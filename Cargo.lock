@@ -896,9 +896,9 @@ dependencies = [
 
 [[package]]
 name = "gtk4-layer-shell"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3e1e1b1516be3d7ca089dfa6a1e688e268c74aef50c0c25fe8c46b1ba8ed1cc"
+checksum = "aec4fd3226bb6aa8dda5370142e14a4d15f00bba99bfb355b6ef7bb49d100758"
 dependencies = [
  "bitflags",
  "gdk4",
