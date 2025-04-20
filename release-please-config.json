@@ -5,7 +5,21 @@
   "draft-pull-request": true,
   "bootstrap-sha": "0d834ab64cb607d2bc10ca7b13d2642728592f50",
   "plugins": [
-    "cargo-workspace"
+    {
+      "type": "cargo-workspace",
+      "merge": false
+    },
+    {
+      "type": "linked-versions",
+      "groupName": "my group",
+      "components": [
+        ".",
+        "core-lib",
+        "exec-lib",
+        "windows-lib",
+        "launcher-lib"
+      ]
+    }
   ],
   "packages": {
     ".": {
@@ -16,22 +30,22 @@
     {
       "type": "toml",
       "path": "Cargo.toml",
-      "jsonpath": "workspace.dependencies.core-lib.version"
+      "jsonpath": "$.workspace.dependencies.core-lib.version"
     },
     {
       "type": "toml",
       "path": "Cargo.toml",
-      "jsonpath": "workspace.dependencies.exec-lib.version"
+      "jsonpath": "$.workspace.dependencies.exec-lib.version"
     },
     {
       "type": "toml",
       "path": "Cargo.toml",
-      "jsonpath": "workspace.dependencies.windows-lib.version"
+      "jsonpath": "$.workspace.dependencies.windows-lib.version"
     },
     {
       "type": "toml",
       "path": "Cargo.toml",
-      "jsonpath": "workspace.dependencies.launcher-lib.version"
+      "jsonpath": "$.workspace.dependencies.launcher-lib.version"
     }
   ]
 }
