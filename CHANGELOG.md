@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/H3rmt/hyprswitch/compare/0.2.1...0.2.3) (2025-04-21)
+
+
+### Bug Fixes
+
+* fix ci release ([6dc00c7](https://github.com/H3rmt/hyprswitch/commit/6dc00c719ef7beaea70c86f7851c6de8cdf9117e))
+
 ## 0.2.1 (2025-04-20)
 
 
