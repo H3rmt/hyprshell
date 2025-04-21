@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/H3rmt/hyprswitch/compare/0.2.4...0.2.5) (2025-04-21)
+
+
+### Bug Fixes
+
+* fix versions ([89711a6](https://github.com/H3rmt/hyprswitch/commit/89711a628c45d6286742ac274ad4ec2fe487faed))
+
 ## [0.2.4](https://github.com/H3rmt/hyprswitch/compare/0.2.3...0.2.4) (2025-04-21)
 
 
