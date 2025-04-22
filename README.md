@@ -40,6 +40,8 @@ yay -S hyprshell
 
 ### NixOS
 
+- Supported Architectures: `x86_64-linux`, `aarch64-linux`
+
 #### With Flakes
 
 `flake.nix`:
@@ -65,13 +67,13 @@ yay -S hyprshell
 `configuration.nix`:
 
 ```nix
-{...}: let
+{pkgs, ...}: let
   flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
   hyprshell = (import flake-compat {
     src = builtins.fetchTarball "https://github.com/H3rmt/hyprswitch/archive/hyprshell.tar.gz";
   }).defaultNix;
 in {
-   environment.systemPackages = [hyprshell.packages.x86_64-linux.default];
+   environment.systemPackages = [hyprshell.packages.${pkgs.system}.default];
 }
 ```
 
