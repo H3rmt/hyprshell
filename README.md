@@ -38,16 +38,46 @@ paru -S hyprshell
 yay -S hyprshell
 ```
 
-### Nixos (TODO Add)
+### NixOS
 
-- add ``hyprshell.url = "github:h3rmt/hyprshell/release";`` to flake inputs
-- add `specialArgs = { inherit inputs; };` to `nixpkgs.lib.nixosSystem`
-- add `inputs.hyprshell.packages.x86_64-linux.default` to your `environment.systemPackages`
-- available systems: `aarch64-linux`, `i686-linux`, `riscv32-linux`, `riscv64-linux`, `x86_64-linux`
+#### With Flakes
+
+`flake.nix`:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    hyprshell.url = "github:H3rmt/hyprswitch?ref=hyprshell";
+  };
+
+  outputs = { nixpkgs, hyprshell }: {
+    nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [{ environment.systemPackages = [ hyprshell.packages.x86_64-linux.default ]; }];
+    };
+  };
+}
+```
+
+#### Without Flakes
+
+`configuration.nix`:
+
+```nix
+{...}: let
+  flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
+  hyprshell = (import flake-compat {
+    src = builtins.fetchTarball "https://github.com/H3rmt/hyprswitch/archive/hyprshell.tar.gz";
+  }).defaultNix;
+in {
+   environment.systemPackages = [hyprshell.packages.x86_64-linux.default];
+}
+```
 
 ## Usage
 
-Run ``hyprshell --help`` to see available commands and options.
+Run `hyprshell --help` to see available commands and options.
 
 ### Config generation
 
@@ -64,7 +94,7 @@ The generated file will be located at `~/.config/hypr/hyprshell.conf`.
 
 To validate your configuration file, run:
 
-```bash 
+```bash
 hyprshell config check
 ```
 
