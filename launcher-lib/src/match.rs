@@ -135,7 +135,7 @@ pub fn get_matches(
             Match {
                 name: "Run in terminal".into(),
                 icon: Some(PathBuf::from("utilities-terminal").into_boxed_path()),
-                exec: Box::from(format!("$SHELL -c \"{text};exec $SHELL\"")),
+                exec: Box::from(format!("$SHELL -c \"{text}; exec $SHELL\"")),
                 terminal: true,
                 exec_path: None,
                 source: None,

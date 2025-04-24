@@ -266,6 +266,18 @@ fn get_exec_label(exec: &str) -> String {
                 .unwrap_or_default()
         )
     } else {
-        format!("{}", exec_trim) // show full exec instead of only last part of /path/to/exec
+        // show only last part of /path/to/exec if it begins with /
+        // otherwise show full exec
+        if exec_trim.starts_with('/') {
+            format!(
+                "{}",
+                exec_trim
+                    .rsplit('/')
+                    .find(|s| !s.is_empty())
+                    .unwrap_or_default()
+            )
+        } else {
+            format!("{}", exec_trim)
+        }
     }
 }
