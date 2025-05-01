@@ -14,13 +14,14 @@ pkgs.rustPlatform.buildRustPackage {
     wrapGAppsHook4
     pkg-config
     makeBinaryWrapper
+
+    # hyprshell-core-lib gets the path at build time
+    socat
   ];
 
   buildInputs = with pkgs; [
     gtk4
     gtk4-layer-shell
-    # hyprshell-core-lib gets the path at build time
-    socat
   ];
 
   meta = {
