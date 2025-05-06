@@ -1,13 +1,18 @@
 {
   description = "hyprshell - A Rust-based GUI designed to enhance window management in hyprland";
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-  outputs = { self, nixpkgs, }:
+  outputs =
+    { self, nixpkgs }:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       pkgsFor = nixpkgs.legacyPackages;
     in
     {
+      formatter = forAllSystems (system: pkgsFor.${system}.nixfmt-tree);
       packages = forAllSystems (system: rec {
         hyprshell = pkgsFor.${system}.callPackage ./nix/default.nix { inherit self; };
         default = hyprshell;
@@ -15,6 +20,9 @@
       devShells = forAllSystems (system: {
         default = pkgsFor.${system}.callPackage ./nix/shell.nix { inherit self; };
       });
-      formatter = forAllSystems (system: pkgsFor.${system}.nixpkgs-fmt);
+      homeModules = {
+        hyprshell = import ./nix/module.nix self;
+        default = self.homeModules.hyprshell;
+      };
     };
 }

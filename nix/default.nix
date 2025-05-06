@@ -1,11 +1,11 @@
-{ self, pkgs, }:
-let pname = "hyprshell"; in
+{ self, pkgs }:
+let
+  pname = "hyprshell";
+in
 pkgs.rustPlatform.buildRustPackage {
   inherit pname;
   version =
-    (pkgs.lib.importTOML ../Cargo.toml).workspace.package.version
-    + "_"
-    + (self.shortRev or "dirty");
+    (pkgs.lib.importTOML ../Cargo.toml).workspace.package.version + "_" + (self.shortRev or "dirty");
 
   cargoLock.lockFile = ../Cargo.lock;
   src = pkgs.lib.cleanSource ../.;

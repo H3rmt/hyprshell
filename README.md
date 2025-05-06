@@ -62,6 +62,8 @@ yay -S hyprshell
 }
 ```
 
+This repository also contains a [`home-manager`](https://github.com/nix-community/home-manager) module to configure Hyprshell, which can be accessed by using `hyprshell.homeModules.hyprshell`
+
 #### Without Flakes
 
 `configuration.nix`:
