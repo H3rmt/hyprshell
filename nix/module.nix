@@ -70,7 +70,7 @@ in
         If value is a path, then that will be used as the CSS file
       '';
       type = nullOr (either path lines);
-      default = (readFile ../windows-lib/src/styles.css) + (readFile ../launcher-lib/src/styles.css);
+      default = readFile ../core-lib/src/config/generate/default.css;
     };
 
     settings = {
