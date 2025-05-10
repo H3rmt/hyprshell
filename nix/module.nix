@@ -21,6 +21,7 @@ let
     mapAttrsToList
     mkEnableOption
     mkIf
+    mkMerge
     mkOption
     optionalString
     types
@@ -71,6 +72,21 @@ in
       '';
       type = nullOr (either path lines);
       default = readFile ../core-lib/src/config/generate/default.css;
+    };
+
+    declarative = mkEnableOption' ''
+      Declarative configuration of Hyprshell settings
+      If enabled, then the configuration will be generated from `programs.hyprshell.settings`
+      Otherwise `programs.hyprshell.configFile` will be used
+    '';
+
+    configFile = mkOption {
+      description = ''
+        File containing Hyprshell configuration
+        If value is a string, then that will be used as the contents of the file
+      '';
+      type = nullOr (either path lines);
+      default = null;
     };
 
     settings = {
@@ -205,109 +221,127 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = with cfg.settings.launcher; !enable || (terminal != null);
-        message = "Default terminal must be set";
-      }
-    ];
+  config = mkIf cfg.enable (mkMerge [
+    {
+      assertions = [
+        {
+          assertion = cfg.declarative || cfg.configFile != null;
+          message = "Configuration must be specified either declaratively or by using `configFile`";
+        }
+      ];
 
-    home.packages = [ cfg.package ];
+      home.packages = [ cfg.package ];
 
-    xdg.configFile = {
-      "hyprshell/styles.css" = mkIf (cfg.style != null) {
-        source =
-          if isPath cfg.style || isStorePath cfg.style then
-            cfg.style
-          else
-            pkgs.writeText "hyprshell/styles.css" cfg.style;
+      systemd.user.services.hyprshell = mkIf cfg.systemd.enable {
+        Install.WantedBy = [ cfg.systemd.target ];
+        Unit = {
+          Description = "Starts Hyprshell daemon";
+          PartOf = [ cfg.systemd.target ];
+          After = [ cfg.systemd.target ];
+        };
+        Service = {
+          ExecStart = "${getExe cfg.package} run";
+          Type = "simple";
+          Restart = "on-failure";
+          RestartSec = 1;
+        };
       };
 
-      "hyprshell/config.ron".text =
-        with cfg.settings;
+      xdg.configFile =
         let
-          launcher' =
-            with launcher;
-            if launcher.enable then
-              ''
-                (
-                  default_terminal: "${terminal}",
-                  width: ${toString width},
-                  max_items: ${toString items},
-                  plugins: [
-                    ${optionalString plugins.calc "Calc(),"}
-                    ${optionalString plugins.shell "Shell(),"}
-                    ${optionalString plugins.terminal "Terminal(),"}
-                    ${optionalString plugins.apps.enable ''
-                      Applications(
-                        run_cache_weeks: ${toString plugins.apps.cache},
-                        show_execs: ${boolStr plugins.apps.execs},
-                      ),
-                    ''}
-                    ${optionalString plugins.web.enable ''
-                      WebSearch([
-                        ${concatStringsSep "" (
-                          map (engine: ''
-                            (
-                              ${concatStringsSep "," (mapAttrsToList (name: value: "${name}: \"${value}\"") engine)},
-                            ),
-                          '') plugins.web.engines
-                        )}
-                      ]),
-                    ''}
-                  ],
-                )
-              ''
-            else
-              "None";
+          source' =
+            conf: file:
+            if (isPath conf || isStorePath conf) then cfg.style else pkgs.writeText "hyprshell/${file}" conf;
+        in
+        {
+          "hyprshell/styles.css" = mkIf (cfg.style != null) {
+            source = source' cfg.style "styles.css";
+          };
+          "hyprshell/config.ron" = mkIf (!cfg.declarative) {
+            source = source' cfg.configFile "config.ron";
+          };
+        };
+    }
 
-          build = conf: key: ''
+    (mkIf cfg.declarative (
+      with cfg.settings;
+      {
+        assertions = [
+          {
+            assertion = with launcher; !enable || (terminal != null);
+            message = "Default terminal must be set";
+          }
+        ];
+
+        xdg.configFile."hyprshell/config.ron".text =
+          let
+            launcher' =
+              with launcher;
+              if launcher.enable then
+                ''
+                  (
+                    default_terminal: "${terminal}",
+                    width: ${toString width},
+                    max_items: ${toString items},
+                    plugins: [
+                      ${optionalString plugins.calc "Calc(),"}
+                      ${optionalString plugins.shell "Shell(),"}
+                      ${optionalString plugins.terminal "Terminal(),"}
+                      ${optionalString plugins.apps.enable ''
+                        Applications(
+                          run_cache_weeks: ${toString plugins.apps.cache},
+                          show_execs: ${boolStr plugins.apps.execs},
+                        ),
+                      ''}
+                      ${optionalString plugins.web.enable ''
+                        WebSearch([
+                          ${concatStringsSep "" (
+                            map (engine: ''
+                              (
+                                ${concatStringsSep "," (mapAttrsToList (name: value: "${name}: \"${value}\"") engine)},
+                              ),
+                            '') plugins.web.engines
+                          )}
+                        ]),
+                      ''}
+                    ],
+                  )
+                ''
+              else
+                "None";
+
+            build = conf: key: ''
+              (
+                open: (
+                  modifier: ${conf.open.mod},
+                  ${optionalString key "key: \"${conf.open.key}\","}
+                ),
+                navigate: (
+                  forward: "${conf.nav.forward}",
+                  reverse: ${conf.nav.reverse},
+                ),
+                other: (
+                  hide_filtered: ${boolStr conf.filter.hide},
+                  filter_by: [${concatStringsSep "," conf.filter.by}],
+                ),
+              )
+            '';
+          in
+          ''
             (
-              open: (
-                modifier: ${conf.open.mod},
-                ${optionalString key "key: \"${conf.open.key}\","}
-              ),
-              navigate: (
-                forward: "${conf.nav.forward}",
-                reverse: ${conf.nav.reverse},
-              ),
-              other: (
-                hide_filtered: ${boolStr conf.filter.hide},
-                filter_by: [${concatStringsSep "," conf.filter.by}],
+              layerrules: ${boolStr layerrules},
+              launcher: ${launcher'},
+              windows: (
+                scale: ${toString windows.scale},
+                size_factor: ${toString windows.size},
+                workspaces_per_row: ${toString windows.numWorkspaces},
+                strip_html_from_workspace_title: ${boolStr windows.stripHtml},
+                overview: ${build windows.overview true},
+                switch: ${build windows.switcher false},
               ),
             )
           '';
-        in
-        ''
-          (
-            layerrules: ${boolStr layerrules},
-            launcher: ${launcher'},
-            windows: (
-              scale: ${toString windows.scale},
-              size_factor: ${toString windows.size},
-              workspaces_per_row: ${toString windows.numWorkspaces},
-              strip_html_from_workspace_title: ${boolStr windows.stripHtml},
-              overview: ${build windows.overview true},
-              switch: ${build windows.switcher false},
-            ),
-          )
-        '';
-    };
-
-    systemd.user.services.hyprshell = mkIf cfg.systemd.enable {
-      Install.WantedBy = [ cfg.systemd.target ];
-      Unit = {
-        Description = "Starts Hyprshell daemon";
-        PartOf = [ cfg.systemd.target ];
-        After = [ cfg.systemd.target ];
-      };
-      Service = {
-        ExecStart = "${getExe cfg.package} run";
-        Type = "simple";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-    };
-  };
+      }
+    ))
+  ]);
 }
