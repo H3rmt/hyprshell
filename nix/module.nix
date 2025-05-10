@@ -93,9 +93,10 @@ in
       layerrules = mkEnableOption' "Enable layer rules";
       launcher = {
         enable = mkEnableOption' "Enable app launcher";
-        items = mkOpt "Max items" int 5;
-        width = mkOpt "Width" int 650;
-        terminal = mkOption {
+        width = mkOpt "Launcher width" int 650;
+        max_items = mkOpt "Max shown items" int 5;
+        animate_launch_ms = mkOpt "Launcher close duration" int 450;
+        default_terminal = mkOption {
           description = "Default terminal";
           type = types.nullOr (
             types.enum [
@@ -116,12 +117,12 @@ in
           calc = mkEnableOption' "Calculator";
           shell = mkEnableOption' "Run in Shell";
           terminal = mkEnableOption' "Run in Terminal";
-          apps = {
+          applications = {
             enable = mkEnableOption' "Open applications";
             cache = mkOpt "Run Cache weeks" int 4;
             execs = mkEnableOption' "Show execs";
           };
-          web = {
+          websearch = {
             enable = mkEnableOption' "Web search";
             engines = mkOption {
               description = "Search engines";
@@ -155,11 +156,11 @@ in
         };
       };
 
-      windows =
+      window =
         let
           build = key: {
             open = {
-              mod = mkOption {
+              modifier = mkOption {
                 description = "Modifier key";
                 type = types.nullOr (
                   types.enum [
@@ -182,13 +183,13 @@ in
                 else
                   { };
             };
-            nav = {
+            navigate = {
               forward = mkOption {
                 description = "Key to navigate forwards";
                 type = str;
                 default = "tab";
               };
-              reverse = mkOption {
+              backward = mkOption {
                 description = "Key to navigate backwards";
                 type = str;
                 default = "Mod(shift)";
@@ -201,6 +202,7 @@ in
                 description = "Filter by";
                 type = listOf (
                   types.enum [
+                    "same_class"
                     "current_monitor"
                     "current_workspace"
                   ]
@@ -211,10 +213,10 @@ in
           };
         in
         {
-          size = mkOpt "Size Factor" float 6.5;
           scale = mkOpt "Scale" float 8.5;
-          numWorkspaces = mkOpt "Workspaces per row" int 5;
-          stripHtml = mkEnableOption' "Strip HTML from workspace title";
+          size_factor = mkOpt "Size Factor" float 6.5;
+          workspaces_per_row = mkOpt "Workspaces per row" int 5;
+          strip_html_from_workspace_title = mkEnableOption' "Strip HTML from workspace title";
           overview = build true;
           switcher = build false;
         };
@@ -268,7 +270,7 @@ in
       {
         assertions = [
           {
-            assertion = with launcher; !enable || (terminal != null);
+            assertion = with launcher; !enable || (default_terminal != null);
             message = "Default terminal must be set";
           }
         ];
@@ -280,27 +282,28 @@ in
               if launcher.enable then
                 ''
                   (
-                    default_terminal: "${terminal}",
+                    default_terminal: "${default_terminal}",
                     width: ${toString width},
-                    max_items: ${toString items},
+                    max_items: ${toString max_items},
+                    animate_launch_ms: ${toString animate_launch_ms},
                     plugins: [
                       ${optionalString plugins.calc "Calc(),"}
                       ${optionalString plugins.shell "Shell(),"}
                       ${optionalString plugins.terminal "Terminal(),"}
-                      ${optionalString plugins.apps.enable ''
+                      ${optionalString plugins.applications.enable ''
                         Applications(
-                          run_cache_weeks: ${toString plugins.apps.cache},
-                          show_execs: ${boolStr plugins.apps.execs},
+                          run_cache_weeks: ${toString plugins.applications.cache},
+                          show_execs: ${boolStr plugins.applications.execs},
                         ),
                       ''}
-                      ${optionalString plugins.web.enable ''
+                      ${optionalString plugins.websearch.enable ''
                         WebSearch([
                           ${concatStringsSep "" (
                             map (engine: ''
                               (
                                 ${concatStringsSep "," (mapAttrsToList (name: value: "${name}: \"${value}\"") engine)},
                               ),
-                            '') plugins.web.engines
+                            '') plugins.websearch.engines
                           )}
                         ]),
                       ''}
@@ -313,12 +316,12 @@ in
             build = conf: key: ''
               (
                 open: (
-                  modifier: ${conf.open.mod},
+                  modifier: ${conf.open.modifier},
                   ${optionalString key "key: \"${conf.open.key}\","}
                 ),
                 navigate: (
-                  forward: "${conf.nav.forward}",
-                  reverse: ${conf.nav.reverse},
+                  forward: "${conf.navigate.forward}",
+                  backward: ${conf.navigate.backward},
                 ),
                 other: (
                   hide_filtered: ${boolStr conf.filter.hide},
@@ -332,12 +335,12 @@ in
               layerrules: ${boolStr layerrules},
               launcher: ${launcher'},
               windows: (
-                scale: ${toString windows.scale},
-                size_factor: ${toString windows.size},
-                workspaces_per_row: ${toString windows.numWorkspaces},
-                strip_html_from_workspace_title: ${boolStr windows.stripHtml},
-                overview: ${build windows.overview true},
-                switch: ${build windows.switcher false},
+                scale: ${toString window.scale},
+                size_factor: ${toString window.size_factor},
+                workspaces_per_row: ${toString window.workspaces_per_row},
+                strip_html_from_workspace_title: ${boolStr window.strip_html_from_workspace_title},
+                overview: ${build window.overview true},
+                switch: ${build window.switcher false},
               ),
             )
           '';
