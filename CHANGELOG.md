@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.2](https://github.com/H3rmt/hyprswitch/compare/v4.0.1...v4.0.2) (2025-05-31)
+
+
+### Bug Fixes
+
+* fixed the PKGBUILD for arch ([89c06ba](https://github.com/H3rmt/hyprswitch/commit/89c06baa318157827e7042adeaa4ca274b251756))
+
 ## [4.0.1](https://github.com/H3rmt/hyprswitch/compare/v4.0.0...v4.0.1) (2025-05-31)
 
 
