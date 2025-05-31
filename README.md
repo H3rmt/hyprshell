@@ -57,7 +57,7 @@ hyprshell config generate
 ```
 
 This launches an interactive prompt to set up your configuration.
-The generated file will be located at `~/.config/hypr/hyprshell.conf`.
+The generated file will be located at `~/.config/hyprshell/config.ron`.
 
 If you want to modify these settings, look at the [Documentation](CONFIGURE.md) for the config file.
 
