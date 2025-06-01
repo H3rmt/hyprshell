@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.0.3](https://github.com/H3rmt/hyprswitch/compare/v4.0.2...v4.0.3) (2025-06-01)
+
+
+### Bug Fixes
+
+* fixed icon scaling ([5a0489a](https://github.com/H3rmt/hyprswitch/commit/5a0489a39742d89abed3760096c3dccee2fa5845))
+* remove launch animation from plugins after close ([685b7bd](https://github.com/H3rmt/hyprswitch/commit/685b7bdf205cafc48e9a21aaccd9428e774905d9))
+* use dbus to open if no browser was found ([c074a56](https://github.com/H3rmt/hyprswitch/commit/c074a56ac7603c14754a4b20a65eeb095e2a103d))
+
 ## [4.0.2](https://github.com/H3rmt/hyprswitch/compare/v4.0.1...v4.0.2) (2025-05-31)
 
 
