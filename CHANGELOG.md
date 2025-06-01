@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.4](https://github.com/H3rmt/hyprswitch/compare/v4.0.3...v4.0.4) (2025-06-01)
+
+
+### Bug Fixes
+
+* more debugging for default browser to fix [#188](https://github.com/H3rmt/hyprswitch/issues/188) ([551bfd0](https://github.com/H3rmt/hyprswitch/commit/551bfd0b58aedbccc93236595beab63dcf9195dc))
+
 ## [4.0.3](https://github.com/H3rmt/hyprswitch/compare/v4.0.2...v4.0.3) (2025-06-01)
 
 
