@@ -53,7 +53,7 @@ pub fn update_launcher(global: &LauncherGlobal, text: String) {
             );
             data1.results.append(&row);
             data1.sorted_matches.push(opt.iden);
-        }
+        };
 
         let static_launch_options =
             get_static_launch_options(&global.plugins, &global.default_terminal);

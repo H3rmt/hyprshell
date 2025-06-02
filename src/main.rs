@@ -145,6 +145,7 @@ fn main() -> anyhow::Result<()> {
                 let runs = launcher_lib::get_applications_stored_runs(run_cache_weeks, &data_dir);
 
                 for (path, run) in runs {
+                    // ignore the ini parser for this, just read the file and find, is faster
                     if let Ok(content) = read_to_string(&path) {
                         if let Some(name_line) = content.lines().find(|l| l.starts_with("Name=")) {
                             let name = name_line.trim_start_matches("Name=");

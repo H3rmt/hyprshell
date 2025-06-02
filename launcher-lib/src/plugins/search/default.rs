@@ -25,41 +25,37 @@ pub fn reload_default_browser(files: &[DirEntry]) {
     let default_browser = get_default_browser_desktop_file();
 
     for entry in files {
-        // trace!("Checking entry: {:?}", entry.path());
-        // TODO ini parser
         if entry.file_name() == default_browser.as_deref().unwrap_or_default() {
-            if let Some(content) = read_to_string(entry.path())
-                .warn(&format!("Failed to read file: {:?}", entry.path()))
-            {
-                let lines: Vec<&str> = content.lines().collect();
-                let exec = lines
-                    .iter()
-                    .find(|l| l.starts_with("Exec="))
-                    .map(|l| l.trim_start_matches("Exec="));
-                let startup_wm_class = lines
-                    .iter()
-                    .find(|l| l.starts_with("StartupWMClass="))
-                    .map(|l| l.trim_start_matches("StartupWMClass="));
-                let icon = lines
-                    .iter()
-                    .find(|l| l.starts_with("Icon="))
-                    .map(|l| l.trim_start_matches("Icon="));
-                trace!(
-                    "Found exec: {:?}, startup_wm_class: {:?}, icon: {:?}",
-                    exec,
-                    startup_wm_class,
-                    icon
-                );
-                if let Some(exec) = exec {
-                    trace!("Found default browser file: {:?} with exec: {:?} and startup_wm_class: {:?}", entry.path(), exec, startup_wm_class);
-                    let _ = BROWSER_EXEC.set(Mutex::new(DefaultPlugins {
-                        exec: Box::from(exec),
-                        startup_wm_class: startup_wm_class.map(Box::from),
-                        icon: icon.map(Path::new).map(Box::from),
-                    }));
-                    return;
+            if let Ok(str) = read_to_string(entry.path()) {
+                let ini = IniFile::parse(&str);
+                if let Some(section) = ini.get_section("Desktop Entry") {
+                    let exec = section.get("Exec");
+                    let startup_wm_class = section.get("StartupWMClass");
+                    let icon = section.get("Icon");
+                    trace!(
+                        "Found exec: {:?}, startup_wm_class: {:?}, icon: {:?}",
+                        exec,
+                        startup_wm_class,
+                        icon
+                    );
+                    if let Some(exec) = exec {
+                        trace!("Found default browser file: {:?} with exec: {:?} and startup_wm_class: {:?}", entry.path(), exec, startup_wm_class);
+                        let _ = BROWSER_EXEC.set(Mutex::new(DefaultPlugins {
+                            exec: Box::from(exec),
+                            startup_wm_class: startup_wm_class.map(Box::from),
+                            icon: icon.map(Path::new).map(Box::from),
+                        }));
+                        return;
+                    }
+                } else {
+                    warn!(
+                        "Failed to find section 'Desktop Entry' in file: {:?}",
+                        entry.path()
+                    );
                 }
-            };
+            } else {
+                warn!("Failed to read file: {:?}", entry.path());
+            }
         }
     }
     warn!("No default browser found! (using firefox and gdbus to open)");
@@ -80,6 +76,8 @@ fn get_default_browser_desktop_file() -> Option<Box<str>> {
                 .get_boxed("x-scheme-handler/https")?;
             debug!("Default browser from mimeapps.list: {}", browser);
             return Some(browser);
+        } else {
+            warn!("Failed to read file: {:?}", entry.path());
         }
     }
     None

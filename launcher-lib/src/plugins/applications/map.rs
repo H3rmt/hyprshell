@@ -119,6 +119,11 @@ fn fill_desktop_file_map(map: &mut Vec<DesktopEntry>, files: &[DirEntry]) -> any
                         });
                     }
                 }
+            } else {
+                warn!(
+                        "Failed to find section 'Desktop Entry' in file: {:?}",
+                        entry.path()
+                    );
             }
         } else {
             warn!("Failed to read file: {:?}", entry.path());
