@@ -7,14 +7,12 @@ on:
 
 jobs:
   publish:
-    permissions:
-      contents: write
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.SSH_KEY }}
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: Install gtk4-layer-shell
