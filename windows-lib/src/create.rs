@@ -1,5 +1,5 @@
-use crate::global::OverviewGlobalMonitorData;
 use crate::WindowsGlobal;
+use crate::global::OverviewGlobalMonitorData;
 use anyhow::Context;
 use core_lib::OVERVIEW_NAMESPACE;
 use exec_lib::get_monitors;
@@ -7,7 +7,7 @@ use gtk::gdk::{Display, Monitor};
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, FlowBox, Orientation, Overlay, SelectionMode};
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
-use tracing::{debug, span, Level};
+use tracing::{Level, debug, span};
 
 pub fn create_windows_window(app: &Application, global: &WindowsGlobal) -> anyhow::Result<()> {
     let _span = span!(Level::TRACE, "create_windows_window").entered();

@@ -1,7 +1,7 @@
-use crate::recive_handle::{close, exit, open_overview, open_switch, r#type, restart, switch};
+use crate::recive_handle::{close, exit, open_overview, open_switch, restart, switch, r#type};
 use anyhow::Context;
-use core_lib::transfer::TransferType;
 use core_lib::get_daemon_socket_path_buff;
+use core_lib::transfer::TransferType;
 use exec_lib::toast;
 use gtk::gio::{Cancellable, InputStream, SocketListener, UnixSocketAddress};
 use gtk::prelude::*;
@@ -9,7 +9,7 @@ use gtk::{gio, glib};
 use rand::Rng;
 use std::fs::remove_file;
 use std::time::Instant;
-use tracing::{debug, error, info, span, trace, Level};
+use tracing::{Level, debug, error, info, span, trace};
 
 pub struct Globals {
     pub window: Option<windows_lib::WindowsGlobal>,
@@ -81,8 +81,8 @@ fn handle_client(stream: InputStream, size: isize, global: &Globals) -> anyhow::
 }
 
 fn handle_client_transfer(str: &str, global: &Globals) -> anyhow::Result<()> {
-    let transfer: TransferType = serde_json::from_str(str)
-        .with_context(|| format!("Failed to deserialize str: {str:?}"))?;
+    let transfer: TransferType =
+        serde_json::from_str(str).with_context(|| format!("Failed to deserialize str: {str:?}"))?;
     debug!("Received command: {transfer:?}");
     match transfer {
         TransferType::OpenOverview(config) => open_overview(global, config),

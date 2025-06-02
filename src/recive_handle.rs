@@ -1,6 +1,6 @@
 use crate::receive::Globals;
 use core_lib::transfer::{CloseConfig, OpenOverview, OpenSwitch, SwitchConfig, WindowsOverride};
-use core_lib::{collect_desktop_files, IdOverride, Warn};
+use core_lib::{IdOverride, Warn, collect_desktop_files};
 use gtk::prelude::EntryExt;
 use tracing::{debug, warn};
 
@@ -75,7 +75,11 @@ pub fn close(global: &Globals, config: CloseConfig) {
             if launcher_active {
                 if !launcher_empty {
                     // kill overview, close launcher
-                    if_some!(global.launcher, launcher_lib::close_launcher_press, Some('0'));
+                    if_some!(
+                        global.launcher,
+                        launcher_lib::close_launcher_press,
+                        Some('0')
+                    );
                     if_some!(global.window, windows_lib::close_overview, None);
                 } else {
                     debug!("Launcher is empty, not closing");

@@ -1,10 +1,10 @@
 use crate::keybinds::create_binds_and_submaps;
-use crate::receive::{socket_handler, Globals};
+use crate::receive::{Globals, socket_handler};
 use core_lib::theme_icon_cache::init_icon_map;
 use core_lib::transfer::TransferType;
 use core_lib::{
-    collect_desktop_files, config, hyprshell_config_block, hyprshell_config_listener,
-    hyprshell_css_listener, send_to_socket, Warn,
+    Warn, collect_desktop_files, config, hyprshell_config_block, hyprshell_config_listener,
+    hyprshell_css_listener, send_to_socket,
 };
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use exec_lib::{apply_keybinds, reload_config, toast};
@@ -12,15 +12,15 @@ use gtk::gdk::Display;
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::{
-    glib, style_context_add_provider_for_display, Application, CssProvider, IconTheme, Settings,
-    STYLE_PROVIDER_PRIORITY_APPLICATION, STYLE_PROVIDER_PRIORITY_USER,
+    Application, CssProvider, IconTheme, STYLE_PROVIDER_PRIORITY_APPLICATION,
+    STYLE_PROVIDER_PRIORITY_USER, Settings, glib, style_context_add_provider_for_display,
 };
-use launcher_lib::{create_launcher_window, LauncherGlobal};
+use launcher_lib::{LauncherGlobal, create_launcher_window};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use tracing::{debug, info, span, trace, warn, Level};
-use windows_lib::{create_windows_window, WindowsGlobal};
+use tracing::{Level, debug, info, span, trace, warn};
+use windows_lib::{WindowsGlobal, create_windows_window};
 
 const APPLICATION_ID: &str = "com.github.h3rmt.hyprshell";
 
@@ -199,7 +199,9 @@ fn check_themes() {
     if let Some(settings) = Settings::default() {
         let theme_name = settings.gtk_theme_name();
         let icon_theme_name = settings.gtk_icon_theme_name();
-        info!("Using theme: {theme_name:?} and icon theme: {icon_theme_name:?}, please make sure both exist, else weird icon or graphical issues may occur");
+        info!(
+            "Using theme: {theme_name:?} and icon theme: {icon_theme_name:?}, please make sure both exist, else weird icon or graphical issues may occur"
+        );
     } else {
         warn!("Unable to check default settings for icon theme");
     }

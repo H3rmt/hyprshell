@@ -1,10 +1,10 @@
 use core_lib::{IniFile, Warn};
 use std::collections::HashMap;
-use std::fs::{read_to_string, DirEntry};
+use std::fs::{DirEntry, read_to_string};
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
-use tracing::{span, trace, warn, Level};
+use tracing::{Level, span, trace, warn};
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Source {

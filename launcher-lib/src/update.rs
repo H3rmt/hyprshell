@@ -1,17 +1,17 @@
+use crate::LauncherGlobal;
 use crate::plugins::{
-    get_sortable_launch_options, get_static_launch_options, iden_to_str, DetailsMenuItem,
+    DetailsMenuItem, get_sortable_launch_options, get_static_launch_options, iden_to_str,
 };
 use crate::util::DataInWidget;
-use crate::LauncherGlobal;
 use core_lib::theme_icon_cache::theme_has_icon_name;
 use core_lib::transfer::{CloseConfig, Identifier, TransferType};
-use core_lib::{send_to_socket, Warn};
+use core_lib::{Warn, send_to_socket};
 use gtk::gdk::Cursor;
 use gtk::pango::EllipsizeMode;
 use gtk::prelude::*;
-use gtk::{glib, Align, Button, IconSize, Image, Label, ListBoxRow, Orientation, Popover};
+use gtk::{Align, Button, IconSize, Image, Label, ListBoxRow, Orientation, Popover, glib};
 use std::path::Path;
-use tracing::{debug, span, warn, Level};
+use tracing::{Level, debug, span, warn};
 
 pub fn update_launcher(global: &LauncherGlobal, text: String) {
     let _span = span!(Level::TRACE, "update_launcher").entered();
@@ -53,7 +53,7 @@ pub fn update_launcher(global: &LauncherGlobal, text: String) {
             );
             data1.results.append(&row);
             data1.sorted_matches.push(opt.iden);
-        };
+        }
 
         let static_launch_options =
             get_static_launch_options(&global.plugins, &global.default_terminal);

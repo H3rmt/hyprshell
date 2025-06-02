@@ -1,18 +1,24 @@
 use crate::config::Config;
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
+use ron::Options;
 use ron::extensions::Extensions;
 use ron::ser::PrettyConfig;
-use ron::Options;
 use std::ffi::OsStr;
-use std::fs::{create_dir_all, File};
+use std::fs::{File, create_dir_all};
 use std::path::Path;
-use tracing::{info, span, Level};
+use tracing::{Level, info, span};
 
-pub fn write_config(config_path: &Path, config: &Config, override_file: bool) -> anyhow::Result<()> {
+pub fn write_config(
+    config_path: &Path,
+    config: &Config,
+    override_file: bool,
+) -> anyhow::Result<()> {
     let _span = span!(Level::TRACE, "write_config").entered();
 
     if config_path.exists() && !override_file {
-        bail!("Config file at {config_path:?} already exists, delete it before generating a new one or use -f to override");
+        bail!(
+            "Config file at {config_path:?} already exists, delete it before generating a new one or use -f to override"
+        );
     }
     if let Some(parent) = config_path.parent() {
         create_dir_all(parent)
@@ -41,7 +47,10 @@ pub fn write_config(config_path: &Path, config: &Config, override_file: bool) ->
             write(config_path, str)
                 .with_context(|| format!("Failed to create config at ({config_path:?})"))?;
         }
-        Some(ext) => bail!("Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)", ext),
+        Some(ext) => bail!(
+            "Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)",
+            ext
+        ),
     };
 
     info!("Config file written successfully at {:?}", config_path);

@@ -1,6 +1,6 @@
 use gtk::gdk::Display;
 use gtk::{
-    glib, style_context_add_provider_for_display, CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION,
+    CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, glib, style_context_add_provider_for_display,
 };
 pub fn get_css() {
     let provider_app = CssProvider::new();

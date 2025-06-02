@@ -4,7 +4,7 @@ use exec_lib::switch::{switch_client, switch_workspace};
 use exec_lib::{activate_submap, to_client_address};
 use gtk::glib;
 use gtk::prelude::*;
-use tracing::{debug, span, trace, Level};
+use tracing::{Level, debug, span, trace};
 
 pub fn close_overview(global: &WindowsGlobal, ids: Option<Option<IdOverride>>) {
     let _span = span!(Level::TRACE, "close_overview").entered();

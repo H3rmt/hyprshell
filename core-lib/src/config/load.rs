@@ -1,11 +1,11 @@
 use crate::config;
-use crate::config::{check, Config};
-use anyhow::{bail, Context};
-use ron::extensions::Extensions;
+use crate::config::{Config, check};
+use anyhow::{Context, bail};
 use ron::Options;
+use ron::extensions::Extensions;
 use std::ffi::OsStr;
 use std::path::Path;
-use tracing::{debug, info, span, warn, Level};
+use tracing::{Level, debug, info, span, warn};
 
 pub fn load_config(config_path: &Path) -> anyhow::Result<Config> {
     let _span = span!(Level::TRACE, "load_config", path =? config_path).entered();
@@ -39,7 +39,10 @@ pub fn load_config(config_path: &Path) -> anyhow::Result<Config> {
                 .context("Failed to read toml config")?;
             toml::from_str(&content).context("Failed to parse toml config")
         }
-        Some(ext) => bail!("Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)", ext),
+        Some(ext) => bail!(
+            "Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)",
+            ext
+        ),
     };
 
     let config = match config {

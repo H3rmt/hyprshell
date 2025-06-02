@@ -5,11 +5,11 @@ use core_lib::transfer::{
     CloseConfig, Direction, OpenOverview, OpenSwitch, SwitchConfig, TransferType,
 };
 use core_lib::{
-    generate_socat, generate_socat_and_activate_submap, get_hyprctl_path, LAUNCHER_NAMESPACE,
-    OVERVIEW_NAMESPACE,
+    LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, generate_socat, generate_socat_and_activate_submap,
+    get_hyprctl_path,
 };
 use launcher_lib::generate_keybinds;
-use tracing::{span, Level};
+use tracing::{Level, span};
 
 pub fn create_binds_and_submaps<'a>(config: &Config) -> anyhow::Result<Vec<(&'a str, String)>> {
     let _span = span!(Level::DEBUG, "create_binds_and_submaps").entered();

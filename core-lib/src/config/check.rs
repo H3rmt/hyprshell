@@ -13,7 +13,13 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
 
     if let Some(l) = &config.launcher {
         let mut used: Vec<char> = vec![];
-        for engine in l.plugins.websearch.as_ref().map(|ws| &ws.engines).unwrap_or(&vec![]) {
+        for engine in l
+            .plugins
+            .websearch
+            .as_ref()
+            .map(|ws| &ws.engines)
+            .unwrap_or(&vec![])
+        {
             if engine.url.is_empty() {
                 bail!("Search engine url cannot be empty");
             }

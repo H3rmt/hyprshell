@@ -1,7 +1,7 @@
 use anyhow::Context;
 use core_lib::transfer::Direction;
 use core_lib::{Active, ClientData, ClientId, HyprlandData, WorkspaceData, WorkspaceId};
-use tracing::{debug, span, trace, Level};
+use tracing::{Level, debug, span, trace};
 
 pub fn find_next(
     direction: &Direction,

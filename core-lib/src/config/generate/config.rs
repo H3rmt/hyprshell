@@ -1,4 +1,4 @@
-use crate::config::generate::tui::{configurable_launcher_plugins, WEB_SEARCH_ENGINES};
+use crate::config::generate::tui::{WEB_SEARCH_ENGINES, configurable_launcher_plugins};
 use crate::config::structs::{
     Config, KeyMaybeMod, Launcher, Mod, Navigate, OpenOverview, OpenSwitch, Overview, Reverse,
     Switch, Windows,
@@ -32,10 +32,14 @@ pub fn check_file_exist(
     override_css: bool,
 ) -> anyhow::Result<()> {
     if !override_config && config_path.exists() {
-        warn!("Config file {config_path:?} already exists, use -f to override all or -f config to override only the config file")
+        warn!(
+            "Config file {config_path:?} already exists, use -f to override all or -f config to override only the config file"
+        )
     }
     if !override_css && css_path.exists() {
-        warn!("CSS file {css_path:?} already exists, use -f to override all or -f css to override only the css file")
+        warn!(
+            "CSS file {css_path:?} already exists, use -f to override all or -f css to override only the css file"
+        )
     }
     Ok(())
 }

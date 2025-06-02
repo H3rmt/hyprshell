@@ -21,10 +21,11 @@ pub fn save_run(desktop_file: &Path, data_dir: &Path) -> anyhow::Result<()> {
         serde_json::json!({})
     };
 
-    data[&*desktop_file.to_string_lossy()] = serde_json::json!(data
-        .get(&*desktop_file.to_string_lossy())
-        .map(|v| v.as_i64().unwrap_or(0) + 1)
-        .unwrap_or(1));
+    data[&*desktop_file.to_string_lossy()] = serde_json::json!(
+        data.get(&*desktop_file.to_string_lossy())
+            .map(|v| v.as_i64().unwrap_or(0) + 1)
+            .unwrap_or(1)
+    );
 
     trace!("Cache saved to {file:?} (added {:?})", desktop_file);
     let file = OpenOptions::new()

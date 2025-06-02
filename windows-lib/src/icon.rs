@@ -3,7 +3,7 @@ use core_lib::theme_icon_cache::theme_has_icon_name;
 use gtk::Image;
 use std::fs;
 use std::path::Path;
-use tracing::{span, trace, warn, Level};
+use tracing::{Level, span, trace, warn};
 
 pub fn set_icon(class: &str, pid: i32, image: &Image) {
     let image = image.clone();

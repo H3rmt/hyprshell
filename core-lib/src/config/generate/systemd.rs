@@ -3,7 +3,7 @@ use anyhow::Context;
 use std::env;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
-use tracing::{info, span, trace, Level};
+use tracing::{Level, info, span, trace};
 
 const UNIT: &str = include_str!("default.service");
 pub fn write_systemd_unit(

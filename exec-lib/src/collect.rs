@@ -4,7 +4,7 @@ use core_lib::{
 };
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
 use hyprland::prelude::*;
-use tracing::{span, warn, Level};
+use tracing::{Level, span, warn};
 
 fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
     let _span = span!(Level::TRACE, "get_hypr_data").entered();

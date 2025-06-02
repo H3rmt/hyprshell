@@ -5,7 +5,7 @@ use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::Instant;
-use tracing::{debug, span, Level};
+use tracing::{Level, debug, span};
 
 fn get_icon_map() -> &'static Mutex<BTreeSet<Box<str>>> {
     static MAP_LOCK: OnceLock<Mutex<BTreeSet<Box<str>>>> = OnceLock::new();

@@ -1,14 +1,14 @@
-use crate::data::{collect_data, SortConfig};
+use crate::WindowsGlobal;
+use crate::data::{SortConfig, collect_data};
 use crate::icon::set_icon;
 use crate::next::find_next;
-use crate::WindowsGlobal;
 use anyhow::Context;
 use core_lib::transfer::{CloseConfig, OpenSwitch, TransferType, WindowsOverride};
-use core_lib::{send_to_socket, ClientData, ClientId, FindByFirst, Warn};
+use core_lib::{ClientData, ClientId, FindByFirst, Warn, send_to_socket};
 use gtk::gdk::Cursor;
 use gtk::prelude::*;
-use gtk::{pango, Button, Frame, Image, Label, Overflow, Overlay};
-use tracing::{debug, span, trace, Level};
+use gtk::{Button, Frame, Image, Label, Overflow, Overlay, pango};
+use tracing::{Level, debug, span, trace};
 
 fn scale(value: i16, scale: f64) -> i32 {
     (value as f64 / (15f64 - scale)) as i32

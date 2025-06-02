@@ -1,13 +1,14 @@
-
-use std::collections::{BTreeMap, HashMap, VecDeque};
 use core_lib::{ClientData, ClientId, MonitorId, WorkspaceId};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 
 /// Sorts clients with complex sorting
 ///
 /// * 'clients' - Vector of clients to sort
 /// * 'ignore_workspaces' - Don't split clients into workspaces (treat all clients on monitor as one workspace)
 /// * 'ignore_monitors' - Don't split clients into monitors (treat all clients as one monitor)
-pub fn sort_clients_by_position(clients: Vec<(ClientId, ClientData)>) -> Vec<(ClientId, ClientData)> {
+pub fn sort_clients_by_position(
+    clients: Vec<(ClientId, ClientData)>,
+) -> Vec<(ClientId, ClientData)> {
     // monitor -> workspace -> clients
     let monitors: Vec<Vec<Vec<(ClientId, ClientData)>>> = {
         let mut monitors: BTreeMap<MonitorId, BTreeMap<WorkspaceId, Vec<(ClientId, ClientData)>>> =
@@ -105,7 +106,6 @@ pub fn sort_clients_by_position(clients: Vec<(ClientId, ClientData)>) -> Vec<(Cl
 
     sorted_clients
 }
-
 
 pub fn sort_clients_by_recent(clients: &mut [(ClientId, ClientData)]) {
     let focus_map = clients

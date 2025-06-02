@@ -1,6 +1,6 @@
 use core_lib::config::Plugins;
 use std::path::Path;
-use tracing::{span, Level};
+use tracing::{Level, span};
 
 mod applications;
 mod search;

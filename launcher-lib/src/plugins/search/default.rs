@@ -1,8 +1,8 @@
-use core_lib::{find_config_dirs, get_config_dir, IniFile};
-use std::fs::{read_to_string, DirEntry};
+use core_lib::{IniFile, find_config_dirs, get_config_dir};
+use std::fs::{DirEntry, read_to_string};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock};
-use tracing::{debug, span, trace, warn, Level};
+use tracing::{Level, debug, span, trace, warn};
 
 pub struct DefaultPlugins {
     pub exec: Box<str>,
@@ -34,12 +34,15 @@ pub fn reload_default_browser(files: &[DirEntry]) {
                     let icon = section.get("Icon");
                     trace!(
                         "Found exec: {:?}, startup_wm_class: {:?}, icon: {:?}",
-                        exec,
-                        startup_wm_class,
-                        icon
+                        exec, startup_wm_class, icon
                     );
                     if let Some(exec) = exec {
-                        trace!("Found default browser file: {:?} with exec: {:?} and startup_wm_class: {:?}", entry.path(), exec, startup_wm_class);
+                        trace!(
+                            "Found default browser file: {:?} with exec: {:?} and startup_wm_class: {:?}",
+                            entry.path(),
+                            exec,
+                            startup_wm_class
+                        );
                         let _ = BROWSER_EXEC.set(Mutex::new(DefaultPlugins {
                             exec: Box::from(exec),
                             startup_wm_class: startup_wm_class.map(Box::from),

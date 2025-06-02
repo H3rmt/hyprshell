@@ -1,4 +1,4 @@
-use core_lib::{Warn, TERMINALS};
+use core_lib::{TERMINALS, Warn};
 use std::os::unix::prelude::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -18,7 +18,9 @@ pub fn run_program(
             run_command(&command, &path).warn("Failed to run command");
         } else {
             let path_env = env::var_os("PATH").unwrap_or_default();
-            info!("No default terminal found, searching common terminals in PATH. (Set default_terminal in config to avoid this search)");
+            info!(
+                "No default terminal found, searching common terminals in PATH. (Set default_terminal in config to avoid this search)"
+            );
             trace!("PATH: {}", path_env.to_string_lossy());
             let paths: Vec<_> = env::split_paths(&path_env).collect();
             let mut found_terminal = false;

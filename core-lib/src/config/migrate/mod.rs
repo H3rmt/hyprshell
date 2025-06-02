@@ -1,11 +1,11 @@
 use crate::config;
 use crate::config::save::write_config;
-use anyhow::{bail, Context};
-use ron::extensions::Extensions;
+use anyhow::{Context, bail};
 use ron::Options;
+use ron::extensions::Extensions;
 use std::ffi::OsStr;
 use std::path::Path;
-use tracing::{span, Level};
+use tracing::{Level, span};
 
 mod convert;
 mod old_structs;
@@ -56,7 +56,10 @@ fn load_old_config(config_path: &Path) -> anyhow::Result<old_structs::Config> {
                 .context("Failed to read toml config")?;
             toml::from_str(&content).context("Failed to parse toml config")?
         }
-        Some(ext) => bail!("Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)", ext),
+        Some(ext) => bail!(
+            "Invalid config file extension: {} (check `FEATURES: ` debug log to see enabled extensions)",
+            ext
+        ),
     };
 
     Ok(config)

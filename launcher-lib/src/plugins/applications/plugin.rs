@@ -1,7 +1,7 @@
 use crate::plugins::applications::data::{get_stored_runs, save_run};
-use crate::plugins::applications::map::{get_all_desktop_files, DesktopEntry};
+use crate::plugins::applications::map::{DesktopEntry, get_all_desktop_files};
 use crate::plugins::{DetailsMenuItem, Identifier, PluginNames, SortableLaunchOption};
-use core_lib::{analyse_exec, ExecType, Warn};
+use core_lib::{ExecType, Warn, analyse_exec};
 use exec_lib::run::run_program;
 use std::collections::HashMap;
 use std::path::Path;

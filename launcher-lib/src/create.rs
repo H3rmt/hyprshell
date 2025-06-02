@@ -1,16 +1,16 @@
 use crate::global::LauncherGlobalData;
-use crate::{update_launcher, LauncherGlobal};
+use crate::{LauncherGlobal, update_launcher};
 use core_lib::transfer::TransferType;
-use core_lib::{send_to_socket, Warn, LAUNCHER_NAMESPACE};
+use core_lib::{LAUNCHER_NAMESPACE, Warn, send_to_socket};
+use gtk::Orientation;
 use gtk::gdk::Key;
 use gtk::glib::Propagation;
 use gtk::prelude::*;
-use gtk::Orientation;
 use gtk::{Application, ApplicationWindow, Entry, EventControllerKey, ListBox, SelectionMode};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use tracing::{debug, span, Level};
+use tracing::{Level, debug, span};
 
 pub fn create_launcher_window(
     app: &Application,

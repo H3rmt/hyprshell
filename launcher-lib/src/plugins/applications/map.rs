@@ -1,9 +1,9 @@
-use core_lib::{analyse_exec, ExecType, IniFile, Warn};
-use std::fs::{read_to_string, DirEntry};
+use core_lib::{ExecType, IniFile, Warn, analyse_exec};
+use std::fs::{DirEntry, read_to_string};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::Instant;
-use tracing::{span, trace, warn, Level};
+use tracing::{Level, span, trace, warn};
 
 #[derive(Debug, Clone)]
 pub struct DesktopEntry {
@@ -97,7 +97,7 @@ fn fill_desktop_file_map(map: &mut Vec<DesktopEntry>, files: &[DirEntry]) -> any
                                     Some(DesktopAction {
                                         id: Box::from(name.trim_start_matches("Desktop Action ")),
                                         name,
-                                        exec
+                                        exec,
                                     })
                                 } else {
                                     None
@@ -121,9 +121,9 @@ fn fill_desktop_file_map(map: &mut Vec<DesktopEntry>, files: &[DirEntry]) -> any
                 }
             } else {
                 warn!(
-                        "Failed to find section 'Desktop Entry' in file: {:?}",
-                        entry.path()
-                    );
+                    "Failed to find section 'Desktop Entry' in file: {:?}",
+                    entry.path()
+                );
             }
         } else {
             warn!("Failed to read file: {:?}", entry.path());

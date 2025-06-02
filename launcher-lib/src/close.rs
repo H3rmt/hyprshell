@@ -1,12 +1,12 @@
 use crate::plugins::iden_to_str;
 use crate::util::DataInWidget;
-use crate::{plugins, LauncherGlobal};
+use crate::{LauncherGlobal, plugins};
 use core_lib::transfer::Identifier;
 use gtk::prelude::*;
-use gtk::{glib, Widget};
+use gtk::{Widget, glib};
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
 use std::time::{Duration, Instant};
-use tracing::{span, trace, warn, Level};
+use tracing::{Level, span, trace, warn};
 
 pub fn close_launcher_press(global: &LauncherGlobal, char: Option<char>) {
     let _span = span!(Level::TRACE, "close_launcher_key").entered();

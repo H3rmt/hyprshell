@@ -1,8 +1,8 @@
-use crate::next::find_next;
 use crate::WindowsGlobal;
+use crate::next::find_next;
 use core_lib::transfer::SwitchConfig;
 use gtk::prelude::*;
-use tracing::{span, Level};
+use tracing::{Level, span};
 
 pub fn update_overview(global: &WindowsGlobal, config: SwitchConfig) {
     let _span = span!(Level::TRACE, "update_overview").entered();

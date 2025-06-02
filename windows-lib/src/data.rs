@@ -1,10 +1,10 @@
+use crate::sort::{sort_clients_by_position, sort_clients_by_recent};
 use core_lib::{
     Active, ClientData, ClientId, FindByFirst, HyprlandData, MonitorData, MonitorId, WorkspaceData,
     WorkspaceId,
 };
 use exec_lib::collect::collect_hypr_data;
-use tracing::{span, trace, warn, Level};
-use crate::sort::{sort_clients_by_position, sort_clients_by_recent};
+use tracing::{Level, span, trace, warn};
 
 #[derive(Debug, Clone, Default)]
 pub struct SortConfig {
@@ -32,7 +32,9 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
         client_data = sort_clients_by_position(client_data);
     }
 
-    trace!("active_client: {active_client:?}; active_ws: {active_ws:?}; active_monitor: {active_monitor:?}");
+    trace!(
+        "active_client: {active_client:?}; active_ws: {active_ws:?}; active_monitor: {active_monitor:?}"
+    );
 
     // iterate over all clients and set active to false if the client is not on the active workspace or monitor
     for (_, client) in client_data.iter_mut() {

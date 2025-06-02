@@ -1,8 +1,8 @@
 use crate::config::generate::tui::DEFAULT_COLORS;
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use std::fs::create_dir_all;
 use std::path::Path;
-use tracing::{info, span, Level};
+use tracing::{Level, info, span};
 
 #[derive(Debug)]
 pub struct StyleData {

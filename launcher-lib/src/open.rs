@@ -1,7 +1,7 @@
 use crate::LauncherGlobal;
 use gtk::prelude::*;
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
-use tracing::{span, trace, Level};
+use tracing::{Level, span, trace};
 
 pub fn open_launcher(global: &LauncherGlobal) {
     let _span = span!(Level::TRACE, "open_launcher").entered();

@@ -1,9 +1,9 @@
 use core_lib::config::Windows;
 use core_lib::{Active, ClientId, HyprlandData, MonitorId, WorkspaceId};
+use exec_lib::get_initial_active;
 use gtk::{ApplicationWindow, Button, FlowBox};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use exec_lib::get_initial_active;
 
 #[derive(Debug)]
 pub struct WindowsGlobal {

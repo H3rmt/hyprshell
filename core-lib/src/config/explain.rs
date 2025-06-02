@@ -1,4 +1,4 @@
-use crate::config::{load_config, Config, Reverse};
+use crate::config::{Config, Reverse, load_config};
 use crate::daemon_running;
 use std::path::Path;
 
@@ -11,7 +11,9 @@ pub fn check_config(config_path: &Path) -> anyhow::Result<()> {
     if daemon_running() {
         println!("Daemon \x1b[32mrunning\x1b[0m")
     } else {
-        println!("Daemon \x1b[31mnot running\x1b[0m, start it with `hyprshell run` or `systemctl --user enable --now hyprshell`");
+        println!(
+            "Daemon \x1b[31mnot running\x1b[0m, start it with `hyprshell run` or `systemctl --user enable --now hyprshell`"
+        );
     }
     Ok(())
 }
@@ -44,10 +46,14 @@ pub fn explain(config: Config) -> String {
                     Press \x1b[34mreturn\x1b[0m to launch the first app, use \x1b[34mCtrl + 1/2/3/...\x1b[0m to open the second, third, etc.\n");
         }
         if launcher.plugins.terminal.is_some() {
-            builder.push_str("Press \x1b[34mCtrl + t\x1b[0m to run the typed command in a terminal.\n");
+            builder.push_str(
+                "Press \x1b[34mCtrl + t\x1b[0m to run the typed command in a terminal.\n",
+            );
         }
         if launcher.plugins.shell.is_some() {
-            builder.push_str("Press \x1b[34mCtrl + r\x1b[0m to run the typed command in the background.\n");
+            builder.push_str(
+                "Press \x1b[34mCtrl + r\x1b[0m to run the typed command in the background.\n",
+            );
         }
         if let Some(engines) = &launcher.plugins.websearch {
             builder.push_str(&format!("Press \x1b[34mCtrl + \x1b[1m\x1b[34m<key>\x1b[0m to search the typed text in any of the configured SearchEngines: {}.\n",

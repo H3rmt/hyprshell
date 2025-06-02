@@ -2,8 +2,8 @@ mod default;
 
 use crate::plugins::search::default::get_browser_info;
 use crate::plugins::{Identifier, PluginNames, StaticLaunchOption};
-use core_lib::config::SearchEngine;
 use core_lib::Warn;
+use core_lib::config::SearchEngine;
 pub use default::reload_default_browser;
 use exec_lib::run::run_program;
 use exec_lib::switch::switch_client_by_initial_class;

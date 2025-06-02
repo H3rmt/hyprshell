@@ -1,8 +1,8 @@
+use crate::config::SearchEngine;
 use crate::config::generate::autocomplete::StringAutoCompleter;
 use crate::config::generate::config::ConfigData;
 use crate::config::generate::css::StyleData;
 use crate::config::structs::{KeyMaybeMod, Mod};
-use crate::config::SearchEngine;
 use crate::util::TERMINALS;
 use anyhow::bail;
 use inquire::formatter::MultiOptionFormatter;
