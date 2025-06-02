@@ -5,10 +5,9 @@ use crate::WindowsGlobal;
 use anyhow::Context;
 use core_lib::transfer::{CloseConfig, OpenSwitch, TransferType, WindowsOverride};
 use core_lib::{send_to_socket, ClientData, ClientId, FindByFirst, Warn};
-use exec_lib::activate_submap;
+use gtk::gdk::Cursor;
 use gtk::prelude::*;
 use gtk::{pango, Button, Frame, Image, Label, Overflow, Overlay};
-use gtk::gdk::Cursor;
 use tracing::{debug, span, trace, Level};
 
 fn scale(value: i16, scale: f64) -> i32 {
@@ -31,8 +30,6 @@ pub fn open_switch(global: &WindowsGlobal, config: OpenSwitch) -> anyhow::Result
         active_prev,
         global.workspaces_per_row as usize,
     );
-
-    activate_submap(&config.submap_name)?;
 
     let mut data = global.data.borrow_mut();
     for (window, monitor_data) in &mut data.monitor_list.iter_mut() {

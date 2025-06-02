@@ -7,17 +7,17 @@
 }
 
 .launcher-input {
-    font-size: 1.5em;
+    font-size: 1.5rem;
     margin: 6px;
     padding: 4px 8px;
 }
 
 .launcher-results {
-    font-size: 1.5em;
     margin: 2px;
 }
 
 .launcher-item {
+    font-size: 1.5rem;
     padding: 0 6px;
     border-radius: var(--border-radius, 12px);
     background-color: var(--bg-color, rgba(20, 20, 20, 1));
@@ -28,12 +28,40 @@
 }
 
 .launcher-exec {
-    font-size: 0.6em;
+    font-size: 0.8rem;
     font-family: monospace;
 }
 
+.launcher-other-menu-button > button {
+    padding: 2px 4px;
+    border-radius: var(--border-radius, 12px);
+    background-color: var(--bg-color, rgba(20, 20, 20, 1));
+    border: 1px var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+}
+
+.launcher-other-menu-button > button:hover {
+    background-color: var(--bg-color-hover, rgba(40, 40, 50, 1));
+}
+
+.launcher-other-menu {
+    padding: 6px;
+    border-radius: var(--border-radius, 12px);
+    background-color: var(--bg-color, rgba(20, 20, 20, 1));
+    border: 1px var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+}
+
+.launcher-other-menu-item {
+    padding: 2px 5px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+}
+
+.launcher-other-menu-item:hover {
+    background-color: var(--bg-color-hover, rgba(40, 40, 50, 1));
+}
+
 .launcher-key {
-    font-size: 0.8em;
+    font-size: 1.2rem;
     font-family: monospace;
 }
 

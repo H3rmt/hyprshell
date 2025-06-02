@@ -13,10 +13,11 @@ pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &s
             details: Box::from(""),
             details_long: None,
             score: 0,
-            data: Identifier {
+            iden: Identifier {
                 plugin: PluginNames::Calc,
                 identifier: Some(format!("{eval}").into_boxed_str()),
             },
+            details_menu: vec![],
         });
     } else {
         // trace!("expression error: {eval:?}");

@@ -12,6 +12,7 @@ mod calc;
 
 pub use applications::get_stored_runs as get_applications_stored_runs;
 pub use applications::reload_desktop_map as reload_applications_desktop_map;
+use core_lib::transfer::{Identifier, PluginNames};
 pub use search::reload_default_browser as reload_search_default_browser;
 
 #[derive(Debug)]
@@ -21,7 +22,15 @@ pub struct SortableLaunchOption {
     pub details: Box<str>,
     pub details_long: Option<Box<str>>,
     pub score: u64,
-    pub data: Identifier,
+    pub iden: Identifier,
+    pub details_menu: Vec<DetailsMenuItem>,
+}
+
+#[derive(Debug)]
+pub struct DetailsMenuItem {
+    pub text: Box<str>,
+    pub exec: Box<str>,
+    pub iden: Identifier,
 }
 
 #[derive(Debug)]
@@ -30,33 +39,15 @@ pub struct StaticLaunchOption {
     pub details: Box<str>,
     pub icon: Option<Box<Path>>,
     pub key: char,
-    pub data: Identifier,
+    pub iden: Identifier,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum PluginNames {
-    Applications,
-    Shell,
-    Terminal,
-    WebSearch,
-    Calc,
-}
-
-#[derive(Debug, Clone)]
-pub struct Identifier {
-    /// identify the plugin that created this option.
-    pub plugin: PluginNames,
-    pub identifier: Option<Box<str>>,
-}
-
-impl Identifier {
-    pub fn str(&self) -> String {
-        format!(
-            "{}:{}",
-            self.plugin as u8,
-            self.identifier.as_deref().unwrap_or_default()
-        )
-    }
+pub fn iden_to_str(iden: &Identifier) -> String {
+    format!(
+        "{}:{}",
+        iden.plugin as u8,
+        iden.identifier.as_deref().unwrap_or_default()
+    )
 }
 
 pub fn get_sortable_launch_options(

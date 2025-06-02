@@ -4,7 +4,7 @@ use core_lib::config::{Config, FilterBy, Overview, Reverse, Switch};
 use core_lib::transfer::{
     CloseConfig, Direction, OpenOverview, OpenSwitch, SwitchConfig, TransferType,
 };
-use core_lib::{generate_socat, LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE};
+use core_lib::{generate_socat, generate_socat_and_activate_submap, LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE};
 use launcher_lib::generate_keybinds;
 use tracing::{span, Level};
 
@@ -20,6 +20,7 @@ pub fn create_binds_and_submaps<'a>(config: &Config) -> anyhow::Result<Vec<(&'a 
         keyword_list.push(("layerrule", format!("ignorezero, {LAUNCHER_NAMESPACE}")));
     }
 
+    // TODO allow configure with config
     #[cfg(debug_assertions)]
     keyword_list.push((
         "bind",
@@ -93,11 +94,10 @@ fn generate_overview_open(
             .filter_by
             .iter()
             .any(|f| f == &FilterBy::SameClass),
-        submap_name: submap_name.to_string(),
         workspaces_per_row,
     });
     let config_str = serde_json::to_string(&config).context("Failed to serialize config")?;
-    Ok(generate_socat(&config_str))
+    Ok(generate_socat_and_activate_submap(&config_str, submap_name))
 }
 
 fn generate_overview(
@@ -225,12 +225,11 @@ fn generate_switch_open(
             .filter_by
             .iter()
             .any(|f| f == &FilterBy::SameClass),
-        submap_name: submap_name.to_string(),
         workspaces_per_row,
         direction,
     });
     let config_str = serde_json::to_string(&config).context("Failed to serialize config")?;
-    Ok(generate_socat(&config_str))
+    Ok(generate_socat_and_activate_submap(&config_str, submap_name))
 }
 
 fn generate_switch(

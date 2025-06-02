@@ -1,15 +1,16 @@
-use crate::plugins::{get_sortable_launch_options, get_static_launch_options};
+use crate::plugins::{
+    get_sortable_launch_options, get_static_launch_options, iden_to_str, DetailsMenuItem,
+};
 use crate::util::DataInWidget;
 use crate::LauncherGlobal;
 use core_lib::theme_icon_cache::theme_has_icon_name;
-use core_lib::transfer::{CloseConfig, TransferType};
+use core_lib::transfer::{CloseConfig, Identifier, TransferType};
 use core_lib::{send_to_socket, Warn};
 use gtk::gdk::Cursor;
 use gtk::pango::EllipsizeMode;
-use gtk::prelude::{BoxExt, ButtonExt, WidgetExt};
-use gtk::{glib, Align, Button, IconSize, Image, Label, ListBoxRow, Orientation};
+use gtk::prelude::*;
+use gtk::{glib, Align, Button, IconSize, Image, Label, ListBoxRow, Orientation, Popover};
 use std::path::Path;
-use std::str::FromStr;
 use tracing::{debug, span, warn, Level};
 
 pub fn update_launcher(global: &LauncherGlobal, text: String) {
@@ -37,7 +38,8 @@ pub fn update_launcher(global: &LauncherGlobal, text: String) {
                 break;
             }
             items -= 1;
-            let (row, button) = create_entry(
+            let row = create_entry(
+                &opt.iden,
                 match index {
                     0 => "Return".to_string(),
                     i if i <= 9 => format!("Ctrl+{}", i),
@@ -47,30 +49,25 @@ pub fn update_launcher(global: &LauncherGlobal, text: String) {
                 &opt.name,
                 opt.details,
                 opt.details_long,
+                opt.details_menu,
             );
-            click_entry(
-                &button,
-                char::from_str(&index.to_string()).expect("Failed to convert u32 to char"),
-            );
-            row.set_iden_data(opt.data.str());
             data1.results.append(&row);
-            data1.sorted_matches.push(opt.data);
+            data1.sorted_matches.push(opt.iden);
         }
 
         let static_launch_options =
             get_static_launch_options(&global.plugins, &global.default_terminal);
         for opt in static_launch_options.into_iter() {
-            let button = create_static_plugin_box(opt.icon, &opt.text, &opt.details, opt.key);
-            button.set_cursor(Cursor::from_name("pointer", None).as_ref());
-            click_entry(&button, opt.key);
-            button.set_iden_data(opt.data.str());
+            let button =
+                create_static_plugin_box(&opt.iden, opt.icon, &opt.text, &opt.details, opt.key);
             data1.plugin_box.append(&button);
-            data1.static_matches.insert(opt.key, opt.data);
+            data1.static_matches.insert(opt.key, opt.iden);
         }
     }
 }
 
 fn create_static_plugin_box(
+    iden: &Identifier,
     icon: Option<Box<Path>>,
     text: &str,
     details: &str,
@@ -115,19 +112,25 @@ fn create_static_plugin_box(
 
     hbox.append(&vbox);
 
-    Button::builder()
+    let button = Button::builder()
         .child(&hbox)
         .css_classes(["launcher-plugin"])
-        .build()
+        .build();
+    button.set_cursor(Cursor::from_name("pointer", None).as_ref());
+    button.set_iden_data(iden_to_str(iden));
+    click_plugin(&button, iden.clone());
+    button
 }
 
 fn create_entry(
+    iden: &Identifier,
     key: impl Into<glib::GString>,
     icon_path: Option<Box<Path>>,
     name: &str,
     details: Box<str>,
     details_long: Option<Box<str>>,
-) -> (ListBoxRow, Button) {
+    details_menu: Vec<DetailsMenuItem>,
+) -> ListBoxRow {
     let hbox = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
         .spacing(8)
@@ -179,6 +182,34 @@ fn create_entry(
     }
     hbox.append(&exec);
 
+    if !details_menu.is_empty() {
+        let menu = Popover::builder()
+            .css_classes(["launcher-other-menu"])
+            .autohide(true)
+            .has_arrow(false)
+            .build();
+        let menu_box = gtk::Box::builder()
+            .orientation(Orientation::Vertical)
+            .build();
+
+        for item in details_menu {
+            let menu_item_text = Label::builder()
+                .css_classes(["underline"])
+                .label(format!("{} [todo]", item.text))
+                .build();
+            let menu_item = Button::builder()
+                .css_classes(["launcher-other-menu-item"])
+                .child(&menu_item_text)
+                .focusable(true)
+                .tooltip_text(item.exec)
+                .build();
+            menu_item.set_cursor(Cursor::from_name("pointer", None).as_ref());
+            click_details_entry(&menu_item, item.iden);
+            menu_box.append(&menu_item);
+        }
+        menu.set_child(Some(&menu_box));
+    }
+
     let index_label = Label::builder()
         .halign(Align::End)
         .valign(Align::Center)
@@ -187,24 +218,47 @@ fn create_entry(
         .build();
     hbox.append(&index_label);
 
-    let button = Button::builder().child(&hbox).build();
-    button.set_cursor(Cursor::from_name("pointer", None).as_ref());
-
     let row = ListBoxRow::builder()
         .css_classes(["launcher-item"])
         .height_request(45)
         .hexpand(true)
         .vexpand(true)
-        .child(&button)
+        .child(&hbox)
         .build();
-
-    (row, button)
+    row.set_cursor(Cursor::from_name("pointer", None).as_ref());
+    row.set_iden_data(iden_to_str(iden));
+    click_entry(&row, iden.clone());
+    row
 }
 
-fn click_entry(button: &Button, char: char) {
+fn click_plugin(button: &Button, iden: Identifier) {
     button.connect_clicked(move |_| {
         debug!("Exiting on click of launcher entry");
-        send_to_socket(&TransferType::Close(CloseConfig::Launcher(char)))
-            .warn("unable send return to socket");
+        send_to_socket(&TransferType::Close(CloseConfig::LauncherClick(
+            iden.clone(),
+        )))
+        .warn("unable send return to socket");
+    });
+}
+
+fn click_entry(button: &ListBoxRow, iden: Identifier) {
+    let gesture = gtk::GestureClick::new();
+    button.add_controller(gesture.clone());
+    gesture.connect_released(move |_, _, _, _| {
+        debug!("Exiting on click of launcher entry");
+        send_to_socket(&TransferType::Close(CloseConfig::LauncherClick(
+            iden.clone(),
+        )))
+        .warn("unable send return to socket");
+    });
+}
+
+fn click_details_entry(button: &Button, iden: Identifier) {
+    button.connect_clicked(move |_| {
+        debug!("Exiting on click of launcher details entry");
+        send_to_socket(&TransferType::Close(CloseConfig::LauncherClick(
+            iden.clone(),
+        )))
+        .warn("unable send return to socket");
     });
 }

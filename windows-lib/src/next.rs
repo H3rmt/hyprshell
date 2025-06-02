@@ -90,36 +90,37 @@ pub(crate) fn find_next_workspace(
 
     let ind = workspaces.iter().position(|(id, _)| *id == active);
     trace!("Current index: {:?} in len: {}", ind, workspaces.len());
-    let index = match ind {
+    let index: i64 = match ind {
         Some(si) => match direction {
-            Direction::Right => si + 1,
+            Direction::Right => si as i64 + 1,
             Direction::Left => {
                 if si == 0 {
-                    workspaces.len() - 1
+                    workspaces.len() as i64 - 1
                 } else {
-                    si - 1
+                    si as i64 - 1
                 }
             }
-            Direction::Up => si.saturating_sub(workspaces_per_row),
+            Direction::Up => si as i64 - workspaces_per_row as i64,
             Direction::Down => {
                 if si as i64 >= workspaces.len() as i64 - workspaces_per_row as i64 {
-                    workspaces.len() - 1
+                    workspaces.len() as i64 - 1
                 } else {
-                    si + workspaces_per_row
+                    si as i64 + workspaces_per_row as i64
                 }
             }
         },
         None => match direction {
-            Direction::Left | Direction::Up => workspaces.len() - 1,
+            Direction::Left | Direction::Up => workspaces.len() as i64 - 1,
             Direction::Right | Direction::Down => 0,
         },
     };
     trace!("New index: {}", index);
+    let len = workspaces.len() as i64;
 
     let next_workspace = workspaces
         .into_iter()
         .cycle()
-        .nth(index)
+        .nth(index.rem_euclid(len) as usize)
         .context("No next client found")?;
 
     Ok(next_workspace)

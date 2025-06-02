@@ -20,7 +20,6 @@ pub enum TransferType {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenSwitch {
-    pub submap_name: String,
     pub hide_filtered: bool,
     pub filter_current_workspace: bool,
     pub filter_current_monitor: bool,
@@ -31,7 +30,6 @@ pub struct OpenSwitch {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenOverview {
-    pub submap_name: String,
     pub hide_filtered: bool,
     pub filter_current_workspace: bool,
     pub filter_current_monitor: bool,
@@ -47,10 +45,27 @@ pub struct SwitchConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum CloseConfig {
-    Launcher(char),
+    LauncherClick(Identifier),
+    LauncherPress(char),
     Windows(WindowsOverride),
     None,
 }
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum PluginNames {
+    Applications,
+    Shell,
+    Terminal,
+    WebSearch,
+    Calc,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Identifier {
+    pub plugin: PluginNames,
+    pub identifier: Option<Box<str>>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum WindowsOverride {
     ClientId(ClientId),

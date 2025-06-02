@@ -1,4 +1,4 @@
-use core_lib::{find_config_dirs, get_config_dir, Warn};
+use core_lib::{find_config_dirs, get_config_dir, IniFile, Warn};
 use std::fs::{read_to_string, DirEntry};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock};
@@ -25,7 +25,8 @@ pub fn reload_default_browser(files: &[DirEntry]) {
     let default_browser = get_default_browser_desktop_file();
 
     for entry in files {
-        trace!("Checking entry: {:?}", entry.path());
+        // trace!("Checking entry: {:?}", entry.path());
+        // TODO ini parser
         if entry.file_name() == default_browser.as_deref().unwrap_or_default() {
             if let Some(content) = read_to_string(entry.path())
                 .warn(&format!("Failed to read file: {:?}", entry.path()))
@@ -71,17 +72,14 @@ pub fn reload_default_browser(files: &[DirEntry]) {
 
 fn get_default_browser_desktop_file() -> Option<Box<str>> {
     for entry in get_mimeapps() {
-        let text = read_to_string(entry.path()).unwrap_or_default();
-        let lines = text.lines();
-        for line in lines {
-            if line.starts_with("x-scheme-handler/https") {
-                let mut parts = line.split('=');
-                parts.next();
-                if let Some(browser) = parts.next() {
-                    debug!("Default browser desktop file: {}", browser);
-                    return Some(Box::from(browser));
-                }
-            }
+        // parse the mimeapps.list file
+        if let Ok(str) = read_to_string(entry.path()) {
+            let ini = IniFile::parse(&str);
+            let browser = ini
+                .get_section("Default Applications")?
+                .get_boxed("x-scheme-handler/https")?;
+            debug!("Default browser from mimeapps.list: {}", browser);
+            return Some(browser);
         }
     }
     None

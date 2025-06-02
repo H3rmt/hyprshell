@@ -1,21 +1,29 @@
-use core_lib::{analyse_exec, ExecType, Warn};
+use core_lib::{analyse_exec, ExecType, IniFile, Warn};
 use std::fs::{read_to_string, DirEntry};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::Instant;
-use tracing::{span, trace, Level};
+use tracing::{span, trace, warn, Level};
 
 #[derive(Debug, Clone)]
-pub(super) struct DesktopEntry {
-    pub(super) name: Box<str>,
-    pub(super) icon: Option<Box<Path>>,
-    pub(crate) keywords: Vec<Box<str>>,
-    pub(crate) exec_search: Box<str>,
-    pub(crate) exec: Box<str>,
-    pub(super) exec_path: Option<Box<Path>>,
-    pub(super) type_search: &'static str,
-    pub(super) terminal: bool,
-    pub(super) source: Box<Path>,
+pub struct DesktopEntry {
+    pub name: Box<str>,
+    pub icon: Option<Box<Path>>,
+    pub keywords: Vec<Box<str>>,
+    pub exec_search: Box<str>,
+    pub exec: Box<str>,
+    pub exec_path: Option<Box<Path>>,
+    pub type_search: &'static str,
+    pub terminal: bool,
+    pub source: Box<Path>,
+    pub other: Vec<DesktopAction>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DesktopAction {
+    pub id: Box<str>,
+    pub name: Box<str>,
+    pub exec: Box<str>,
 }
 
 fn get_desktop_file_map() -> &'static Mutex<Vec<DesktopEntry>> {
@@ -23,7 +31,7 @@ fn get_desktop_file_map() -> &'static Mutex<Vec<DesktopEntry>> {
     MAP_LOCK.get_or_init(|| Mutex::new(Vec::new()))
 }
 
-pub(crate) fn get_all_desktop_files<'a>() -> MutexGuard<'a, Vec<DesktopEntry>> {
+pub fn get_all_desktop_files<'a>() -> MutexGuard<'a, Vec<DesktopEntry>> {
     let map = get_desktop_file_map()
         .lock()
         .expect("Failed to lock desktop file map");
@@ -43,55 +51,28 @@ fn fill_desktop_file_map(map: &mut Vec<DesktopEntry>, files: &[DirEntry]) -> any
 
     let now = Instant::now();
     for entry in files {
-        read_to_string(entry.path())
-            // TODO someday improve parsing to allow for [Desktop Action new-window] etc to have different entries
-            .map(|content| {
-                let lines: Vec<&str> = content.lines().collect();
-                let icon = lines
-                    .iter()
-                    .find(|l| l.starts_with("Icon="))
-                    .map(|l| l.trim_start_matches("Icon="));
-                let name = lines
-                    .iter()
-                    .find(|l| l.starts_with("Name="))
-                    .map(|l| l.trim_start_matches("Name="));
-                let r#type = lines
-                    .iter()
-                    .find(|l| l.starts_with("Type="))
-                    .map(|l| l.trim_start_matches("Type="));
-                let exec = lines
-                    .iter()
-                    .find(|l| l.starts_with("Exec="))
-                    .map(|l| l.trim_start_matches("Exec="));
-                let keywords = lines
-                    .iter()
-                    .find(|l| l.starts_with("Keywords="))
-                    .map(|l| l.trim_start_matches("Keywords="));
-                let no_display = lines
-                    .iter()
-                    .find(|l| l.starts_with("NoDisplay="))
-                    .map(|l| l.trim_start_matches("NoDisplay="))
-                    .map(|l| l == "true");
-                let exec_path = lines
-                    .iter()
-                    .find(|l| l.starts_with("Path="))
-                    .and_then(|l| l.split('=').nth(1));
-                let terminal = lines
-                    .iter()
-                    .find(|l| l.starts_with("Terminal="))
-                    .map(|l| l.trim_start_matches("Terminal="))
-                    .map(|l| l == "true")
-                    .unwrap_or(false);
+        if let Ok(str) = read_to_string(entry.path()) {
+            let ini = IniFile::parse(&str);
+            if let Some(section) = ini.get_section("Desktop Entry") {
+                let r#type = section.get("Type");
+                let no_display = section.get_boolean("NoDisplay");
                 if r#type == Some("Application") && no_display.is_none_or(|n| !n) {
+                    let name = section.get_boxed("Name");
+                    let exec = section.get("Exec");
+                    let icon = section.get_path_boxed("Icon");
+                    let exec_path = section.get_path_boxed("Path");
+                    let terminal = section.get_boolean("Terminal").unwrap_or(false);
+                    let keywords = section
+                        .get_boxed("Keywords")
+                        .map(|k| k.split(';').map(|k| Box::from(k.trim())).collect())
+                        .unwrap_or_else(Vec::new);
+
                     if let (Some(name), Some(exec)) = (name, exec) {
                         let mut exec = String::from(exec);
-                        for repl in &["%f", "%F", "%u", "%U"] {
-                            if exec.contains(repl) {
-                                exec = exec.replace(repl, "");
-                            }
+                        for replacement in ["%f", "%F", "%u", "%U"] {
+                            exec = exec.replace(replacement, "");
                         }
-                        let exec_info = analyse_exec(&exec);
-                        let (exec_search, type_search) = match exec_info {
+                        let (exec_search, type_search) = match analyse_exec(&exec) {
                             ExecType::Flatpak(flatpak_identifier, _) => {
                                 (flatpak_identifier, "flatpak")
                             }
@@ -105,23 +86,43 @@ fn fill_desktop_file_map(map: &mut Vec<DesktopEntry>, files: &[DirEntry]) -> any
                             ExecType::Absolute(exec_name, _) => (exec_name, ""),
                             ExecType::Relative(exec_name) => (exec_name, ""),
                         };
+
+                        let other = ini
+                            .sections()
+                            .iter()
+                            .filter_map(|(name, section)| {
+                                if name.starts_with("Desktop Action ") {
+                                    let exec = section.get_boxed("Exec")?;
+                                    let name = section.get_boxed("Name")?;
+                                    Some(DesktopAction {
+                                        id: Box::from(name.trim_start_matches("Desktop Action ")),
+                                        name,
+                                        exec
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+
                         map.push(DesktopEntry {
-                            name: name.trim().into(),
-                            icon: icon.map(|p| Box::from(Path::new(p))),
-                            keywords: keywords
-                                .map(|k| k.split(';').map(|k| k.trim().into()).collect())
-                                .unwrap_or_else(Vec::new),
+                            name,
+                            icon,
+                            keywords,
                             exec_search,
                             type_search,
-                            exec: exec.trim().into(),
-                            exec_path: exec_path.map(|p| Box::from(Path::new(p))),
+                            exec_path,
                             terminal,
+                            exec: exec.into_boxed_str(),
                             source: entry.path().into_boxed_path(),
+                            other,
                         });
                     }
                 }
-            })
-            .warn(&format!("Failed to read file: {:?}", entry.path()));
+            }
+        } else {
+            warn!("Failed to read file: {:?}", entry.path());
+        }
     }
     trace!(
         "filled launcher desktop file map in {}ms",

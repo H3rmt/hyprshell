@@ -55,7 +55,7 @@ fn load_icon_from_cache(name: &str, pic: &Image) -> Option<Box<Path>> {
         // check if icon is in desktop file cache and apply it
         if let Some((icon_path, path, source)) = get_icon_name_by_name_from_desktop_files(name) {
             trace!(
-                "Found icon for {name}/{icon_path:?} in cache from source: {source:?} at {path:?}"
+                "Found icon for {name} / {icon_path:?} in cache from source: {source:?} at {path:?}"
             );
             if icon_path.is_absolute() {
                 pic.set_from_file(Some(Path::new(&*icon_path)));

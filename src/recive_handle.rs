@@ -49,7 +49,7 @@ pub fn switch(global: &Globals, config: SwitchConfig) {
     }
 }
 pub fn exit(global: &Globals) {
-    if_some!(global.launcher, launcher_lib::close_launcher, None);
+    if_some!(global.launcher, launcher_lib::close_launcher_press, None);
     if_some!(global.window, windows_lib::close_overview, None);
     reload_data();
 }
@@ -75,25 +75,34 @@ pub fn close(global: &Globals, config: CloseConfig) {
             if launcher_active {
                 if !launcher_empty {
                     // kill overview, close launcher
-                    if_some!(global.launcher, launcher_lib::close_launcher, Some('0'));
+                    if_some!(global.launcher, launcher_lib::close_launcher_press, Some('0'));
                     if_some!(global.window, windows_lib::close_overview, None);
                 } else {
                     debug!("Launcher is empty, not closing");
                 }
             } else {
                 // close overview, kill launcher
-                if_some!(global.launcher, launcher_lib::close_launcher, None);
+                if_some!(global.launcher, launcher_lib::close_launcher_press, None);
                 if_some!(global.window, windows_lib::close_overview, Some(None));
             };
         }
-        CloseConfig::Launcher(key) => {
+        CloseConfig::LauncherClick(iden) => {
             // kill overview, close launcher
-            if_some!(global.launcher, launcher_lib::close_launcher, Some(key));
+            if_some!(global.launcher, launcher_lib::close_launcher_click, iden);
+            if_some!(global.window, windows_lib::close_overview, None);
+        }
+        CloseConfig::LauncherPress(char) => {
+            // kill overview, close launcher
+            if_some!(
+                global.launcher,
+                launcher_lib::close_launcher_press,
+                Some(char)
+            );
             if_some!(global.window, windows_lib::close_overview, None);
         }
         CloseConfig::Windows(WindowsOverride::ClientId(client_id)) => {
             // close overview, kill launcher
-            if_some!(global.launcher, launcher_lib::close_launcher, None);
+            if_some!(global.launcher, launcher_lib::close_launcher_press, None);
             if_some!(
                 global.window,
                 windows_lib::close_overview,
@@ -102,7 +111,7 @@ pub fn close(global: &Globals, config: CloseConfig) {
         }
         CloseConfig::Windows(WindowsOverride::WorkspaceID(workspace_id)) => {
             // close overview, kill launcher
-            if_some!(global.launcher, launcher_lib::close_launcher, None);
+            if_some!(global.launcher, launcher_lib::close_launcher_press, None);
             if_some!(
                 global.window,
                 windows_lib::close_overview,

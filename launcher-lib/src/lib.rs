@@ -10,7 +10,7 @@ mod update;
 mod util;
 pub mod debug;
 
-pub use close::close_launcher;
+pub use close::{close_launcher_press, close_launcher_click};
 pub use create::create_launcher_window;
 pub use css::get_css;
 pub use global::LauncherGlobal;

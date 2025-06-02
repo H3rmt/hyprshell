@@ -21,7 +21,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[Searc
                 details: format!("Search with {}", engine.name).into_boxed_str(),
                 icon: icon.clone(),
                 key: engine.key,
-                data: Identifier {
+                iden: Identifier {
                     plugin: PluginNames::WebSearch,
                     identifier: Some(engine.url.clone().into_boxed_str()),
                 },

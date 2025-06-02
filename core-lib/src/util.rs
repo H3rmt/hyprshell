@@ -143,8 +143,33 @@ fn get_hyprshell_path() -> String {
         .replace("(deleted)", "")
 }
 
+fn get_hyprctl_path() -> String {
+    env::var("PATH")
+        .unwrap_or_else(|_| String::from("/usr/bin:/bin:/usr/local/bin"))
+        .split(':')
+        .find_map(|dir| {
+            let path = PathBuf::from(dir).join("hyprctl");
+            if path.exists() {
+                Some(path.display().to_string())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| String::from("hyprctl"))
+}
+
 pub fn generate_socat(echo: &str) -> String {
     format!(r#"{} socat '{}'"#, get_hyprshell_path(), echo)
+}
+
+pub fn generate_socat_and_activate_submap(echo: &str, submap: &str) -> String {
+    format!(
+        r#"{} dispatch submap {} && {} socat '{}'"#,
+        get_hyprctl_path(),
+        submap,
+        get_hyprshell_path(),
+        echo
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -210,7 +235,7 @@ pub fn analyse_exec(exec: &str) -> ExecType {
             .find(|arg| !arg.starts_with("--"))
             .unwrap_or(UNKNOWN_EXEC);
         ExecType::Flatpak(Box::from(flatpak_identifier), Box::from(command_in_flatpak))
-    } else if exec_trim. contains(".AppImage"){
+    } else if exec_trim.contains(".AppImage") {
         // AppImage detection
         let appimage_name = exec_trim
             .split_whitespace()

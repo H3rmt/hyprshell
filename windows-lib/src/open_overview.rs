@@ -4,7 +4,6 @@ use crate::WindowsGlobal;
 use anyhow::Context;
 use core_lib::transfer::{CloseConfig, OpenOverview, TransferType, WindowsOverride};
 use core_lib::{send_to_socket, ClientData, ClientId, FindByFirst, Warn, WorkspaceId};
-use exec_lib::activate_submap;
 use gtk::prelude::*;
 use gtk::{pango, Button, Fixed, Frame, Image, Label, Overflow, Overlay};
 use std::borrow::Cow;
@@ -24,8 +23,6 @@ pub fn open_overview(global: &WindowsGlobal, config: OpenOverview) -> anyhow::Re
         sort_recent: false,
     })
     .context("Failed to collect data")?;
-
-    activate_submap(&config.submap_name)?;
 
     let regex = regex::Regex::new(r"<[^>]*>").context("Invalid regex")?;
 

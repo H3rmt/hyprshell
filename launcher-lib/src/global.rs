@@ -1,5 +1,5 @@
-use crate::plugins::Identifier;
 use core_lib::config::{Launcher, Plugins};
+use core_lib::transfer::Identifier;
 use gtk::{ApplicationWindow, Entry, ListBox};
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -1,6 +1,6 @@
 use crate::plugins::applications::data::{get_stored_runs, save_run};
 use crate::plugins::applications::map::{get_all_desktop_files, DesktopEntry};
-use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
+use crate::plugins::{DetailsMenuItem, Identifier, PluginNames, SortableLaunchOption};
 use core_lib::{analyse_exec, ExecType, Warn};
 use exec_lib::run::run_program;
 use std::collections::HashMap;
@@ -54,10 +54,26 @@ impl SortableLaunchOption {
             details,
             details_long,
             score: r#match as u64 + runs,
-            data: Identifier {
+            iden: Identifier {
                 identifier: Some(Box::from(entry.source.to_string_lossy())),
                 plugin: PluginNames::Applications,
             },
+            details_menu: entry
+                .other
+                .iter()
+                .map(|action| DetailsMenuItem {
+                    text: action.name.clone(),
+                    exec: action.exec.clone(),
+                    iden: Identifier {
+                        identifier: Some(Box::from(format!(
+                            "{}|{}",
+                            entry.source.to_string_lossy(),
+                            action.id
+                        ))),
+                        plugin: PluginNames::Applications,
+                    },
+                })
+                .collect(),
         }
     }
 }

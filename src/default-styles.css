@@ -5,7 +5,10 @@
 
 /* buttons need to be transparent as they wrap everything clickable */
 button {
-    all: unset;
+    background: unset;
+    padding: unset;
+    margin: unset;
+    border: unset;
 }
 
 /* no background and no hover effects by default */
@@ -48,6 +51,7 @@ flowboxchild {
 }
 
 tooltip {
+    font-size: 1rem;
     padding: 5px;
     background-color: var(--bg-color-hover, rgba(40, 40, 50, 1));
     border-radius: var(--border-radius, 12px);

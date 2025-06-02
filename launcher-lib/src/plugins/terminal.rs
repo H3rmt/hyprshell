@@ -7,7 +7,7 @@ pub fn get_static_options(
     default_terminal: &Option<Box<str>>,
 ) {
     matches.push(StaticLaunchOption {
-        data: Identifier {
+        iden: Identifier {
             plugin: PluginNames::Terminal,
             identifier: None,
         },

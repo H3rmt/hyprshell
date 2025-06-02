@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
     matches.push(StaticLaunchOption {
-        data: Identifier {
+        iden: Identifier {
             plugin: PluginNames::Shell,
             identifier: None,
         },

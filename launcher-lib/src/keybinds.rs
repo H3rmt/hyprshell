@@ -18,7 +18,7 @@ pub fn generate_keybinds(keyword_list: &mut Vec<(&str, String)>, launcher: &Laun
             format!(
                 "ctrl, {}, exec, {}",
                 i,
-                generate_launcher_return(CloseConfig::Launcher(
+                generate_launcher_return(CloseConfig::LauncherPress(
                     char::from_str(&i.to_string()).expect("Failed to convert u32 to char")
                 ))
             ),
@@ -31,7 +31,7 @@ pub fn generate_keybinds(keyword_list: &mut Vec<(&str, String)>, launcher: &Laun
             format!(
                 "ctrl, {}, exec, {}",
                 char,
-                generate_launcher_return(CloseConfig::Launcher(char))
+                generate_launcher_return(CloseConfig::LauncherPress(char))
             ),
         ));
     }
