@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.1.0](https://github.com/H3rmt/hyprswitch/compare/v4.0.4...v4.1.0) (2025-06-02)
+
+
+### Features
+
+* added kill_bind if hyprshell crashes ([5e0b0fa](https://github.com/H3rmt/hyprswitch/commit/5e0b0fa2cf8b7c7d4902fafff0b0dc4b2d03a84a))
+* better parsing of desktop files(ini) to add DesktopActions in launcher ([a304809](https://github.com/H3rmt/hyprswitch/commit/a3048098b1702277cf25e0454e0a7dd3d48c61ee))
+* faster open speeds by applying submaps earlier ([a304809](https://github.com/H3rmt/hyprswitch/commit/a3048098b1702277cf25e0454e0a7dd3d48c61ee))
+
+
+### Bug Fixes
+
+* use new ini parser everywhere ([8db2643](https://github.com/H3rmt/hyprswitch/commit/8db2643a7c5e5b51a316d4654268c38bc2202be4))
+
 ## [4.0.4](https://github.com/H3rmt/hyprswitch/compare/v4.0.3...v4.0.4) (2025-06-01)
 
 
