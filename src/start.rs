@@ -199,57 +199,9 @@ fn check_themes() {
     if let Some(settings) = Settings::default() {
         let theme_name = settings.gtk_theme_name();
         let icon_theme_name = settings.gtk_icon_theme_name();
-        let icon_theme = IconTheme::new();
-        let search_path = icon_theme.search_path();
         info!("Using theme: {theme_name:?} and icon theme: {icon_theme_name:?}, please make sure both exist, else weird icon or graphical issues may occur");
-
-        if let Some(theme_name) = theme_name {
-            check_theme(
-                &theme_name,
-                vec!["/usr/share/themes".into(), "/usr/local/share/themes".into()],
-            );
-        } else {
-            warn!("No theme set");
-        }
-        if let Some(icon_theme_name) = icon_theme_name {
-            check_icon_theme(&icon_theme_name, search_path);
-        } else {
-            warn!("No icon theme set");
-        }
     } else {
         warn!("Unable to check default settings for icon theme");
-    }
-}
-
-fn check_icon_theme(icon_theme_name: &str, search_path: Vec<PathBuf>) {
-    if !icon_theme_name.is_empty() {
-        trace!("Icon theme search path: {search_path:?}");
-        for mut path in search_path {
-            path.push(icon_theme_name);
-            if path.exists() {
-                debug!("Icon theme found: {icon_theme_name:?} in {path:?}");
-                return;
-            }
-        }
-        warn!("Unable to find icon theme: {icon_theme_name:?}");
-    } else {
-        warn!("No icon theme set");
-    }
-}
-
-fn check_theme(theme_name: &str, search_path: Vec<PathBuf>) {
-    if !theme_name.is_empty() {
-        trace!("Theme search path: {search_path:?}");
-        for mut path in search_path {
-            path.push(theme_name);
-            if path.exists() {
-                debug!("Theme found: {theme_name:?} in {path:?}");
-                return;
-            }
-        }
-        warn!("Unable to find theme: {theme_name:?}");
-    } else {
-        warn!("No theme set");
     }
 }
 

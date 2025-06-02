@@ -38,8 +38,12 @@ pub fn close_launcher(global: &LauncherGlobal, char: Option<char>) {
                 drop(data1);
 
                 if animate {
-                    trace!("starting timeout({}ms) animation after {:?} time", global.animate_launch_ms, instant.elapsed());
-                    show_launch(results, plugin_box, &iden);
+                    trace!(
+                        "starting timeout({}ms) animation after {:?} time",
+                        global.animate_launch_ms,
+                        instant.elapsed()
+                    );
+                    show_launch(&results, &plugin_box, &iden);
                     entry.set_editable(false);
                     glib::timeout_add_local_once(
                         Duration::from_millis(global.animate_launch_ms),
@@ -47,6 +51,7 @@ pub fn close_launcher(global: &LauncherGlobal, char: Option<char>) {
                             let _span = _span.clone();
                             // close launcher
                             close(&entry, &window);
+                            hide_launch(&results, &plugin_box);
                             trace!("closed launcher after {:?} time", instant.elapsed());
                         },
                     );
@@ -68,7 +73,7 @@ fn close(entry: &gtk::Entry, window: &gtk::ApplicationWindow) {
     entry.set_text("");
 }
 
-fn show_launch(results: gtk::ListBox, plugin_box: gtk::Box, iden: &Identifier) {
+fn show_launch(results: &gtk::ListBox, plugin_box: &gtk::Box, iden: &Identifier) {
     for child in results.observe_children().into_iter().flatten() {
         if let Some(child) = child.dynamic_cast_ref::<Widget>() {
             // trace!("A Child: {:?}, {:?}", child.get_iden_data(), iden.str());
@@ -89,6 +94,19 @@ fn show_launch(results: gtk::ListBox, plugin_box: gtk::Box, iden: &Identifier) {
                     return;
                 }
             }
+        }
+    }
+}
+
+fn hide_launch(results: &gtk::ListBox, plugin_box: &gtk::Box) {
+    for child in results.observe_children().into_iter().flatten() {
+        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
+            child.remove_css_class("launch");
+        }
+    }
+    for child in plugin_box.observe_children().into_iter().flatten() {
+        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
+            child.remove_css_class("launch");
         }
     }
 }

@@ -139,7 +139,7 @@ pub fn open_overview(global: &WindowsGlobal, config: OpenOverview) -> anyhow::Re
                     if client_h_w > 70 {
                         let image = Image::builder()
                             .css_classes(["client-image"])
-                            .pixel_size((client_h_w.clamp(50, 600) as f64 / 1.5) as i32 - 20)
+                            .pixel_size((client_h_w.clamp(50, 600) as f64 / 1.6) as i32 - 20)
                             .build();
                         if !client.enabled {
                             image.add_css_class("monochrome");

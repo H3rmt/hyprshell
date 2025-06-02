@@ -25,6 +25,7 @@ pub fn reload_default_browser(files: &[DirEntry]) {
     let default_browser = get_default_browser_desktop_file();
 
     for entry in files {
+        trace!("Checking entry: {:?}", entry.path());
         if entry.file_name() == default_browser.as_deref().unwrap_or_default() {
             if let Some(content) = read_to_string(entry.path())
                 .warn(&format!("Failed to read file: {:?}", entry.path()))
@@ -42,6 +43,12 @@ pub fn reload_default_browser(files: &[DirEntry]) {
                     .iter()
                     .find(|l| l.starts_with("Icon="))
                     .map(|l| l.trim_start_matches("Icon="));
+                trace!(
+                    "Found exec: {:?}, startup_wm_class: {:?}, icon: {:?}",
+                    exec,
+                    startup_wm_class,
+                    icon
+                );
                 if let Some(exec) = exec {
                     trace!("Found default browser file: {:?} with exec: {:?} and startup_wm_class: {:?}", entry.path(), exec, startup_wm_class);
                     let _ = BROWSER_EXEC.set(Mutex::new(DefaultPlugins {
@@ -54,9 +61,9 @@ pub fn reload_default_browser(files: &[DirEntry]) {
             };
         }
     }
-    warn!("No default browser found! (using firefox)");
+    warn!("No default browser found! (using firefox and gdbus to open)");
     let _ = BROWSER_EXEC.set(Mutex::new(DefaultPlugins {
-        exec: Box::from("firefox"),
+        exec: Box::from(r#"gdbus call --session --dest="org.freedesktop.portal.Desktop" --object-path=/org/freedesktop/portal/desktop --method=org.freedesktop.portal.OpenURI.OpenURI '' '%u' '{}'"#),
         startup_wm_class: Some(Box::from("firefox")),
         icon: Some(Box::from(Path::new("firefox"))),
     }));

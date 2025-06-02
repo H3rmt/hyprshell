@@ -86,7 +86,7 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
                 "Alt",
                 "Alt + Tab",
             ]))
-            .with_help_message("Shows all apps in a miniature view, allows to switch using arrow keys or tab. Leave blank to disable]\n[↑↓ to move, tab to autocomplete, enter to submit")
+            .with_help_message("Shows all apps in a miniature view, allows to switch using arrow keys or tab. Leave blank to disable]\n[Any valid modifier or modifier + key can be typed in]\n[↑↓ to move, tab to autocomplete, enter to submit")
             .prompt()?;
         if open_overview.trim().is_empty() {
             None
@@ -103,7 +103,7 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
         let (default_terminal, launcher_plugins, launcher_engines) = if enable_launcher {
             let default_terminal = Text::new("Default Terminal")
                 .with_autocomplete(StringAutoCompleter::from(Box::from(TERMINALS)))
-                .with_help_message("used to open terminal applications (htop), leave empty to chose from installed terminals]\n[↑↓ to move, tab to autocomplete, enter to submit")
+                .with_help_message("used to open terminal applications (htop), leave empty to chose from installed terminals]\n[Any valid binary name found in path can be typed in]\n[↑↓ to move, tab to autocomplete, enter to submit")
                 .prompt()
                 .map_or(None, |term| if term.trim().is_empty() { None } else { Some(term.into_boxed_str()) });
 
@@ -153,7 +153,7 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
     let open_switch = {
         let open_switch = Text::new("Modifier to open the switch (<mod> + tab)")
             .with_autocomplete(StringAutoCompleter::from(vec!["Alt", "Ctrl", "Super"]))
-            .with_help_message("Shows clients in a list sorted by recently accessed. Please use something different from the Overview modifier. Leave blank to disable]\n[↑↓ to move, tab to autocomplete, enter to submit")
+            .with_help_message("Shows clients in a list sorted by recently accessed. Please use something different from the Overview modifier. Leave blank to disable]\n[Any valid modifier can be typed in]\n[↑↓ to move, tab to autocomplete, enter to submit")
             .prompt()?;
         if open_switch.trim().is_empty() {
             None

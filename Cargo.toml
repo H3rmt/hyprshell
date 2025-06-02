@@ -2,7 +2,7 @@
 name = "hyprshell"
 readme = "README.md"
 documentation = "https://docs.rs/hyprshell"
-version = "4.0.2"
+version = "4.0.4"
 edition.workspace = true
 description.workspace = true
 license.workspace = true
@@ -45,7 +45,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "4.0.2"
+version = "4.0.4"
 description = "A modern GTK4-based window switcher and application launcher for Hyprland"
 license = "MIT"
 authors = ["h3rmt"]
@@ -62,10 +62,10 @@ serde_json = { version = "1.0.140" }
 gtk = { version = "0.9.6", package = "gtk4", default-features = false, features = ["v4_12"] }
 gtk4-layer-shell = { version = "0.5.0" }
 
-core-lib = { path = "core-lib", package = "hyprshell-core-lib", version = "=4.0.2" }
-exec-lib = { path = "exec-lib", package = "hyprshell-exec-lib", version = "=4.0.2" }
-windows-lib = { path = "windows-lib", package = "hyprshell-windows-lib", version = "=4.0.2" }
-launcher-lib = { path = "launcher-lib", package = "hyprshell-launcher-lib", version = "=4.0.2" }
+core-lib = { path = "core-lib", package = "hyprshell-core-lib", version = "=4.0.4" }
+exec-lib = { path = "exec-lib", package = "hyprshell-exec-lib", version = "=4.0.4" }
+windows-lib = { path = "windows-lib", package = "hyprshell-windows-lib", version = "=4.0.4" }
+launcher-lib = { path = "launcher-lib", package = "hyprshell-launcher-lib", version = "=4.0.4" }
 
 [profile.release]
 strip = "debuginfo"

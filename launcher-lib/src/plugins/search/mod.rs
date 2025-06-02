@@ -37,12 +37,18 @@ pub fn launch_option(iden: &Option<Box<str>>, text: &str) -> bool {
         let url = iden.replace("{}", text);
         debug!("Launching URL: {}", url);
         let browser = get_browser_info();
-        let mut cmdline = format!("{} '{}'", browser.exec, url);
-        for repl in ["%u", "%U", "%f", "%F"] {
-            if browser.exec.contains(repl) {
-                cmdline = browser.exec.replace(repl, &format!("'{url}'"));
+        let cmdline = if ["%u", "%U", "%f", "%F"]
+            .iter()
+            .any(|repl| browser.exec.contains(repl))
+        {
+            let mut exec = browser.exec.to_string();
+            for repl in ["%u", "%U", "%f", "%F"] {
+                exec = exec.replace(repl, &format!("'{url}'"));
             }
-        }
+            exec
+        } else {
+            format!("{} '{}'", browser.exec, url)
+        };
         debug!("Launching browser: {}", cmdline);
         run_program(&cmdline, None, false, &None);
 
