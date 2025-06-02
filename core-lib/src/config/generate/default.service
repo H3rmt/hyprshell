@@ -2,14 +2,12 @@
 Description=Starts hyprshell daemon
 After=graphical-session.target
 Wants=graphical-session.target
-StartLimitIntervalSec=600
-StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart={path} run {params}
+ExecStart=/usr/bin/hyprshell run
 Restart=always
-{extra}
+RestartSec=2
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target
