@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.1](https://github.com/H3rmt/hyprswitch/compare/v4.1.0...v4.1.1) (2025-06-02)
+
+
+### Bug Fixes
+
+* release workflow now uses deploy keys ([e2c9b89](https://github.com/H3rmt/hyprswitch/commit/e2c9b89f10505a6617f74b3e05c4129b162029ec))
+
 ## [4.1.0](https://github.com/H3rmt/hyprswitch/compare/v4.0.4...v4.1.0) (2025-06-02)
 
 
