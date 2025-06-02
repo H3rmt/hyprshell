@@ -1,7 +1,7 @@
 use clap::Parser;
 use core_lib::{
-    check_version, daemon_running, get_default_config_path, get_default_css_path,
-    get_default_data_dir, Warn,
+    Warn, check_version, daemon_running, get_default_config_path, get_default_css_path,
+    get_default_data_dir,
 };
 use std::env;
 use std::fs::read_to_string;
@@ -175,7 +175,7 @@ pub mod malloc {
     use std::os::raw::c_int;
     const M_MMAP_THRESHOLD: c_int = -3;
 
-    extern "C" {
+    unsafe extern "C" {
         fn mallopt(param: c_int, value: c_int) -> c_int;
     }
 
