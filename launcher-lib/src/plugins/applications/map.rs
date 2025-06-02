@@ -32,10 +32,9 @@ fn get_desktop_file_map() -> &'static Mutex<Vec<DesktopEntry>> {
 }
 
 pub fn get_all_desktop_files<'a>() -> MutexGuard<'a, Vec<DesktopEntry>> {
-    let map = get_desktop_file_map()
+    get_desktop_file_map()
         .lock()
-        .expect("Failed to lock desktop file map");
-    map
+        .expect("Failed to lock desktop file map")
 }
 
 pub fn reload_desktop_map(files: &[DirEntry]) {

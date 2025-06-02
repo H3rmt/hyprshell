@@ -36,4 +36,4 @@ jobs:
       - name: Load Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Run Clippy
-        run: cargo clippy --all-targets
+        run: cargo --color always clippy --all-targets
