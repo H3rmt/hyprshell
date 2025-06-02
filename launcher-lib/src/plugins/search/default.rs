@@ -1,4 +1,4 @@
-use core_lib::{find_config_dirs, get_config_dir, IniFile, Warn};
+use core_lib::{find_config_dirs, get_config_dir, IniFile};
 use std::fs::{read_to_string, DirEntry};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock};

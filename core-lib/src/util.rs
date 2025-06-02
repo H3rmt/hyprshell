@@ -135,7 +135,7 @@ pub fn collect_desktop_files() -> Vec<DirEntry> {
     res
 }
 
-fn get_hyprshell_path() -> String {
+pub fn get_hyprshell_path() -> String {
     env::current_exe()
         .expect("Current executable not found")
         .display()
@@ -143,7 +143,7 @@ fn get_hyprshell_path() -> String {
         .replace("(deleted)", "")
 }
 
-fn get_hyprctl_path() -> String {
+pub fn get_hyprctl_path() -> String {
     env::var("PATH")
         .unwrap_or_else(|_| String::from("/usr/bin:/bin:/usr/local/bin"))
         .split(':')

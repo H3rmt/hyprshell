@@ -7,6 +7,7 @@ impl From<old_structs::Config> for config::Config {
             layerrules: value.layerrules,
             launcher: value.launcher.map(Into::into),
             windows: value.windows.map(Into::into),
+            ..Default::default()
         }
     }
 }
@@ -45,17 +46,11 @@ impl From<old_structs::Launcher> for config::Launcher {
                     _ => None,
                 }),
                 websearch: value.plugins.iter().find_map(|p| match p {
-                        old_structs::Plugin::WebSearch(engines) => Some(
-                            config::WebSearchConfig {
-                                engines:
-                                engines
-                                    .iter()
-                                    .map(|e| e.clone().into())
-                                    .collect::<Vec<_>>(),
-                            }
-                        ),
-                        _ => None,
+                    old_structs::Plugin::WebSearch(engines) => Some(config::WebSearchConfig {
+                        engines: engines.iter().map(|e| e.clone().into()).collect::<Vec<_>>(),
                     }),
+                    _ => None,
+                }),
                 calc: value.plugins.iter().find_map(|p| match p {
                     old_structs::Plugin::Calc() => Some(Default::default()),
                     _ => None,

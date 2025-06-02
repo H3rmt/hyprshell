@@ -24,6 +24,8 @@ The config is split into three sections:
 
 - **layerrules:**_[boolean]_ layerrules are used in hyprland to configure animations modal-view, etc.
   They are currently used in [this part of the code](src/keybinds.rs) to disable the default animations and dim the background around the launcher.
+- **kill_bind**_[string]_ Keybinding to kill the hyprshell daemon. It can be used if the overview or switch mode is stuck or if the program crashed and the submap wasn't reset.
+  It must be a valid keybinding like `super+alt, q` or `ctrl+alt, k`. By default, this is set to `ctrl+shift+alt, h`.
 
 ## Launcher Options
 

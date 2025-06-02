@@ -7,6 +7,8 @@ use std::fmt::Display;
 pub struct Config {
     #[default = true]
     pub layerrules: bool,
+    #[default = "ctrl+shift+alt, h"]
+    pub kill_bind: String,
     #[default(None)]
     pub launcher: Option<Launcher>,
     #[default(Some(Windows::default()))]

@@ -4,7 +4,10 @@ use core_lib::config::{Config, FilterBy, Overview, Reverse, Switch};
 use core_lib::transfer::{
     CloseConfig, Direction, OpenOverview, OpenSwitch, SwitchConfig, TransferType,
 };
-use core_lib::{generate_socat, generate_socat_and_activate_submap, LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE};
+use core_lib::{
+    generate_socat, generate_socat_and_activate_submap, get_hyprctl_path, LAUNCHER_NAMESPACE,
+    OVERVIEW_NAMESPACE,
+};
 use launcher_lib::generate_keybinds;
 use tracing::{span, Level};
 
@@ -20,11 +23,13 @@ pub fn create_binds_and_submaps<'a>(config: &Config) -> anyhow::Result<Vec<(&'a 
         keyword_list.push(("layerrule", format!("ignorezero, {LAUNCHER_NAMESPACE}")));
     }
 
-    // TODO allow configure with config
-    #[cfg(debug_assertions)]
     keyword_list.push((
         "bind",
-        "ctrl, k, exec, pkill hyprshell; hyprctl dispatch submap reset".to_string(),
+        format!(
+            "{}, exec, pkill hyprshell; {} dispatch submap reset",
+            config.kill_bind,
+            get_hyprctl_path()
+        ),
     ));
 
     if let Some(windows) = &config.windows {

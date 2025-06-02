@@ -87,6 +87,7 @@ in
 
     settings = {
       layerrules = mkOpt "Enable layer rules" bool true;
+      kill_bind = mkOpt "Key to kill hyprshell if it is stuck" str "ctrl+shift+alt, h";
       launcher = {
         enable = mkOpt "Enable app launcher" bool true;
         width = mkOpt "Launcher width" int 650;
