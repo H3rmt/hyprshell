@@ -42,14 +42,21 @@ pub fn create_binds_and_submaps<'a>(config: &Config) -> anyhow::Result<Vec<(&'a 
                 submap_name,
                 workspaces_per_row,
                 &config.launcher,
+                &config.kill_bind,
             )
             .context("Failed to generate overview")?;
         }
         if let Some(switch) = &windows.switch {
             let workspaces_per_row = windows.workspaces_per_row;
             let submap_name = "hyprshell-switch";
-            generate_switch(&mut keyword_list, switch, submap_name, workspaces_per_row)
-                .context("Failed to generate overview")?;
+            generate_switch(
+                &mut keyword_list,
+                switch,
+                submap_name,
+                workspaces_per_row,
+                &config.kill_bind,
+            )
+            .context("Failed to generate overview")?;
         }
     }
 
@@ -111,6 +118,7 @@ fn generate_overview(
     submap_name: &str,
     workspaces_per_row: u8,
     launcher: &Option<Launcher>,
+    kill_bind: &str,
 ) -> anyhow::Result<()> {
     keyword_list.push((
         "bind",
@@ -170,6 +178,35 @@ fn generate_overview(
             generate_switch_press(Direction::Up, true)?
         ),
     ));
+    // Vim keybinds: h, j, k, l
+    keyword_list.push((
+        "bind",
+        format!(
+            "ctrl, l, exec, {}",
+            generate_switch_press(Direction::Right, true)?
+        ),
+    ));
+    keyword_list.push((
+        "bind",
+        format!(
+            "ctrl, h, exec, {}",
+            generate_switch_press(Direction::Left, true)?
+        ),
+    ));
+    keyword_list.push((
+        "bind",
+        format!(
+            "ctrl, j, exec, {}",
+            generate_switch_press(Direction::Down, true)?
+        ),
+    ));
+    keyword_list.push((
+        "bind",
+        format!(
+            "ctrl, k, exec, {}",
+            generate_switch_press(Direction::Up, true)?
+        ),
+    ));
 
     keyword_list.push((
         "binde",
@@ -201,7 +238,11 @@ fn generate_overview(
 
     keyword_list.push((
         "bind",
-        "ctrl, k, exec, pkill hyprshell; hyprctl dispatch submap reset".to_string(),
+        format!(
+            "{}, exec, pkill hyprshell; {} dispatch submap reset",
+            kill_bind,
+            get_hyprctl_path()
+        ),
     ));
     keyword_list.push(("submap", "reset".to_string()));
     Ok(())
@@ -242,6 +283,7 @@ fn generate_switch(
     switch: &Switch,
     submap_name: &str,
     workspaces_per_row: u8,
+    kill_bind: &str,
 ) -> anyhow::Result<()> {
     keyword_list.push((
         "bind",
@@ -337,6 +379,39 @@ fn generate_switch(
             generate_switch_press(Direction::Up, false)?
         ),
     ));
+    // Vim keybinds: h, j, k, l
+    keyword_list.push((
+        "binden",
+        format!(
+            "{}, l, exec, {}",
+            switch.open.modifier,
+            generate_switch_press(Direction::Right, false)?
+        ),
+    ));
+    keyword_list.push((
+        "binden",
+        format!(
+            "{}, h, exec, {}",
+            switch.open.modifier,
+            generate_switch_press(Direction::Left, false)?
+        ),
+    ));
+    keyword_list.push((
+        "binden",
+        format!(
+            "{}, j, exec, {}",
+            switch.open.modifier,
+            generate_switch_press(Direction::Down, false)?
+        ),
+    ));
+    keyword_list.push((
+        "binden",
+        format!(
+            "{}, k, exec, {}",
+            switch.open.modifier,
+            generate_switch_press(Direction::Up, false)?
+        ),
+    ));
 
     keyword_list.push((
         "binde",
@@ -371,9 +446,12 @@ fn generate_switch(
 
     keyword_list.push((
         "bind",
-        "ctrl, k, exec, pkill hyprshell; hyprctl dispatch submap reset".to_string(),
+        format!(
+            "{}, exec, pkill hyprshell; {} dispatch submap reset",
+            kill_bind,
+            get_hyprctl_path()
+        ),
     ));
-
     keyword_list.push(("submap", "reset".to_string()));
     Ok(())
 }
