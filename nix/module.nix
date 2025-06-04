@@ -94,6 +94,7 @@ in
         max_items = mkOpt "Max shown items" int 5;
         animate_launch_ms = mkOpt "Launcher close duration" int 250;
         default_terminal = mkOpt "Default terminal" (nullOr (str)) null;
+        show_when_empty = mkOpt "Show entries when no text is entered" bool true;
 
         plugins = {
           applications = {
