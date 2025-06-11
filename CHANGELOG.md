@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.4](https://github.com/H3rmt/hyprswitch/compare/v4.2.3...v4.2.4) (2025-06-11)
+
+
+### Bug Fixes
+
+* diable gestures and input:follow_mouse on start and reset after close ([6a516b2](https://github.com/H3rmt/hyprswitch/commit/6a516b23e9124f577e16d2475962f8e3347237ae))
+
 ## [4.2.3](https://github.com/H3rmt/hyprswitch/compare/v4.2.2...v4.2.3) (2025-06-11)
 
 
