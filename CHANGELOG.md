@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.5](https://github.com/H3rmt/hyprshell/compare/v4.2.4...v4.2.5) (2025-06-11)
+
+
+### Bug Fixes
+
+* fix run programs ([3997d2a](https://github.com/H3rmt/hyprshell/commit/3997d2a85e77d2d0e3a6799b17518ad5886aca74))
+
 ## [4.2.4](https://github.com/H3rmt/hyprswitch/compare/v4.2.3...v4.2.4) (2025-06-11)
 
 
