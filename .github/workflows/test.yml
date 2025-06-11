@@ -15,7 +15,7 @@ jobs:
     name: Build and Test
     runs-on: "ubuntu-latest"
     container:
-      image: alpine:latest
+      image: alpine:latest@sha256:8a1f59ffb675680d47db6337b49d22281a139e9d709335b492be023728e11715
     steps:
       - name: Install git and other dependencies
         run: apk add --no-cache git tar pkgconf cargo gtk4.0-dev gtk4-layer-shell-dev bash
@@ -31,7 +31,7 @@ jobs:
     name: Run Clippy
     runs-on: "ubuntu-latest"
     container:
-      image: alpine:latest
+      image: alpine:latest@sha256:8a1f59ffb675680d47db6337b49d22281a139e9d709335b492be023728e11715
     steps:
       - name: Install git and other dependencies
         run: apk add --no-cache git tar pkgconf cargo gtk4.0-dev gtk4-layer-shell-dev rust-clippy
