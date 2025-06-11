@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Install git and other dependencies
         run: apk add --no-cache git tar pkgconf cargo gtk4.0-dev gtk4-layer-shell-dev bash
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Load Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Build
@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Install git and other dependencies
         run: apk add --no-cache git tar pkgconf cargo gtk4.0-dev gtk4-layer-shell-dev rust-clippy
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Load Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Run Clippy
