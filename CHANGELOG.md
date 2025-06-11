@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.2.3](https://github.com/H3rmt/hyprswitch/compare/v4.2.2...v4.2.3) (2025-06-11)
+
+
+### Bug Fixes
+
+* fix storage of input:follow_mouse setting ([62ab0f2](https://github.com/H3rmt/hyprswitch/commit/62ab0f2f90a7235e3e2d6a8aa9267ebff4c16348))
+* fix systemd exit ([26ae103](https://github.com/H3rmt/hyprswitch/commit/26ae103729696a02069c873bad76c2edbe9dcdf6))
+
 ## [4.2.2](https://github.com/H3rmt/hyprswitch/compare/v4.2.1...v4.2.2) (2025-06-11)
 
 
