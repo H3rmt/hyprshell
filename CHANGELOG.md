@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.2](https://github.com/H3rmt/hyprswitch/compare/v4.2.1...v4.2.2) (2025-06-11)
+
+
+### Bug Fixes
+
+* add HYPRSHELL_RELOAD_TIMEOUT to change timeout ([764cbb2](https://github.com/H3rmt/hyprswitch/commit/764cbb211ee0a2a1382443b34e58e8a4a035fdb9))
+
 ## [4.2.1](https://github.com/H3rmt/hyprswitch/compare/v4.2.0...v4.2.1) (2025-06-11)
 
 
