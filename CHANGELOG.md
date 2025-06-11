@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.2.0](https://github.com/H3rmt/hyprswitch/compare/v4.1.1...v4.2.0) (2025-06-11)
+
+
+### Features
+
+* better window selection on empty workspace ([24b36b3](https://github.com/H3rmt/hyprswitch/commit/24b36b38cc0b127fe2de2a59c223936ffc9c988e))
+* **nix:** Add `show_when_empty` ([8ebb333](https://github.com/H3rmt/hyprswitch/commit/8ebb333cd0dad0ff919ea1790136c8e6120d4560))
+
+
+### Bug Fixes
+
+* close socket after restarting app ([b4a8f2e](https://github.com/H3rmt/hyprswitch/commit/b4a8f2e61d503fb6eee7850ce1ce6f33dfab72bf))
+* debounce reload ([5858cfd](https://github.com/H3rmt/hyprswitch/commit/5858cfd475f1e3b604f6d035bdc5507977833af5))
+* **deps:** update rust crate clap to v4.5.40 ([19272f4](https://github.com/H3rmt/hyprswitch/commit/19272f40aec98c2820919f4d5924533f12b15fc9))
+* **deps:** update rust crate toml to v0.8.23 ([6268be8](https://github.com/H3rmt/hyprswitch/commit/6268be8a74f85eb90dc1d7d94a5057ce6534ce89))
+* handle sigterm and reset submap ([1516024](https://github.com/H3rmt/hyprswitch/commit/1516024a04d46f4433f52984197bf6f39eeee6a6))
+* improved file watcher, file descriptor limit was reached if reloaded too many times ([b4a8f2e](https://github.com/H3rmt/hyprswitch/commit/b4a8f2e61d503fb6eee7850ce1ce6f33dfab72bf))
+* selecting a client with filtering form workspace without an enabled client now selects the first valid client depending on the direction instead of a first client in the workspace ([2a72d8b](https://github.com/H3rmt/hyprswitch/commit/2a72d8ba63ff7c20412d1a9a1dcd7da861c8204b))
+* toml config plugins for launcher ([5858cfd](https://github.com/H3rmt/hyprswitch/commit/5858cfd475f1e3b604f6d035bdc5507977833af5))
+
 ## [4.1.1](https://github.com/H3rmt/hyprswitch/compare/v4.1.0...v4.1.1) (2025-06-02)
 
 
