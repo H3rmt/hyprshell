@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.1](https://github.com/H3rmt/hyprswitch/compare/v4.2.0...v4.2.1) (2025-06-11)
+
+
+### Bug Fixes
+
+* add show_actions_submenu with default false ([c0828d6](https://github.com/H3rmt/hyprswitch/commit/c0828d6706157728e4af7742a8e97f7190a8eec0))
+* file watchers work again ([73c7ebf](https://github.com/H3rmt/hyprswitch/commit/73c7ebf0914442c85b8af49e920fdbdd87be10a9))
+* use correct path to generate config ([112e7d2](https://github.com/H3rmt/hyprswitch/commit/112e7d26acde6dd98805b69b807b6a5004763a96))
+
 ## [4.2.0](https://github.com/H3rmt/hyprswitch/compare/v4.1.1...v4.2.0) (2025-06-11)
 
 
