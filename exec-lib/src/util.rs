@@ -68,7 +68,7 @@ pub fn set_remain_focused() -> anyhow::Result<()> {
     let mut lock = get_prev_follow_mouse()
         .lock()
         .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {}", e))?;
-    if follow.set && follow.value.to_string() != "3" {
+    if follow.value.to_string() != "3" {
         trace!("Storing previous follow_mouse value: {}", follow.value);
         *lock = Some(follow.value.to_string());
     }
