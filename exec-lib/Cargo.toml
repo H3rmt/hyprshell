@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell-exec-lib"
 documentation = "https://docs.rs/hyprshell-exec-lib"
-version = "4.2.4"
+version = "4.2.5"
 edition.workspace = true
 description.workspace = true
 license.workspace = true

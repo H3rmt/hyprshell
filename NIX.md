@@ -10,7 +10,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprshell.url = "github:H3rmt/hyprswitch?ref=hyprshell";
+    hyprshell.url = "github:H3rmt/hyprshell?ref=hyprshell";
     hyprshell.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -31,7 +31,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprshell.url = "github:H3rmt/hyprswitch?ref=hyprshell";
+    hyprshell.url = "github:H3rmt/hyprshell?ref=hyprshell";
     hyprshell.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -94,7 +94,7 @@
 {pkgs, ...}: let
   flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
   hyprshell = (import flake-compat {
-    src = builtins.fetchTarball "https://github.com/H3rmt/hyprswitch/archive/hyprshell.tar.gz";
+    src = builtins.fetchTarball "https://github.com/H3rmt/hyprshell/archive/hyprshell.tar.gz";
   }).defaultNix;
 in {
    environment.systemPackages = [hyprshell.packages.${pkgs.system}.hyprshell];

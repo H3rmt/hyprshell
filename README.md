@@ -22,6 +22,8 @@ The application also includes a launcher for running applications, doing calcula
 
 ## Installation
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
+
 ### From Source
 
 gtk4 and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
@@ -91,7 +93,7 @@ systemctl --user enable --now hyprshell.service
 ### Env Variables
 
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
-- `HYPRSHELL_SHOW_OUTPUT`: Show the output of an opened application in the terminal.
+- `HYPRSHELL_HIDE_OUTPUT`: Dont show the output of a command started by the launcher. (output is only visible if the program exists after 2 seconds)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
 - `HYPRSHELL_RELOAD_TIMEOUT`: Set the timeout for reloading the config file in milliseconds (default: `1000`).
 

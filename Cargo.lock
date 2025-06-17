@@ -1000,7 +1000,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell"
-version = "4.2.4"
+version = "4.2.5"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1019,7 +1019,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-core-lib"
-version = "4.2.4"
+version = "4.2.5"
 dependencies = [
  "anyhow",
  "inquire",
@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-exec-lib"
-version = "4.2.4"
+version = "4.2.5"
 dependencies = [
  "anyhow",
  "hyprland",
@@ -1045,7 +1045,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-launcher-lib"
-version = "4.2.4"
+version = "4.2.5"
 dependencies = [
  "anyhow",
  "calc",
@@ -1060,7 +1060,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-windows-lib"
-version = "4.2.4"
+version = "4.2.5"
 dependencies = [
  "anyhow",
  "gtk4",
