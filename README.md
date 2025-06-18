@@ -73,16 +73,16 @@ This checks for any syntax errors or issues in your configuration file and shows
 
 ### Initialization
 
-Add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
-
-```ini
-exec-once = hyprshell run &
-```
-
-Or enable the systemd service (generated with `hyprshell config generate`):
+Enable the systemd service (generated with `hyprshell config generate`) [recommended]:
 
 ```bash
 systemctl --user enable --now hyprshell.service
+```
+
+Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
+
+```ini
+exec-once = hyprshell run &
 ```
 
 ![image.png](imgs/swappy-20250420_000818.png)
