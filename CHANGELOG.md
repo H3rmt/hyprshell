@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.6](https://github.com/H3rmt/hyprshell/compare/v4.2.5...v4.2.6) (2025-06-20)
+
+
+### Bug Fixes
+
+* fix [#219](https://github.com/H3rmt/hyprshell/issues/219) use RecommendedWatcher instead of INotifyWatcher ([7be8b50](https://github.com/H3rmt/hyprshell/commit/7be8b501fa39a616029be2830022625d317f2936))
+* print output if launched program exists after &lt; 2 seconds ([ca85cb7](https://github.com/H3rmt/hyprshell/commit/ca85cb78cdcf8484fd2b95e0a1536ed496c027a1))
+* print output if launched program exists after &lt; 2 seconds ([c21d09b](https://github.com/H3rmt/hyprshell/commit/c21d09b92c75d06de1a940c24cec9c7efc8f52e9))
+
 ## [4.2.5](https://github.com/H3rmt/hyprshell/compare/v4.2.4...v4.2.5) (2025-06-11)
 
 
