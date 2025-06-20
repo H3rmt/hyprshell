@@ -65,9 +65,6 @@ pub fn get_daemon_socket_path_buff() -> PathBuf {
     } else {
         std::path::PathBuf::from("/tmp")
     };
-    #[cfg(debug_assertions)]
-    buf.push("hyprshell.debug.sock");
-    #[cfg(not(debug_assertions))]
     buf.push("hyprshell.sock");
     buf
 }

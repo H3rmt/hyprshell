@@ -76,11 +76,15 @@ fn run_command(run: &str, path: &Option<Box<Path>>) -> anyhow::Result<()> {
     debug!("Running command: {:?}", cmd);
     let out = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
     thread::spawn(move || {
-        if env::var_os("HYPRSHELL_SHOW_OUTPUT").is_some() {
+        if env::var_os("HYPRSHELL_HIDE_OUTPUT").is_none() {
+            let start = std::time::Instant::now();
             let output = out.wait_with_output();
+            trace!("Command [{cmd:?}] finished");
             if let Ok(output) = output {
-                if !output.stdout.is_empty() || !output.stderr.is_empty() {
-                    trace!("Output from [{cmd:?}]: {output:?}");
+                if start.elapsed().as_secs() < 2 {
+                    if !output.stdout.is_empty() || !output.stderr.is_empty() {
+                        trace!("Output from [{cmd:?}]: {output:?}");
+                    }
                 }
             }
         }
