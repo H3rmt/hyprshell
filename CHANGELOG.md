@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.8](https://github.com/H3rmt/hyprshell/compare/v4.2.7...v4.2.8) (2025-06-20)
+
+
+### Bug Fixes
+
+* use release branch in ci to create new commits ([d8a489e](https://github.com/H3rmt/hyprshell/commit/d8a489e80070f3a3c7d9d451a9f4b04f703fb2d9))
+
 ## [4.2.7](https://github.com/H3rmt/hyprshell/compare/v4.2.6...v4.2.7) (2025-06-20)
 
 
