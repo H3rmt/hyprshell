@@ -3,7 +3,8 @@ name: release-please
 on:
   push:
     branches:
-      - hyprshell
+      - 'hyprshell'
+      - 'hyprshell-patch-**'
 
 jobs:
   release-please:
