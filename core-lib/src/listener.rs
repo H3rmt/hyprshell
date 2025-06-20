@@ -1,10 +1,10 @@
 use crate::Warn;
 use notify::event::{DataChange, ModifyKind};
-use notify::{Config, Event, EventKind, INotifyWatcher, RecursiveMode, Watcher};
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 use tracing::{debug, info, trace, warn};
 
-pub fn hyprshell_config_listener<F>(file_path: &Path, callback: F) -> Option<INotifyWatcher>
+pub fn hyprshell_config_listener<F>(file_path: &Path, callback: F) -> Option<RecommendedWatcher>
 where
     F: Fn(&'static str) + 'static + Clone + Send,
 {
@@ -13,7 +13,7 @@ where
         return None;
     }
 
-    let mut watcher = INotifyWatcher::new(
+    let mut watcher = RecommendedWatcher::new(
         move |res: notify::Result<Event>| match res {
             Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
                 trace!("Event: {:?}", event);
@@ -36,7 +36,7 @@ where
     Some(watcher)
 }
 
-pub fn hyprshell_css_listener<F>(file_path: &Path, callback: F) -> Option<INotifyWatcher>
+pub fn hyprshell_css_listener<F>(file_path: &Path, callback: F) -> Option<RecommendedWatcher>
 where
     F: Fn(&'static str) + 'static + Clone + Send,
 {
@@ -45,7 +45,7 @@ where
         return None;
     }
 
-    let mut watcher = INotifyWatcher::new(
+    let mut watcher = RecommendedWatcher::new(
         move |res: notify::Result<Event>| match res {
             Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
                 trace!("Event: {:?}", event);
@@ -75,7 +75,7 @@ pub fn hyprshell_config_block(file_path: &Path) {
     }
 
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut watcher = INotifyWatcher::new(
+    let mut watcher = RecommendedWatcher::new(
         move |res: notify::Result<Event>| match res {
             Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
                 trace!("Event: {:?}", event);
