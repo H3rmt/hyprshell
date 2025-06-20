@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.9](https://github.com/H3rmt/hyprshell/compare/v4.2.8...v4.2.9) (2025-06-20)
+
+
+### Bug Fixes
+
+* repair ci ([0aadfcc](https://github.com/H3rmt/hyprshell/commit/0aadfcc95262f34f49fd535fc88a35f767997423))
+
 ## [4.2.8](https://github.com/H3rmt/hyprshell/compare/v4.2.7...v4.2.8) (2025-06-20)
 
 
