@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.2.12](https://github.com/H3rmt/hyprshell/compare/v4.2.11...v4.2.12) (2025-06-20)
+
+
+### Bug Fixes
+
+* repair ci ([eaf5391](https://github.com/H3rmt/hyprshell/commit/eaf5391a28a9821caaec626baab2a78211ee7cdd))
+* repair ci ([e0f8af6](https://github.com/H3rmt/hyprshell/commit/e0f8af675a8702fa50c062030b00c51d2f0d4c30))
+* repair ci ([ca782ce](https://github.com/H3rmt/hyprshell/commit/ca782ce03493b3d01f1e30540b7869ff20b0ad1e))
+* repair ci ([761bd1b](https://github.com/H3rmt/hyprshell/commit/761bd1b3444f35c32924efbdd1fc375452600096))
+* repair ci ([0aadfcc](https://github.com/H3rmt/hyprshell/commit/0aadfcc95262f34f49fd535fc88a35f767997423))
+* show toast when using switch mode ([a34a9bb](https://github.com/H3rmt/hyprshell/commit/a34a9bbe2460dd44213fc5c15d7c34a140b19315))
+* use release branch in ci to create new commits ([d8a489e](https://github.com/H3rmt/hyprshell/commit/d8a489e80070f3a3c7d9d451a9f4b04f703fb2d9))
+
 ## [4.2.11](https://github.com/H3rmt/hyprshell/compare/v4.2.10...v4.2.11) (2025-06-20)
 
 
