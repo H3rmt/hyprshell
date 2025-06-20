@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.7](https://github.com/H3rmt/hyprshell/compare/v4.2.6...v4.2.7) (2025-06-20)
+
+
+### Bug Fixes
+
+* show toast when using switch mode ([a34a9bb](https://github.com/H3rmt/hyprshell/commit/a34a9bbe2460dd44213fc5c15d7c34a140b19315))
+
 ## [4.2.6](https://github.com/H3rmt/hyprshell/compare/v4.2.5...v4.2.6) (2025-06-20)
 
 
