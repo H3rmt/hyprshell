@@ -53,7 +53,8 @@ fn get_command(command: &str) -> Command {
     for replacement in ["%f", "%F", "%u", "%U"] {
         command = command.replace(replacement, "");
     }
-    // if run as systemd unit all programs exit when not run outside the units cgroup
+    // check if hyprshell is running inside a systemd unit (Hyprland inside uwsm or regular systemd unit)
+    // if run as systemd unit all programs exit when hyprshell exits, so we need to run them in a new scope
     if env::var_os("INVOCATION_ID").is_some() {
         let mut cmd = Command::new("systemd-run");
         cmd.args(["--user", "--scope", "--collect", "sh", "-c", &command]);
