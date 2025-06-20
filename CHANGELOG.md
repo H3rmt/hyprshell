@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.13](https://github.com/H3rmt/hyprshell/compare/v4.2.12...v4.2.13) (2025-06-20)
+
+
+### Bug Fixes
+
+* launch apps working again ([be4beee](https://github.com/H3rmt/hyprshell/commit/be4beee4823415e4e41fcfd464cdffec1c729da1))
+
 ## [4.2.12](https://github.com/H3rmt/hyprshell/compare/v4.2.11...v4.2.12) (2025-06-20)
 
 
