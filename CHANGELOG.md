@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.1](https://github.com/H3rmt/hyprshell/compare/v4.3.0...v4.3.1) (2025-06-21)
+
+
+### Bug Fixes
+
+* repair launcher control keys ([78147fa](https://github.com/H3rmt/hyprshell/commit/78147fa354e3b961b19ce8a9a147601434d71d06))
+
 ## [4.3.0](https://github.com/H3rmt/hyprshell/compare/v4.2.12...v4.3.0) (2025-06-21)
 
 
