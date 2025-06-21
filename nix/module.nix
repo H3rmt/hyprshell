@@ -86,6 +86,7 @@ in
     };
 
     settings = {
+      version = mkOpt "Hyprshell config version" str "1";
       layerrules = mkOpt "Enable layer rules" bool true;
       kill_bind = mkOpt "Key to kill hyprshell if it is stuck" str "ctrl+shift+alt, h";
 
@@ -95,9 +96,9 @@ in
           apply = num: if (num >= 0 && num <= 15) then num else throw "Value must be between 0 and 15";
         };
         items_per_row = mkOpt "Workspaces per row" int 5;
-        strip_html_from_workspace_title = mkOpt "Strip HTML from workspace title" bool true;
         overview = {
           enable = mkOpt "Enable overview" bool true;
+          strip_html_from_workspace_title = mkOpt "Strip HTML from workspace title" bool true;
           launcher = {
             enable = mkOpt "Enable app launcher" bool true;
             width = mkOpt "Launcher width" int 650;
