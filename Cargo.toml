@@ -2,7 +2,7 @@
 name = "hyprshell"
 readme = "README.md"
 documentation = "https://docs.rs/hyprshell"
-version = "4.2.12"
+version = "4.3.0"
 edition.workspace = true
 description.workspace = true
 license.workspace = true
@@ -43,7 +43,7 @@ resolver = "2"
 
 
 [workspace.package]
-version = "4.2.12"
+version = "4.3.0"
 description = "A modern GTK4-based window switcher and application launcher for Hyprland"
 license = "MIT"
 authors = ["h3rmt"]
@@ -61,10 +61,10 @@ async-channel = { version = "2.3.1", default-features = true }
 gtk = { version = "0.9.6", package = "gtk4", default-features = false, features = ["v4_14"] }
 gtk4-layer-shell = { version = "0.5.0" }
 
-core-lib = { path = "core-lib", package = "hyprshell-core-lib", version = "=4.2.12" }
-exec-lib = { path = "exec-lib", package = "hyprshell-exec-lib", version = "=4.2.12" }
-windows-lib = { path = "windows-lib", package = "hyprshell-windows-lib", version = "=4.2.12" }
-launcher-lib = { path = "launcher-lib", package = "hyprshell-launcher-lib", version = "=4.2.12" }
+core-lib = { path = "core-lib", package = "hyprshell-core-lib", version = "=4.3.0" }
+exec-lib = { path = "exec-lib", package = "hyprshell-exec-lib", version = "=4.3.0" }
+windows-lib = { path = "windows-lib", package = "hyprshell-windows-lib", version = "=4.3.0" }
+launcher-lib = { path = "launcher-lib", package = "hyprshell-launcher-lib", version = "=4.3.0" }
 
 [profile.release]
 strip = "debuginfo"
