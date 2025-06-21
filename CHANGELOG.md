@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.4.0](https://github.com/H3rmt/hyprshell/compare/v4.3.0...v4.4.0) (2025-06-21)
+
+
+### Features
+
+* switch to gtk key handling ([65a0ad5](https://github.com/H3rmt/hyprshell/commit/65a0ad5f482707cab8339c3c01195ff9b5557c1a))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate libc to v0.2.174 ([b6d1089](https://github.com/H3rmt/hyprshell/commit/b6d10891ce2bc1f649a6af7d62f2f7f2fa09d74b))
+* fix closing on mod keys other than open key ([d6aba16](https://github.com/H3rmt/hyprshell/commit/d6aba16a2eedfee40bd74feae95750d75c2edf85))
+* fix colored output for explain command ([5cbf8ed](https://github.com/H3rmt/hyprshell/commit/5cbf8ede5d3323b6d7484ab1b638f26842165e83))
+* repair ci ([eaf5391](https://github.com/H3rmt/hyprshell/commit/eaf5391a28a9821caaec626baab2a78211ee7cdd))
+* repair ci ([e0f8af6](https://github.com/H3rmt/hyprshell/commit/e0f8af675a8702fa50c062030b00c51d2f0d4c30))
+* repair ci ([ca782ce](https://github.com/H3rmt/hyprshell/commit/ca782ce03493b3d01f1e30540b7869ff20b0ad1e))
+* repair ci ([761bd1b](https://github.com/H3rmt/hyprshell/commit/761bd1b3444f35c32924efbdd1fc375452600096))
+* repair ci ([0aadfcc](https://github.com/H3rmt/hyprshell/commit/0aadfcc95262f34f49fd535fc88a35f767997423))
+* repair launcher control keys ([6bd1310](https://github.com/H3rmt/hyprshell/commit/6bd1310f79036b516213e95d0d26621570127d3a))
+* show toast when using switch mode ([a34a9bb](https://github.com/H3rmt/hyprshell/commit/a34a9bbe2460dd44213fc5c15d7c34a140b19315))
+* use release branch in ci to create new commits ([d8a489e](https://github.com/H3rmt/hyprshell/commit/d8a489e80070f3a3c7d9d451a9f4b04f703fb2d9))
+
+
+### Code Refactoring
+
+* better program output ([f3530ba](https://github.com/H3rmt/hyprshell/commit/f3530ba978c946d0026c63bd89cdd91110a3b6cd))
+* remove launcher dependency of overview/switch crate ([df40faa](https://github.com/H3rmt/hyprshell/commit/df40faaec4bf5e5466575d6189194b97e303ac78))
+* remove submaps (1/?) ([97aedf8](https://github.com/H3rmt/hyprshell/commit/97aedf8a570008c6ca09c980e523e4d2a0ca9ae8))
+* remove submaps (10/10) ([c7551ea](https://github.com/H3rmt/hyprshell/commit/c7551ea526583841b5de1b8071ee22a6d5b158fd))
+* remove submaps (2/?) ([7b65ea8](https://github.com/H3rmt/hyprshell/commit/7b65ea831d44d3b94b6cbb9a3cbcdadaf55fcdd0))
+* remove submaps (3/?) ([9f0c09e](https://github.com/H3rmt/hyprshell/commit/9f0c09e32d8a2ead763f38810f06b71e7dfa93e9))
+* remove submaps (4/?) ([765c88c](https://github.com/H3rmt/hyprshell/commit/765c88c331c3b0e7d834857ef8dc76f235a342ad))
+* remove submaps (5/?) ([65b31cf](https://github.com/H3rmt/hyprshell/commit/65b31cf95ec0edb16357cd865f8d2fa6a22f4e6a))
+* remove submaps (6/?) ([0bc4396](https://github.com/H3rmt/hyprshell/commit/0bc43963a7783a03fc0681f43549e2cd55a56bc7))
+* remove submaps (7/?) ([fdc797d](https://github.com/H3rmt/hyprshell/commit/fdc797d52cba759167a93f88e03b66609ef54f78))
+* remove submaps (8/?) ([9de4678](https://github.com/H3rmt/hyprshell/commit/9de46780f4b2cfeb0f5f4fe9e39c67aebc9e8730))
+* remove submaps (9/?) ([b3f0209](https://github.com/H3rmt/hyprshell/commit/b3f02096c69aa90ca49eebd02b922fb8a127c1b2))
+
 ## [4.3.0](https://github.com/H3rmt/hyprshell/compare/v4.2.12...v4.3.0) (2025-06-21)
 
 
