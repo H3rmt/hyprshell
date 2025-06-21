@@ -1,5 +1,32 @@
 # Changelog
 
+## [4.3.0](https://github.com/H3rmt/hyprshell/compare/v4.2.12...v4.3.0) (2025-06-21)
+
+
+### Features
+
+* switch to gtk key handling ([65a0ad5](https://github.com/H3rmt/hyprshell/commit/65a0ad5f482707cab8339c3c01195ff9b5557c1a))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate libc to v0.2.174 ([b6d1089](https://github.com/H3rmt/hyprshell/commit/b6d10891ce2bc1f649a6af7d62f2f7f2fa09d74b))
+* fix closing on mod keys other than open key ([d6aba16](https://github.com/H3rmt/hyprshell/commit/d6aba16a2eedfee40bd74feae95750d75c2edf85))
+* fix colored output for explain command ([5cbf8ed](https://github.com/H3rmt/hyprshell/commit/5cbf8ede5d3323b6d7484ab1b638f26842165e83))
+
+
+### Code Refactoring
+
+* remove launcher dependency of overview/switch crate ([df40faa](https://github.com/H3rmt/hyprshell/commit/df40faaec4bf5e5466575d6189194b97e303ac78))
+* remove submaps (10/10) ([c7551ea](https://github.com/H3rmt/hyprshell/commit/c7551ea526583841b5de1b8071ee22a6d5b158fd))
+* remove submaps (3/?) ([9f0c09e](https://github.com/H3rmt/hyprshell/commit/9f0c09e32d8a2ead763f38810f06b71e7dfa93e9))
+* remove submaps (4/?) ([765c88c](https://github.com/H3rmt/hyprshell/commit/765c88c331c3b0e7d834857ef8dc76f235a342ad))
+* remove submaps (5/?) ([65b31cf](https://github.com/H3rmt/hyprshell/commit/65b31cf95ec0edb16357cd865f8d2fa6a22f4e6a))
+* remove submaps (6/?) ([0bc4396](https://github.com/H3rmt/hyprshell/commit/0bc43963a7783a03fc0681f43549e2cd55a56bc7))
+* remove submaps (7/?) ([fdc797d](https://github.com/H3rmt/hyprshell/commit/fdc797d52cba759167a93f88e03b66609ef54f78))
+* remove submaps (8/?) ([9de4678](https://github.com/H3rmt/hyprshell/commit/9de46780f4b2cfeb0f5f4fe9e39c67aebc9e8730))
+* remove submaps (9/?) ([b3f0209](https://github.com/H3rmt/hyprshell/commit/b3f02096c69aa90ca49eebd02b922fb8a127c1b2))
+
 ## [4.2.12](https://github.com/H3rmt/hyprshell/compare/v4.2.11...v4.2.12) (2025-06-20)
 
 
