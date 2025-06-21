@@ -180,17 +180,6 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
-    assertions = [
-      {
-        assertion = with cfg.settings.windows.overview.navigate.reverse; key == null || mod == null;
-        message = "'key' and 'mod' are mutually exclusive";
-      }
-      {
-        assertion = with cfg.settings.windows.switch.navigate.reverse; key == null || mod == null;
-        message = "'key' and 'mod' are mutually exclusive";
-      }
-    ];
-
     home.packages = [ cfg.package ];
 
     systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
