@@ -132,7 +132,7 @@ fn handle_release(key: Key, mods: Arc<Mutex<u16>>) {
         Key::Super_L | Key::Super_R => *mods &= !8,
         _ => (),
     };
-    // trace!("key: {}, mods: {}", key, mods);
+    // trace!("key: {}{:?}, mods: {}", key, key, mods);
 }
 
 fn handle_key(
@@ -252,6 +252,79 @@ fn handle_key(
                 .warn("unable to send");
             Propagation::Stop
         }
+        Key::_1 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('1'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_2 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('2'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_3 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('3'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_4 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('4'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_5 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('5'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_6 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('6'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_7 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('7'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_8 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('8'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+        Key::_9 => {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress('9'),
+                ))
+                .warn("unable to send");
+            Propagation::Stop
+        }
+
         _ => Propagation::Proceed,
     }
 }
