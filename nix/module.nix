@@ -86,7 +86,7 @@ in
     };
 
     settings = {
-      version = mkOpt "Hyprshell config version" str "1";
+      version = mkOpt "Hyprshell config version" int 1;
       layerrules = mkOpt "Enable layer rules" bool true;
       kill_bind = mkOpt "Key to kill hyprshell if it is stuck" str "ctrl+shift+alt, h";
 
