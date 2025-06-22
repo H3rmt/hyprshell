@@ -4,6 +4,7 @@
   rustPlatform,
   pkg-config,
   wrapGAppsHook4,
+  hyprland,
   gtk4,
   gtk4-layer-shell,
   ...
@@ -46,6 +47,6 @@ rustPlatform.buildRustPackage {
     description = "A modern GTK4-based window switcher and application launcher for Hyprland";
     homepage = "https://github.com/h3rmt/hyprshell";
     license = lib.licenses.mit;
-    platforms = lib.platforms.linux;
+    platforms = hyprland.meta.platforms;
   };
 }
