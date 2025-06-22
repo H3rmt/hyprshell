@@ -44,10 +44,9 @@ jobs:
 
   check-nix:
     name: Run Nix Flake Check
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Install Nix
       - uses: DeterminateSystems/nix-installer-action@v17
       - uses: DeterminateSystems/magic-nix-cache-action@v11
       - name: Run Nix Flake Check
