@@ -988,7 +988,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell"
-version = "4.3.1"
+version = "4.4.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1005,7 +1005,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-core-lib"
-version = "4.3.1"
+version = "4.4.0"
 dependencies = [
  "anyhow",
  "inquire",
@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-exec-lib"
-version = "4.3.1"
+version = "4.4.0"
 dependencies = [
  "anyhow",
  "hyprland",
@@ -1031,7 +1031,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-launcher-lib"
-version = "4.3.1"
+version = "4.4.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1047,7 +1047,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-windows-lib"
-version = "4.3.1"
+version = "4.4.0"
 dependencies = [
  "anyhow",
  "async-channel",
