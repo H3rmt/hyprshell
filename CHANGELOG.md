@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.4.1](https://github.com/H3rmt/hyprshell/compare/v4.4.0...v4.4.1) (2025-06-24)
+
+
+### Bug Fixes
+
+* run flake update ci on hyprshell branch ([b39d435](https://github.com/H3rmt/hyprshell/commit/b39d435af9ceb60b25667bf70965499828f1f719))
+
+
+### Code Refactoring
+
+* simplify flake ([431536c](https://github.com/H3rmt/hyprshell/commit/431536cddc88606ebe2246ddb755c10a2db51643))
+
+
+### Documentation
+
+* update nix docs ([d0f45f1](https://github.com/H3rmt/hyprshell/commit/d0f45f1fdaeac348e25d5c5f7c95f76cabefb3d0))
+
 ## [4.4.0](https://github.com/H3rmt/hyprshell/compare/v4.3.1...v4.4.0) (2025-06-24)
 
 
