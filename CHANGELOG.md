@@ -1,5 +1,36 @@
 # Changelog
 
+## [4.4.0](https://github.com/H3rmt/hyprshell/compare/v4.3.1...v4.4.0) (2025-06-24)
+
+
+### Features
+
+* add tui question for switch&gt;show_workspaces ([8e0d925](https://github.com/H3rmt/hyprshell/commit/8e0d9254ec9e0556a1f7b214acbb70a98710c1ca))
+* added show_workspaces flag ([bbba547](https://github.com/H3rmt/hyprshell/commit/bbba5472ed493b4ce5f0b4efe47e98c303e734b6))
+
+
+### Bug Fixes
+
+* dont allow opening overview and switch at the same time. ([7b61fd5](https://github.com/H3rmt/hyprshell/commit/7b61fd58627a7fe5be85c4322fd506b57b8685f0))
+* dont launch plugin entries when typing num instead of ctrl + num ([7b61fd5](https://github.com/H3rmt/hyprshell/commit/7b61fd58627a7fe5be85c4322fd506b57b8685f0))
+* fix nix strip_html_from_workspace_title ([e3f02ea](https://github.com/H3rmt/hyprshell/commit/e3f02ea902fd84fe6201fe29bf221e9804100f57))
+* fix nix version setting ([06fd3f7](https://github.com/H3rmt/hyprshell/commit/06fd3f7f0de5e3f8c7ae80eb99e98f953766c81e))
+* generate correct keybinds for opening overview with super + &lt;key&gt;, fix [#254](https://github.com/H3rmt/hyprshell/issues/254) ([9d52a57](https://github.com/H3rmt/hyprshell/commit/9d52a57baa17a0b41897073b3602619bc04f53d4))
+* mark the current workspace as active if the overview is opened without an active client ([f6eaa02](https://github.com/H3rmt/hyprshell/commit/f6eaa0212782e35d2d0d051f77da53b3efaeda7c))
+* removed old nix navigate assertions ([8151fba](https://github.com/H3rmt/hyprshell/commit/8151fba64718e69e7ed3a9d46bccfd54a84329d6))
+
+
+### Code Refactoring
+
+* add better nix checks and switch to nix only for ci ([b5f8682](https://github.com/H3rmt/hyprshell/commit/b5f86823ed599f2f133b6cba8271248417fbe03f))
+* added check-if-default command for ci ([db912d1](https://github.com/H3rmt/hyprshell/commit/db912d1f1b6919e71288b9cc75e703071bce559e))
+* separate nix code utils ([a3b61e8](https://github.com/H3rmt/hyprshell/commit/a3b61e869c6ff60b4b755f4b2c977ffbc4d82d91))
+
+
+### Documentation
+
+* update CONFIGURE.md ([24b9799](https://github.com/H3rmt/hyprshell/commit/24b979918340dd76515686996cf836e61cd96694))
+
 ## [4.3.1](https://github.com/H3rmt/hyprshell/compare/v4.3.0...v4.3.1) (2025-06-21)
 
 
