@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.4.3](https://github.com/H3rmt/hyprshell/compare/v4.4.2...v4.4.3) (2025-06-26)
+
+
+### Bug Fixes
+
+* fix modifier keys to launch again... ([d31ee66](https://github.com/H3rmt/hyprshell/commit/d31ee669c8da6460b1b0821b9b66783fd10c4a0e))
+* use correct keys for switch mode ([b1c3353](https://github.com/H3rmt/hyprshell/commit/b1c335325f68ca1c5810fac772072640d5db464f))
+
+
+### Code Refactoring
+
+* changed PKGBUILD ([b3f207d](https://github.com/H3rmt/hyprshell/commit/b3f207d7bc0c27892d30fa2420053f27b8e714e6))
+
 ## [4.4.2](https://github.com/H3rmt/hyprshell/compare/v4.4.1...v4.4.2) (2025-06-26)
 
 
