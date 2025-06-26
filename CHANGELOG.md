@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.4.2](https://github.com/H3rmt/hyprshell/compare/v4.4.1...v4.4.2) (2025-06-26)
+
+
+### Bug Fixes
+
+* fix launcher keybinds ([05b2867](https://github.com/H3rmt/hyprshell/commit/05b28670edef4ca23e47100785b90b57b8311c06))
+* fix modifier keys to launch, added launch_modifier ([19ba571](https://github.com/H3rmt/hyprshell/commit/19ba57169ae4c77e1e5331c764828f7f67703b90))
+* **nix-flake:** update flake.lock ([abeaea5](https://github.com/H3rmt/hyprshell/commit/abeaea56cb568cb8e30ab8289e194ce10c46ec26))
+* run flake update ci on hyprshell branch ([b39d435](https://github.com/H3rmt/hyprshell/commit/b39d435af9ceb60b25667bf70965499828f1f719))
+
+
+### Code Refactoring
+
+* simplify flake ([431536c](https://github.com/H3rmt/hyprshell/commit/431536cddc88606ebe2246ddb755c10a2db51643))
+
+
+### Documentation
+
+* update nix docs ([d0f45f1](https://github.com/H3rmt/hyprshell/commit/d0f45f1fdaeac348e25d5c5f7c95f76cabefb3d0))
+
 ## [4.4.1](https://github.com/H3rmt/hyprshell/compare/v4.4.0...v4.4.1) (2025-06-24)
 
 
