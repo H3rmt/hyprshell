@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.5.0](https://github.com/H3rmt/hyprshell/compare/v4.4.3...v4.5.0) (2025-06-27)
+
+
+### Features
+
+* added path plugin ([910aa35](https://github.com/H3rmt/hyprshell/commit/910aa357abc27c4c6f801d19920feed4e05549f1))
+
+
+### Documentation
+
+* update screenshots ([e9b8c7c](https://github.com/H3rmt/hyprshell/commit/e9b8c7ce5b2915ec13adf2cbd8994a3eb669408f))
+
 ## [4.4.3](https://github.com/H3rmt/hyprshell/compare/v4.4.2...v4.4.3) (2025-06-26)
 
 
