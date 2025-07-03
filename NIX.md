@@ -74,7 +74,7 @@ All the settings are optional and can be found in the [module.nix](./nix/module.
       windows = {
         overview = {
           key = "super_l";
-          mod = super;
+          modifier = "super";
           launcher = {
             max_items = 6;
             plugins.websearch = {
@@ -87,7 +87,7 @@ All the settings are optional and can be found in the [module.nix](./nix/module.
             };
           };
         };
-        switcher.enable = false;
+        switch.enable = false;
       };
     };
   };
