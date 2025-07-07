@@ -16,7 +16,7 @@ use exec_lib::{reload_hyprland_config, toast};
 use gtk::gdk::Display;
 use gtk::prelude::*;
 use gtk::{
-    Application, CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, STYLE_PROVIDER_PRIORITY_USER,
+    Application, CssProvider, STYLE_PROVIDER_PRIORITY_USER,
     glib, style_context_add_provider_for_display,
 };
 use launcher_lib::{LauncherData, create_windows_overview_launcher_window};
@@ -187,7 +187,7 @@ fn apply_css(custom_css: &Path) {
     style_context_add_provider_for_display(
         &Display::default().expect("Could not connect to a display."),
         &provider_app,
-        STYLE_PROVIDER_PRIORITY_APPLICATION,
+        STYLE_PROVIDER_PRIORITY_USER,
     );
 
     windows_lib::get_css();
