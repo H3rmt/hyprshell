@@ -10,6 +10,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test-global/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/config-lib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/clipboard-lib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/clipboard-lib/wl-clipboard-rs/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/config" />
       <excludeFolder url="file://$MODULE_DIR$/core-lib/target" />
       <excludeFolder url="file://$MODULE_DIR$/exec-lib/target" />

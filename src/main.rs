@@ -51,6 +51,8 @@ fn main() -> anyhow::Result<()> {
     check_features();
     check_env();
 
+    clipboard_lib::test();
+
     let data_dir = cli.global_opts.data_dir;
     let css_file = cli.global_opts.css_file;
     let config_path = cli.global_opts.config_file;

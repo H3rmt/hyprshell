@@ -30,18 +30,20 @@ core-lib.workspace = true
 exec-lib.workspace = true
 windows-lib.workspace = true
 launcher-lib.workspace = true
+clipboard-lib = { workspace = true, optional = true }
 
 [features]
-default = ["json5_config", "generate_config_command", "launcher_calc", "debug_command"]
+default = ["json5_config", "generate_config_command", "launcher_calc", "debug_command", "clipboard"]
 json5_config = ["config-lib/json5_config"]
 generate_config_command = ["config-lib/generate_config"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin"]
 debug_command = []
 config_check_is_default = ["config-lib/no-default-config-values"]
+clipboard = ["dep:clipboard-lib"]
 
 
 [workspace]
-members = ["exec-lib", "core-lib", "windows-lib", "launcher-lib", "config-lib"]
+members = ["exec-lib", "core-lib", "windows-lib", "launcher-lib", "config-lib", "clipboard-lib"]
 resolver = "2"
 
 [workspace.package]
@@ -68,6 +70,7 @@ core-lib = { path = "core-lib", package = "hyprshell-core-lib", version = "=4.5.
 exec-lib = { path = "exec-lib", package = "hyprshell-exec-lib", version = "=4.5.0" }
 windows-lib = { path = "windows-lib", package = "hyprshell-windows-lib", version = "=4.5.0" }
 launcher-lib = { path = "launcher-lib", package = "hyprshell-launcher-lib", version = "=4.5.0" }
+clipboard-lib = { path = "clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.5.0" }
 
 
 [profile.release]

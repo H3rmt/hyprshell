@@ -20,31 +20,31 @@
 
 .monitor {
     border: unset;
-    box-shadow: inset 0 0 30px var(--box-shadow-color);
+    box-shadow: inset 0 0 10px var(--box-shadow-color);
 }
 
 .workspace {
-    box-shadow: inset 0 0 25px var(--box-shadow-color);
+    box-shadow: inset 0 0 10px var(--box-shadow-color);
 }
 
 .workspace.active {
-    box-shadow: inset 0 0 30px var(--box-shadow-color-hover);
+    box-shadow: inset 0 0 15px var(--box-shadow-color-hover);
 }
 
 .workspace:hover {
-    box-shadow: inset 0 0 35px var(--box-shadow-color-hover);
+    box-shadow: inset 0 0 20px var(--box-shadow-color-hover);
 }
 
 .client {
-    box-shadow: inset 0 0 25px var(--box-shadow-color);
+    box-shadow: inset 0 0 10px var(--box-shadow-color);
 }
 
 .client.active {
-    box-shadow: inset 0 0 30px var(--box-shadow-color-hover);
+    box-shadow: inset 0 0 15px var(--box-shadow-color-hover);
 }
 
 .client:hover {
-    box-shadow: inset 0 0 35px var(--box-shadow-color-hover);
+    box-shadow: inset 0 0 20px var(--box-shadow-color-hover);
 }
 
 .client-image {
@@ -53,7 +53,7 @@
 
 .launcher {
     border: unset;
-    box-shadow: inset 0 0 25px var(--box-shadow-color);
+    box-shadow: inset 0 0 10px var(--box-shadow-color);
 }
 
 .launcher-input {
@@ -72,7 +72,7 @@
 .launcher-item {
     padding: 0 10px;
     border-radius: 16px;
-    box-shadow: inset 0 0 12px var(--box-shadow-color);
+    box-shadow: inset 0 0 5px var(--box-shadow-color);
 }
 
 .launcher-item:hover {
@@ -91,9 +91,9 @@
 .launcher-plugin {
     padding: 8px;
     border-radius: 24px;
-    box-shadow: inset 0 0 20px var(--box-shadow-color);
+    box-shadow: inset 0 0 5px var(--box-shadow-color);
 }
 
 .launcher-plugin:hover {
-    box-shadow: inset 0 0 20px var(--box-shadow-color-hover);
+    box-shadow: inset 0 0 15px var(--box-shadow-color-hover);
 }
