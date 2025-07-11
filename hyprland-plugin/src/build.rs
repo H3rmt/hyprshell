@@ -9,11 +9,11 @@ use tracing::{Level, span, trace};
 pub fn build<P: AsRef<Path>>(path: P) -> anyhow::Result<PathBuf> {
     let _span = span!(Level::TRACE, "build", path =? path.as_ref()).entered();
     trace!("PATH: {:?}", env::var_os("PATH"));
-    trace!("C_INCLUDE_PATH: {:?}", env::var_os("C_INCLUDE_PATH"));
+    trace!("CPATH: {:?}", env::var_os("CPATH"));
     let mut cmd = Command::new("gcc");
     cmd.current_dir(path.as_ref())
         .args(["-shared", "-fPIC", "--no-gnu-unique", "-std=c++2b"])
-        .arg("-I/usr/include/pixman-1")
+        .arg("-I/usr/include/pixman-1") // fix for arch?
         .arg("-O2")
         .arg("-o")
         .arg("hyprfocus.so")

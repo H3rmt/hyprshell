@@ -23,8 +23,8 @@ rec {
   stdenv = p: p.stdenv;
   postInstall = ''
     wrapProgram $out/bin/hyprshell \
-      --prefix PATH : ${pkgs.gcc} \
-      --prefix C_INCLUDE_PATH : ${pkgs.lib.makeBinPath pkgs.hyprland.buildInputs}
+      --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.gcc ]} \
+      --prefix CPATH : ${pkgs.lib.makeIncludePath (pkgs.hyprland.buildInputs ++ [ pkgs.hyprland ])}
   '';
   commonArgs = {
     inherit
