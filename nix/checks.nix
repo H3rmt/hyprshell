@@ -59,7 +59,10 @@ rec {
     buildLib.commonArgsCachedRelease
     // {
       pnameSuffix = "-check-all-feature-combinations";
-      nativeBuildInputs = [ pkgs.bash pkgs.clippy ] ++ buildLib.commonArgs.nativeBuildInputs;
+      nativeBuildInputs = [
+        pkgs.bash
+        pkgs.clippy
+      ] ++ buildLib.commonArgs.nativeBuildInputs;
       cargoClippyExtraArgs = "";
       buildPhaseCargoCommand = ''
         cargoBuildLog=$(mktemp cargoBuildLogXXXX.json)

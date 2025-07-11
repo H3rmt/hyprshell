@@ -10,7 +10,7 @@ rec {
     src = ../.;
     filter =
       path: type:
-      (builtins.match ".*(css|service)$" path != null) || (craneLib.filterCargoSources path type);
+      (builtins.match ".*(css|service|hpp|cpp)$" path != null) || (craneLib.filterCargoSources path type);
     name = "source";
   };
   meta = {
@@ -39,6 +39,7 @@ rec {
     nativeBuildInputs = [
       pkgs.pkg-config
       pkgs.wrapGAppsHook4
+      pkgs.makeBinaryWrapper
     ];
 
     buildInputs = [

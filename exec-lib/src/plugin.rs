@@ -1,10 +1,14 @@
-use tracing::trace;
+use tracing::{trace, warn};
 
 pub fn test() -> anyhow::Result<()> {
-    let path = hyprland_plugin::extract_plugin()?;
-    trace!("plugin extracted to path: {path:?}");
-    let out = hyprland_plugin::build(path);
-    println!("{:?}", out);
-    // hyprland::ctl::plugin::load()
+    match hyprland_plugin::generate() {
+        Ok(path) => {
+            trace!("generated plugin at {:?}", path);
+        }
+        Err(err) => {
+            warn!("unable to generate plugin: {err:?}")
+        }
+    }
+
     Ok(())
 }

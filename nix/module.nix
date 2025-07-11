@@ -34,7 +34,6 @@ in
       description = "The Hyprshell package";
       type = package;
       default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      nullable = true;
     };
 
     systemd = {

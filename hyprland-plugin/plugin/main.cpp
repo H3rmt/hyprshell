@@ -12,7 +12,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
     const std::string name = HYPRSHELL_PLUGIN_NAME;
     const std::string author = HYPRSHELL_PLUGIN_AUTHOR;
-    const std::string description = HYPRSHELL_PLUGIN_DESCRIPTION;
+    const std::string description = HYPRSHELL_PLUGIN_DESC;
     const std::string version = HYPRSHELL_PLUGIN_VERSION;
     return {name, description, author, version};
 }
