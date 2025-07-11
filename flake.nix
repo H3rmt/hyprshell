@@ -37,8 +37,8 @@
             hyprshell = craneLib.buildPackage buildLib.commonArgsCachedRelease // {
               postInstall = ''
                 wrapProgram $out/bin/hyprshell \
-                  --suffix PATH:${pkgs.libgcc} \
-                  --suffix C_INCLUDE_PATHH:${pkgs.lib.makeBinPath pkgs.hyprland.buildInputs}
+                  --suffix PATH:${pkgs.gcc} \
+                  --suffix C_INCLUDE_PATH:${pkgs.lib.makeBinPath pkgs.hyprland.buildInputs}
               '';
             };
             default = hyprshell;
