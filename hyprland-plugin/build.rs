@@ -28,14 +28,10 @@ fn include_plugin() -> Result<(), Box<dyn Error>> {
         buffer.clear();
     }
     zip.finish()?;
-
-    println!("cargo:warning=Plugin included in build at: {zip_path:?}");
     Ok(())
 }
 
 fn main() {
     include_plugin().expect("Failed to include plugin");
-    // pass TARGET env var through
-    println!("cargo:rustc-env=TARGET={}", env::var("TARGET").unwrap());
     println!("cargo:rerun-if-changed=plugin");
 }

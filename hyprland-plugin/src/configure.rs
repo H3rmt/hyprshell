@@ -1,6 +1,6 @@
 use anyhow::Context;
-use std::fs::{File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::fs::OpenOptions;
+use std::io::{Read, Write};
 use std::path::Path;
 use tracing::{Level, span};
 

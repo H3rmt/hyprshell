@@ -57,7 +57,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         cli::Command::Run {} => {
-            exec_lib::plugin::test();
+            let _ = exec_lib::plugin::test();
             if daemon_running() {
                 anyhow::bail!("Daemon already running");
             }

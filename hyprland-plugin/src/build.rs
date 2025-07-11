@@ -1,10 +1,7 @@
-use crate::configure::configure;
 use anyhow::{Context, bail};
 use std::env;
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus, Stdio};
+use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
 use tracing::{Level, span, trace};

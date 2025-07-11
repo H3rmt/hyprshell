@@ -3,7 +3,6 @@ mod configure;
 mod extract;
 
 use anyhow::Context;
-use std::io::Read;
 use std::path::Path;
 
 static ASSET_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/plugin.zip"));

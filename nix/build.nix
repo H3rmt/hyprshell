@@ -21,11 +21,15 @@ rec {
     platforms = pkgs.hyprland.meta.platforms;
   };
   stdenv = p: p.stdenv;
+  postInstall = ''
+    wrapProgram $out/bin/hyprshell \
+      --prefix PATH : ${pkgs.gcc} \
+      --prefix C_INCLUDE_PATH : ${pkgs.lib.makeBinPath pkgs.hyprland.buildInputs}
+  '';
   commonArgs = {
     inherit
       src
       stdenv
-      meta
       pname
       version
       ;
@@ -62,7 +66,7 @@ rec {
   commonArgsCachedRelease = (
     commonArgs
     // {
-      inherit cargoArtifacts;
+      inherit postInstall cargoArtifacts meta;
     }
   );
 }
