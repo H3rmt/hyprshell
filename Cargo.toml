@@ -60,7 +60,7 @@ tracing = { version = "0.1.41" }
 serde_json = { version = "1.0.140" }
 async-channel = { version = "2.3.1", default-features = true }
 
-gtk = { version = "0.9.6", package = "gtk4", default-features = false, features = ["v4_14"] }
+gtk = { version = "0.10.0", package = "gtk4", default-features = false, features = ["v4_14"] }
 gtk4-layer-shell = { version = "0.5.0" }
 
 config-lib = { path = "config-lib", package = "hyprshell-config-lib", version = "=4.5.0" }
