@@ -1,12 +1,14 @@
+use crate::{PLUGIN_AUTHOR, PLUGIN_DESC, PLUGIN_NAME, PLUGIN_VERSION};
 use anyhow::Context;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::Path;
+use tempfile::TempDir;
 use tracing::{Level, span};
 
-pub fn configure<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "configure", path =? path.as_ref()).entered();
-    let defs = path.as_ref().join("defs.hpp");
+pub fn configure(dir: &TempDir) -> anyhow::Result<()> {
+    let _span = span!(Level::TRACE, "configure", path =? dir.path()).entered();
+    let defs = dir.path().join("defs.hpp");
 
     let mut defs_file = OpenOptions::new()
         .read(true)
@@ -17,10 +19,10 @@ pub fn configure<P: AsRef<Path>>(path: P) -> anyhow::Result<()> {
         .read_to_string(&mut buffer)
         .context("unable to read defs file")?;
     for replace in [
-        ("@HYPRSHELL_PLUGIN_NAME@", env!("CARGO_PKG_NAME")),
-        ("@HYPRSHELL_PLUGIN_AUTHOR@", env!("CARGO_PKG_AUTHORS")),
-        ("@HYPRSHELL_PLUGIN_DESC@", env!("CARGO_PKG_DESCRIPTION")),
-        ("@HYPRSHELL_PLUGIN_VERSION@", env!("CARGO_PKG_VERSION")),
+        ("@HYPRSHELL_PLUGIN_NAME@", PLUGIN_NAME),
+        ("@HYPRSHELL_PLUGIN_AUTHOR@", PLUGIN_AUTHOR),
+        ("@HYPRSHELL_PLUGIN_DESC@", PLUGIN_DESC),
+        ("@HYPRSHELL_PLUGIN_VERSION@", PLUGIN_VERSION),
     ] {
         buffer = buffer.replace(replace.0, replace.1);
     }

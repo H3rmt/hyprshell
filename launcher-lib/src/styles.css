@@ -87,7 +87,7 @@
 }
 
 .launch {
-    animation: background-moving 300ms cubic-bezier(0.2, 0.9, 0.4, 1.0) normal;
+    animation: background-moving 300ms cubic-bezier(0.2, 0.9, 0.4, 1.0) normal forwards;
 }
 
 @keyframes background-moving {

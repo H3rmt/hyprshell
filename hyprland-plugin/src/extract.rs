@@ -6,7 +6,7 @@ use tracing::trace;
 use zip::ZipArchive;
 
 pub fn extract_plugin() -> anyhow::Result<TempDir> {
-    let tmp_dir = tempdir().expect("create tempdir failed");
+    let tmp_dir = TempDir::with_suffix(env!("CARGO_PKG_NAME")).expect("create tempdir failed");
     let mut archive = ZipArchive::new(Cursor::new(ASSET_ZIP)).expect("failed to read zip");
 
     let mut counter = 0;

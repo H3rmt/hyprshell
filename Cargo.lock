@@ -1165,8 +1165,6 @@ dependencies = [
 [[package]]
 name = "hyprland"
 version = "0.4.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc9c1413b6f0fd10b2e4463479490e30b2497ae4449f044da16053f5f2cb03b8"
 dependencies = [
  "async-net",
  "async-stream",
@@ -1186,8 +1184,6 @@ dependencies = [
 [[package]]
 name = "hyprland-macros"
 version = "0.4.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e3cbed6e560408051175d29a9ed6ad1e64a7ff443836addf797b0479f58983"
 dependencies = [
  "proc-macro2",
  "quote",

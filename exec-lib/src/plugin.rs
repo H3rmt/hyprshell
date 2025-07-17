@@ -1,14 +1,31 @@
-use tracing::{trace, warn};
+use anyhow::{Context, bail};
+use hyprland::ctl::plugin;
+use std::path::Path;
+use tracing::{debug, info, trace};
 
 pub fn test() -> anyhow::Result<()> {
-    match hyprland_plugin::generate() {
-        Ok(path) => {
-            trace!("generated plugin at {:?}", path);
-        }
-        Err(err) => {
-            warn!("unable to generate plugin: {err:?}")
+    let plugins = plugin::list().unwrap_or_default();
+    trace!("plugins: {:?}", plugins);
+    for plugin in plugins {
+        if plugin.name == hyprland_plugin::PLUGIN_NAME {
+            debug!("plugin already loaded, unloading it");
+            plugin::unload(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH)).with_context(|| {
+                format!(
+                    "unable to unload old plugin at: {}",
+                    hyprland_plugin::PLUGIN_OUTPUT_PATH
+                )
+            })?;
+            debug!("plugin unloaded");
         }
     }
 
+    hyprland_plugin::generate().context("unable to generate plugin: {err:?}")?;
+    trace!(
+        "generated plugin at {:?}",
+        hyprland_plugin::PLUGIN_OUTPUT_PATH
+    );
+    plugin::load(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH))
+        .context("unable to load plugin")?;
+    trace!("loaded plugin");
     Ok(())
 }

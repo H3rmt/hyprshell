@@ -3,13 +3,18 @@ mod configure;
 mod extract;
 
 use anyhow::Context;
-use std::path::Path;
+
+pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+pub const PLUGIN_AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
+pub const PLUGIN_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
+pub const PLUGIN_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const PLUGIN_OUTPUT_PATH: &str = "/tmp/hyprshell.so";
 
 static ASSET_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/plugin.zip"));
 
-pub fn generate() -> anyhow::Result<Box<Path>> {
-    let path = extract::extract_plugin().context("Failed to extract plugin")?;
-    configure::configure(&path).context("unable to configure defs file")?;
-    let out = build::build(&path).context("Failed to build plugin")?;
-    Ok(out.into_boxed_path())
+pub fn generate() -> anyhow::Result<()> {
+    let dir = extract::extract_plugin().context("Failed to extract plugin")?;
+    configure::configure(&dir).context("unable to configure defs file")?;
+    build::build(&dir).context("Failed to build plugin")?;
+    Ok(())
 }
