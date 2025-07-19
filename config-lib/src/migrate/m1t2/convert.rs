@@ -1,7 +1,5 @@
-use crate::migrate::old_structs;
-use crate::migrate::old_structs::Modifier;
-use crate::structs::CURRENT_CONFIG_VERSION;
-use crate::{Config, Launcher, Overview, Switch, Windows};
+use crate::migrate::m1t2::old_structs;
+use crate::{CURRENT_CONFIG_VERSION, Config, Launcher, Overview, Switch, Windows};
 
 impl From<old_structs::Config> for Config {
     fn from(value: old_structs::Config) -> Self {
@@ -62,13 +60,13 @@ impl From<old_structs::Launcher> for Launcher {
     }
 }
 
-impl From<Modifier> for crate::Modifier {
-    fn from(value: Modifier) -> Self {
+impl From<old_structs::Modifier> for crate::Modifier {
+    fn from(value: old_structs::Modifier) -> Self {
         match value {
-            Modifier::Alt => crate::Modifier::Alt,
-            Modifier::Ctrl => crate::Modifier::Ctrl,
-            Modifier::Shift => crate::Modifier::Shift,
-            Modifier::Super => crate::Modifier::Super,
+            old_structs::Modifier::Alt => crate::Modifier::Alt,
+            old_structs::Modifier::Ctrl => crate::Modifier::Ctrl,
+            old_structs::Modifier::Shift => crate::Modifier::Shift,
+            old_structs::Modifier::Super => crate::Modifier::Super,
         }
     }
 }

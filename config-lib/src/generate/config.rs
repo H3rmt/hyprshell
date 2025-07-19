@@ -29,12 +29,12 @@ pub fn check_file_exist(
 ) -> anyhow::Result<()> {
     if !override_config && config_path.exists() {
         eprintln!(
-            "\x1b[1mConfig file {config_path:?} already exists, use -f to override all or -f config to override only the config file\x1b[0m"
+            "\x1b[31mConfig file {config_path:?} already exists, use -f to override all or -f config to override only the config file\x1b[0m"
         )
     }
     if !override_css && css_path.exists() {
         eprintln!(
-            "\x1b[1mCSS file {css_path:?} already exists, use -f to override all or -f css to override only the css file\x1b[0m"
+            "\x1b[31mCSS file {css_path:?} already exists, use -f to override all or -f css to override only the css file\x1b[0m"
         )
     }
     Ok(())

@@ -2,13 +2,8 @@ use serde::Deserialize;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Deserialize)]
-pub(super) struct EmptyConfig {
-    pub(super) version: u16,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Config {
+pub struct Config {
     pub(super) layerrules: bool,
     pub(super) kill_bind: String,
     pub(super) windows: Option<Windows>,

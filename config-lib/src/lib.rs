@@ -14,3 +14,5 @@ pub use load::load_and_migrate_config;
 pub use modifier::*;
 pub use save::write_config;
 pub use structs::*;
+
+pub(crate) const CURRENT_CONFIG_VERSION: u16 = 2;

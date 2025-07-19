@@ -1,9 +1,6 @@
-use crate::Modifier;
+use crate::{CURRENT_CONFIG_VERSION, Modifier};
 use serde::{Deserialize, Serialize};
 use smart_default::SmartDefault;
-
-pub(crate) const CURRENT_CONFIG_VERSION: u16 = 2;
-pub(crate) const PREV_CONFIG_VERSION: u16 = 1;
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
@@ -27,9 +24,9 @@ pub struct Windows {
     pub scale: f64,
     #[default = 5]
     pub items_per_row: u8,
-    #[default(Some(Overview::default()))]
+    #[default(None)]
     pub overview: Option<Overview>,
-    #[default(Some(Switch::default()))]
+    #[default(None)]
     pub switch: Option<Switch>,
 }
 
