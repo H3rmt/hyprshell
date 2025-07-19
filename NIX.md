@@ -73,6 +73,7 @@ All the settings are optional and can be found in the [module.nix](./nix/module.
     settings = {
       windows = {
         overview = {
+          enable = true;
           key = "super_l";
           modifier = "super";
           launcher = {

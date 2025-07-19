@@ -1,5 +1,6 @@
 use anyhow::Context;
 use hyprland::data::Workspace;
+use hyprland::default_instance_panic;
 use hyprland::dispatch::{
     Dispatch, DispatchType, WindowIdentifier, WorkspaceIdentifierWithSpecial,
 };
@@ -9,28 +10,30 @@ use tracing::{trace, warn};
 
 pub fn switch_client(address: Address) -> anyhow::Result<()> {
     trace!("execute switch to client: {}", address);
-    Dispatch::call(DispatchType::FocusWindow(WindowIdentifier::Address(
-        address,
-    )))?;
-    Dispatch::call(DispatchType::BringActiveToTop)?;
+    Dispatch::call(
+        default_instance_panic(),
+        DispatchType::FocusWindow(WindowIdentifier::Address(address)),
+    )?;
+    Dispatch::call(default_instance_panic(), DispatchType::BringActiveToTop)?;
     Ok(())
 }
 
 pub fn switch_client_by_initial_class(class: &str) -> anyhow::Result<()> {
     trace!("execute switch to client: {} by initial_class", class);
-    Dispatch::call(DispatchType::FocusWindow(
-        WindowIdentifier::ClassRegularExpression(&format!(
+    Dispatch::call(
+        default_instance_panic(),
+        DispatchType::FocusWindow(WindowIdentifier::ClassRegularExpression(&format!(
             "initialclass:{}",
             class.to_ascii_lowercase()
-        )),
-    ))?;
-    Dispatch::call(DispatchType::BringActiveToTop)?;
+        ))),
+    )?;
+    Dispatch::call(default_instance_panic(), DispatchType::BringActiveToTop)?;
     Ok(())
 }
 
 pub fn switch_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     // check if already on workspace (if so, don't switch because it throws an error `Previous workspace doesn't exist`)
-    let current_workspace = Workspace::get_active();
+    let current_workspace = Workspace::get_active(default_instance_panic());
     if let Ok(workspace) = current_workspace {
         if workspace_id == workspace.id {
             trace!("Already on workspace {}", workspace_id);
@@ -52,8 +55,9 @@ pub fn switch_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
 
 fn switch_normal_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     trace!("execute switch to workspace {workspace_id}");
-    Dispatch::call(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
-        workspace_id,
-    )))?;
+    Dispatch::call(
+        default_instance_panic(),
+        DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(workspace_id)),
+    )?;
     Ok(())
 }

@@ -3,15 +3,18 @@ use core_lib::{
     ClientData, ClientId, FindByFirst, MonitorData, MonitorId, WorkspaceData, WorkspaceId,
 };
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
+use hyprland::default_instance_panic;
 use hyprland::prelude::*;
 use tracing::{Level, span, warn};
 
 fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
+    let instance = default_instance_panic();
+
     let _span = span!(Level::TRACE, "get_hypr_data").entered();
-    let monitors = Monitors::get()?.to_vec();
+    let monitors = Monitors::get(instance)?.to_vec();
     // sort and filter all workspaces sorted by ID
     let workspaces = {
-        let mut workspaces = Workspaces::get()?
+        let mut workspaces = Workspaces::get(instance)?
             .into_iter()
             .filter(|w| w.id != -1) // filter invalid workspaces
             .filter(|w| !w.id < 0) // TODO someday add special_workspace support
@@ -20,7 +23,7 @@ fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)
         workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         workspaces
     };
-    let clients = Clients::get()?
+    let clients = Clients::get(instance)?
         .into_iter()
         .filter(|c| c.workspace.id != -1) // ignore clients on invalid workspaces
         .filter(|w| !w.workspace.id < 0) // TODO someday add special_workspace support
@@ -127,9 +130,11 @@ pub fn collect_hypr_data() -> anyhow::Result<(
     workspace_data.sort_by(|a, b| a.0.cmp(&b.0));
     monitor_data.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let active_ws = Workspace::get_active()?.id;
-    let active_monitor = Monitor::get_active()?.id;
-    let active_client = Client::get_active()?.map(|a| (a.class.clone(), to_client_id(&a.address)));
+    let instance = default_instance_panic();
+    let active_ws = Workspace::get_active(instance)?.id;
+    let active_monitor = Monitor::get_active(instance)?.id;
+    let active_client =
+        Client::get_active(instance)?.map(|a| (a.class.clone(), to_client_id(&a.address)));
 
     Ok((
         client_data,
