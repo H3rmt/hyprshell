@@ -10,10 +10,7 @@ pub fn get_static_options(
     default_terminal: &Option<Box<str>>,
 ) {
     matches.push(StaticLaunchOption {
-        iden: Identifier {
-            plugin: PluginNames::Terminal,
-            identifier: None,
-        },
+        iden: Identifier::plugin(PluginNames::Terminal),
         key: 't',
         text: Box::from("Terminal"),
         details: Box::from("Run a command in a terminal"),

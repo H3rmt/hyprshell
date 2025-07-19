@@ -187,7 +187,7 @@ pub fn open_overview(
 
 fn click_client(button: &Button, client_id: ClientId, event_sender: Sender<TransferType>) {
     button.connect_clicked(move |_| {
-        debug!("Exiting on click of launcher details entry");
+        debug!("Exiting on click of client button");
         event_sender
             .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::Windows(
                 WindowsOverride::ClientId(client_id),
@@ -198,7 +198,7 @@ fn click_client(button: &Button, client_id: ClientId, event_sender: Sender<Trans
 
 fn click_workspace(button: &Button, workspace_id: WorkspaceId, event_sender: Sender<TransferType>) {
     button.connect_clicked(move |_| {
-        debug!("Exiting on click of launcher details entry");
+        debug!("Exiting on click of workspace button");
         event_sender
             .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::Windows(
                 WindowsOverride::WorkspaceID(workspace_id),

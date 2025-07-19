@@ -45,11 +45,12 @@ pub struct StaticLaunchOption {
     pub iden: Identifier,
 }
 
-pub fn iden_to_str(iden: &Identifier) -> String {
+/// only encode first data (last data can be used for launching when using the submenu)
+pub fn iden_to_str_for_gtk(iden: &Identifier) -> String {
     format!(
         "{}:{}",
         iden.plugin as u8,
-        iden.identifier.as_deref().unwrap_or_default()
+        iden.data.as_deref().unwrap_or_default()
     )
 }
 
@@ -114,16 +115,19 @@ pub fn launch(
     let _span = span!(Level::TRACE, "launch_plugin").entered();
 
     match iden.plugin {
-        PluginNames::Applications => {
-            applications::launch_option(&iden.identifier, default_terminal, data_dir)
-        }
+        PluginNames::Applications => applications::launch_option(
+            &iden.data,
+            &iden.data_additional,
+            default_terminal,
+            data_dir,
+        ),
         PluginNames::Shell => shell::launch_option(text, default_terminal),
         PluginNames::Terminal => terminal::launch_option(text, default_terminal),
-        PluginNames::WebSearch => search::launch_option(&iden.identifier, text),
+        PluginNames::WebSearch => search::launch_option(&iden.data, text),
         PluginNames::Path => path::launch_option(text),
         PluginNames::Calc => {
             #[cfg(feature = "calc")]
-            calc::copy_result(&iden.identifier);
+            calc::copy_result(&iden.data);
             #[cfg(not(feature = "calc"))]
             tracing::warn!("calc plugin is not enabled");
             false

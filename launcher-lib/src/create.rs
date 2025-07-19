@@ -4,7 +4,7 @@ use async_channel::Sender;
 use config_lib::{Launcher, Modifier};
 use core_lib::transfer::{CloseOverviewConfig, Direction, SwitchOverviewConfig, TransferType};
 use core_lib::{LAUNCHER_NAMESPACE, WarnWithDetails};
-use gtk::gdk::Key;
+use gtk::gdk::{Key, ModifierType};
 use gtk::glib::{ControlFlow, Propagation};
 use gtk::prelude::*;
 use gtk::{
@@ -16,7 +16,7 @@ use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tracing::{Level, debug, span};
+use tracing::{Level, debug, info, span};
 
 pub fn create_windows_overview_launcher_window(
     app: &Application,
@@ -73,32 +73,26 @@ pub fn create_windows_overview_launcher_window(
     let event_controller = EventControllerKey::new();
     let plugin_keys = get_static_options_chars(&launcher.plugins);
     let event_sender_3 = event_sender.clone();
-    let modifiers = Arc::new(Mutex::new(0u16));
-    let modifiers_2 = modifiers.clone();
     let entry_2 = entry.clone();
     let results_2 = results.clone();
     let launch_modifier = launcher.launch_modifier;
-    event_controller.connect_key_pressed(move |_, key, _, _| {
+    event_controller.connect_key_pressed(move |_, key, _, modt| {
         handle_key(
             &entry_2,
             key,
+            modt,
             &plugin_keys,
             open_modifier,
             launch_modifier,
             results_2.clone(),
-            modifiers_2.clone(),
             event_sender_3.clone(),
         )
     });
-    event_controller.connect_key_released(move |_, key, _, _| {
-        handle_release(key, open_modifier, modifiers.clone());
-    });
     event_controller.set_propagation_phase(PropagationPhase::Capture);
     entry.add_controller(event_controller);
-    // TODO excape doesnt reset mods any more
     let entry_2 = entry.clone();
     let window_2 = window.clone();
-    glib::timeout_add_local(std::time::Duration::from_millis(400), move || {
+    glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
         if window_2.is_visible() {
             entry_2.grab_focus_without_selecting(); // ensure that the entry is always focused
         }
@@ -134,48 +128,28 @@ fn launcher_entry_text_change(text: String, event_sender: Sender<TransferType>) 
         .warn_details("unable to send");
 }
 
-fn handle_release(key: Key, open_modifier: Modifier, mods: Arc<Mutex<u16>>) {
-    let mut mods = mods.lock().unwrap();
-    match key {
-        Key::Shift_L | Key::Shift_R if open_modifier != Modifier::Shift => *mods &= !0b0001,
-        Key::Control_L | Key::Control_R if open_modifier != Modifier::Ctrl => *mods &= !0b0010,
-        Key::Alt_L | Key::Alt_R if open_modifier != Modifier::Alt => *mods &= !0b0100,
-        Key::Super_L | Key::Super_R if open_modifier != Modifier::Super => *mods &= !0b1000,
-        _ => (),
-    };
-    tracing::trace!("key: {}{:?}, mods: {}", key, key, mods);
-}
-
 #[allow(clippy::too_many_arguments)]
 fn handle_key(
     entry: &Entry,
     key: Key,
+    modt: ModifierType,
     plugin_keys: &[Key],
     open_modifier: Modifier,
     launch_modifier: Modifier,
     results: gtk::Box,
-    mods: Arc<Mutex<u16>>,
     event_sender: Sender<TransferType>,
 ) -> Propagation {
-    let mut mods = mods.lock().unwrap();
-    match key {
-        Key::Shift_L | Key::Shift_R if open_modifier != Modifier::Shift => *mods |= 0b0001,
-        Key::Control_L | Key::Control_R if open_modifier != Modifier::Ctrl => *mods |= 0b0010,
-        Key::Alt_L | Key::Alt_R if open_modifier != Modifier::Alt => *mods |= 0b0100,
-        Key::Super_L | Key::Super_R if open_modifier != Modifier::Super => *mods |= 0b1000,
-        _ => (),
-    };
     let launch_mod = match launch_modifier {
-        Modifier::Shift => (*mods & 0b0001) != 0,
-        Modifier::Ctrl => (*mods & 0b0010) != 0,
-        Modifier::Alt => (*mods & 0b0100) != 0,
-        Modifier::Super => (*mods & 0b1000) != 0,
+        Modifier::Shift => modt == ModifierType::SHIFT_MASK,
+        Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
+        Modifier::Alt => modt == ModifierType::ALT_MASK,
+        Modifier::Super => modt == ModifierType::SUPER_MASK,
     };
     tracing::trace!(
-        "key: {}{:?}, mods: {}, launch_mod: {}, launch_modifier: {}",
+        "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}",
         key,
         key,
-        mods,
+        modt,
         launch_mod,
         launch_modifier
     );
@@ -281,7 +255,6 @@ fn handle_key(
                 event_sender
                     .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::None))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -292,7 +265,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('1'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -303,7 +275,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('2'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -314,7 +285,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('3'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -325,7 +295,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('4'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -336,7 +305,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('5'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -347,7 +315,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('6'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -358,7 +325,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('7'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -369,7 +335,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('8'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }
@@ -380,7 +345,6 @@ fn handle_key(
                         CloseOverviewConfig::LauncherPress('9'),
                     ))
                     .warn_details("unable to send");
-                *mods = 0b0000;
             }
             Propagation::Stop
         }

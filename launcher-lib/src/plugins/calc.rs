@@ -1,4 +1,5 @@
 use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
+use gtk::gdk::Display;
 use gtk::prelude::DisplayExt;
 use std::path::Path;
 use tracing::debug;
@@ -13,10 +14,7 @@ pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &s
             details: Box::from(""),
             details_long: None,
             score: 0,
-            iden: Identifier {
-                plugin: PluginNames::Calc,
-                identifier: Some(format!("{eval}").into_boxed_str()),
-            },
+            iden: Identifier::data(PluginNames::Calc, format!("{eval}").into_boxed_str()),
             details_menu: vec![],
         });
     } else {
@@ -24,11 +22,11 @@ pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &s
     }
 }
 
-pub fn copy_result(iden: &Option<Box<str>>) -> bool {
-    if let Some(iden) = iden {
-        if let Some(clipboard) = gtk::gdk::Display::default().map(|display| display.clipboard()) {
-            debug!("Copying result to clipboard: {}", iden);
-            clipboard.set_text(iden.as_ref());
+pub fn copy_result(data: &Option<Box<str>>) -> bool {
+    if let Some(data) = data {
+        if let Some(clipboard) = Display::default().map(|display| display.clipboard()) {
+            debug!("Copying result to clipboard: {}", data);
+            clipboard.set_text(data.as_ref());
         }
     }
     false

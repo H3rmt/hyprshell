@@ -4,6 +4,7 @@ use crate::plugins::{DetailsMenuItem, Identifier, PluginNames, SortableLaunchOpt
 use core_lib::{ExecType, WarnWithDetails, analyse_exec};
 use exec_lib::run::run_program;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::path::Path;
 use tracing::{trace, warn};
 
@@ -41,24 +42,16 @@ impl SortableLaunchOption {
         };
 
         let runs = runs.get(&entry.source).unwrap_or(&0);
-        // trace!(
-        //     "entry {} has match:{:?}({}) and runs:{} => {}",
-        //     entry.name,
-        //     r#match,
-        //     r#match as u64,
-        //     runs,
-        //     r#match as u64 + runs
-        // );
         SortableLaunchOption {
             name: entry.name.clone(),
             icon: entry.icon.clone(),
             details,
             details_long,
             score: r#match as u64 + runs,
-            iden: Identifier {
-                identifier: Some(Box::from(entry.source.to_string_lossy())),
-                plugin: PluginNames::Applications,
-            },
+            iden: Identifier::data(
+                PluginNames::Applications,
+                Box::from(entry.source.to_string_lossy()),
+            ),
             details_menu: if show_actions_submenu {
                 entry
                     .other
@@ -66,14 +59,11 @@ impl SortableLaunchOption {
                     .map(|action| DetailsMenuItem {
                         text: action.name.clone(),
                         exec: action.exec.clone(),
-                        iden: Identifier {
-                            identifier: Some(Box::from(format!(
-                                "{}|{}",
-                                entry.source.to_string_lossy(),
-                                action.id
-                            ))),
-                            plugin: PluginNames::Applications,
-                        },
+                        iden: Identifier::data_additional(
+                            PluginNames::Applications,
+                            Box::from(entry.source.to_string_lossy()),
+                            Box::from(action.id.clone()),
+                        ),
                     })
                     .collect()
             } else {
@@ -184,30 +174,21 @@ pub fn get_sortable_options(
     }
 }
 pub fn launch_option(
-    iden: &Option<Box<str>>,
+    data: &Option<Box<str>>,
+    data_additional: &Option<Box<str>>,
     default_terminal: &Option<Box<str>>,
     data_dir: &Path,
 ) -> bool {
     let entries = get_all_desktop_files();
-    if let Some(iden) = iden {
-        let (source, section) = if iden.contains('|') {
-            // split identifier for desktop action
-            let parts: Vec<&str> = iden.split('|').collect();
-            if parts.len() != 2 {
-                warn!("Invalid identifier format: {:?}", iden);
-                return false;
-            }
-            (parts[0], Some(parts[1]))
-        } else {
-            (iden.as_ref(), None)
-        };
+    if let Some(data) = data {
+        let source = data.as_ref();
         let entry = entries
             .iter()
             .find(|entry| source == entry.source.to_string_lossy());
         if let Some(entry) = entry {
-            let exec = if let Some(section) = section {
+            let exec = if let Some(ref section) = data_additional.as_ref() {
                 // find desktop action
-                if let Some(action) = entry.other.iter().find(|a| *a.id == *section) {
+                if let Some(action) = entry.other.iter().find(|a| a.id == **section) {
                     action.exec.clone()
                 } else {
                     warn!(
@@ -230,7 +211,7 @@ pub fn launch_option(
             save_run(&entry.source, data_dir).warn_details("Failed to cache run");
             return true;
         } else {
-            warn!("Failed to find entry for {:?}", iden);
+            warn!("Failed to find entry for {:?}|{:?}", data, data_additional);
         };
     };
     false

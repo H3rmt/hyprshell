@@ -57,7 +57,36 @@ pub enum PluginNames {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Identifier {
     pub plugin: PluginNames,
-    pub identifier: Option<Box<str>>,
+    // identifies the box in the launcher results
+    pub data: Option<Box<str>>,
+    // additional data used to get suboption in submenu (only available when launched through click)
+    pub data_additional: Option<Box<str>>,
+}
+
+impl Identifier {
+    pub fn plugin(plugin: PluginNames) -> Self {
+        Identifier {
+            plugin,
+            data: None,
+            data_additional: None,
+        }
+    }
+
+    pub fn data(plugin: PluginNames, data: Box<str>) -> Self {
+        Identifier {
+            plugin,
+            data: Some(data),
+            data_additional: None,
+        }
+    }
+
+    pub fn data_additional(plugin: PluginNames, data: Box<str>, data_additional: Box<str>) -> Self {
+        Identifier {
+            plugin,
+            data: Some(data),
+            data_additional: Some(data_additional),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

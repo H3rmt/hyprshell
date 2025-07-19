@@ -1,6 +1,6 @@
 use crate::LauncherData;
 use crate::plugins::{
-    DetailsMenuItem, get_sortable_launch_options, get_static_launch_options, iden_to_str,
+    DetailsMenuItem, get_sortable_launch_options, get_static_launch_options, iden_to_str_for_gtk,
 };
 use crate::util::DataInWidget;
 use async_channel::Sender;
@@ -129,7 +129,7 @@ fn create_static_plugin_box(
         .css_classes(["launcher-plugin"])
         .build();
     button.set_cursor(Cursor::from_name("pointer", None).as_ref());
-    button.set_iden_data(iden_to_str(iden));
+    button.set_iden_data(iden_to_str_for_gtk(iden));
     click_plugin(&button, iden.clone(), event_sender);
     button
 }
@@ -248,7 +248,7 @@ fn create_entry(
     hbox.append(&index_label);
 
     hbox.set_cursor(Cursor::from_name("pointer", None).as_ref());
-    hbox.set_iden_data(iden_to_str(iden));
+    hbox.set_iden_data(iden_to_str_for_gtk(iden));
     click_entry(&hbox, iden.clone(), event_sender);
     hbox
 }

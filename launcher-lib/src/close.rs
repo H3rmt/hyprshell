@@ -1,4 +1,4 @@
-use crate::plugins::iden_to_str;
+use crate::plugins::iden_to_str_for_gtk;
 use crate::util::DataInWidget;
 use crate::{LauncherData, plugins};
 use core_lib::transfer::Identifier;
@@ -87,9 +87,13 @@ fn close_window(entry: &Entry, window: &ApplicationWindow) {
 fn show_launch(results: &gtk::Box, plugin_box: &gtk::Box, iden: &Identifier) {
     for child in results.observe_children().into_iter().flatten() {
         if let Some(child) = child.dynamic_cast_ref::<Widget>() {
-            // trace!("A Child: {:?}, {:?}", child.get_iden_data(), iden_to_str(iden));
+            // trace!(
+            //     "A Child: {:?}, {:?}",
+            //     child.get_iden_data(),
+            //     iden_to_str_for_gtk(iden)
+            // );
             if let Some(data) = child.get_iden_data() {
-                if data == iden_to_str(iden) {
+                if data == iden_to_str_for_gtk(iden) {
                     child.add_css_class("launch");
                     return;
                 }
@@ -100,7 +104,7 @@ fn show_launch(results: &gtk::Box, plugin_box: &gtk::Box, iden: &Identifier) {
         if let Some(child) = child.dynamic_cast_ref::<Widget>() {
             // trace!("B Child: {:?}, {:?}", child.get_iden_data(), iden_to_str(iden));
             if let Some(data) = child.get_iden_data() {
-                if data == iden_to_str(iden) {
+                if data == iden_to_str_for_gtk(iden) {
                     child.add_css_class("launch");
                     return;
                 }

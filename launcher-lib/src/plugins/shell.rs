@@ -7,10 +7,7 @@ use tracing::debug;
 
 pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
     matches.push(StaticLaunchOption {
-        iden: Identifier {
-            plugin: PluginNames::Shell,
-            identifier: None,
-        },
+        iden: Identifier::plugin(PluginNames::Shell),
         key: 'r',
         text: Box::from("Shell"),
         details: Box::from("Run a command in a shell"),

@@ -15,10 +15,7 @@ pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
             details: Box::from(""),
             details_long: None,
             score: 100,
-            iden: Identifier {
-                plugin: PluginNames::Path,
-                identifier: None,
-            },
+            iden: Identifier::plugin(PluginNames::Path),
             details_menu: vec![],
         });
     }
