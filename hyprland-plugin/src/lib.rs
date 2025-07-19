@@ -12,9 +12,11 @@ pub const PLUGIN_OUTPUT_PATH: &str = "/tmp/hyprshell.so";
 
 static ASSET_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/plugin.zip"));
 
-pub fn generate() -> anyhow::Result<()> {
+pub use configure::PluginConfig;
+
+pub fn generate(config: &PluginConfig) -> anyhow::Result<()> {
     let dir = extract::extract_plugin().context("Failed to extract plugin")?;
-    configure::configure(&dir).context("unable to configure defs file")?;
+    configure::configure(&dir, config).context("unable to configure defs file")?;
     build::build(&dir).context("Failed to build plugin")?;
     Ok(())
 }

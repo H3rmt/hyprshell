@@ -103,12 +103,9 @@ fn activate(
     let _span = span!(Level::TRACE, "activate").entered();
     apply_css(css_path);
 
-    // if let Err(err) = reload_hyprland_config() {
-    //     error!("Failed to reload hyprland config: {err:?}");
-    //     toast(&format!("Failed to reload hyprland config: {err}"));
-    //     hyprshell_config_block(config_path);
-    //     return; // return needed to exit the application
-    // }
+    exec_lib::reload_hyprland_config()
+        .context("Failed to reload hyprland config")
+        .warn_details("unable to reload hyprland config");
 
     let config = match config_lib::load_and_migrate_config(config_path) {
         Ok(config) => config,
@@ -120,9 +117,6 @@ fn activate(
         }
     };
 
-    exec_lib::reload_hyprland_config()
-        .context("Failed to reload hyprland config")
-        .warn_details("unable to reload hyprland config");
     if let Err(err) = create_binds(&config) {
         error!("Failed to create keybinds: {err:?}");
         toast(&format!("Failed to create keybinds: {err}"));

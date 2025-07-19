@@ -11,7 +11,7 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 }
 
 void onOpenLayerChange(const PHLLS &window) {
-    HyprlandAPI::addNotification(PHANDLE, "AMONGUS", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
+//    HyprlandAPI::addNotification(PHANDLE, "AMONGUS", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
 }
 
 void onKeyPressTest(const std::unordered_map<std::string, std::any> &data) {

@@ -3,7 +3,7 @@ use crate::load::load_config_file;
 use anyhow::{Context, bail};
 use serde::Deserialize;
 use std::path::Path;
-use tracing::{Level, span, warn};
+use tracing::{Level, span};
 
 #[derive(Debug, Clone, Deserialize)]
 pub(super) struct EmptyConfig {

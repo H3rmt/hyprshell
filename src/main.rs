@@ -1,7 +1,7 @@
 use anyhow::Context;
 use clap::Parser;
 use core_lib::{
-    Warn, WarnWithDetails, daemon_running, get_default_config_path, get_default_css_path,
+    WarnWithDetails, daemon_running, get_default_config_path, get_default_css_path,
     get_default_data_dir,
 };
 use std::env;
@@ -57,7 +57,6 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         cli::Command::Run {} => {
-            exec_lib::plugin::test().warn();
             if daemon_running() {
                 anyhow::bail!("Daemon already running");
             }

@@ -48,6 +48,9 @@ impl From<old_structs::Switch> for Switch {
 impl From<old_structs::Launcher> for Launcher {
     fn from(value: old_structs::Launcher) -> Launcher {
         let mut plugins = value.plugins;
+        if let Some(a) = &mut plugins.applications {
+            a.show_actions_submenu = true
+        };
         plugins.path = Some(Default::default());
         Launcher {
             default_terminal: value.default_terminal,

@@ -18,7 +18,7 @@ pub fn migrate(config_path: &Path) -> anyhow::Result<Config> {
         }
         _ => bail!("Unsupported old config version {old_version}, cannot migrate"),
     };
-    match write_config(&config_path, &new_config, true) {
+    match write_config(config_path, &new_config, true) {
         Ok(_) => {
             info!("New config written successfully");
         }

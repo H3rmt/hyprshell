@@ -4,17 +4,14 @@ use core_lib::binds::generate_transfer_socat;
 use core_lib::transfer::TransferType;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
-use std::path::Path;
 use tempfile::TempDir;
 use tracing::{Level, span, trace};
 
-struct Config {
-    overview_key: Option<String>,
-    overview_mod: Option<String>,
-    switch_mod: Option<String>,
+pub struct PluginConfig {
+    pub switch_mod: String,
 }
 
-pub fn configure(dir: &TempDir) -> anyhow::Result<()> {
+pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
     let _span = span!(Level::TRACE, "configure", path =? dir.path()).entered();
     let defs = dir.path().join("defs.hpp");
 
@@ -36,7 +33,7 @@ pub fn configure(dir: &TempDir) -> anyhow::Result<()> {
             "_HYPRSHELL_PRINT_START_",
             if cfg!(debug_assertions) { "1" } else { "0" },
         ),
-        ("_HYPRSHELL_SWTICH_RELEASE_KEYCODE_", "56"),
+        ("_HYPRSHELL_SWTICH_RELEASE_KEYCODE_", &config.switch_mod),
         (
             "_HYPRSHELL_PROGRAM_CLOSE_SWITCH_",
             &generate_transfer_socat(&TransferType::CloseSwitch),

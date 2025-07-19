@@ -1,5 +1,3 @@
-use anyhow::Context;
-
 mod check;
 mod m1t2;
 mod migrate_config;

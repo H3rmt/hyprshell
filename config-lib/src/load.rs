@@ -3,7 +3,6 @@ use crate::migrate::check_migration_needed;
 use anyhow::{Context, bail};
 use ron::Options;
 use ron::extensions::Extensions;
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use std::ffi::OsStr;
 use std::path::Path;

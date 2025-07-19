@@ -1,10 +1,7 @@
 use crate::PLUGIN_OUTPUT_PATH;
 use anyhow::{Context, bail};
 use std::env;
-use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::thread::sleep;
-use std::time::Duration;
 use tempfile::TempDir;
 use tracing::{Level, span, trace};
 

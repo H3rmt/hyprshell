@@ -1209,6 +1209,7 @@ version = "4.5.0"
 dependencies = [
  "anyhow",
  "hyprland",
+ "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-hyprland-plugin",
  "semver",

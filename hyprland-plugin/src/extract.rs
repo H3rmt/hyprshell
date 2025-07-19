@@ -1,7 +1,7 @@
 use crate::ASSET_ZIP;
 use std::fs::File;
 use std::io::{Cursor, copy};
-use tempfile::{TempDir, tempdir};
+use tempfile::TempDir;
 use tracing::trace;
 use zip::ZipArchive;
 

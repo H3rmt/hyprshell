@@ -4,7 +4,6 @@ use crate::plugins::{DetailsMenuItem, Identifier, PluginNames, SortableLaunchOpt
 use core_lib::{ExecType, WarnWithDetails, analyse_exec};
 use exec_lib::run::run_program;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::path::Path;
 use tracing::{trace, warn};
 
@@ -62,7 +61,7 @@ impl SortableLaunchOption {
                         iden: Identifier::data_additional(
                             PluginNames::Applications,
                             Box::from(entry.source.to_string_lossy()),
-                            Box::from(action.id.clone()),
+                            action.id.clone(),
                         ),
                     })
                     .collect()

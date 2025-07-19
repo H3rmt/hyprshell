@@ -15,8 +15,7 @@ use gtk::{Orientation, glib};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use tracing::{Level, debug, info, span};
+use tracing::{Level, debug, span};
 
 pub fn create_windows_overview_launcher_window(
     app: &Application,
@@ -179,6 +178,12 @@ fn handle_key(
     }
 
     match (launch_mod, key) {
+        (_, Key::Escape) => {
+            event_sender
+                .send_blocking(TransferType::Exit)
+                .warn_details("unable to send");
+            Propagation::Stop
+        }
         (_, Key::Tab) => {
             event_sender
                 .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {

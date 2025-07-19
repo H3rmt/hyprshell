@@ -7,17 +7,22 @@ use tracing::{Level, span};
 
 pub fn create_binds(config: &Config) -> anyhow::Result<()> {
     let _span = span!(Level::DEBUG, "create_binds").entered();
-    if config.layerrules {
-        apply_layerrules().warn_details("Failed to apply layerrules");
-    }
     generate_bind_kill(&config.kill_bind)
         .and_then(|bind| apply_exec_bind(&bind))
         .context("Failed to apply kill bind")?;
 
     if let Some(windows) = &config.windows {
+        if let Some(switch) = windows.switch.as_ref() {
+            exec_lib::plugin::load_plugin(switch.modifier)
+                .warn_details("Failed to load plugin for switch modifier");
+        }
         for bind in windows_lib::generate_open_keybinds(windows) {
             apply_exec_bind(&bind).context("Failed to apply open keybinds for windows")?;
         }
     };
+
+    if config.layerrules {
+        apply_layerrules().warn_details("Failed to apply layerrules");
+    }
     Ok(())
 }
