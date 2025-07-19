@@ -95,7 +95,7 @@ pub fn create_windows_overview_launcher_window(
     });
     event_controller.set_propagation_phase(PropagationPhase::Capture);
     entry.add_controller(event_controller);
-
+    // TODO excape doesnt reset mods any more
     let entry_2 = entry.clone();
     let window_2 = window.clone();
     glib::timeout_add_local(std::time::Duration::from_millis(400), move || {
@@ -205,13 +205,6 @@ fn handle_key(
     }
 
     match (launch_mod, key) {
-        (_, Key::Escape) => {
-            event_sender
-                .send_blocking(TransferType::Exit)
-                .warn_details("unable to send");
-            *mods = 0b0000;
-            Propagation::Stop
-        }
         (_, Key::Tab) => {
             event_sender
                 .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {

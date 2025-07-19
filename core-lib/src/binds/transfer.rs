@@ -1,7 +1,7 @@
 use crate::transfer::TransferType;
 use std::env;
 
-fn get_hyprshell_path() -> String {
+pub fn get_hyprshell_path() -> String {
     env::current_exe()
         .expect("Current executable not found")
         .display()

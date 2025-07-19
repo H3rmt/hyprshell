@@ -120,6 +120,9 @@ fn activate(
         }
     };
 
+    exec_lib::reload_hyprland_config()
+        .context("Failed to reload hyprland config")
+        .warn_details("unable to reload hyprland config");
     if let Err(err) = create_binds(&config) {
         error!("Failed to create keybinds: {err:?}");
         toast(&format!("Failed to create keybinds: {err}"));

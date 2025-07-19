@@ -28,22 +28,30 @@ void onKeyPressTest(const std::unordered_map<std::string, std::any> &data) {
 }
 
 void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
-    auto keyboardIt = data.find("keyboard");
-    auto eventIt = data.find("event");
+    const auto keyboardIt = data.find("keyboard");
+    const auto eventIt = data.find("event");
 
     if (keyboardIt != data.end() && eventIt != data.end()) {
-        auto keyboard = std::any_cast<CSharedPointer<IKeyboard> >(keyboardIt->second);
+        // auto keyboard = std::any_cast<CSharedPointer<IKeyboard> >(keyboardIt->second);
         auto event = std::any_cast<IKeyboard::SKeyEvent>(eventIt->second);
-
-        if (event.keycode == HYPRSHELL_OVERVIEW_MOD_KEYCODE) {
-            if (event.state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-                HyprlandAPI::addNotification(PHANDLE, "Overview key pressed", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
-            } else if (event.state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-                HyprlandAPI::addNotification(PHANDLE, "Overview key released", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
+        if constexpr (HYPRSHELL_PRINT_START == 1) {
+            HyprlandAPI::addNotification(PHANDLE, "Key Pressed: " + std::to_string(event.keycode),
+                                         CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
+        }
+        if (event.keycode == HYPRSHELL_SWTICH_RELEASE_KEYCODE) {
+            if (event.state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+                system(std::string(HYPRSHELL_PROGRAM_CLOSE_SWITCH).c_str());
+            }
+        }
+        // Escape key
+        if (event.keycode == 1) {
+            if (event.state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+                system(std::string(HYPRSHELL_PROGRAM_ESCAPE).c_str());
             }
         }
     }
 }
+
 
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;

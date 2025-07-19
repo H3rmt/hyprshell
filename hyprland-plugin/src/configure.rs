@@ -1,10 +1,12 @@
 use crate::{PLUGIN_AUTHOR, PLUGIN_DESC, PLUGIN_NAME, PLUGIN_VERSION};
 use anyhow::Context;
+use core_lib::binds::generate_transfer_socat;
+use core_lib::transfer::TransferType;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::Path;
 use tempfile::TempDir;
-use tracing::{Level, span};
+use tracing::{Level, span, trace};
 
 struct Config {
     overview_key: Option<String>,
@@ -34,8 +36,15 @@ pub fn configure(dir: &TempDir) -> anyhow::Result<()> {
             "_HYPRSHELL_PRINT_START_",
             if cfg!(debug_assertions) { "1" } else { "0" },
         ),
-        ("_HYPRSHELL_OVERVIEW_MOD_KEYCODE_", "125"),
-        ("_HYPRSHELL_OVERVIEW_KEY_KEYCODE_", "15"),
+        ("_HYPRSHELL_SWTICH_RELEASE_KEYCODE_", "56"),
+        (
+            "_HYPRSHELL_PROGRAM_CLOSE_SWITCH_",
+            &generate_transfer_socat(&TransferType::CloseSwitch),
+        ),
+        (
+            "_HYPRSHELL_PROGRAM_ESCAPE_",
+            &generate_transfer_socat(&TransferType::Exit),
+        ),
     ] {
         buffer = buffer.replace(replace.0, replace.1);
     }
@@ -49,5 +58,6 @@ pub fn configure(dir: &TempDir) -> anyhow::Result<()> {
     defs_file
         .write_all(buffer.as_bytes())
         .context("unable to write defs file")?;
+    trace!("Updated defs file: {defs:?}, content:\n{buffer}");
     Ok(())
 }

@@ -42,7 +42,6 @@ pub fn build(dir: &TempDir) -> anyhow::Result<()> {
                 for line in String::from_utf8(output.stderr).unwrap_or_default().lines() {
                     trace!("{line}");
                 }
-                sleep(Duration::from_secs(15));
                 bail!("Build failed with exit code: {:?}", output.status.code());
             }
         }

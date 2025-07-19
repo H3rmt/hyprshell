@@ -7,6 +7,10 @@ use gtk::glib;
 use gtk::prelude::*;
 use tracing::{Level, debug, span, trace};
 
+pub fn overview_already_hidden(data: &WindowsOverviewData) -> bool {
+    !data.window_list.iter().any(|w| w.0.get_visible())
+}
+
 pub fn close_overview(data: &mut WindowsOverviewData, ids: Option<Option<WindowsOverride>>) {
     let _span = span!(Level::TRACE, "close_overview").entered();
     reset_remain_focused().warn_details("Failed to reset follow mouse");

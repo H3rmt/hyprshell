@@ -6,6 +6,10 @@ use gtk::glib;
 use gtk::prelude::*;
 use tracing::{Level, debug, span, trace};
 
+pub fn switch_already_hidden(data: &WindowsSwitchData) -> bool {
+    !data.window.is_visible()
+}
+
 pub fn close_switch(data: &mut WindowsSwitchData, switch: bool) {
     let _span = span!(Level::TRACE, "close_switch").entered();
 

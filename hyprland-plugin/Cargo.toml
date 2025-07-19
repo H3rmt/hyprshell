@@ -13,10 +13,9 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
+core-lib.workspace = true
 tempfile = { version = "3.20.0" }
 zip = { version = "4.3.0" }
-cmake = { version = "0.1.54" }
-gag = { version = "1.0.0" }
 
 [build-dependencies]
 zip = { version = "4.3.0" }
