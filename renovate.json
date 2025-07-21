@@ -5,7 +5,7 @@
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
   ],
-  "baseBranches": [
+  "baseBranchPatterns": [
     "hyprshell"
   ]
 }
