@@ -5,9 +5,8 @@ use crate::plugins::{
 use crate::util::DataInWidget;
 use async_channel::Sender;
 use config_lib::Modifier;
-use core_lib::WarnWithDetails;
-use core_lib::theme_icon_cache::theme_has_icon_name;
 use core_lib::transfer::{CloseOverviewConfig, Identifier, TransferType};
+use core_lib::{WarnWithDetails, default};
 use gtk::gdk::Cursor;
 use gtk::pango::EllipsizeMode;
 use gtk::prelude::*;
@@ -158,7 +157,7 @@ fn create_entry(
     if let Some(icon_path) = icon_path {
         if icon_path.is_absolute() {
             if let Some(icon_name) = icon_path.file_stem() {
-                if theme_has_icon_name(&icon_name.to_string_lossy()) {
+                if default::theme_has_icon_name(&icon_name.to_string_lossy()) {
                     icon.set_icon_name(Some(&icon_name.to_string_lossy()));
                 } else {
                     icon.set_from_file(Some(Path::new(&*icon_path)));

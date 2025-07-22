@@ -3,7 +3,7 @@ use core_lib::WarnWithDetails;
 use exec_lib::run::run_program;
 use gtk::gdk::Key;
 use std::path::PathBuf;
-use tracing::debug;
+use tracing::{debug, trace};
 
 pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
     matches.push(StaticLaunchOption {
@@ -13,6 +13,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
         details: Box::from("Run a command in a shell"),
         icon: Some(PathBuf::from("bash").into_boxed_path()),
     });
+    trace!("Added static shell option");
 }
 
 pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {

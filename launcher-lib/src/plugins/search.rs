@@ -1,20 +1,19 @@
-mod default;
-
-use crate::plugins::search::default::get_browser_info;
 use crate::plugins::{Identifier, PluginNames, StaticLaunchOption};
 use crate::util::convert_to_key;
 use config_lib::SearchEngine;
 use core_lib::WarnWithDetails;
-pub use default::reload_default_browser;
+use core_lib::default::get_default_desktop_file;
 use exec_lib::run::run_program;
 use exec_lib::switch::switch_client_by_initial_class;
 use gtk::gdk::Key;
+use std::path::Path;
 use tracing::{debug, trace, warn};
 
 pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[SearchEngine]) {
     let browser = get_browser_info();
     let icon = browser.icon.clone();
     drop(browser);
+    let mut count = 0;
     for engine in config.iter() {
         if !engine.key.is_whitespace() {
             matches.push(StaticLaunchOption {
@@ -24,10 +23,12 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[Searc
                 key: engine.key,
                 iden: Identifier::data(PluginNames::WebSearch, engine.url.clone()),
             });
+            count += 1;
         } else {
             warn!("Plugin {} has no valid key set", engine.name);
         }
     }
+    trace!("Added {count} static web search options");
 }
 
 pub fn launch_option(iden: &Option<Box<str>>, text: &str) -> bool {
@@ -70,4 +71,45 @@ pub(crate) fn get_chars(config: &[SearchEngine]) -> Vec<Key> {
         .iter()
         .flat_map(|engine| convert_to_key(engine.key))
         .collect()
+}
+
+pub struct BrowserData {
+    pub exec: Box<str>,
+    pub startup_wm_class: Option<Box<str>>,
+    pub icon: Option<Box<Path>>,
+}
+
+pub(super) fn get_browser_info() -> BrowserData {
+    let a = get_default_desktop_file("x-scheme-handler/https", |(entry, ini)| {
+        if let Some(section) = ini.get_section("Desktop Entry") {
+            let exec = section.get_first("Exec");
+            let startup_wm_class = section.get_first("StartupWMClass");
+            let icon = section.get_first_as_path("Icon");
+            if let Some(exec) = exec {
+                trace!(
+                    "Found default browser file: {:?} with exec: {:?}, icon: {:?} and startup_wm_class: {:?}",
+                    entry.path(),
+                    exec,
+                    icon,
+                    startup_wm_class
+                );
+                return Some(BrowserData {
+                    exec,
+                    startup_wm_class,
+                    icon,
+                });
+            }
+        }
+        None
+    });
+    a.unwrap_or_else(|| {
+        warn!("No default browser found! (using firefox and gdbus to open)");
+        BrowserData {
+            exec: Box::from(
+                r#"gdbus call --session --dest="org.freedesktop.portal.Desktop" --object-path=/org/freedesktop/portal/desktop --method=org.freedesktop.portal.OpenURI.OpenURI '' '%u' '{}'"#,
+            ),
+            startup_wm_class: Some(Box::from("firefox")),
+            icon: Some(Box::from(Path::new("firefox"))),
+        }
+    })
 }

@@ -1,5 +1,4 @@
 use crate::start::Globals;
-use crate::util::reload_desktop_data;
 use async_channel::{Receiver, Sender};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{
@@ -126,7 +125,6 @@ fn exit(global: &mut Globals) {
             windows_lib::close_switch(switch, false);
         };
     }
-    reload_desktop_data();
 }
 
 fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
@@ -172,7 +170,6 @@ fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
             }
         }
     }
-    reload_desktop_data()
 }
 
 fn close_switch(global: &mut Globals) {
@@ -185,7 +182,6 @@ fn close_switch(global: &mut Globals) {
             windows_lib::close_switch(switch, true);
         }
     }
-    reload_desktop_data()
 }
 
 fn restart(global: &Globals) {

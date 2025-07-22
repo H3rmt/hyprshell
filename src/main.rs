@@ -129,7 +129,7 @@ fn main() -> anyhow::Result<()> {
         },
         #[cfg(feature = "debug_command")]
         cli::Command::Debug { command } => {
-            tracing::info!("use with -vv ... to see full logs!");
+            println!("run with -vv ... to see all logs");
             match command {
                 cli::DebugCommand::ListIcons => {
                     debug::list_icons();
@@ -152,8 +152,13 @@ fn main() -> anyhow::Result<()> {
                     cli::DefaultApplicationsCommand::Get { mime } => {
                         default_apps::get(&mime).context("unable to get default app")?;
                     }
+                    cli::DefaultApplicationsCommand::Set { mime, value } => {
+                        default_apps::set_default(&mime, &value)
+                            .context("unable to set default app")?;
+                    }
                     cli::DefaultApplicationsCommand::Add { mime, value } => {
-                        default_apps::add(&mime, &value).context("unable to set default app")?;
+                        default_apps::add_association(&mime, &value)
+                            .context("unable to add association")?;
                     }
                     cli::DefaultApplicationsCommand::List { all } => {
                         default_apps::list(all);
@@ -207,5 +212,21 @@ fn check_env() {
         env::var("HYPRSHELL_NO_ALL_ICONS").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_RELOAD_TIMEOUT").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_LOG_MODULE_PATH").unwrap_or_else(|_| "-None-".to_string()),
-    )
+    );
+    let os_name = std::fs::read_to_string("/etc/os-release")
+        .ok()
+        .and_then(|content| {
+            content
+                .lines()
+                .find(|line| line.starts_with("NAME="))
+                .map(|line| line.to_string())
+        })
+        .unwrap_or_else(|| "NAME=Unknown".to_string());
+
+    tracing::trace!(
+        "OS: {}, ARCH: {}, {}",
+        env::consts::OS,
+        env::consts::ARCH,
+        os_name,
+    );
 }

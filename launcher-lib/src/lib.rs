@@ -14,9 +14,6 @@ pub use create::create_windows_overview_launcher_window;
 pub use css::get_css;
 pub use global::LauncherData;
 pub use open::open_launcher;
-pub use plugins::{
-    get_applications_stored_runs, reload_applications_desktop_map,
-    reload_path_default_file_manager, reload_search_default_browser,
-};
+pub use plugins::{get_applications_stored_runs, reload_applications_desktop_entries_map};
 pub use stop::stop_launcher;
 pub use update::update_launcher;

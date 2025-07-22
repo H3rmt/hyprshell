@@ -1,6 +1,6 @@
 use std::fs::read_to_string;
 use std::path::Path;
-use tracing::{debug, info};
+use tracing::debug;
 
 pub(crate) fn launch_history(
     run_cache_weeks: Option<u8>,
@@ -32,15 +32,15 @@ pub(crate) fn launch_history(
                 let name = name_line.trim_start_matches("Name=");
                 // check if verbosity is set, if so, print the name
                 if verbose > 0 {
-                    info!("{name}: ({run}) {}", path.display());
+                    println!("{name}: ({run}) {}", path.display());
                 } else if verbose == 0 {
-                    info!("{name}: ({run})");
+                    println!("{name}: ({run})");
                 }
             } else {
-                info!("{}: ({run})", path.display());
+                println!("?{}?: ({run})", path.display());
             }
         } else {
-            info!("{}: ({run})", path.display());
+            println!("?{}?: ({run})", path.display());
         }
     }
 }

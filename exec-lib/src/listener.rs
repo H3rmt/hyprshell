@@ -1,5 +1,4 @@
 use core_lib::WarnWithDetails;
-use hyprland::default_instance_panic;
 use tracing::info;
 
 pub async fn monitor_listener<F>(callback: F)
@@ -16,7 +15,7 @@ where
     });
     info!("Starting monitor added/removed listener");
     event_listener
-        .start_listener_async(default_instance_panic())
+        .start_listener_async()
         .await
         .warn_details("Failed to start monitor added/removed listener");
 }
@@ -31,7 +30,7 @@ where
     });
     info!("Starting hyprland config reload listener");
     event_listener
-        .start_listener_async(default_instance_panic())
+        .start_listener_async()
         .await
         .warn_details("Failed to start hyprland config reload listener");
 }

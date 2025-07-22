@@ -2,9 +2,12 @@ use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
 use gtk::gdk::Display;
 use gtk::prelude::DisplayExt;
 use std::path::Path;
-use tracing::debug;
+use tracing::{debug, trace};
 
 pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+    if text.is_empty() {
+        return;
+    }
     let mut context: calc::Context<f64> = Default::default();
     let eval = context.evaluate(text);
     if let Ok(eval) = eval {
@@ -17,8 +20,9 @@ pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &s
             iden: Identifier::data(PluginNames::Calc, format!("{eval}").into_boxed_str()),
             details_menu: vec![],
         });
+        trace!("Added calc option: {eval}");
     } else {
-        // trace!("expression error: {eval:?}");
+        trace!("No option added: expression error: {eval:?}");
     }
 }
 

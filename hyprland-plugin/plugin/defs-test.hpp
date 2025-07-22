@@ -1,4 +1,4 @@
 #pragma once
 
-#define _HYPRSHELL_PRINT_START_ 1
+#define _HYPRSHELL_PRINT_DEBUG_ 1
 #define _HYPRSHELL_SWTICH_RELEASE_KEYCODE_ 0

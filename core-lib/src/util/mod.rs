@@ -1,11 +1,9 @@
 mod r#const;
-mod default_desktop_file;
 mod exec;
 mod helpers;
 mod path;
 
 pub use r#const::*;
-pub use default_desktop_file::*;
 pub use exec::*;
 pub use helpers::*;
 pub use path::*;

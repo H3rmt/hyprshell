@@ -2,7 +2,6 @@ use anyhow::Context;
 use core_lib::{Active, ClientId};
 use hyprland::ctl::{Color, notify, reload};
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace};
-use hyprland::default_instance_panic;
 use hyprland::keyword::Keyword;
 use hyprland::prelude::*;
 use semver::Version;
@@ -10,25 +9,24 @@ use std::sync::{Mutex, OnceLock};
 use tracing::{debug, info, trace};
 
 pub fn get_clients() -> Vec<Client> {
-    Clients::get(default_instance_panic()).map_or(vec![], |clients| clients.to_vec())
+    Clients::get().map_or(vec![], |clients| clients.to_vec())
 }
 
 pub fn get_monitors() -> Vec<Monitor> {
-    Monitors::get(default_instance_panic()).map_or(vec![], |monitors| monitors.to_vec())
+    Monitors::get().map_or(vec![], |monitors| monitors.to_vec())
 }
 
 pub fn get_current_monitor() -> Option<Monitor> {
-    Monitor::get_active(default_instance_panic()).ok()
+    Monitor::get_active().ok()
 }
 
 pub fn reload_hyprland_config() -> anyhow::Result<()> {
     debug!("Reloading hyprland config");
-    reload::call(default_instance_panic()).context("Failed to reload hyprland config")
+    reload::call().context("Failed to reload hyprland config")
 }
 
 pub fn toast(body: &str) {
     let _ = notify::call(
-        default_instance_panic(),
         notify::Icon::Warning,
         std::time::Duration::from_secs(10),
         Color::new(255, 0, 0, 255),
@@ -57,17 +55,16 @@ fn get_gestures_enabled() -> &'static Mutex<Option<bool>> {
 }
 
 pub fn set_remain_focused() -> anyhow::Result<()> {
-    let instance = default_instance_panic();
     let mut lock = get_prev_follow_mouse()
         .lock()
         .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {}", e))?;
     // only set once
     if lock.is_none() {
-        let follow = Keyword::get(instance, "input:follow_mouse").context("keyword failed")?;
+        let follow = Keyword::get("input:follow_mouse").context("keyword failed")?;
         trace!("Storing previous follow_mouse value: {}", follow.value);
         *lock = Some(follow.value.to_string());
     }
-    Keyword::set(instance, "input:follow_mouse", "3").context("keyword failed")?;
+    Keyword::set("input:follow_mouse", "3").context("keyword failed")?;
     trace!("Set follow_mouse to 3");
 
     let mut lock = get_gestures_enabled()
@@ -75,26 +72,24 @@ pub fn set_remain_focused() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("unable to lock get_gestures_enabled mutex: {}", e))?;
     if lock.is_none() {
         let gestures_enabled =
-            Keyword::get(instance, "gestures:workspace_swipe").context("keyword failed")?;
+            Keyword::get("gestures:workspace_swipe").context("keyword failed")?;
         trace!(
             "Storing previous gestures_enabled value: {}",
             gestures_enabled.value
         );
         *lock = Some(gestures_enabled.value.to_string() == "1");
     }
-    Keyword::set(instance, "gestures:workspace_swipe", "0").context("keyword failed")?;
+    Keyword::set("gestures:workspace_swipe", "0").context("keyword failed")?;
     trace!("Set gestures:workspace_swipe to 0");
     Ok(())
 }
 
 pub fn reset_remain_focused() -> anyhow::Result<()> {
-    let instance = default_instance_panic();
     let follow = get_prev_follow_mouse()
         .lock()
         .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {}", e))?;
     if let Some(follow) = follow.as_ref() {
-        Keyword::set(instance, "input:follow_mouse", follow.to_string())
-            .context("keyword failed")?;
+        Keyword::set("input:follow_mouse", follow.to_string()).context("keyword failed")?;
         trace!("Restored previous follow_mouse value: {}", follow);
     } else {
         trace!("No previous follow_mouse value stored, skipping reset");
@@ -104,12 +99,8 @@ pub fn reset_remain_focused() -> anyhow::Result<()> {
         .lock()
         .map_err(|e| anyhow::anyhow!("unable to lock get_gestures_enabled mutex: {}", e))?;
     if let Some(enabled) = gestures_enabled.as_ref() {
-        Keyword::set(
-            instance,
-            "gestures:workspace_swipe",
-            if *enabled { "1" } else { "0" },
-        )
-        .context("keyword failed")?;
+        Keyword::set("gestures:workspace_swipe", if *enabled { "1" } else { "0" })
+            .context("keyword failed")?;
         trace!(
             "Restored previous gestures:workspace_swipe value: {}",
             enabled
@@ -121,10 +112,9 @@ pub fn reset_remain_focused() -> anyhow::Result<()> {
 }
 
 pub fn get_initial_active() -> anyhow::Result<Active> {
-    let instance = default_instance_panic();
-    let active_client = Client::get_active(instance)?.map(|c| to_client_id(&c.address));
-    let active_ws = Workspace::get_active(instance)?.id;
-    let active_monitor = Monitor::get_active(instance)?.id;
+    let active_client = Client::get_active()?.map(|c| to_client_id(&c.address));
+    let active_ws = Workspace::get_active()?.id;
+    let active_monitor = Monitor::get_active()?.id;
     Ok(Active {
         client: active_client,
         workspace: active_ws,
@@ -135,7 +125,7 @@ pub fn get_initial_active() -> anyhow::Result<Active> {
 pub fn check_version() -> anyhow::Result<()> {
     pub const MIN_VERSION: Version = Version::new(0, 42, 0);
 
-    let version = hyprland::data::Version::get(default_instance_panic())
+    let version = hyprland::data::Version::get()
         .context("Failed to get version! (hyprland is probably outdated or too new??)")?;
     trace!("hyprland {version:?}");
 

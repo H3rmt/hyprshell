@@ -13,10 +13,8 @@ mod calc;
 mod path;
 
 pub use applications::get_stored_runs as get_applications_stored_runs;
-pub use applications::reload_desktop_map as reload_applications_desktop_map;
+pub use applications::reload_desktop_entries_map as reload_applications_desktop_entries_map;
 use core_lib::transfer::{Identifier, PluginNames};
-pub use path::reload_default_file_manager as reload_path_default_file_manager;
-pub use search::reload_default_browser as reload_search_default_browser;
 
 #[derive(Debug)]
 pub struct SortableLaunchOption {
@@ -46,7 +44,7 @@ pub struct StaticLaunchOption {
 }
 
 /// only encode first data (last data can be used for launching when using the submenu)
-pub fn iden_to_str_for_gtk(iden: &Identifier) -> String {
+pub(crate) fn iden_to_str_for_gtk(iden: &Identifier) -> String {
     format!(
         "{}:{}",
         iden.plugin as u8,
@@ -54,7 +52,7 @@ pub fn iden_to_str_for_gtk(iden: &Identifier) -> String {
     )
 }
 
-pub fn get_sortable_launch_options(
+pub(crate) fn get_sortable_launch_options(
     plugins: &Plugins,
     text: &str,
     data_dir: &Path,
@@ -62,23 +60,27 @@ pub fn get_sortable_launch_options(
     let mut matches = Vec::new();
 
     if let Some(config) = plugins.applications.as_ref() {
-        applications::get_sortable_options(
-            &mut matches,
-            text,
-            config.run_cache_weeks,
-            config.show_execs,
-            config.show_actions_submenu,
-            data_dir,
-        );
+        span!(Level::TRACE, "applications").in_scope(|| {
+            applications::get_sortable_options(
+                &mut matches,
+                text,
+                config.run_cache_weeks,
+                config.show_execs,
+                config.show_actions_submenu,
+                data_dir,
+            );
+        });
     }
     if plugins.calc.is_some() {
         #[cfg(feature = "calc")]
-        calc::get_calc_options(&mut matches, text);
+        span!(Level::TRACE, "calc").in_scope(|| {
+            calc::get_calc_options(&mut matches, text);
+        });
         #[cfg(not(feature = "calc"))]
         tracing::warn!("calc plugin is not enabled");
     }
     if plugins.path.is_some() {
-        path::get_path_options(&mut matches, text)
+        span!(Level::TRACE, "path").in_scope(|| path::get_path_options(&mut matches, text));
     }
 
     // sort in reverse
@@ -94,13 +96,19 @@ pub fn get_static_launch_options(
     let mut matches = Vec::new();
 
     if plugins.shell.is_some() {
-        shell::get_static_options(&mut matches);
+        span!(Level::TRACE, "shell").in_scope(|| {
+            shell::get_static_options(&mut matches);
+        })
     }
     if plugins.terminal.is_some() {
-        terminal::get_static_options(&mut matches, default_terminal);
+        span!(Level::TRACE, "terminal").in_scope(|| {
+            terminal::get_static_options(&mut matches, default_terminal);
+        })
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
-        search::get_static_options(&mut matches, &websearch.engines);
+        span!(Level::TRACE, "search").in_scope(|| {
+            search::get_static_options(&mut matches, &websearch.engines);
+        });
     }
 
     matches
@@ -115,19 +123,26 @@ pub fn launch(
     let _span = span!(Level::TRACE, "launch_plugin").entered();
 
     match iden.plugin {
-        PluginNames::Applications => applications::launch_option(
-            &iden.data,
-            &iden.data_additional,
-            default_terminal,
-            data_dir,
-        ),
-        PluginNames::Shell => shell::launch_option(text, default_terminal),
-        PluginNames::Terminal => terminal::launch_option(text, default_terminal),
-        PluginNames::WebSearch => search::launch_option(&iden.data, text),
-        PluginNames::Path => path::launch_option(text),
+        PluginNames::Applications => span!(Level::TRACE, "applications").in_scope(|| {
+            applications::launch_option(
+                &iden.data,
+                &iden.data_additional,
+                default_terminal,
+                data_dir,
+            )
+        }),
+        PluginNames::Shell => {
+            span!(Level::TRACE, "shell").in_scope(|| shell::launch_option(text, default_terminal))
+        }
+        PluginNames::Terminal => span!(Level::TRACE, "terminal")
+            .in_scope(|| terminal::launch_option(text, default_terminal)),
+        PluginNames::WebSearch => {
+            span!(Level::TRACE, "search").in_scope(|| search::launch_option(&iden.data, text))
+        }
+        PluginNames::Path => span!(Level::TRACE, "path").in_scope(|| path::launch_option(text)),
         PluginNames::Calc => {
             #[cfg(feature = "calc")]
-            calc::copy_result(&iden.data);
+            span!(Level::TRACE, "calc").in_scope(|| calc::copy_result(&iden.data));
             #[cfg(not(feature = "calc"))]
             tracing::warn!("calc plugin is not enabled");
             false

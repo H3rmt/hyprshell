@@ -5,9 +5,10 @@ use core_lib::{get_daemon_socket_path_buff, transfer};
 use std::fs::remove_file;
 use std::io::Read;
 use std::os::unix::net::UnixStream;
-use tracing::{info, warn};
+use tracing::{Level, info, span, warn};
 
 pub fn socket_handler(event_sender: Sender<TransferType>) {
+    let _span = span!(Level::TRACE, "socket_handler").entered();
     let buf = get_daemon_socket_path_buff();
     let path = buf.as_path();
     let listener = {
@@ -41,6 +42,7 @@ fn handle_client(
     mut stream: UnixStream,
     event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<()> {
+    let _span = span!(Level::TRACE, "handle_client").entered();
     let mut buffer = Vec::with_capacity(1024);
     stream
         .read_to_end(&mut buffer)

@@ -34,19 +34,13 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
     if (keyboardIt != data.end() && eventIt != data.end()) {
         // auto keyboard = std::any_cast<CSharedPointer<IKeyboard> >(keyboardIt->second);
         auto event = std::any_cast<IKeyboard::SKeyEvent>(eventIt->second);
-        if constexpr (HYPRSHELL_PRINT_START == 1) {
+        if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
             HyprlandAPI::addNotification(PHANDLE, "Key Pressed: " + std::to_string(event.keycode),
                                          CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
         }
         if (event.keycode == HYPRSHELL_SWTICH_RELEASE_KEYCODE) {
             if (event.state == WL_KEYBOARD_KEY_STATE_RELEASED) {
                 system(std::string(HYPRSHELL_PROGRAM_CLOSE_SWITCH).c_str());
-            }
-        }
-        // Escape key
-        if (event.keycode == 1) {
-            if (event.state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-                system(std::string(HYPRSHELL_PROGRAM_ESCAPE).c_str());
             }
         }
     }
@@ -56,7 +50,7 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
-    if constexpr (HYPRSHELL_PRINT_START == 1) {
+    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
         HyprlandAPI::addNotification(PHANDLE, "Hyprshell Plugin started", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
     }
 

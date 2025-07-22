@@ -1,10 +1,9 @@
 use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
-use core_lib::{IniFile, WarnWithDetails, get_default_desktop_file};
+use core_lib::WarnWithDetails;
+use core_lib::default::get_default_desktop_file;
 use exec_lib::run::run_program;
-use std::fs::{DirEntry, read_to_string};
 use std::path::Path;
-use std::sync::{Mutex, MutexGuard, OnceLock};
-use tracing::{Level, debug, span, trace, warn};
+use tracing::{debug, trace, warn};
 
 pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
     if text.starts_with("/") || text.starts_with("~") {
@@ -52,57 +51,31 @@ pub struct FilemanagerData {
     pub icon: Option<Box<Path>>,
 }
 
-pub(super) fn get_file_manager_info<'a>() -> MutexGuard<'a, FilemanagerData> {
-    FILE_MANAGER_DATA
-        .get()
-        .expect("file-manager exec no initialized")
-        .lock()
-        .expect("Failed to lock file-manager exec")
-}
-
-static FILE_MANAGER_DATA: OnceLock<Mutex<FilemanagerData>> = OnceLock::new();
-
-pub fn reload_default_file_manager(files: &[DirEntry], mime_files: &[DirEntry]) {
-    let _span = span!(Level::TRACE, "reload_default_file_manager").entered();
-    let default_file_manager = get_default_desktop_file("inode/directory", mime_files);
-
-    for entry in files {
-        if entry.file_name() == default_file_manager.as_deref().unwrap_or_default() {
-            if let Ok(str) = read_to_string(entry.path()) {
-                let ini = IniFile::from_str(&str);
-                if let Some(section) = ini.get_section("Desktop Entry") {
-                    let exec = section.get_first("Exec");
-                    let icon = section.get_first("Icon");
-                    let name = section.get_first_as_boxed("Name").unwrap_or_default();
-                    trace!("Found exec: {:?}, icon: {:?}", exec, icon);
-                    if let Some(exec) = exec {
-                        trace!(
-                            "Found default file-manager file: {:?} with exec: {:?}",
-                            entry.path(),
-                            exec,
-                        );
-                        let _ = FILE_MANAGER_DATA.set(Mutex::new(FilemanagerData {
-                            exec: Box::from(exec),
-                            icon: icon.map(Path::new).map(Box::from),
-                            name,
-                        }));
-                        return;
-                    }
-                } else {
-                    warn!(
-                        "Failed to find section 'Desktop Entry' in file: {:?}",
-                        entry.path()
-                    );
-                }
-            } else {
-                warn!("Failed to read file: {:?}", entry.path());
+pub(super) fn get_file_manager_info() -> FilemanagerData {
+    get_default_desktop_file("inode/directory", |(entry, ini)| {
+        if let Some(section) = ini.get_section("Desktop Entry") {
+            let exec = section.get_first("Exec");
+            let icon = section.get_first_as_path("Icon");
+            let name = section.get_first("Name").unwrap_or_default();
+            trace!("Found exec: {:?}, icon: {:?}", exec, icon);
+            if let Some(exec) = exec {
+                trace!(
+                    "Found default file-manager file: {:?} with exec: {:?}",
+                    entry.path(),
+                    exec,
+                );
+                return Some(Some(FilemanagerData { exec, icon, name }));
             }
         }
-    }
-    warn!("No default file-manager found! (using nautilus)");
-    let _ = FILE_MANAGER_DATA.set(Mutex::new(FilemanagerData {
-        exec: Box::from(r#"nautilus --new-window %U"#),
-        icon: Some(Box::from(Path::new("org.gnome.Nautilus"))),
-        name: Box::from(r#"Nautilus"#),
-    }));
+        None
+    })
+    .flatten()
+    .unwrap_or_else(|| {
+        warn!("No default browser found! (using firefox and gdbus to open)");
+        FilemanagerData {
+            exec: Box::from(r#"nautilus --new-window %U"#),
+            icon: Some(Box::from(Path::new("org.gnome.Nautilus"))),
+            name: Box::from(r#"Nautilus"#),
+        }
+    })
 }

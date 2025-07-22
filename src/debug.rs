@@ -1,13 +1,14 @@
 use crate::util;
-use core_lib::theme_icon_cache::get_all_icons;
+use core_lib::default;
 use std::path::Path;
 use tracing::debug;
 
 pub fn check_class(class: Option<String>) {
     util::init_gtk();
-    util::fill_icon_name_map(false);
-    let desktop_files = core_lib::collect_desktop_files();
-    windows_lib::reload_desktop_map(&desktop_files);
+    util::check_themes();
+    util::reload_desktop_data();
+    util::reload_icons(false);
+    windows_lib::reload_class_to_icon_map();
     debug!("prepared desktop files and icon map");
 
     if let Some(class) = class {
@@ -24,7 +25,7 @@ pub fn check_class(class: Option<String>) {
 }
 
 fn check_icon(class: &str) {
-    let in_theme = core_lib::theme_icon_cache::theme_has_icon_name(class);
+    let in_theme = default::theme_has_icon_name(class);
     println!(
         "Icon ({class}) {} in theme (first choice)",
         if in_theme { "is" } else { "is not" }
@@ -43,8 +44,9 @@ fn check_icon(class: &str) {
 
 pub fn list_icons() {
     util::init_gtk();
-    util::fill_icon_name_map(false);
-    let icons = get_all_icons();
+    util::check_themes();
+    util::reload_icons(false);
+    let icons = default::get_all_icons();
     for icon in icons.iter() {
         println!("{icon}");
     }

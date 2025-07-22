@@ -3,7 +3,7 @@ use core_lib::WarnWithDetails;
 use exec_lib::run::run_program;
 use gtk::gdk::Key;
 use std::path::PathBuf;
-use tracing::debug;
+use tracing::{debug, trace};
 
 pub fn get_static_options(
     matches: &mut Vec<StaticLaunchOption>,
@@ -28,6 +28,7 @@ pub fn get_static_options(
             .into_boxed_path(),
         ),
     });
+    trace!("Added static terminal option");
 }
 
 pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {

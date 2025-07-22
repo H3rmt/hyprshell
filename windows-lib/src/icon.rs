@@ -1,5 +1,5 @@
 use crate::desktop_map::{add_path_for_icon_by_pid_exec, get_icon_name_by_name_from_desktop_files};
-use core_lib::theme_icon_cache::theme_has_icon_name;
+use core_lib::default;
 use gtk::Image;
 use std::fs;
 use std::path::Path;
@@ -45,10 +45,10 @@ pub fn set_icon(class: &str, pid: i32, image: &Image) {
 fn load_icon_from_cache(name: &str, pic: &Image) -> Option<Box<Path>> {
     let name_lower = name.to_ascii_lowercase();
 
-    if theme_has_icon_name(name) {
+    if default::theme_has_icon_name(name) {
         pic.set_icon_name(Some(name));
         Some(Box::from(Path::new(name)))
-    } else if theme_has_icon_name(&name_lower) {
+    } else if default::theme_has_icon_name(&name_lower) {
         pic.set_icon_name(Some(&name_lower));
         Some(Box::from(Path::new(&name_lower)))
     } else {

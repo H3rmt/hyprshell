@@ -154,7 +154,10 @@ pub enum DefaultApplicationsCommand {
     /// Get default app for mimetype
     Get { mime: String },
 
-    /// Add a default app for mimetype (if one already exists, this one is placed before)
+    /// Sets a default app for a mimetype (if one already exists, it is replaced)
+    Set { mime: String, value: String },
+
+    /// Add an association app for mimetype (if one already exists, this one is placed before)
     Add { mime: String, value: String },
 
     /// List default apps for all mimetypes

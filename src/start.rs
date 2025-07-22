@@ -2,7 +2,6 @@ use crate::keybinds::create_binds;
 use crate::receive_handle::event_handler;
 use crate::socket::socket_handler;
 use crate::util;
-use crate::util::{check_themes, fill_icon_name_map, gtk_handle_sigterm, reload_desktop_data};
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use config_lib::Config;
@@ -34,16 +33,11 @@ use windows_lib::{
 };
 
 pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "start").entered();
     let config_path = Rc::new(config_path);
     let css_path = Rc::new(css_path);
     let data_dir = Rc::new(data_dir);
-    util::init_gtk();
 
-    check_themes();
-    gtk_handle_sigterm();
-    reload_desktop_data();
-    fill_icon_name_map(true);
+    util::preactivate();
 
     let (event_sender, event_receiver) = async_channel::unbounded();
 

@@ -1,5 +1,5 @@
 use crate::plugins::applications::data::{get_stored_runs, save_run};
-use crate::plugins::applications::map::{DesktopEntry, get_all_desktop_files};
+use crate::plugins::applications::map::{DesktopEntry, get_all_desktop_entries};
 use crate::plugins::{DetailsMenuItem, Identifier, PluginNames, SortableLaunchOption};
 use core_lib::{ExecType, WarnWithDetails, analyse_exec};
 use exec_lib::run::run_program;
@@ -80,9 +80,10 @@ pub fn get_sortable_options(
     show_actions_submenu: bool,
     data_dir: &Path,
 ) {
-    let entries = get_all_desktop_files();
+    let entries = get_all_desktop_entries();
     let runs = get_stored_runs(run_cache_weeks, data_dir);
 
+    let mut count = 0;
     if text.is_empty() {
         for entry in entries.iter() {
             matches.push(SortableLaunchOption::from_desktop_entry(
@@ -92,7 +93,9 @@ pub fn get_sortable_options(
                 show_execs,
                 show_actions_submenu,
             ));
+            count += 1;
         }
+        trace!("Added {count} applications to matches");
         return;
     }
 
@@ -168,9 +171,11 @@ pub fn get_sortable_options(
                 m.name == opt.name && m.details == opt.details && m.details_long == opt.details_long
             }) {
                 matches.push(opt);
+                count += 1;
             }
         }
     }
+    trace!("Added {count} applications to matches");
 }
 pub fn launch_option(
     data: &Option<Box<str>>,
@@ -178,7 +183,7 @@ pub fn launch_option(
     default_terminal: &Option<Box<str>>,
     data_dir: &Path,
 ) -> bool {
-    let entries = get_all_desktop_files();
+    let entries = get_all_desktop_entries();
     if let Some(data) = data {
         let source = data.as_ref();
         let entry = entries
