@@ -76,15 +76,14 @@ pub fn open_overview(
 
             let workspace_button = {
                 let workspace_overlay = Overlay::builder().child(&workspace_frame).build();
-                let button = Button::builder()
-                    .child(&workspace_overlay)
+                let button = gtk::Box::builder()
                     .css_classes(["workspace"])
                     .build();
-                button.set_cursor(Cursor::from_name("pointer", None).as_ref());
+                button.append(&workspace_overlay);
                 if active.client.is_none() && active.workspace == *wid {
                     button.add_css_class("active");
                 }
-                click_workspace(&button, *wid, event_sender.clone());
+                // click_workspace(&button, *wid, event_sender.clone());
                 monitor_data.workspaces_flow.insert(&button, -1);
                 button
             };

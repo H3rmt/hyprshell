@@ -45,7 +45,6 @@ pub fn close_overview(data: &mut WindowsOverviewData, ids: Option<Option<Windows
                         .map(|c| c.title.clone())
                         .unwrap_or_else(|| "<Unknown>".to_string())
                 );
-                // TODO doesnt move mouse focus (reset_remain_focused is already reset??)
                 glib::idle_add_local(move || {
                     switch_client(to_client_address(client_id))
                         .warn_details(&format!("Failed to execute with id {client_id:?}"));

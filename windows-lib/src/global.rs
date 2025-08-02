@@ -46,7 +46,7 @@ pub struct WindowsSwitchConfig {
 pub struct WindowsOverviewMonitorData {
     pub id: MonitorId,
     pub workspaces_flow: FlowBox,
-    pub workspaces: HashMap<WorkspaceId, Button>,
+    pub workspaces: HashMap<WorkspaceId, gtk::Box>,
     pub clients: HashMap<ClientId, Button>,
 }
 

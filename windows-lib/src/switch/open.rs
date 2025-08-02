@@ -45,7 +45,6 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
     );
     let remove_html = regex::Regex::new(r"<[^>]*>").context("Invalid regex")?;
 
-    // TODO find a way to check if the key was already released and close the window or open it faster
     trace!("Showing window {:?}", data.window.id());
     data.window.set_visible(true);
 

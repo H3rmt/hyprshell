@@ -19,14 +19,6 @@
     border: var(--border-size, 3px) var(--border-style, solid) var(--border-color-active, rgba(239, 9, 9, 0.9));
 }
 
-.workspace.no-hover:hover {
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-}
-
-.workspace:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
-}
-
 
 .client {
     font-size: 1.2rem;
