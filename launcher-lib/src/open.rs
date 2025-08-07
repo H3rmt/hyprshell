@@ -2,10 +2,10 @@ use crate::LauncherData;
 use gtk::glib;
 use gtk::prelude::*;
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
-use tracing::{Level, span, trace};
+use tracing::{Level, debug_span, span, trace};
 
 pub fn open_launcher(data: &LauncherData) {
-    let _span = span!(Level::TRACE, "open_launcher").entered();
+    let _span = debug_span!("open_launcher").entered();
     // check if already open
     if data.window.get_visible() {
         return;

@@ -3,10 +3,10 @@ use crate::migrate::check::get_config_version;
 use crate::{CURRENT_CONFIG_VERSION, Config, migrate, write_config};
 use anyhow::{Context, bail};
 use std::path::Path;
-use tracing::{Level, info, span, warn};
+use tracing::{Level, debug_span, info, span, warn};
 
 pub fn migrate(config_path: &Path) -> anyhow::Result<Config> {
-    let _span = span!(Level::TRACE, "migrate").entered();
+    let _span = debug_span!("migrate").entered();
     let old_version = get_config_version(config_path)?;
 
     let new_config = match old_version {
@@ -23,7 +23,7 @@ pub fn migrate(config_path: &Path) -> anyhow::Result<Config> {
             info!("New config written successfully");
         }
         Err(err) => {
-            warn!("Failed to write new config!, please update it manually {err:?}");
+            warn!("Failed to write new config!, please update it manually. \n{err:?}");
         }
     }
     Ok(new_config)

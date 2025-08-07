@@ -35,7 +35,7 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
         // auto keyboard = std::any_cast<CSharedPointer<IKeyboard> >(keyboardIt->second);
         auto event = std::any_cast<IKeyboard::SKeyEvent>(eventIt->second);
         if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-            HyprlandAPI::addNotification(PHANDLE, "Key Pressed: " + std::to_string(event.keycode),
+            HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] Key Pressed: " + std::to_string(event.keycode),
                                          CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
         }
         if (event.keycode == HYPRSHELL_SWTICH_RELEASE_KEYCODE) {
@@ -51,15 +51,15 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
 
     if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-        HyprlandAPI::addNotification(PHANDLE, "Hyprshell Plugin started", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
+        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] Plugin started", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
     }
 
     // ALWAYS add this to your plugins. It will prevent random crashes coming from
     // mismatched header versions.
     if (const std::string HASH = __hyprland_api_get_hash(); HASH != GIT_COMMIT_HASH) {
-        HyprlandAPI::addNotification(PHANDLE, "[MyPlugin] Mismatched headers! Can't proceed.",
+        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] Mismatched headers! Can't proceed.",
                                      CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
-        throw std::runtime_error("[MyPlugin] Version mismatch");
+        throw std::runtime_error("[Hyprshell Plugin] Version mismatch");
     }
 
     // clang-format off

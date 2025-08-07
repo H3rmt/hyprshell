@@ -1,5 +1,4 @@
 use crate::plugins::{Identifier, PluginNames, StaticLaunchOption};
-use crate::util::convert_to_key;
 use config_lib::SearchEngine;
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
@@ -112,4 +111,36 @@ pub(super) fn get_browser_info() -> BrowserData {
             icon: Some(Box::from(Path::new("firefox"))),
         }
     })
+}
+
+pub fn convert_to_key(char: char) -> Option<Key> {
+    match char {
+        'a' => Some(Key::a),
+        'b' => Some(Key::b),
+        'c' => Some(Key::c),
+        'd' => Some(Key::d),
+        'e' => Some(Key::e),
+        'f' => Some(Key::f),
+        'g' => Some(Key::g),
+        'h' => Some(Key::h),
+        'i' => Some(Key::i),
+        'j' => Some(Key::j),
+        'k' => Some(Key::k),
+        'l' => Some(Key::l),
+        'm' => Some(Key::m),
+        'n' => Some(Key::n),
+        'o' => Some(Key::o),
+        'p' => Some(Key::p),
+        'q' => Some(Key::q),
+        'r' => Some(Key::r),
+        's' => Some(Key::s),
+        't' => Some(Key::t),
+        'u' => Some(Key::u),
+        'v' => Some(Key::v),
+        'w' => Some(Key::w),
+        'x' => Some(Key::x),
+        'y' => Some(Key::y),
+        'z' => Some(Key::z),
+        _ => None,
+    }
 }

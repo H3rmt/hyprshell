@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::path::Path;
-use tracing::{Level, span, warn};
+use tracing::{Level, debug_span, span, warn};
 
 #[derive(Debug, Default)]
 pub struct Section<'a> {
@@ -70,7 +70,7 @@ pub struct IniFile<'a> {
 impl IniFile<'_> {
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(content: &str) -> IniFile {
-        let _span = span!(Level::TRACE, "from_str").entered();
+        let _span = debug_span!("from_str").entered();
 
         let mut sections = HashMap::new();
         let mut current_section = sections.entry("").or_insert_with(Section::default);

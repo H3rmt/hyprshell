@@ -1,8 +1,5 @@
 use crate::LauncherData;
-use crate::plugins::{
-    DetailsMenuItem, get_sortable_launch_options, get_static_launch_options, iden_to_str_for_gtk,
-};
-use crate::util::DataInWidget;
+use crate::plugins::{DetailsMenuItem, get_sortable_launch_options, get_static_launch_options};
 use async_channel::Sender;
 use config_lib::Modifier;
 use core_lib::transfer::{CloseOverviewConfig, Identifier, TransferType};
@@ -14,17 +11,18 @@ use gtk::{
     Align, Button, IconSize, Image, Label, ListBox, ListBoxRow, Orientation, Overflow, Popover,
     SelectionMode, glib,
 };
+use std::collections::HashMap;
 use std::path::Path;
-use tracing::{Level, debug, span, warn};
+use tracing::{Level, debug, debug_span, span, warn};
 
 pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Sender<TransferType>) {
-    let _span = span!(Level::TRACE, "update_launcher").entered();
+    let _span = debug_span!("update_launcher").entered();
 
-    while let Some(child) = data.results.first_child() {
-        data.results.remove(&child);
+    while let Some(child) = data.results_box.first_child() {
+        data.results_box.remove(&child);
     }
-    while let Some(child) = data.plugin_box.first_child() {
-        data.plugin_box.remove(&child);
+    while let Some(child) = data.plugins_box.first_child() {
+        data.plugins_box.remove(&child);
     }
     data.sorted_matches.clear();
     data.static_matches.clear();
@@ -40,7 +38,7 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
             break;
         }
         items -= 1;
-        let row = create_entry(
+        let (row, details) = create_entry(
             &opt.iden,
             match index {
                 0 => "Return".to_string(),
@@ -54,7 +52,8 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
             opt.details_menu,
             event_sender.clone(),
         );
-        data.results.append(&row);
+        data.results_box.append(&row);
+        data.results_items.insert(opt.iden.clone(), (row, details));
         data.sorted_matches.push(opt.iden);
     }
 
@@ -70,7 +69,8 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
             data.config.launch_modifier,
             event_sender.clone(),
         );
-        data.plugin_box.append(&button);
+        data.plugins_box.append(&button);
+        data.plugins_items.insert(opt.iden.clone(), button);
         data.static_matches.insert(opt.key, opt.iden);
     }
 }
@@ -86,6 +86,7 @@ fn create_static_plugin_box(
 ) -> Button {
     let hbox = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
+        .css_classes(["launcher-plugin-inner"])
         .spacing(6)
         .build();
 
@@ -128,7 +129,6 @@ fn create_static_plugin_box(
         .css_classes(["launcher-plugin"])
         .build();
     button.set_cursor(Cursor::from_name("pointer", None).as_ref());
-    button.set_iden_data(iden_to_str_for_gtk(iden));
     click_plugin(&button, iden.clone(), event_sender);
     button
 }
@@ -143,9 +143,9 @@ fn create_entry(
     details_long: Option<Box<str>>,
     details_menu: Vec<DetailsMenuItem>,
     event_sender: Sender<TransferType>,
-) -> gtk::Box {
+) -> (gtk::Box, HashMap<Identifier, ListBoxRow>) {
     let hbox = gtk::Box::builder()
-        .css_classes(["launcher-item"])
+        .css_classes(["launcher-item-inner"])
         .orientation(Orientation::Horizontal)
         .height_request(45)
         .spacing(8)
@@ -197,6 +197,7 @@ fn create_entry(
     }
     hbox.append(&exec);
 
+    let mut details_list = HashMap::new();
     if !details_menu.is_empty() {
         let button = Button::builder()
             .css_classes(["launcher-other-menu-button"])
@@ -216,9 +217,10 @@ fn create_entry(
         for item in details_menu {
             let menu_item_text = Label::builder()
                 .css_classes(["underline"])
-                .label(format!("{}", item.text))
+                .label(format!("{}: {}", name, item.text))
                 .build();
             let menu_item_button = Button::builder()
+                .css_classes(["launcher-other-menu-item-inner"])
                 .child(&menu_item_text)
                 .tooltip_text(item.exec)
                 .build();
@@ -227,8 +229,9 @@ fn create_entry(
                 .child(&menu_item_button)
                 .build();
             menu_item.set_cursor(Cursor::from_name("pointer", None).as_ref());
-            click_details_entry(&menu_item_button, item.iden, event_sender.clone());
+            click_details_entry(&menu_item_button, item.iden.clone(), event_sender.clone());
             menu_list_box.append(&menu_item);
+            details_list.insert(item.iden.clone(), menu_item);
         }
         menu.set_parent(&button);
         menu.set_child(Some(&menu_list_box));
@@ -246,10 +249,12 @@ fn create_entry(
         .build();
     hbox.append(&index_label);
 
-    hbox.set_cursor(Cursor::from_name("pointer", None).as_ref());
-    hbox.set_iden_data(iden_to_str_for_gtk(iden));
-    click_entry(&hbox, iden.clone(), event_sender);
-    hbox
+    let outer_box = gtk::Box::builder().css_classes(["launcher-item"]).build();
+    outer_box.append(&hbox);
+
+    outer_box.set_cursor(Cursor::from_name("pointer", None).as_ref());
+    click_entry(&outer_box, iden.clone(), event_sender);
+    (outer_box, details_list)
 }
 
 fn click_plugin(button: &Button, iden: Identifier, event_sender: Sender<TransferType>) {

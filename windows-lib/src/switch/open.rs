@@ -10,7 +10,7 @@ use gtk::gdk::Cursor;
 use gtk::prelude::*;
 use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
-use tracing::{Level, span, trace};
+use tracing::{Level, debug_span, span, trace};
 
 fn scale(value: i16, scale: f64) -> i32 {
     (value as f64 / (15f64 - scale)) as i32
@@ -21,7 +21,7 @@ pub fn switch_already_open(data: &WindowsSwitchData) -> bool {
 }
 
 pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "open_switch").entered();
+    let _span = debug_span!("open_switch").entered();
     set_remain_focused().warn_details("Failed to set no follow mouse");
 
     let (clients_data, active_prev) = collect_data(&SortConfig {

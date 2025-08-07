@@ -6,7 +6,7 @@ use std::fs::{DirEntry, read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock, RwLockReadGuard};
 use std::{env, thread};
-use tracing::{debug, trace, warn};
+use tracing::{debug, debug_span, info_span, trace, warn};
 
 fn get_desktop_files() -> &'static RwLock<Vec<(DirEntry, IniFileOwned)>> {
     static MAP_LOCK: OnceLock<RwLock<Vec<(DirEntry, IniFileOwned)>>> = OnceLock::new();
@@ -109,7 +109,7 @@ pub fn reload_available_icons(
     search_path: Vec<PathBuf>,
     in_background: bool,
 ) -> anyhow::Result<()> {
-    let span = tracing::span!(tracing::Level::TRACE, "reload_icons");
+    let span = debug_span!("reload_icons");
     let _span = span.enter();
 
     let Ok(mut map) = get_icons().write() else {
@@ -124,11 +124,11 @@ pub fn reload_available_icons(
 
     if env::var_os("HYPRSHELL_NO_ALL_ICONS").is_none() {
         for path in search_path {
-            let span = span.clone();
+            let _span = span.clone();
             if path.exists() {
                 if in_background {
                     thread::spawn(move || {
-                        let _span = span.entered();
+                        let _span = _span.entered();
                         let paths = collect_unique_filenames_recursive(&path);
                         debug!(
                             "found {} icons from filesystem in {path:?} paths (in background)",

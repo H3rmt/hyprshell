@@ -1,7 +1,7 @@
 use config_lib::Plugins;
 use gtk::gdk::Key;
 use std::path::Path;
-use tracing::{Level, span};
+use tracing::{Level, debug_span, span};
 
 mod applications;
 mod search;
@@ -43,15 +43,6 @@ pub struct StaticLaunchOption {
     pub iden: Identifier,
 }
 
-/// only encode first data (last data can be used for launching when using the submenu)
-pub(crate) fn iden_to_str_for_gtk(iden: &Identifier) -> String {
-    format!(
-        "{}:{}",
-        iden.plugin as u8,
-        iden.data.as_deref().unwrap_or_default()
-    )
-}
-
 pub(crate) fn get_sortable_launch_options(
     plugins: &Plugins,
     text: &str,
@@ -60,7 +51,7 @@ pub(crate) fn get_sortable_launch_options(
     let mut matches = Vec::new();
 
     if let Some(config) = plugins.applications.as_ref() {
-        span!(Level::TRACE, "applications").in_scope(|| {
+        debug_span!("applications").in_scope(|| {
             applications::get_sortable_options(
                 &mut matches,
                 text,
@@ -73,14 +64,14 @@ pub(crate) fn get_sortable_launch_options(
     }
     if plugins.calc.is_some() {
         #[cfg(feature = "calc")]
-        span!(Level::TRACE, "calc").in_scope(|| {
+        debug_span!("calc").in_scope(|| {
             calc::get_calc_options(&mut matches, text);
         });
         #[cfg(not(feature = "calc"))]
         tracing::warn!("calc plugin is not enabled");
     }
     if plugins.path.is_some() {
-        span!(Level::TRACE, "path").in_scope(|| path::get_path_options(&mut matches, text));
+        debug_span!("path").in_scope(|| path::get_path_options(&mut matches, text));
     }
 
     // sort in reverse
@@ -96,17 +87,17 @@ pub fn get_static_launch_options(
     let mut matches = Vec::new();
 
     if plugins.shell.is_some() {
-        span!(Level::TRACE, "shell").in_scope(|| {
+        debug_span!("shell").in_scope(|| {
             shell::get_static_options(&mut matches);
         })
     }
     if plugins.terminal.is_some() {
-        span!(Level::TRACE, "terminal").in_scope(|| {
+        debug_span!("terminal").in_scope(|| {
             terminal::get_static_options(&mut matches, default_terminal);
         })
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
-        span!(Level::TRACE, "search").in_scope(|| {
+        debug_span!("search").in_scope(|| {
             search::get_static_options(&mut matches, &websearch.engines);
         });
     }
@@ -120,10 +111,10 @@ pub fn launch(
     default_terminal: &Option<Box<str>>,
     data_dir: &Path,
 ) -> bool {
-    let _span = span!(Level::TRACE, "launch_plugin").entered();
+    let _span = debug_span!("launch_plugin").entered();
 
     match iden.plugin {
-        PluginNames::Applications => span!(Level::TRACE, "applications").in_scope(|| {
+        PluginNames::Applications => debug_span!("applications").in_scope(|| {
             applications::launch_option(
                 &iden.data,
                 &iden.data_additional,
@@ -132,17 +123,18 @@ pub fn launch(
             )
         }),
         PluginNames::Shell => {
-            span!(Level::TRACE, "shell").in_scope(|| shell::launch_option(text, default_terminal))
+            debug_span!("shell").in_scope(|| shell::launch_option(text, default_terminal))
         }
-        PluginNames::Terminal => span!(Level::TRACE, "terminal")
-            .in_scope(|| terminal::launch_option(text, default_terminal)),
+        PluginNames::Terminal => {
+            debug_span!("terminal").in_scope(|| terminal::launch_option(text, default_terminal))
+        }
         PluginNames::WebSearch => {
-            span!(Level::TRACE, "search").in_scope(|| search::launch_option(&iden.data, text))
+            debug_span!("search").in_scope(|| search::launch_option(&iden.data, text))
         }
-        PluginNames::Path => span!(Level::TRACE, "path").in_scope(|| path::launch_option(text)),
+        PluginNames::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
         PluginNames::Calc => {
             #[cfg(feature = "calc")]
-            span!(Level::TRACE, "calc").in_scope(|| calc::copy_result(&iden.data));
+            debug_span!("calc").in_scope(|| calc::copy_result(&iden.data));
             #[cfg(not(feature = "calc"))]
             tracing::warn!("calc plugin is not enabled");
             false

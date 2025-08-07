@@ -3,30 +3,31 @@ use config_lib::Modifier;
 use hyprland::ctl::plugin;
 use hyprland_plugin::PluginConfig;
 use std::path::Path;
-use tracing::{Level, debug, span, trace};
+use tracing::{Level, debug, debug_span, span, trace};
 
 pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "load_plugin").entered();
+    let _span = debug_span!("load_plugin").entered();
 
     let plugins = plugin::list().unwrap_or_default();
     trace!("plugins: {:?}", plugins);
-    for plugin in plugins {
-        if plugin.name == hyprland_plugin::PLUGIN_NAME {
-            debug!("plugin already loaded, unloading it");
-            plugin::unload(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH)).with_context(|| {
-                format!(
-                    "unable to unload old plugin at: {}",
-                    hyprland_plugin::PLUGIN_OUTPUT_PATH
-                )
-            })?;
-            debug!("plugin unloaded");
-        }
-    }
+    // TODO
+    // for plugin in plugins {
+    //     if plugin.name == hyprland_plugin::PLUGIN_NAME {
+    //         debug!("plugin already loaded, unloading it");
+    //         plugin::unload(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH)).with_context(|| {
+    //             format!(
+    //                 "unable to unload old plugin at: {}",
+    //                 hyprland_plugin::PLUGIN_OUTPUT_PATH
+    //             )
+    //         })?;
+    //         debug!("plugin unloaded");
+    //     }
+    // }
 
     hyprland_plugin::generate(&PluginConfig {
         switch_mod: mod_to_hyprland_keycode(modifier).to_string(),
     })
-    .context("unable to generate plugin: {err:?}")?;
+    .context("unable to generate plugin: \n{err:?}")?;
     trace!(
         "generated plugin at {:?}",
         hyprland_plugin::PLUGIN_OUTPUT_PATH

@@ -2,7 +2,7 @@ use core_lib::default::get_all_desktop_files;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{OnceLock, RwLock};
-use tracing::{Level, span, trace, warn};
+use tracing::{Level, debug_span, span, trace, warn};
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Source {
@@ -19,7 +19,7 @@ fn get_icon_path_map() -> &'static RwLock<IconPathMap> {
 }
 
 pub fn reload_class_to_icon_map() {
-    let _span = span!(Level::TRACE, "reload_class_to_icon_map").entered();
+    let _span = debug_span!("reload_class_to_icon_map").entered();
     let mut map = get_icon_path_map()
         .write()
         .expect("Failed to lock icon path map");

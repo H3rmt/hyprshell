@@ -2,7 +2,7 @@ use anyhow::Context;
 use std::env;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
-use tracing::{Level, info, span, trace};
+use tracing::{Level, debug_span, info, span, trace};
 
 const UNIT: &str = include_str!("default.service");
 pub fn write_systemd_unit(
@@ -11,7 +11,7 @@ pub fn write_systemd_unit(
     data_dir: Option<&PathBuf>,
     data_home_dir: &Path,
 ) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "write_systemd_unit").entered();
+    let _span = debug_span!("write_systemd_unit").entered();
     let path = {
         let mut data_home_dir = data_home_dir.to_path_buf();
         data_home_dir.push("systemd/user/hyprshell.service");

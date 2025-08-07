@@ -25,7 +25,7 @@ jobs:
       - name: Increase nix download-buffer-size
         run: echo "download-buffer-size = 1048576000" | sudo tee -a /etc/nix/nix.conf && cat /etc/nix/nix.conf
       - name: Run Nix Flake Check build
-        run: nix build '.#checks.x86_64-linux.hyprshell-default-check' -L
+        run: nix build '.#checks.x86_64-linux.hyprshell-config-check' -L
       - name: Run Nix Flake Check test
         run: nix build '.#checks.x86_64-linux.hyprshell-test' -L
       - name: Run Nix Flake Check clippy

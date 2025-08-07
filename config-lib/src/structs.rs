@@ -10,10 +10,10 @@ pub struct Config {
     pub layerrules: bool,
     #[default = "ctrl+shift+alt, h"]
     pub kill_bind: Box<str>,
-    #[default(Some(Windows::default()))]
+    #[default(None)]
     pub windows: Option<Windows>,
-    #[default(CURRENT_CONFIG_VERSION)]
-    pub version: u16,
+    #[default(Some(CURRENT_CONFIG_VERSION))]
+    pub version: Option<u16>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]

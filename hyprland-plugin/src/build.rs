@@ -3,10 +3,10 @@ use anyhow::{Context, bail};
 use std::env;
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
-use tracing::{Level, span, trace};
+use tracing::{Level, debug_span, span, trace};
 
 pub fn build(dir: &TempDir) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "build", path =? dir.path()).entered();
+    let _span = debug_span!("build", path =? dir.path()).entered();
     trace!("PATH: {:?}", env::var_os("PATH"));
     trace!("CPATH: {:?}", env::var_os("CPATH"));
     let mut cmd = Command::new("gcc");

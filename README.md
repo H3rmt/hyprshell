@@ -91,12 +91,17 @@ exec-once = hyprshell run &
 ![image.png](imgs/swappy-20250420_000818.png)
 ![img.png](imgs/img-2.png)
 
+### Debugging
+
+Debug commands are provided to help troubleshoot desktop files, icons, default applications and launcher functionality, see [Debug.md](DEBUG.md) for detailed information about available commands and their usage.
+
 ### Env Variables
 
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
 - `HYPRSHELL_RELOAD_TIMEOUT`: Set the timeout for reloading the config file in milliseconds (default: `1500`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
+- `HYPRSHELL_NO_USE_PLUGIN`: Disable the use of the hyprland plugin to capture switch mode events.
 
 ### Feature Flags
 
@@ -105,8 +110,4 @@ exec-once = hyprshell run &
 - json5_config: Adds support for a toml config file.
 - launcher_calc: Adds support for the calc plugin in the launcher.
 - debug_command: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
-- config_check_is_default: Adds a command to check if the loaded config is equal to the default config. Also diables loading of configs without all values.
-
-### Debugging
-
-Debug commands are provided to help troubleshoot desktop files, icons, default applications, and launcher functionality - see [Debug.md](DEBUG.md) for detailed information about available commands and their usage.
+- config_check: Adds a command to check if the loaded config is equal to the default config or the full config. Also diables loading of configs without all values. (used for ci testing)

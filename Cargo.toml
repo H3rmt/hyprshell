@@ -37,7 +37,7 @@ json5_config = ["config-lib/json5_config"]
 generate_config_command = ["config-lib/generate_config"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin"]
 debug_command = []
-config_check_is_default = ["config-lib/no-default-config-values"]
+config_check = ["config-lib/no-default-config-values"]
 
 
 [workspace]

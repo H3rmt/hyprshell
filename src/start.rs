@@ -26,7 +26,7 @@ use std::rc::Rc;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use std::{env, thread};
-use tracing::{Level, debug, error, info, span, trace};
+use tracing::{Level, debug, debug_span, error, info, span, trace};
 use windows_lib::{
     WindowsOverviewData, WindowsSwitchData, create_windows_overview_window,
     create_windows_switch_window,
@@ -94,14 +94,14 @@ fn activate(
     event_sender: Sender<TransferType>,
     event_receiver: Receiver<TransferType>,
 ) {
-    let _span = span!(Level::TRACE, "activate").entered();
+    let _span = debug_span!("activate").entered();
     apply_css(css_path);
 
     exec_lib::reload_hyprland_config()
         .context("Failed to reload hyprland config")
         .warn_details("unable to reload hyprland config");
 
-    let config = match config_lib::load_and_migrate_config(config_path) {
+    let config = match config_lib::load_and_migrate_config(config_path, true) {
         Ok(config) => config,
         Err(err) => {
             error!("Failed to load config: {:?}", err);
@@ -174,7 +174,7 @@ fn create_windows(
 fn apply_css(custom_css: &Path) {
     let provider_app = CssProvider::new();
     provider_app.load_from_bytes(&glib::Bytes::from_static(include_bytes!(
-        "default-styles.css"
+        "default_styles.css"
     )));
     style_context_add_provider_for_display(
         &Display::default().expect("Could not connect to a display."),

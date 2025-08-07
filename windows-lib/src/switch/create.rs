@@ -13,7 +13,7 @@ use gtk::{
 };
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use std::collections::HashMap;
-use tracing::{Level, debug, span};
+use tracing::{Level, debug, debug_span, span};
 
 pub fn create_windows_switch_window(
     app: &Application,
@@ -21,7 +21,7 @@ pub fn create_windows_switch_window(
     windows: &Windows,
     event_sender: Sender<TransferType>,
 ) -> anyhow::Result<WindowsSwitchData> {
-    let _span = span!(Level::TRACE, "create_windows_switch_window").entered();
+    let _span = debug_span!("create_windows_switch_window").entered();
 
     let clients_flow = FlowBox::builder()
         .selection_mode(SelectionMode::None)

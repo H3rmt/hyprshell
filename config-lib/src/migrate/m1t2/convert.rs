@@ -7,7 +7,7 @@ impl From<old_structs::Config> for Config {
             layerrules: value.layerrules,
             kill_bind: value.kill_bind.into(),
             windows: value.windows.map(old_structs::Windows::into),
-            version: CURRENT_CONFIG_VERSION,
+            version: Some(CURRENT_CONFIG_VERSION),
         }
     }
 }

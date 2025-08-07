@@ -12,6 +12,7 @@ pub async fn event_handler(
     event_receiver: Receiver<TransferType>,
     event_sender: Sender<TransferType>,
 ) {
+    let _span = tracing::span!(tracing::Level::TRACE, "event_handler").entered();
     loop {
         if let Ok(transfer) = event_receiver.recv().await {
             let close_socket = matches!(transfer, TransferType::Restart);
@@ -52,9 +53,10 @@ fn open_overview(global: &mut Globals, event_sender: Sender<TransferType>) {
                     .map(windows_lib::switch_already_open)
                     .unwrap_or(false)
             {
-                windows_lib::open_overview(overview, event_sender)
+                windows_lib::open_overview(overview, event_sender.clone())
                     .warn_details("Failed to open overview window");
-                launcher_lib::open_launcher(launcher)
+                launcher_lib::open_launcher(launcher);
+                launcher_lib::update_launcher(launcher, "".to_string(), event_sender)
             } else {
                 debug!("Overview or Switch already open");
             }

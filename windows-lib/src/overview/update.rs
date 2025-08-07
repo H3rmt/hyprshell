@@ -2,10 +2,10 @@ use crate::global::WindowsOverviewData;
 use crate::next::find_next;
 use core_lib::transfer::SwitchOverviewConfig;
 use gtk::prelude::*;
-use tracing::{Level, span};
+use tracing::{Level, debug_span, span};
 
 pub fn update_overview(data: &mut WindowsOverviewData, config: SwitchOverviewConfig) {
-    let _span = span!(Level::TRACE, "update_overview").entered();
+    let _span = debug_span!("update_overview").entered();
 
     let active = find_next(
         &config.direction,

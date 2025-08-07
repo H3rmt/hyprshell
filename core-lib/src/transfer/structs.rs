@@ -44,7 +44,7 @@ pub enum CloseOverviewConfig {
     None,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum PluginNames {
     Applications,
     Shell,
@@ -54,7 +54,7 @@ pub enum PluginNames {
     Path,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Identifier {
     pub plugin: PluginNames,
     // identifies the box in the launcher results

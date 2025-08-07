@@ -7,14 +7,14 @@ use std::ffi::OsStr;
 use std::fs::{File, create_dir_all};
 use std::io::Write;
 use std::path::Path;
-use tracing::{Level, debug, info, span};
+use tracing::{Level, debug, debug_span, info, span};
 
 pub fn write_config(
     config_path: &Path,
     config: &Config,
     override_file: bool,
 ) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "write_config").entered();
+    let _span = debug_span!("write_config").entered();
     if config_path.exists() && !override_file {
         bail!(
             "Config file at {config_path:?} already exists, delete it before generating a new one or use -f to override"

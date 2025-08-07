@@ -54,14 +54,14 @@ flowboxchild {
 }
 
 .underline {
-    text-decoration: underline;
-    /*text-decoration: underline dashed;*/
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
 }
 
 tooltip {
     font-size: 1rem;
     padding: 5px;
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
+    background: var(--bg-color, rgba(20, 20, 20, 0.9));
     border-radius: var(--border-radius, 12px);
     border: 2px dashed var(--border-color, rgba(90, 90, 120, 0.4));
 }

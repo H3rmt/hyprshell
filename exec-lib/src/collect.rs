@@ -4,10 +4,10 @@ use core_lib::{
 };
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
 use hyprland::prelude::*;
-use tracing::{Level, span, warn};
+use tracing::{Level, debug_span, span, warn};
 
 fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
-    let _span = span!(Level::TRACE, "get_hypr_data").entered();
+    let _span = debug_span!("get_hypr_data").entered();
     let monitors = Monitors::get()?.to_vec();
     // sort and filter all workspaces sorted by ID
     let workspaces = {
@@ -38,7 +38,7 @@ pub fn collect_hypr_data() -> anyhow::Result<(
     WorkspaceId,
     MonitorId,
 )> {
-    let _span = span!(Level::TRACE, "convert_hypr_data").entered();
+    let _span = debug_span!("convert_hypr_data").entered();
 
     let (monitors, workspaces, clients) = get_hypr_data()?;
 
@@ -70,7 +70,8 @@ pub fn collect_hypr_data() -> anyhow::Result<(
             let mut x_offset: i32 = 0;
             workspaces
                 .iter()
-                .filter(|ws| ws.monitor_id == Some(*monitor_id))
+                // .filter(|ws| ws.monitor_id == Some(*monitor_id))
+                .filter(|ws| ws.monitor_id == *monitor_id)
                 .for_each(|workspace| {
                     wd.push((
                         workspace.id,
@@ -93,7 +94,8 @@ pub fn collect_hypr_data() -> anyhow::Result<(
         let mut cd: Vec<(ClientId, ClientData)> = Vec::with_capacity(clients.len());
 
         for client in clients {
-            let Some(monitor) = client.monitor else {
+            let monitor = client.monitor else {
+                // let Some(monitor) = client.monitor else {
                 continue;
             };
             if workspace_data.find_by_first(&client.workspace.id).is_some() {

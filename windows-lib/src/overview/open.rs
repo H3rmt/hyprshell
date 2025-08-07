@@ -10,7 +10,7 @@ use gtk::gdk::Cursor;
 use gtk::prelude::*;
 use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
-use tracing::{Level, debug, span, trace};
+use tracing::{Level, debug, debug_span, span, trace};
 
 fn scale(value: i16, scale: f64) -> i32 {
     (value as f64 / (15f64 - scale)) as i32
@@ -24,7 +24,7 @@ pub fn open_overview(
     data: &mut WindowsOverviewData,
     event_sender: Sender<TransferType>,
 ) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "open_overview").entered();
+    let _span = debug_span!("open_overview").entered();
     set_remain_focused().warn_details("Failed to set no follow mouse");
 
     let (clients_data, active) = collect_data(&SortConfig {
@@ -76,14 +76,11 @@ pub fn open_overview(
 
             let workspace_button = {
                 let workspace_overlay = Overlay::builder().child(&workspace_frame).build();
-                let button = gtk::Box::builder()
-                    .css_classes(["workspace"])
-                    .build();
+                let button = gtk::Box::builder().css_classes(["workspace"]).build();
                 button.append(&workspace_overlay);
                 if active.client.is_none() && active.workspace == *wid {
                     button.add_css_class("active");
                 }
-                // click_workspace(&button, *wid, event_sender.clone());
                 monitor_data.workspaces_flow.insert(&button, -1);
                 button
             };
@@ -190,17 +187,6 @@ fn click_client(button: &Button, client_id: ClientId, event_sender: Sender<Trans
         event_sender
             .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::Windows(
                 WindowsOverride::ClientId(client_id),
-            )))
-            .warn_details("unable to send");
-    });
-}
-
-fn click_workspace(button: &Button, workspace_id: WorkspaceId, event_sender: Sender<TransferType>) {
-    button.connect_clicked(move |_| {
-        debug!("Exiting on click of workspace button");
-        event_sender
-            .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::Windows(
-                WindowsOverride::WorkspaceID(workspace_id),
             )))
             .warn_details("unable to send");
     });

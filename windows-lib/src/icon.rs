@@ -3,11 +3,11 @@ use core_lib::default;
 use gtk::Image;
 use std::fs;
 use std::path::Path;
-use tracing::{Level, span, trace, warn};
+use tracing::{Level, debug_span, span, trace, warn};
 
 pub fn set_icon(class: &str, pid: i32, image: &Image) {
     let image = image.clone();
-    let _span = span!(Level::TRACE, "icon", class = class).entered();
+    let _span = debug_span!("icon", class = class).entered();
 
     if load_icon_from_cache(class, &image).is_some() {
         return;

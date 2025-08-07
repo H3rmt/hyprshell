@@ -5,14 +5,14 @@ use core_lib::transfer::TransferType;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use tempfile::TempDir;
-use tracing::{Level, span};
+use tracing::{Level, debug_span, span};
 
 pub struct PluginConfig {
     pub switch_mod: String,
 }
 
 pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "configure", path =? dir.path()).entered();
+    let _span = debug_span!("configure", path =? dir.path()).entered();
     let defs = dir.path().join("defs.hpp");
 
     let mut defs_file = OpenOptions::new()

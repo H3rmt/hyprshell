@@ -2,10 +2,10 @@ use crate::global::WindowsSwitchData;
 use crate::next::find_next;
 use core_lib::transfer::{Direction, SwitchSwitchConfig};
 use gtk::prelude::*;
-use tracing::{Level, span};
+use tracing::{Level, debug_span, span};
 
 pub fn update_switch(data: &mut WindowsSwitchData, config: SwitchSwitchConfig) {
-    let _span = span!(Level::TRACE, "update_switch").entered();
+    let _span = debug_span!("update_switch").entered();
 
     let active = find_next(
         &if config.reverse {

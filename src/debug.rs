@@ -60,7 +60,7 @@ pub fn list_desktop_files() {
 }
 
 pub fn search(text: &str, all: bool, config_path: &Path, data_dir: &Path) {
-    let (plugins, max_items) = config_lib::load_and_migrate_config(config_path)
+    let (plugins, max_items) = config_lib::load_and_migrate_config(config_path, true)
         .ok()
         .and_then(|c| c.windows)
         .and_then(|w| w.overview)

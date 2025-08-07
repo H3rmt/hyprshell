@@ -33,7 +33,7 @@ pub fn daemon_running() -> bool {
 }
 
 pub fn explain_config(config_path: &std::path::Path) {
-    let config = match config_lib::load_and_migrate_config(config_path) {
+    let config = match config_lib::load_and_migrate_config(config_path, true) {
         Ok(config) => config,
         Err(err) => {
             eprintln!("\x1b[1m\x1b[31mConfig is invalid ({config_path:?}):\x1b[0m {err:?}\n");

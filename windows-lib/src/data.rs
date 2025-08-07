@@ -7,7 +7,7 @@ use core_lib::{
     WorkspaceId,
 };
 use exec_lib::collect::collect_hypr_data;
-use tracing::{Level, span, trace, warn};
+use tracing::{Level, debug_span, span, trace, warn};
 
 #[derive(Debug, Clone, Default)]
 pub struct SortConfig {
@@ -18,7 +18,7 @@ pub struct SortConfig {
 }
 
 pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active)> {
-    let _span = span!(Level::TRACE, "collect_data").entered();
+    let _span = debug_span!("collect_data").entered();
 
     let (
         mut client_data,

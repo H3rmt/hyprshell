@@ -1,17 +1,16 @@
-use crate::plugins::iden_to_str_for_gtk;
-use crate::util::DataInWidget;
 use crate::{LauncherData, plugins};
 use core_lib::transfer::Identifier;
 use gtk::prelude::*;
-use gtk::{ApplicationWindow, Entry, Widget, glib};
+use gtk::{ApplicationWindow, Button, Entry, Widget, glib};
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use tracing::{Level, span, trace, warn};
+use tracing::{Level, debug_span, span, trace, warn};
 
 const ANIMATE_LAUNCH_MS: u64 = 500;
 
 pub fn close_launcher_by_char(data: &mut LauncherData, char: Option<char>) {
-    let _span = span!(Level::TRACE, "close_launcher_by_char").entered();
+    let _span = debug_span!("close_launcher_by_char").entered();
     if let Some(char) = char {
         data.window.set_keyboard_mode(KeyboardMode::None);
         trace!("Closing launcher with char: {}", char);
@@ -34,7 +33,7 @@ pub fn close_launcher_by_char(data: &mut LauncherData, char: Option<char>) {
 }
 
 pub fn close_launcher_by_iden(data: &mut LauncherData, iden: &Identifier) {
-    let _span = span!(Level::TRACE, "close_launcher_by_iden").entered();
+    let _span = debug_span!("close_launcher_by_iden").entered();
     data.window.set_keyboard_mode(KeyboardMode::None);
     trace!("Closing launcher with iden: {:?}", iden);
 
@@ -42,7 +41,7 @@ pub fn close_launcher_by_iden(data: &mut LauncherData, iden: &Identifier) {
 }
 
 fn close_launcher(data: &mut LauncherData, iden: &Identifier) {
-    let _span = span!(Level::TRACE, "close_launcher").entered();
+    let _span = debug_span!("close_launcher").entered();
     let instant = Instant::now();
 
     let animate = plugins::launch(
@@ -51,30 +50,23 @@ fn close_launcher(data: &mut LauncherData, iden: &Identifier) {
         &data.config.default_terminal,
         &data.config.data_dir,
     );
-    // copy pointer for later close
-    let window = data.window.clone();
-    let entry = data.entry.clone();
-    let results = data.results.clone();
-    let plugin_box = data.plugin_box.clone();
-    let iden = iden.clone();
-
     if animate {
         trace!(
             "starting timeout({}ms) animation after {:?} time",
             ANIMATE_LAUNCH_MS,
             instant.elapsed()
         );
-        show_launch(&results, &plugin_box, &iden);
-        entry.set_editable(false);
+        data.entry.set_editable(false);
+        show_launch(&data.results_items, &data.plugins_items, iden);
+        let window = data.window.clone();
+        let entry = data.entry.clone();
         glib::timeout_add_local_once(Duration::from_millis(ANIMATE_LAUNCH_MS), move || {
             let _span = _span.clone();
-            // close launcher
             close_window(&entry, &window);
-            hide_launch(&results, &plugin_box);
             trace!("closed launcher after {:?} time", instant.elapsed());
         });
     } else {
-        close_window(&entry, &window);
+        close_window(&data.entry, &data.window);
     }
 }
 
@@ -84,44 +76,28 @@ fn close_window(entry: &Entry, window: &ApplicationWindow) {
     entry.set_text("");
 }
 
-fn show_launch(results: &gtk::Box, plugin_box: &gtk::Box, iden: &Identifier) {
-    for child in results.observe_children().into_iter().flatten() {
-        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
-            // trace!(
-            //     "A Child: {:?}, {:?}",
-            //     child.get_iden_data(),
-            //     iden_to_str_for_gtk(iden)
-            // );
-            if let Some(data) = child.get_iden_data() {
-                if data == iden_to_str_for_gtk(iden) {
-                    child.add_css_class("launch");
+fn show_launch(
+    results_items: &HashMap<Identifier, (gtk::Box, HashMap<Identifier, gtk::ListBoxRow>)>,
+    plugins_items: &HashMap<Identifier, Button>,
+    open_iden: &Identifier,
+) {
+    for (iden, child) in results_items {
+        if iden.data == open_iden.data {
+            for (iden_2, row) in child.1.iter() {
+                if iden_2.data_additional == open_iden.data_additional {
+                    row.add_css_class("launch");
                     return;
                 }
             }
+            // only add if no child with additional data was found
+            child.0.add_css_class("launch");
+            return;
         }
     }
-    for child in plugin_box.observe_children().into_iter().flatten() {
-        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
-            // trace!("B Child: {:?}, {:?}", child.get_iden_data(), iden_to_str(iden));
-            if let Some(data) = child.get_iden_data() {
-                if data == iden_to_str_for_gtk(iden) {
-                    child.add_css_class("launch");
-                    return;
-                }
-            }
-        }
-    }
-}
-
-fn hide_launch(results: &gtk::Box, plugin_box: &gtk::Box) {
-    for child in results.observe_children().into_iter().flatten() {
-        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
-            child.remove_css_class("launch");
-        }
-    }
-    for child in plugin_box.observe_children().into_iter().flatten() {
-        if let Some(child) = child.dynamic_cast_ref::<Widget>() {
-            child.remove_css_class("launch");
+    for (iden, child) in plugins_items {
+        if iden.data == open_iden.data {
+            child.add_css_class("launch");
+            return;
         }
     }
 }

@@ -6,10 +6,13 @@ use ron::extensions::Extensions;
 use serde::de::DeserializeOwned;
 use std::ffi::OsStr;
 use std::path::Path;
-use tracing::{Level, debug, info, span, trace, warn};
+use tracing::{Level, debug, debug_span, info, span, trace, warn};
 
-pub fn load_and_migrate_config(config_path: &Path) -> anyhow::Result<Config> {
-    let _span = span!(Level::TRACE, "load_config", path =? config_path).entered();
+pub fn load_and_migrate_config(config_path: &Path, allow_migrate: bool) -> anyhow::Result<Config> {
+    let _span = debug_span!(
+    "load_config", path =?
+    config_path)
+    .entered();
     if !config_path.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
@@ -19,6 +22,9 @@ pub fn load_and_migrate_config(config_path: &Path) -> anyhow::Result<Config> {
         .unwrap_or(false)
     {
         info!("Config needs migration");
+        if !allow_migrate {
+            bail!("Config file needs migration, but migration is not allowed.");
+        }
         let migrated = crate::migrate::migrate(config_path);
         match migrated {
             Ok(config) => {
@@ -27,7 +33,7 @@ pub fn load_and_migrate_config(config_path: &Path) -> anyhow::Result<Config> {
                 return Ok(config);
             }
             Err(err) => {
-                warn!("Migration failed: {err:?}");
+                warn!("Migration failed: \n{err:?}");
             }
         }
     } else {

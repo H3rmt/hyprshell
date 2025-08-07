@@ -2,7 +2,7 @@ use crate::generate::tui::DEFAULT_COLORS;
 use anyhow::{Context, bail};
 use std::fs::create_dir_all;
 use std::path::Path;
-use tracing::{Level, info, span};
+use tracing::{Level, debug_span, info, span};
 
 #[derive(Debug)]
 pub struct StyleData {
@@ -12,7 +12,7 @@ pub struct StyleData {
 const CSS_CONFIG: &str = include_str!("default.css");
 
 pub fn write_css(css_path: &Path, data: &StyleData, override_file: bool) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "write_css").entered();
+    let _span = debug_span!("write_css").entered();
 
     if css_path.exists() && !override_file {
         bail!(

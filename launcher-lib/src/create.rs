@@ -15,7 +15,7 @@ use gtk::{Orientation, glib};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tracing::{Level, debug, span};
+use tracing::{Level, debug, debug_span, span};
 
 pub fn create_windows_overview_launcher_window(
     app: &Application,
@@ -24,7 +24,7 @@ pub fn create_windows_overview_launcher_window(
     data_dir: &Path,
     event_sender: Sender<TransferType>,
 ) -> anyhow::Result<LauncherData> {
-    let _span = span!(Level::TRACE, "create_windows_overview_launcher_window").entered();
+    let _span = debug_span!("create_windows_overview_launcher_window").entered();
 
     let main_vbox = ListBox::builder()
         .css_classes(["launcher"])
@@ -49,7 +49,7 @@ pub fn create_windows_overview_launcher_window(
     let plugin_box = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
         .css_classes(["launcher-plugins"])
-        .spacing(7)
+        .spacing(4)
         .build();
     main_vbox.append(&plugin_box);
 
@@ -114,8 +114,10 @@ pub fn create_windows_overview_launcher_window(
         },
         window,
         entry,
-        results,
-        plugin_box,
+        results_box: results,
+        results_items: HashMap::new(),
+        plugins_box: plugin_box,
+        plugins_items: HashMap::new(),
         sorted_matches: vec![],
         static_matches: HashMap::new(),
     })

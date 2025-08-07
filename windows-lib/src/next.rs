@@ -2,7 +2,7 @@ use core_lib::transfer::Direction;
 use core_lib::{
     Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData, WorkspaceId,
 };
-use tracing::{Level, debug, span, trace};
+use tracing::{Level, debug, debug_span, span, trace};
 
 pub fn find_next(
     direction: &Direction,
@@ -13,8 +13,7 @@ pub fn find_next(
     workspaces_per_row: usize,
 ) -> Active {
     let _span =
-        span!(Level::TRACE, "find_next", direction = ?direction, workspace, active = ?active)
-            .entered();
+        debug_span!("find_next", direction =? direction, workspace, active =? active).entered();
     let reverse = matches!(direction, Direction::Left | Direction::Up);
     let next = if workspace {
         if wrap_workspaces {

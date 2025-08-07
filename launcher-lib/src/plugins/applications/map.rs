@@ -2,7 +2,7 @@ use core_lib::default::get_all_desktop_files;
 use core_lib::{ExecType, analyse_exec};
 use std::path::Path;
 use std::sync::{OnceLock, RwLock, RwLockReadGuard};
-use tracing::{Level, span, trace, warn};
+use tracing::{Level, debug_span, span, trace, warn};
 
 #[derive(Debug, Clone)]
 pub struct DesktopEntry {
@@ -37,7 +37,7 @@ pub(crate) fn get_all_desktop_entries<'a>() -> RwLockReadGuard<'a, Vec<DesktopEn
 }
 
 pub fn reload_desktop_entries_map() {
-    let _span = span!(Level::TRACE, "reload_desktop_entries_map").entered();
+    let _span = debug_span!("reload_desktop_entries_map").entered();
 
     let mut map = get_desktop_file_map()
         .write()

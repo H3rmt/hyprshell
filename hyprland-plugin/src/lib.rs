@@ -3,7 +3,7 @@ mod configure;
 mod extract;
 
 use anyhow::Context;
-use tracing::{Level, span, trace};
+use tracing::{Level, debug_span, span, trace};
 
 pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PLUGIN_AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
@@ -16,7 +16,7 @@ static ASSET_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/plugin.zip")
 pub use configure::PluginConfig;
 
 pub fn generate(config: &PluginConfig) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "generate").entered();
+    let _span = debug_span!("generate").entered();
 
     trace!("extracting plugin from zip");
     let dir = extract::extract_plugin().context("Failed to extract plugin")?;

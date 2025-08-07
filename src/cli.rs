@@ -98,13 +98,20 @@ pub enum ConfigCommand {
         #[arg(long)]
         no_systemd: bool,
     },
+
     /// Check the config file for errors
     Check {},
+
     /// Explain how to use the program based on the config
     Explain {},
-    #[cfg(feature = "config_check_is_default")]
+
+    #[cfg(feature = "config_check")]
     /// Check if the provided config is equal to the default config
     CheckIfDefault {},
+
+    #[cfg(feature = "config_check")]
+    /// Check if the provided config is equal to the fully enabled config
+    CheckIfFull {},
 }
 
 #[derive(Subcommand, Debug, Clone)]

@@ -4,11 +4,12 @@ use core_lib::transfer::TransferType;
 use core_lib::{get_daemon_socket_path_buff, transfer};
 use std::fs::remove_file;
 use std::io::Read;
+use std::os::unix::net;
 use std::os::unix::net::UnixStream;
-use tracing::{Level, info, span, warn};
+use tracing::{Level, debug_span, info, span, warn};
 
 pub fn socket_handler(event_sender: Sender<TransferType>) {
-    let _span = span!(Level::TRACE, "socket_handler").entered();
+    let _span = debug_span!("socket_handler").entered();
     let buf = get_daemon_socket_path_buff();
     let path = buf.as_path();
     let listener = {
@@ -16,7 +17,7 @@ pub fn socket_handler(event_sender: Sender<TransferType>) {
         if path.exists() {
             remove_file(path).expect("Unable to remove old socket file");
         }
-        std::os::unix::net::UnixListener::bind(path)
+        net::UnixListener::bind(path)
             .unwrap_or_else(|_| panic!("Failed to bind to socket {path:?}"))
     };
     info!("Starting socket on {path:?}");
@@ -42,7 +43,7 @@ fn handle_client(
     mut stream: UnixStream,
     event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<()> {
-    let _span = span!(Level::TRACE, "handle_client").entered();
+    let _span = debug_span!("handle_client").entered();
     let mut buffer = Vec::with_capacity(1024);
     stream
         .read_to_end(&mut buffer)

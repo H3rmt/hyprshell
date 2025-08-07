@@ -1,10 +1,11 @@
-use anyhow::Context;
+use anyhow::{Context, bail};
 use clap::Parser;
 use core_lib::{
     WarnWithDetails, daemon_running, get_default_config_path, get_default_css_path,
     get_default_data_dir,
 };
-use std::env;
+use std::process::exit;
+use std::{env, fs};
 
 mod cli;
 mod data;
@@ -58,7 +59,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         cli::Command::Run {} => {
             if daemon_running() {
-                anyhow::bail!("Daemon already running");
+                bail!("Daemon already running");
             }
             exec_lib::check_version()
                 .warn_details("Unable to check hyprland version, continuing anyway");
@@ -105,25 +106,47 @@ fn main() -> anyhow::Result<()> {
             cli::ConfigCommand::Check {} => {
                 if let Err(err) = config_lib::load_and_migrate_config(
                     &config_path.unwrap_or(get_default_config_path()),
+                    true,
                 ) {
                     tracing::warn!("Failed to load config: {err}");
-                    std::process::exit(1);
+                    exit(1);
                 }
             }
-            #[cfg(feature = "config_check_is_default")]
+            #[cfg(feature = "config_check")]
             cli::ConfigCommand::CheckIfDefault {} => {
-                if let Ok(config) = config_lib::load_and_migrate_config(
+                let config = config_lib::load_and_migrate_config(
                     &config_path.unwrap_or(get_default_config_path()),
-                ) {
-                    let config_default = config_lib::Config::default();
-                    if config != config_default {
-                        tracing::warn!("Current config does not match the default configuration");
-                        tracing::info!("Default config: {:#?}", config_default);
-                        tracing::info!("Current config: {:#?}", config);
-                        std::process::exit(1);
-                    } else {
-                        tracing::info!("Current config matches the default configuration");
-                    }
+                    false,
+                )?;
+                let config_default = config_lib::Config::default();
+                if config != config_default {
+                    tracing::warn!("Current config does not match the default configuration");
+                    tracing::info!("Default config: {:#?}", config_default);
+                    tracing::info!("Current config: {:#?}", config);
+                    exit(1);
+                } else {
+                    tracing::info!("Current config matches the default configuration");
+                }
+            }
+            #[cfg(feature = "config_check")]
+            cli::ConfigCommand::CheckIfFull {} => {
+                let config = config_lib::load_and_migrate_config(
+                    &config_path.unwrap_or(get_default_config_path()),
+                    false,
+                )?;
+                let mut config_all = config_lib::Config::default();
+                config_all.windows = Some(config_lib::Windows {
+                    overview: Some(config_lib::Overview::default()),
+                    switch: Some(config_lib::Switch::default()),
+                    ..Default::default()
+                });
+                if config != config_all {
+                    tracing::warn!("Current config does not match the default configuration");
+                    tracing::info!("All config: {:#?}", config_all);
+                    tracing::info!("Current config: {:#?}", config);
+                    exit(1);
+                } else {
+                    tracing::info!("Current config matches the default configuration");
                 }
             }
         },
@@ -206,14 +229,15 @@ fn check_features() {
 }
 
 fn check_env() {
-    tracing::trace!(
-        "ENV: HYPRSHELL_NO_LISTENERS: {}, HYPRSHELL_NO_ALL_ICONS: {}, HYPRSHELL_RELOAD_TIMEOUT: {}, HYPRSHELL_LOG_MODULE_PATH: {}",
+    tracing::debug!(
+        "ENV: HYPRSHELL_NO_LISTENERS: {}, HYPRSHELL_NO_ALL_ICONS: {}, HYPRSHELL_RELOAD_TIMEOUT: {}, HYPRSHELL_LOG_MODULE_PATH: {}, HYPRSHELL_NO_USE_PLUGIN: {}",
         env::var("HYPRSHELL_NO_LISTENERS").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_NO_ALL_ICONS").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_RELOAD_TIMEOUT").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_LOG_MODULE_PATH").unwrap_or_else(|_| "-None-".to_string()),
+        env::var("HYPRSHELL_NO_USE_PLUGIN").unwrap_or_else(|_| "-None-".to_string()),
     );
-    let os_name = std::fs::read_to_string("/etc/os-release")
+    let os_name = fs::read_to_string("/etc/os-release")
         .ok()
         .and_then(|content| {
             content
@@ -223,7 +247,7 @@ fn check_env() {
         })
         .unwrap_or_else(|| "NAME=Unknown".to_string());
 
-    tracing::trace!(
+    tracing::debug!(
         "OS: {}, ARCH: {}, {}",
         env::consts::OS,
         env::consts::ARCH,

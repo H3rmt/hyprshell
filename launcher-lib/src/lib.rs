@@ -7,7 +7,6 @@ mod open;
 mod plugins;
 mod stop;
 mod update;
-mod util;
 
 pub use close::{close_launcher_by_char, close_launcher_by_iden};
 pub use create::create_windows_overview_launcher_window;
