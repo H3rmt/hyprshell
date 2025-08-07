@@ -50,11 +50,7 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
             })
             .collect(),
         key: binds::Key::Key(&bind.key),
-        flags: if bind.on_release {
-            vec![Flag::r, Flag::t]
-        } else {
-            vec![]
-        },
+        flags: vec![],
         dispatcher: DispatchType::Exec(&bind.exec),
     };
     trace!("binding exec: {binding:?}");

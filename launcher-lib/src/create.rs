@@ -15,7 +15,7 @@ use gtk::{Orientation, glib};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tracing::{Level, debug, debug_span, span};
+use tracing::{Level, debug, debug_span, span, trace};
 
 pub fn create_windows_overview_launcher_window(
     app: &Application,
@@ -72,19 +72,23 @@ pub fn create_windows_overview_launcher_window(
     let event_controller = EventControllerKey::new();
     let plugin_keys = get_static_options_chars(&launcher.plugins);
     let event_sender_3 = event_sender.clone();
+    let event_sender_4 = event_sender.clone();
     let entry_2 = entry.clone();
     let results_2 = results.clone();
     let launch_modifier = launcher.launch_modifier;
+    event_controller.connect_key_released(move |_, key, _, _| {
+        handle_release(key, open_modifier, event_sender_3.clone())
+    });
     event_controller.connect_key_pressed(move |_, key, _, modt| {
         handle_key(
             &entry_2,
             key,
+            open_modifier,
             modt,
             &plugin_keys,
-            open_modifier,
             launch_modifier,
             results_2.clone(),
-            event_sender_3.clone(),
+            event_sender_4.clone(),
         )
     });
     event_controller.set_propagation_phase(PropagationPhase::Capture);
@@ -129,13 +133,25 @@ fn launcher_entry_text_change(text: String, event_sender: Sender<TransferType>) 
         .warn_details("unable to send");
 }
 
+fn handle_release(key: Key, modifier: Modifier, event_sender: Sender<TransferType>) {
+    if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
+        || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
+        || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
+    {
+        trace!("Modifier key released: {:?}", key);
+        event_sender
+            .send_blocking(TransferType::Exit)
+            .warn_details("unable to send");
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn handle_key(
     entry: &Entry,
     key: Key,
+    modifier: Modifier,
     modt: ModifierType,
     plugin_keys: &[Key],
-    open_modifier: Modifier,
     launch_modifier: Modifier,
     results: gtk::Box,
     event_sender: Sender<TransferType>,
@@ -146,33 +162,30 @@ fn handle_key(
         Modifier::Alt => modt == ModifierType::ALT_MASK,
         Modifier::Super => modt == ModifierType::SUPER_MASK,
     };
-    tracing::trace!(
-        "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}",
-        key,
-        key,
-        modt,
-        launch_mod,
-        launch_modifier
-    );
+    // tracing::trace!(
+    //     "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}",
+    //     key,
+    //     key,
+    //     modt,
+    //     launch_mod,
+    //     launch_modifier
+    // );
     if launch_mod && plugin_keys.contains(&key) {
-        let ch = key
-            .name()
-            .unwrap_or_default()
-            .to_string()
-            .pop()
-            .unwrap_or('a');
-        event_sender
-            .send_blocking(TransferType::CloseOverview(
-                CloseOverviewConfig::LauncherPress(ch),
-            ))
-            .warn_details("unable to send");
+        if let Some(ch) = key.name().unwrap_or_default().to_string().pop() {
+            event_sender
+                .send_blocking(TransferType::CloseOverview(
+                    CloseOverviewConfig::LauncherPress(ch),
+                ))
+                .warn_details("unable to send");
+        }
         return Propagation::Stop;
     }
 
-    if ((key == Key::Alt_L || key == Key::Alt_R) && open_modifier == Modifier::Alt)
-        || ((key == Key::Control_L || key == Key::Control_R) && open_modifier == Modifier::Ctrl)
-        || ((key == Key::Super_L || key == Key::Super_R) && open_modifier == Modifier::Super)
+    if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
+        || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
+        || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
     {
+        trace!("Modifier key pressed: {:?}", key);
         event_sender
             .send_blocking(TransferType::Exit)
             .warn_details("unable to send");

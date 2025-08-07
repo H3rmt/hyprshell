@@ -23,7 +23,7 @@ async-channel.workspace = true
 clap = { version = "4.5.23", features = ["derive"] }
 clap_complete = "4.5.54"
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter", "ansi"], default-features = false }
-libc = { version = "0.2.172", default-features = false }
+signal-hook = { version = "0.3.18" }
 
 config-lib.workspace = true
 core-lib.workspace = true

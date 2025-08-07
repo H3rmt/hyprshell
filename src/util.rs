@@ -2,16 +2,19 @@ use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
 use gtk::glib::ControlFlow;
 use gtk::{IconTheme, Settings, glib};
-use libc::SIGTERM;
+use signal_hook::consts::{SIGINT, SIGKILL, SIGSTOP, SIGTERM};
+use signal_hook::iterator::Signals;
 use std::path::PathBuf;
+use std::process::exit;
+use std::thread;
 use tracing::{info, trace, warn};
 
 pub fn preactivate() {
     let _span = tracing::span!(tracing::Level::TRACE, "preactivate").entered();
-    init_gtk();
+    handle_sigterm();
 
+    init_gtk();
     check_themes();
-    gtk_handle_sigterm();
 
     reload_icons(true);
     reload_desktop_data();
@@ -50,16 +53,19 @@ pub(crate) fn check_themes() {
     }
 }
 
-fn gtk_handle_sigterm() {
-    glib::unix_signal_add(SIGTERM, || {
-        info!("Received SIGTERM, exiting gracefully");
-        exec_lib::reset_remain_focused().warn_details("Failed to reset follow mouse on SIGTERM");
-        // Continue with the default SIGTERM handler after cleanup
-        unsafe {
-            libc::signal(SIGTERM, libc::SIG_DFL);
-            libc::raise(SIGTERM);
+fn handle_sigterm() {
+    let Ok(mut signals) = Signals::new(&[SIGTERM, SIGINT]) else {
+        warn!("Failed to create signal handler for SIGTERM and SIGINT");
+        return;
+    };
+    thread::spawn(move || {
+        for sig in signals.forever() {
+            info!("Received sig: {sig}, exiting gracefully");
+            exec_lib::reset_remain_focused()
+                .warn_details("Failed to reset follow mouse on SIGTERM");
+            // Continue with the default SIGTERM handler after cleanup
+            exit(0);
         }
-        ControlFlow::Continue
     });
 }
 

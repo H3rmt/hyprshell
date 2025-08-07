@@ -15,7 +15,7 @@ pub enum TransferType {
     CloseSwitch,
     /// send from the gui itself when typing the launcher
     Type(String),
-    /// send from pressing ESC
+    /// send from pressing ESC or repressing openOverview
     Exit,
     /// send from the app itself when new monitor / config changes detected
     Restart,

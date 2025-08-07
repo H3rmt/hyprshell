@@ -25,9 +25,9 @@ pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
     // }
 
     hyprland_plugin::generate(&PluginConfig {
-        switch_mod: mod_to_hyprland_keycode(modifier).to_string(),
+        xkb_key_switch_mod: Box::from(mod_to_xkb_key(modifier)),
     })
-    .context("unable to generate plugin: \n{err:?}")?;
+    .context("unable to generate plugin")?;
     trace!(
         "generated plugin at {:?}",
         hyprland_plugin::PLUGIN_OUTPUT_PATH
@@ -38,11 +38,11 @@ pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn mod_to_hyprland_keycode(r#mod: Modifier) -> u32 {
+pub fn mod_to_xkb_key(r#mod: Modifier) -> &'static str {
     match r#mod {
-        Modifier::Alt => 56,
-        Modifier::Ctrl => 29,
-        Modifier::Super => 125,
-        Modifier::Shift => 42,
+        Modifier::Alt => "XKB_KEY_Alt",
+        Modifier::Ctrl => "XKB_KEY_Control",
+        Modifier::Super => "XKB_KEY_Super",
+        Modifier::Shift => "XKB_KEY_Shift",
     }
 }

@@ -26,7 +26,6 @@ pub fn generate_bind_kill(kill_bind: &str) -> anyhow::Result<ExecBind> {
     let bind = ExecBind {
         key,
         mods,
-        on_release: true,
         exec: format!("kill {}", std::process::id()).into_boxed_str(),
     };
     Ok(bind)

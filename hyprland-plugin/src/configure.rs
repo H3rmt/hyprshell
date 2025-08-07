@@ -8,7 +8,7 @@ use tempfile::TempDir;
 use tracing::{Level, debug_span, span};
 
 pub struct PluginConfig {
-    pub switch_mod: String,
+    pub xkb_key_switch_mod: Box<str>,
 }
 
 pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
@@ -25,17 +25,24 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
         .context("unable to read defs file")?;
     for replace in [
         ("#include \"defs-test.hpp\"", ""),
-        ("_HYPRSHELL_PLUGIN_NAME_", PLUGIN_NAME),
-        ("_HYPRSHELL_PLUGIN_AUTHOR_", PLUGIN_AUTHOR),
-        ("_HYPRSHELL_PLUGIN_DESC_", PLUGIN_DESC),
-        ("_HYPRSHELL_PLUGIN_VERSION_", PLUGIN_VERSION),
+        ("$HYPRSHELL_PLUGIN_NAME$", PLUGIN_NAME),
+        ("$HYPRSHELL_PLUGIN_AUTHOR$", PLUGIN_AUTHOR),
+        ("$HYPRSHELL_PLUGIN_DESC$", PLUGIN_DESC),
+        ("$HYPRSHELL_PLUGIN_VERSION$", PLUGIN_VERSION),
         (
-            "_HYPRSHELL_PRINT_DEBUG_",
+            "$HYPRSHELL_PRINT_DEBUG$",
             if cfg!(debug_assertions) { "1" } else { "0" },
         ),
-        ("_HYPRSHELL_SWTICH_RELEASE_KEYCODE_", &config.switch_mod),
         (
-            "_HYPRSHELL_PROGRAM_CLOSE_SWITCH_",
+            "$HYPRSHELL_SWTICH_XKB_KEY_L$",
+            &format!("{}_L", config.xkb_key_switch_mod),
+        ),
+        (
+            "$HYPRSHELL_SWTICH_XKB_KEY_R$",
+            &format!("{}_R", config.xkb_key_switch_mod),
+        ),
+        (
+            "$HYPRSHELL_PROGRAM_CLOSE_SWITCH$",
             &generate_transfer_socat(&TransferType::CloseSwitch),
         ),
     ] {
