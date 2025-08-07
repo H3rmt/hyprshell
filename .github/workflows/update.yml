@@ -3,7 +3,7 @@ name: update flake.lock
 on:
   workflow_dispatch: # allows manual triggering
   schedule:
-    - cron: '30 2 */1 * *' # At 02:30 on every 14th day-of-month.
+    - cron: '30 2 1,15 * *' # At 02:30 on every 14th day-of-month.
 
 jobs:
   nix-flake-update:

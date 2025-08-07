@@ -71,19 +71,17 @@ in
     };
 
     settings = {
-      version = mkOpt "Hyprshell config version" int 1;
       layerrules = mkOpt "Enable layer rules" bool true;
       kill_bind = mkOpt "Key to kill hyprshell if it is stuck" str "ctrl+shift+alt, h";
 
       windows = {
-        enable = mkOpt "Enable windows (overview, switch)" bool true;
+        enable = lib.mkEnableOption "Enable windows (overview, switch)";
         scale = mkOpt "Scale" float 8.5 // {
           apply = num: if (num >= 0 && num <= 15) then num else throw "Value must be between 0 and 15";
         };
         items_per_row = mkOpt "Workspaces per row" int 5;
         overview = {
-          enable = mkOpt "Enable overview" bool true;
-          strip_html_from_workspace_title = mkOpt "Strip HTML from workspace title" bool true;
+          enable = lib.mkEnableOption "Enable overview";
           key = mkOpt "Key to open overview" str "super_l";
           modifier = mkOpt "Modifier key" (enum [
             "alt"
@@ -99,7 +97,6 @@ in
           ])) [ ];
           hide_filtered = mkOpt "Hide filtered windows" bool false;
           launcher = {
-            enable = mkOpt "Enable app launcher" bool true;
             width = mkOpt "Launcher width" int 650;
             launch_modifier = mkOpt "Launch modifier" (enum [
               "alt"
@@ -108,7 +105,6 @@ in
               "shift"
             ]) "ctrl";
             max_items = mkOpt "Max shown items" int 5;
-            animate_launch_ms = mkOpt "Launcher close duration" int 250;
             default_terminal = mkOpt "Default terminal" (nullOr (str)) null;
             show_when_empty = mkOpt "Show entries when no text is entered" bool true;
 

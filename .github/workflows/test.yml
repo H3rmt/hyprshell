@@ -32,8 +32,8 @@ jobs:
         run: nix build '.#checks.x86_64-linux.hyprshell-clippy' -L
       - name: Run Nix Flake Check fmt
         run: nix build '.#checks.x86_64-linux.hyprshell-fmt' -L
-      - name: Run Nix Flake Check check-nix-config
-        run: nix build '.#checks.x86_64-linux.check-nix-config' -L
+      - name: Run Nix Flake Check check-nix-configs
+        run: nix build '.#checks.x86_64-linux.check-nix-configs' -L
 
   check-all-features:
     name: Run Nix Flake all features Check
