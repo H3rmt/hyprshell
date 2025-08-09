@@ -7,6 +7,16 @@ use zip::write::FileOptions;
 
 fn include_plugin() -> Result<(), Box<dyn Error>> {
     let out_dir = env::var("OUT_DIR")?;
+
+    let status = std::process::Command::new("make")
+        .arg("prepare")
+        .current_dir("plugin")
+        .status()?;
+
+    if !status.success() {
+        return Err("Failed to run make prepare".into());
+    }
+
     let zip_path = Path::new(&out_dir).join("plugin.zip");
 
     let file = File::create(&zip_path)?;
@@ -16,7 +26,7 @@ fn include_plugin() -> Result<(), Box<dyn Error>> {
         .compression_level(None)
         .unix_permissions(0o755);
     let mut buffer = Vec::new();
-    for file in read_dir("plugin")?.flatten() {
+    for file in read_dir("plugin/out")?.flatten() {
         if file.path().is_dir() {
             continue;
         }

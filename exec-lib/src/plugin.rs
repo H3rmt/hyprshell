@@ -8,9 +8,10 @@ use tracing::{Level, debug, debug_span, span, trace};
 pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
 
-    let plugins = plugin::list().unwrap_or_default();
-    trace!("plugins: {:?}", plugins);
-    // TODO
+    // TODO get plugin list and check if the plugin with same config is already loaded
+    unload();
+    // let plugins = plugin::list().unwrap_or_default();
+    // trace!("plugins: {:?}", plugins);
     // for plugin in plugins {
     //     if plugin.name == hyprland_plugin::PLUGIN_NAME {
     //         debug!("plugin already loaded, unloading it");
@@ -36,6 +37,26 @@ pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
         .context("unable to load plugin")?;
     trace!("loaded plugin");
     Ok(())
+}
+
+fn unload() {
+    let mut cmd = std::process::Command::new("sh");
+    cmd.args([
+        "-c",
+        &format!(
+            "hyprctl plugin unload {}",
+            hyprland_plugin::PLUGIN_OUTPUT_PATH
+        ),
+    ]);
+    cmd.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    debug!("Unloading plugin with command: {:?}", cmd);
+    if let Err(e) = cmd.status() {
+        debug!("Failed to unload plugin: {}", e);
+    } else {
+        debug!("Plugin unloaded successfully");
+    }
 }
 
 pub fn mod_to_xkb_key(r#mod: Modifier) -> &'static str {

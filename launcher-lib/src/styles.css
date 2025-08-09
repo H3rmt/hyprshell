@@ -41,14 +41,14 @@
     font-family: monospace;
 }
 
-.launcher-other-menu-button > button {
+.launcher-other-menu-button {
     padding: 2px 4px;
     border-radius: var(--border-radius, 12px);
     background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border: 1px var(--border-style, solid) var(--border-color-active, rgba(90, 90, 120, 0.4));
+    border: 1px var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
 }
 
-.launcher-other-menu-button > button:hover {
+.launcher-other-menu-button:hover {
     background: var(--bg-color-hover, rgba(40, 40, 50, 1));
 }
 
@@ -56,7 +56,7 @@
     padding: 6px;
     border-radius: var(--border-radius, 12px);
     background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border: 1px var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    border: calc(var(--border-size, 3px) / 1.5) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
 }
 
 .launcher-other-menu-item {
@@ -84,7 +84,9 @@
 }
 
 .launcher-plugins {
-    padding: 2px;
+    padding: 4px 2px 2px;
+
+    border-top: calc(var(--border-size, 3px) / 1.5) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
 }
 
 .launcher-plugin {

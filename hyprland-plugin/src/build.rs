@@ -17,11 +17,12 @@ pub fn build(dir: &TempDir) -> anyhow::Result<()> {
         .arg("-o")
         .arg(PLUGIN_OUTPUT_PATH);
 
-    for file in dir.path().read_dir()?.flatten() {
-        if file.file_name().to_string_lossy().ends_with(".cpp") {
-            cmd.arg(file.path());
-        }
-    }
+    // for file in dir.path().read_dir()?.flatten() {
+    //     if file.file_name().to_string_lossy().ends_with(".cpp") {
+    //         cmd.arg(file.path());
+    //     }
+    // }
+    cmd.arg("all.cpp");
 
     trace!("Running build command: {:?}", cmd);
     let out = cmd

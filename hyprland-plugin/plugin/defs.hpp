@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hyprland/src/plugins/PluginAPI.hpp>
+
 // gets removed in the build process
 #include "defs-test.hpp"
 

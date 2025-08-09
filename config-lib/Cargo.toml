@@ -13,10 +13,10 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 
 inquire = { version = "0.7.5", optional = true, default-features = false, features = ["termion"] }
-serde = { version = "1.0.219", features = ["derive"] }
 smart-default = { version = "0.7.1" }
 ron = { version = "0.10.1" }
 serde_json5 = { version = "0.2.1", optional = true }

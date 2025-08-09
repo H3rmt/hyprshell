@@ -6,13 +6,8 @@
 rec {
   pname = "hyprshell";
   version = (pkgs.lib.trivial.importTOML ../Cargo.toml).workspace.package.version;
-  src = pkgs.lib.cleanSourceWith {
-    src = ../.;
-    filter =
-      path: type:
-      (builtins.match ".*(css|service|hpp|cpp)$" path != null) || (craneLib.filterCargoSources path type);
-    name = "source";
-  };
+  # no more filtering, excluded to many files
+  src = ../.;
   meta = {
     mainProgram = pname;
     description = "A modern GTK4-based window switcher and application launcher for Hyprland";

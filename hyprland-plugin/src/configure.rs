@@ -11,6 +11,12 @@ pub struct PluginConfig {
     pub xkb_key_switch_mod: Box<str>,
 }
 
+impl PluginConfig {
+    pub fn serialize(&self) -> String {
+        format!("{}", self.xkb_key_switch_mod)
+    }
+}
+
 pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
     let _span = debug_span!("configure", path =? dir.path()).entered();
     let defs = dir.path().join("defs.hpp");
@@ -27,7 +33,10 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
         ("#include \"defs-test.hpp\"", ""),
         ("$HYPRSHELL_PLUGIN_NAME$", PLUGIN_NAME),
         ("$HYPRSHELL_PLUGIN_AUTHOR$", PLUGIN_AUTHOR),
-        ("$HYPRSHELL_PLUGIN_DESC$", PLUGIN_DESC),
+        (
+            "$HYPRSHELL_PLUGIN_DESC$",
+            &format!("{} - {}", PLUGIN_DESC, config.serialize()),
+        ),
         ("$HYPRSHELL_PLUGIN_VERSION$", PLUGIN_VERSION),
         (
             "$HYPRSHELL_PRINT_DEBUG$",

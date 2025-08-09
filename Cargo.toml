@@ -58,6 +58,7 @@ edition = "2024"
 anyhow = { version = "1.0.98" }
 tracing = { version = "0.1.41" }
 serde_json = { version = "1.0.140" }
+serde = { version = "1.0.219", features = ["derive"] }
 async-channel = { version = "2.3.1", default-features = true }
 
 gtk = { version = "0.9.6", package = "gtk4", default-features = false, features = ["v4_14"] }
