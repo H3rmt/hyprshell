@@ -6,9 +6,9 @@ use std::fs::remove_file;
 use std::io::Read;
 use std::os::unix::net;
 use std::os::unix::net::UnixStream;
-use tracing::{Level, debug_span, info, span, warn};
+use tracing::{debug_span, info, warn};
 
-pub fn socket_handler(event_sender: Sender<TransferType>) {
+pub fn socket_handler(event_sender: &Sender<TransferType>) {
     let _span = debug_span!("socket_handler").entered();
     let buf = get_daemon_socket_path_buff();
     let path = buf.as_path();
@@ -18,7 +18,7 @@ pub fn socket_handler(event_sender: Sender<TransferType>) {
             remove_file(path).expect("Unable to remove old socket file");
         }
         net::UnixListener::bind(path)
-            .unwrap_or_else(|_| panic!("Failed to bind to socket {path:?}"))
+            .unwrap_or_else(|_| panic!("Failed to bind to socket {}", path.display()))
     };
     info!("Starting socket on {path:?}");
 
@@ -26,7 +26,7 @@ pub fn socket_handler(event_sender: Sender<TransferType>) {
         let path = listener.accept();
         match path {
             Ok((conn, _)) => {
-                handle_client(conn, &event_sender)
+                handle_client(conn, event_sender)
                     .context("Failed to handle client")
                     .unwrap_or_else(|e| {
                         warn!("Failed to handle connection {:?}", e);
@@ -35,7 +35,7 @@ pub fn socket_handler(event_sender: Sender<TransferType>) {
             Err(e) => {
                 warn!("Failed to accept connection: {e:?}");
             }
-        };
+        }
     }
 }
 

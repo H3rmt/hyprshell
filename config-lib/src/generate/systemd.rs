@@ -1,8 +1,9 @@
 use anyhow::Context;
 use std::env;
+use std::fmt::Write;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
-use tracing::{Level, debug_span, info, span, trace};
+use tracing::{debug_span, info, trace};
 
 const UNIT: &str = include_str!("default.service");
 pub fn write_systemd_unit(
@@ -20,26 +21,27 @@ pub fn write_systemd_unit(
 
     if let Some(parent) = path.parent() {
         create_dir_all(parent)
-            .with_context(|| format!("Failed to create config dir at ({parent:?})"))?;
+            .with_context(|| format!("Failed to create config dir at ({})", parent.display()))?;
     }
 
     let mut params = String::new();
     if let Some(config_path) = config_path {
-        params.push_str(&format!("--config-file {config_path:?} "));
+        let _ = params.write_str(&format!("--config-file {} ", config_path.display()));
     }
     if let Some(css_path) = css_path {
-        params.push_str(&format!("--css-file {css_path:?} "));
+        let _ = params.write_str(&format!("--css-file {} ", css_path.display()));
     }
     if let Some(data_dir) = data_dir {
-        params.push_str(&format!("--data-dir {data_dir:?} "));
+        let _ = params.write_str(&format!("--data-dir {} ", data_dir.display()));
     }
 
     let extra = if params.is_empty() {
-        "".to_string()
+        String::new()
     } else {
         format!("WorkingDirectory={}", env::current_dir()?.to_string_lossy())
     };
 
+    #[allow(clippy::literal_string_with_formatting_args)]
     let unit_text = UNIT
         .replace(
             "{path}",
@@ -51,8 +53,12 @@ pub fn write_systemd_unit(
         .replace("{extra}", &extra);
 
     trace!("writing {unit_text} to {path:?}");
-    std::fs::write(&path, unit_text)
-        .with_context(|| format!("Failed to write Systemd unit file at ({path:?})"))?;
+    std::fs::write(&path, unit_text).with_context(|| {
+        format!(
+            "Failed to write Systemd unit file at ({:?})",
+            path.display()
+        )
+    })?;
 
     info!("Systemd unit file generated successfully at {path:?}");
     Ok(())

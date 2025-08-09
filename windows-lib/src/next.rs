@@ -1,8 +1,9 @@
 use core_lib::transfer::Direction;
 use core_lib::{
-    Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WarnWithDetails,
+    WorkspaceData, WorkspaceId,
 };
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
 pub fn find_next(
     direction: &Direction,
@@ -85,9 +86,10 @@ pub fn find_next_client_wrap(
         return None;
     }
 
-    let offset = (if reverse { -1 } else { 1 } as isize)
-        .rem_euclid(clients.iter().filter(|(_, c)| c.enabled).count() as isize)
-        as usize;
+    let offset = (if reverse { -1 } else { 1 } as isize).rem_euclid(
+        isize::try_from(clients.iter().filter(|(_, c)| c.enabled).count())
+            .warn_details("unable convert clients len")?,
+    ) as usize;
     trace!("Finding next client with offset: {}", offset);
 
     clients
@@ -117,12 +119,16 @@ pub fn find_next_workspace(
     let offset = match direction {
         Direction::Right => 1,
         Direction::Left => -1,
-        Direction::Up => -(workspaces_per_row as isize),
-        Direction::Down => workspaces_per_row as isize,
+        Direction::Up => -isize::try_from(workspaces_per_row)
+            .warn_details("unable convert workspaces_per_row")?,
+        Direction::Down => {
+            isize::try_from(workspaces_per_row).warn_details("unable convert workspaces_per_row")?
+        }
     };
     trace!("Finding next workspace with offset: {}", offset);
 
     let current = workspaces.iter().position(|w| w.0 == active).unwrap_or(0);
+    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
     workspaces
         .get(
             (current as isize + offset)
@@ -145,7 +151,7 @@ pub fn find_next_workspace_wrap(
         debug!("No workspaces available, returning None");
         return None;
     }
-
+    #[allow(clippy::cast_possible_wrap)]
     let offset =
         (if reverse { -1 } else { 1 } as isize).rem_euclid(workspaces.len() as isize) as usize;
     trace!("Finding next workspace with offset: {}", offset);

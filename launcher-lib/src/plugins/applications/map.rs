@@ -1,8 +1,9 @@
+use anyhow::Context;
 use core_lib::default::get_all_desktop_files;
 use core_lib::{ExecType, analyse_exec};
 use std::path::Path;
 use std::sync::{OnceLock, RwLock, RwLockReadGuard};
-use tracing::{Level, debug_span, span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
 #[derive(Debug, Clone)]
 pub struct DesktopEntry {
@@ -30,20 +31,23 @@ fn get_desktop_file_map() -> &'static RwLock<Vec<DesktopEntry>> {
     MAP_LOCK.get_or_init(|| RwLock::new(Vec::new()))
 }
 
-pub(crate) fn get_all_desktop_entries<'a>() -> RwLockReadGuard<'a, Vec<DesktopEntry>> {
+pub fn get_all_desktop_entries<'a>() -> RwLockReadGuard<'a, Vec<DesktopEntry>> {
     get_desktop_file_map()
         .read()
         .expect("Failed to lock desktop files mutex")
 }
 
-pub fn reload_desktop_entries_map() {
+pub fn reload_desktop_entries_map() -> anyhow::Result<()> {
     let _span = debug_span!("reload_desktop_entries_map").entered();
 
     let mut map = get_desktop_file_map()
         .write()
-        .expect("Failed to lock desktop file map");
+        .map_err(|_| anyhow::anyhow!("Failed to lock desktop file map"))?;
     map.clear();
-    for (entry, ini) in get_all_desktop_files().iter() {
+    for (entry, ini) in get_all_desktop_files()
+        .context("unable to get all desktop files")?
+        .iter()
+    {
         if let Some(section) = ini.get_section("Desktop Entry") {
             let r#type = section.get_first("Type");
             let no_display = section.get_first_as_boolean("NoDisplay");
@@ -69,8 +73,9 @@ pub fn reload_desktop_entries_map() {
                         ExecType::AppImage(app_image_identifier, _) => {
                             (app_image_identifier, "appimage")
                         }
-                        ExecType::Absolute(exec_name, _) => (exec_name, ""),
-                        ExecType::Relative(exec_name) => (exec_name, ""),
+                        ExecType::Absolute(exec_name, _) | ExecType::Relative(exec_name) => {
+                            (exec_name, "")
+                        }
                     };
 
                     let other = ini
@@ -112,5 +117,7 @@ pub fn reload_desktop_entries_map() {
             );
         }
     }
-    trace!("filled launcher desktop file map",);
+    drop(map);
+    trace!("filled launcher desktop file map");
+    Ok(())
 }

@@ -15,27 +15,27 @@ use gtk::{Orientation, glib};
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
 pub fn create_windows_overview_launcher_window(
     app: &Application,
     launcher: &Launcher,
     open_modifier: Modifier,
     data_dir: &Path,
-    event_sender: Sender<TransferType>,
+    event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<LauncherData> {
     let _span = debug_span!("create_windows_overview_launcher_window").entered();
 
     let main_vbox = ListBox::builder()
         .css_classes(["launcher"])
-        .width_request(launcher.width as i32)
+        .width_request(i32::try_from(launcher.width)?)
         .selection_mode(SelectionMode::None)
         .build();
 
     let entry = Entry::builder().css_classes(["launcher-input"]).build();
     let event_sender_2 = event_sender.clone();
     entry.connect_changed(move |e| {
-        launcher_entry_text_change(e.text().to_string(), event_sender_2.clone());
+        launcher_entry_text_change(e.text().to_string(), &event_sender_2);
     });
     main_vbox.append(&entry);
 
@@ -77,7 +77,7 @@ pub fn create_windows_overview_launcher_window(
     let results_2 = results.clone();
     let launch_modifier = launcher.launch_modifier;
     event_controller.connect_key_released(move |_, key, _, _| {
-        handle_release(key, open_modifier, event_sender_3.clone())
+        handle_release(key, open_modifier, &event_sender_3);
     });
     event_controller.connect_key_pressed(move |_, key, _, modt| {
         handle_key(
@@ -87,8 +87,8 @@ pub fn create_windows_overview_launcher_window(
             modt,
             &plugin_keys,
             launch_modifier,
-            results_2.clone(),
-            event_sender_4.clone(),
+            &results_2,
+            &event_sender_4,
         )
     });
     event_controller.set_propagation_phase(PropagationPhase::Capture);
@@ -104,7 +104,7 @@ pub fn create_windows_overview_launcher_window(
 
     debug!("Created launcher window ({})", window.id());
 
-    launcher_entry_text_change("".to_string(), event_sender);
+    launcher_entry_text_change(String::new(), event_sender);
 
     Ok(LauncherData {
         config: LauncherConfig {
@@ -127,13 +127,13 @@ pub fn create_windows_overview_launcher_window(
     })
 }
 
-fn launcher_entry_text_change(text: String, event_sender: Sender<TransferType>) {
+fn launcher_entry_text_change(text: String, event_sender: &Sender<TransferType>) {
     event_sender
         .send_blocking(TransferType::Type(text))
         .warn_details("unable to send");
 }
 
-fn handle_release(key: Key, modifier: Modifier, event_sender: Sender<TransferType>) {
+fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferType>) {
     if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
         || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
         || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
@@ -145,7 +145,7 @@ fn handle_release(key: Key, modifier: Modifier, event_sender: Sender<TransferTyp
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 fn handle_key(
     entry: &Entry,
     key: Key,
@@ -153,8 +153,8 @@ fn handle_key(
     modt: ModifierType,
     plugin_keys: &[Key],
     launch_modifier: Modifier,
-    results: gtk::Box,
-    event_sender: Sender<TransferType>,
+    results: &gtk::Box,
+    event_sender: &Sender<TransferType>,
 ) -> Propagation {
     let launch_mod = match launch_modifier {
         Modifier::Shift => modt == ModifierType::SHIFT_MASK,
@@ -208,16 +208,7 @@ fn handle_key(
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        (_, Key::ISO_Left_Tab) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: false,
-                    direction: Direction::Left,
-                }))
-                .warn_details("unable to send");
-            Propagation::Stop
-        }
-        (_, Key::grave) => {
+        (_, Key::ISO_Left_Tab | Key::grave) => {
             event_sender
                 .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
                     workspace: false,

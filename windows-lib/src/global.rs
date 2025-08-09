@@ -11,6 +11,7 @@ pub struct WindowsOverviewData {
     pub hypr_data: HyprlandData,
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 pub struct WindowsOverviewConfig {
     pub items_per_row: u8,
@@ -32,6 +33,7 @@ pub struct WindowsSwitchData {
     pub hypr_data: HyprlandData,
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 pub struct WindowsSwitchConfig {
     pub items_per_row: u8,

@@ -25,8 +25,8 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
-use std::{env, thread};
-use tracing::{Level, debug, debug_span, error, info, span, trace};
+use std::{env, process, thread};
+use tracing::{debug, debug_span, error, info, trace};
 use windows_lib::{
     WindowsOverviewData, WindowsSwitchData, create_windows_overview_window,
     create_windows_switch_window,
@@ -37,7 +37,7 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
     let css_path = Rc::new(css_path);
     let data_dir = Rc::new(data_dir);
 
-    util::preactivate();
+    util::preactivate().context("Failed to preactivate GTK and reload icons")?;
 
     let (event_sender, event_receiver) = async_channel::unbounded();
 
@@ -47,7 +47,7 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
 
     let event_sender_2 = event_sender.clone();
     thread::spawn(move || {
-        socket_handler(event_sender_2.clone());
+        socket_handler(&event_sender_2);
     });
 
     info!("Starting gui loop");
@@ -70,7 +70,7 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
                 &data_dir,
                 event_sender.clone(),
                 event_receiver.clone(),
-            )
+            );
         });
         application.run_with_args::<String>(&[]);
     }
@@ -95,7 +95,7 @@ fn activate(
     event_receiver: Receiver<TransferType>,
 ) {
     let _span = debug_span!("activate").entered();
-    apply_css(css_path);
+    apply_css(css_path).warn_details("Failed to apply CSS");
 
     exec_lib::reload_hyprland_config()
         .context("Failed to reload hyprland config")
@@ -106,7 +106,10 @@ fn activate(
         Err(err) => {
             error!("Failed to load config: {:?}", err);
             toast(&format!("Failed to load config: {err:?}"));
-            hyprshell_config_block(config_path);
+            if let Err(err) = hyprshell_config_block(config_path) {
+                error!("Failed to block config: {:?}", err);
+                process::exit(1);
+            }
             return; // return needed to exit the application
         }
     };
@@ -114,7 +117,10 @@ fn activate(
     if let Err(err) = create_binds(&config) {
         error!("Failed to create keybinds: {err:?}");
         toast(&format!("Failed to create keybinds: {err}"));
-        hyprshell_config_block(config_path);
+        if let Err(err) = hyprshell_config_block(config_path) {
+            error!("Failed to block config: {:?}", err);
+            process::exit(1);
+        }
         return; // return needed to exit the application
     }
 
@@ -123,7 +129,10 @@ fn activate(
         Err(err) => {
             error!("Failed to create windows: {err:?}");
             toast(&format!("Failed to create windows: {err}"));
-            hyprshell_config_block(config_path);
+            if let Err(err) = hyprshell_config_block(config_path) {
+                error!("Failed to block config: {:?}", err);
+                process::exit(1);
+            }
             return; // return needed to exit the application
         }
     };
@@ -152,7 +161,7 @@ fn create_windows(
                 &overview.launcher,
                 overview.modifier,
                 data_dir,
-                event_sender.clone(),
+                &event_sender,
             )
             .context("failed to create launcher window")?;
             windows_data.overview = Some((overview_data, launcher_data));
@@ -171,32 +180,33 @@ fn create_windows(
     Ok(global)
 }
 
-fn apply_css(custom_css: &Path) {
+fn apply_css(custom_css: &Path) -> anyhow::Result<()> {
     let provider_app = CssProvider::new();
     provider_app.load_from_bytes(&glib::Bytes::from_static(include_bytes!(
         "default_styles.css"
     )));
     style_context_add_provider_for_display(
-        &Display::default().expect("Could not connect to a display."),
+        &Display::default().context("Could not connect to a display.")?,
         &provider_app,
         STYLE_PROVIDER_PRIORITY_USER,
     );
 
-    windows_lib::get_css();
-    launcher_lib::get_css();
+    windows_lib::get_css()?;
+    launcher_lib::get_css()?;
 
-    if !custom_css.exists() {
-        debug!("Custom css file {custom_css:?} does not exist");
-    } else {
+    if custom_css.exists() {
         debug!("Loading custom css file {custom_css:?}");
         let provider_user = CssProvider::new();
         provider_user.load_from_path(custom_css);
         style_context_add_provider_for_display(
-            &Display::default().expect("Could not connect to a display."),
+            &Display::default().context("Could not connect to a display.")?,
             &provider_user,
             STYLE_PROVIDER_PRIORITY_USER,
         );
+    } else {
+        debug!("Custom css file {custom_css:?} does not exist");
     }
+    Ok(())
 }
 
 pub fn register_event_restarter(
@@ -211,7 +221,7 @@ pub fn register_event_restarter(
         .unwrap_or(1500);
     let (restart_sender, restart_receiver) = async_channel::unbounded();
     glib::timeout_add_local_once(Duration::from_millis(delay), move || {
-        setup_restart_listener(&config_path, &css_path, restart_sender);
+        setup_restart_listener(&config_path, &css_path, &restart_sender);
     });
 
     // State to track the current debounce timer
@@ -256,9 +266,9 @@ pub fn register_event_restarter(
 
 static WATCHERS: OnceLock<Mutex<Vec<Box<dyn Any + Send>>>> = OnceLock::new();
 
-fn setup_restart_listener(config_path: &Path, css_path: &Path, restart_tx: Sender<&'static str>) {
+fn setup_restart_listener(config_path: &Path, css_path: &Path, restart_tx: &Sender<&'static str>) {
     let tx = restart_tx.clone();
-    if let Some(watcher) = hyprshell_config_listener(config_path, move |mess| {
+    if let Ok(watcher) = hyprshell_config_listener(config_path, move |mess| {
         let _ = tx.send_blocking(mess);
     }) {
         WATCHERS
@@ -266,9 +276,9 @@ fn setup_restart_listener(config_path: &Path, css_path: &Path, restart_tx: Sende
             .lock()
             .expect("Failed to lock watchers")
             .push(Box::new(watcher));
-    };
+    }
     let tx = restart_tx.clone();
-    if let Some(watcher) = hyprshell_css_listener(css_path, move |mess| {
+    if let Ok(watcher) = hyprshell_css_listener(css_path, move |mess| {
         let _ = tx.send_blocking(mess);
     }) {
         WATCHERS
@@ -276,7 +286,7 @@ fn setup_restart_listener(config_path: &Path, css_path: &Path, restart_tx: Sende
             .lock()
             .expect("Failed to lock watchers")
             .push(Box::new(watcher));
-    };
+    }
 
     let tx = restart_tx.clone();
     glib::spawn_future_local(async move {

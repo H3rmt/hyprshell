@@ -4,7 +4,7 @@ use core_lib::{
 };
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
 use hyprland::prelude::*;
-use tracing::{Level, debug_span, span, warn};
+use tracing::{debug_span, warn};
 
 fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
     let _span = debug_span!("get_hypr_data").entered();
@@ -47,18 +47,19 @@ pub fn collect_hypr_data() -> anyhow::Result<(
     let mut monitor_data = {
         let mut md: Vec<(MonitorId, MonitorData)> = Vec::with_capacity(monitors.iter().len());
 
-        monitors.iter().for_each(|monitor| {
+        for monitor in &monitors {
+            #[allow(clippy::cast_sign_loss)]
             md.push((
                 monitor.id,
                 MonitorData {
                     x: monitor.x,
                     y: monitor.y,
-                    width: (monitor.width as f32 / monitor.scale) as u16,
-                    height: (monitor.height as f32 / monitor.scale) as u16,
+                    width: (f32::from(monitor.width) / monitor.scale) as u16,
+                    height: (f32::from(monitor.height) / monitor.scale) as u16,
                     connector: monitor.name.clone(),
                 },
             ));
-        });
+        }
         md
     };
 
@@ -66,7 +67,7 @@ pub fn collect_hypr_data() -> anyhow::Result<(
     let mut workspace_data = {
         let mut wd: Vec<(WorkspaceId, WorkspaceData)> = Vec::with_capacity(workspaces.len());
 
-        for (monitor_id, monitor_data) in monitor_data.iter() {
+        for (monitor_id, monitor_data) in &monitor_data {
             let mut x_offset: i32 = 0;
             workspaces
                 .iter()
@@ -84,7 +85,7 @@ pub fn collect_hypr_data() -> anyhow::Result<(
                             width: monitor_data.width,
                         },
                     ));
-                    x_offset += monitor_data.width as i32;
+                    x_offset += i32::from(monitor_data.width);
                 });
         }
         wd
@@ -94,10 +95,10 @@ pub fn collect_hypr_data() -> anyhow::Result<(
         let mut cd: Vec<(ClientId, ClientData)> = Vec::with_capacity(clients.len());
 
         for client in clients {
-            let monitor = client.monitor else {
-                // let Some(monitor) = client.monitor else {
-                continue;
-            };
+            // let Some(monitor) = client.monitor else {
+            //     continue;
+            // };
+            let monitor = client.monitor;
             if workspace_data.find_by_first(&client.workspace.id).is_some() {
                 cd.push((
                     to_client_id(&client.address),

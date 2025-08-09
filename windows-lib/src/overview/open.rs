@@ -4,25 +4,26 @@ use crate::icon::set_icon;
 use anyhow::Context;
 use async_channel::Sender;
 use core_lib::transfer::{CloseOverviewConfig, TransferType, WindowsOverride};
-use core_lib::{ClientData, ClientId, WarnWithDetails, WorkspaceId};
+use core_lib::{ClientData, ClientId, WarnWithDetails};
 use exec_lib::set_remain_focused;
 use gtk::gdk::Cursor;
 use gtk::prelude::*;
 use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
-fn scale(value: i16, scale: f64) -> i32 {
-    (value as f64 / (15f64 - scale)) as i32
+fn scale<T: Into<f64>>(value: T, scale: f64) -> i32 {
+    (value.into() / (15f64 - scale)) as i32
 }
 
 pub fn overview_already_open(data: &WindowsOverviewData) -> bool {
     data.window_list.iter().any(|w| w.0.get_visible())
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn open_overview(
     data: &mut WindowsOverviewData,
-    event_sender: Sender<TransferType>,
+    event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("open_overview").entered();
     set_remain_focused().warn_details("Failed to set no follow mouse");
@@ -36,7 +37,7 @@ pub fn open_overview(
     .context("Failed to collect data")?;
     let remove_html = regex::Regex::new(r"<[^>]*>").context("Invalid regex")?;
 
-    for (window, monitor_data) in data.window_list.iter_mut() {
+    for (window, monitor_data) in &mut data.window_list {
         trace!("Showing window {:?}", window.id());
         window.set_visible(true);
 
@@ -54,18 +55,18 @@ pub fn open_overview(
             trace!(
                 "Creating workspace {:?} with ({}x{})",
                 wid,
-                scale(workspace.width as i16, data.config.scale),
-                scale(workspace.height as i16, data.config.scale)
+                scale(workspace.width, data.config.scale),
+                scale(workspace.height, data.config.scale)
             );
             let workspace_fixed = Fixed::builder()
-                .width_request(scale(workspace.width as i16, data.config.scale))
-                .height_request(scale(workspace.height as i16, data.config.scale))
+                .width_request(scale(workspace.width, data.config.scale))
+                .height_request(scale(workspace.height, data.config.scale))
                 .build();
             let id_string = wid.to_string();
-            let title = if !workspace.name.trim().is_empty() {
-                remove_html.replace_all(&workspace.name, "")
-            } else {
+            let title = if workspace.name.trim().is_empty() {
                 Cow::from(&id_string)
+            } else {
+                remove_html.replace_all(&workspace.name, "")
             };
 
             let workspace_frame = Frame::builder()
@@ -106,10 +107,10 @@ pub fn open_overview(
             };
             for (address, client) in clients {
                 let client_button = {
-                    let title = if !client.title.trim().is_empty() {
-                        &client.title
-                    } else {
+                    let title = if client.title.trim().is_empty() {
                         &client.class
+                    } else {
+                        &client.title
                     };
                     let client_label = Label::builder()
                         .label(title)
@@ -128,7 +129,7 @@ pub fn open_overview(
                     if client_h_w > 70 {
                         let image = Image::builder()
                             .css_classes(["client-image"])
-                            .pixel_size((client_h_w.clamp(50, 600) as f64 / 1.6) as i32 - 20)
+                            .pixel_size((f64::from(client_h_w.clamp(50, 600)) / 1.6) as i32 - 20)
                             .build();
                         if !client.enabled {
                             image.add_css_class("monochrome");
@@ -162,13 +163,25 @@ pub fn open_overview(
                     address,
                     scale(client.width, data.config.scale),
                     scale(client.height, data.config.scale),
-                    scale(client.x - workspace.x as i16, data.config.scale) as f64,
-                    scale(client.y - workspace.y as i16, data.config.scale) as f64
+                    f64::from(scale(
+                        client.x - i16::try_from(workspace.x)?,
+                        data.config.scale
+                    )),
+                    f64::from(scale(
+                        client.y - i16::try_from(workspace.y)?,
+                        data.config.scale
+                    ))
                 );
                 workspace_fixed.put(
                     &client_button,
-                    scale(client.x - workspace.x as i16, data.config.scale) as f64,
-                    scale(client.y - workspace.y as i16, data.config.scale) as f64,
+                    f64::from(scale(
+                        client.x - i16::try_from(workspace.x)?,
+                        data.config.scale,
+                    )),
+                    f64::from(scale(
+                        client.y - i16::try_from(workspace.y)?,
+                        data.config.scale,
+                    )),
                 );
                 monitor_data.clients.insert(*address, client_button);
             }

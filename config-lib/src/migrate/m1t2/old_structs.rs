@@ -65,10 +65,10 @@ pub(super) enum Modifier {
 impl Display for Modifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Modifier::Alt => write!(f, "alt"),
-            Modifier::Ctrl => write!(f, "ctrl"),
-            Modifier::Super => write!(f, "super"),
-            Modifier::Shift => write!(f, "shift"),
+            Self::Alt => write!(f, "alt"),
+            Self::Ctrl => write!(f, "ctrl"),
+            Self::Super => write!(f, "super"),
+            Self::Shift => write!(f, "shift"),
         }
     }
 }

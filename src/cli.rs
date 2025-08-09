@@ -27,16 +27,16 @@ pub struct GlobalOpts {
     #[arg(short = 'q', long, global = true)]
     pub quiet: bool,
 
-    /// Path to config [default: $XDG_CONFIG_HOME/hyprshell/config.ron],
+    /// Path to config [default: `$XDG_CONFIG_HOME/hyprshell/config.ron`],
     /// allowed file types: ron, toml, json5
     #[arg(short = 'c', long, global = true)]
     pub config_file: Option<PathBuf>,
 
-    /// Path to css [default: $XDG_CONFIG_HOME/hyprshell/style.css]
+    /// Path to css [default: `$XDG_CONFIG_HOME/hyprshell/style.css`]
     #[arg(long, short = 's', global = true)]
     pub css_file: Option<PathBuf>,
 
-    /// Path to data directory [default: $XDG_DATA_HOME/hyprshell]
+    /// Path to data directory [default: `$XDG_DATA_HOME/hyprshell`]
     #[arg(long, short = 'd', global = true)]
     pub data_dir: Option<PathBuf>,
 }
@@ -78,9 +78,9 @@ pub enum Command {
         shell: Option<String>,
 
         /// BASE Path for completion without filename
-        /// Bash Default: /usr/share/bash-completion/completions
-        /// Fish Default: /usr/share/fish/vendor_completions.d
-        /// Zsh Default: /usr/share/zsh/site-functions
+        /// Bash Default: `/usr/share/bash-completion/completions`
+        /// Fish Default: `/usr/share/fish/vendor_completions.d`
+        /// Zsh Default: `/usr/share/zsh/site-functions`
         #[arg(long, short = 'p')]
         base_path: Option<PathBuf>,
     },

@@ -9,7 +9,7 @@ pub fn send_raw_to_socket(data: &str) -> anyhow::Result<()> {
     debug!("Sending data to socket: {}", data);
     trace!("Socket path: {:?}", path);
     let mut socket = UnixStream::connect(&path)
-        .with_context(|| format!("Can't connect to daemon socket {path:?}"))?;
+        .with_context(|| format!("Can't connect to daemon socket {}", path.display()))?;
     trace!("Socket connected, sending data");
     socket
         .write_all(data.as_bytes())

@@ -51,13 +51,13 @@ pub trait Warn<A> {
 }
 
 impl<A> WarnWithDetails<A> for Option<A> {
-    fn warn_details(self, msg: &str) -> Option<A> {
-        match self {
-            Some(o) => Some(o),
-            None => {
-                warn!("{}", msg);
-                None
-            }
+    fn warn_details(self, msg: &str) -> Self {
+        #[allow(clippy::option_if_let_else)]
+        if let Some(o) = self {
+            Some(o)
+        } else {
+            warn!("{}", msg);
+            None
         }
     }
 }

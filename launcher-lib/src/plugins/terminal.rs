@@ -5,33 +5,25 @@ use gtk::gdk::Key;
 use std::path::PathBuf;
 use tracing::{debug, trace};
 
-pub fn get_static_options(
-    matches: &mut Vec<StaticLaunchOption>,
-    default_terminal: &Option<Box<str>>,
-) {
+pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, default_terminal: Option<&str>) {
     matches.push(StaticLaunchOption {
         iden: Identifier::plugin(PluginNames::Terminal),
         key: 't',
         text: Box::from("Terminal"),
         details: Box::from("Run a command in a terminal"),
         icon: Some(
-            PathBuf::from(
-                default_terminal
-                    .as_deref()
-                    .map(|term| match term {
-                        // random fix for alacritty icon
-                        "alacritty" => "Alacritty",
-                        other => other,
-                    })
-                    .unwrap_or("system-run"),
-            )
+            PathBuf::from(default_terminal.map_or("system-run", |term| match term {
+                // random fix for alacritty icon
+                "alacritty" => "Alacritty",
+                other => other,
+            }))
             .into_boxed_path(),
         ),
     });
     trace!("Added static terminal option");
 }
 
-pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {
+pub fn launch_option(text: &str, default_terminal: Option<&str>) -> bool {
     if text.is_empty() {
         debug!("No text to run in terminal");
         return false;
@@ -48,6 +40,6 @@ pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {
     true
 }
 
-pub(crate) fn get_chars() -> Vec<Key> {
+pub fn get_chars() -> Vec<Key> {
     vec![Key::t]
 }

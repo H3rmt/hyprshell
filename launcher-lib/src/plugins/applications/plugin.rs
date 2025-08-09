@@ -41,7 +41,7 @@ impl SortableLaunchOption {
         };
 
         let runs = runs.get(&entry.source).unwrap_or(&0);
-        SortableLaunchOption {
+        Self {
             name: entry.name.clone(),
             icon: entry.icon.clone(),
             details,
@@ -175,29 +175,29 @@ pub fn get_sortable_options(
             }
         }
     }
+    drop(entries);
     trace!("Added {count} applications to matches");
 }
 pub fn launch_option(
-    data: &Option<Box<str>>,
-    data_additional: &Option<Box<str>>,
-    default_terminal: &Option<Box<str>>,
+    data: Option<&str>,
+    data_additional: Option<&str>,
+    default_terminal: Option<&str>,
     data_dir: &Path,
 ) -> bool {
     let entries = get_all_desktop_entries();
     if let Some(data) = data {
-        let source = data.as_ref();
         let entry = entries
             .iter()
-            .find(|entry| source == entry.source.to_string_lossy());
+            .find(|entry| data == entry.source.to_string_lossy());
         if let Some(entry) = entry {
-            let exec = if let Some(ref section) = data_additional.as_ref() {
+            let exec = if let Some(section) = data_additional.as_ref() {
                 // find desktop action
-                if let Some(action) = entry.other.iter().find(|a| a.id == **section) {
+                if let Some(action) = entry.other.iter().find(|a| (*a.id).eq(&**section)) {
                     action.exec.clone()
                 } else {
                     warn!(
                         "Failed to find action {:?} in entry {:?}",
-                        section, entry.name
+                        &section, entry.name
                     );
                     return false;
                 }
@@ -206,7 +206,7 @@ pub fn launch_option(
             };
             run_program(
                 &exec,
-                entry.exec_path.clone(),
+                entry.exec_path.as_deref(),
                 entry.terminal,
                 default_terminal,
             )
@@ -214,9 +214,9 @@ pub fn launch_option(
             trace!("Saving run: {:?}", entry.source);
             save_run(&entry.source, data_dir).warn_details("Failed to cache run");
             return true;
-        } else {
-            warn!("Failed to find entry for {:?}|{:?}", data, data_additional);
-        };
-    };
+        }
+        warn!("Failed to find entry for {:?}|{:?}", data, data_additional);
+    }
+    drop(entries);
     false
 }

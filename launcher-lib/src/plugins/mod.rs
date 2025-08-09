@@ -1,7 +1,7 @@
 use config_lib::Plugins;
 use gtk::gdk::Key;
 use std::path::Path;
-use tracing::{Level, debug_span, span};
+use tracing::debug_span;
 
 mod applications;
 mod search;
@@ -43,7 +43,7 @@ pub struct StaticLaunchOption {
     pub iden: Identifier,
 }
 
-pub(crate) fn get_sortable_launch_options(
+pub fn get_sortable_launch_options(
     plugins: &Plugins,
     text: &str,
     data_dir: &Path,
@@ -82,19 +82,19 @@ pub(crate) fn get_sortable_launch_options(
 
 pub fn get_static_launch_options(
     plugins: &Plugins,
-    default_terminal: &Option<Box<str>>,
+    default_terminal: Option<&str>,
 ) -> Vec<StaticLaunchOption> {
     let mut matches = Vec::new();
 
     if plugins.shell.is_some() {
         debug_span!("shell").in_scope(|| {
             shell::get_static_options(&mut matches);
-        })
+        });
     }
     if plugins.terminal.is_some() {
         debug_span!("terminal").in_scope(|| {
             terminal::get_static_options(&mut matches, default_terminal);
-        })
+        });
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
         debug_span!("search").in_scope(|| {
@@ -108,7 +108,7 @@ pub fn get_static_launch_options(
 pub fn launch(
     iden: &Identifier,
     text: &str,
-    default_terminal: &Option<Box<str>>,
+    default_terminal: Option<&str>,
     data_dir: &Path,
 ) -> bool {
     let _span = debug_span!("launch_plugin").entered();
@@ -116,8 +116,8 @@ pub fn launch(
     match iden.plugin {
         PluginNames::Applications => debug_span!("applications").in_scope(|| {
             applications::launch_option(
-                &iden.data,
-                &iden.data_additional,
+                iden.data.as_deref(),
+                iden.data_additional.as_deref(),
                 default_terminal,
                 data_dir,
             )
@@ -129,12 +129,12 @@ pub fn launch(
             debug_span!("terminal").in_scope(|| terminal::launch_option(text, default_terminal))
         }
         PluginNames::WebSearch => {
-            debug_span!("search").in_scope(|| search::launch_option(&iden.data, text))
+            debug_span!("search").in_scope(|| search::launch_option(iden.data.as_deref(), text))
         }
         PluginNames::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
         PluginNames::Calc => {
             #[cfg(feature = "calc")]
-            debug_span!("calc").in_scope(|| calc::copy_result(&iden.data));
+            debug_span!("calc").in_scope(|| calc::copy_result(iden.data.as_deref()));
             #[cfg(not(feature = "calc"))]
             tracing::warn!("calc plugin is not enabled");
             false

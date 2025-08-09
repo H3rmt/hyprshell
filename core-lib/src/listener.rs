@@ -1,16 +1,19 @@
 use crate::WarnWithDetails;
+use anyhow::{Context, bail};
 use notify::event::{DataChange, ModifyKind};
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 use tracing::{debug, info, trace, warn};
 
-pub fn hyprshell_config_listener<F>(file_path: &Path, callback: F) -> Option<RecommendedWatcher>
+pub fn hyprshell_config_listener<F>(
+    file_path: &Path,
+    callback: F,
+) -> anyhow::Result<RecommendedWatcher>
 where
     F: Fn(&'static str) + 'static + Clone + Send,
 {
     if !file_path.exists() {
-        debug!("unable to watch for file changes as the file doesnt exist");
-        return None;
+        bail!("unable to watch for file changes as the file doesnt exist");
     }
 
     let mut watcher = RecommendedWatcher::new(
@@ -20,29 +23,31 @@ where
                 callback("hyprshell config change");
             }
             Err(err) => {
-                warn!("Watch error: {:?}", err)
+                warn!("Watch error: {:?}", err);
             }
             Ok(_) => {}
         },
         Config::default(),
     )
-    .expect("Failed to create watcher");
+    .context("Failed to create watcher")?;
 
     info!("Starting hyprshell config reload listener");
     watcher
         .watch(file_path, RecursiveMode::NonRecursive)
-        .expect("Failed to start hyprshell config reload listener");
+        .context("Failed to start hyprshell config reload listener")?;
 
-    Some(watcher)
+    Ok(watcher)
 }
 
-pub fn hyprshell_css_listener<F>(file_path: &Path, callback: F) -> Option<RecommendedWatcher>
+pub fn hyprshell_css_listener<F>(
+    file_path: &Path,
+    callback: F,
+) -> anyhow::Result<RecommendedWatcher>
 where
     F: Fn(&'static str) + 'static + Clone + Send,
 {
     if !file_path.exists() {
-        debug!("unable to watch for file changes as the file doesnt exist");
-        return None;
+        bail!("unable to watch for file changes as the file doesnt exist");
     }
 
     let mut watcher = RecommendedWatcher::new(
@@ -52,26 +57,25 @@ where
                 callback("hyprshell css change");
             }
             Err(err) => {
-                warn!("Watch error: {:?}", err)
+                warn!("Watch error: {:?}", err);
             }
             Ok(_) => {}
         },
         Config::default(),
     )
-    .expect("Failed to create watcher");
+    .context("Failed to create watcher")?;
 
     info!("Starting hyprshell css reload listener");
     watcher
         .watch(file_path.as_ref(), RecursiveMode::NonRecursive)
-        .expect("Failed to start hyprshell css reload listener");
+        .context("Failed to start hyprshell css reload listener")?;
 
-    Some(watcher)
+    Ok(watcher)
 }
 
-pub fn hyprshell_config_block(file_path: &Path) {
+pub fn hyprshell_config_block(file_path: &Path) -> anyhow::Result<()> {
     if !file_path.exists() {
-        debug!("unable to watch for file changes as the file doesnt exist, exiting");
-        std::process::exit(1);
+        bail!("unable to watch for file changes as the file doesnt exist, exiting");
     }
 
     let (tx, rx) = std::sync::mpsc::channel();
@@ -82,17 +86,18 @@ pub fn hyprshell_config_block(file_path: &Path) {
                 tx.send(()).warn_details("Failed to send reload signal");
             }
             Err(err) => {
-                warn!("Watch error: {:?}", err)
+                warn!("Watch error: {:?}", err);
             }
             Ok(_) => {}
         },
         Config::default(),
     )
-    .expect("Failed to create watcher");
+    .context("Failed to create watcher")?;
     debug!("Starting hyprshell config reload listener");
 
     watcher
         .watch(file_path.as_ref(), RecursiveMode::NonRecursive)
-        .expect("Failed to start hyprshell config reload listener");
+        .context("Failed to start hyprshell config reload listener")?;
     rx.recv().warn_details("Failed to receive reload signal");
+    Ok(())
 }

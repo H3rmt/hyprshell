@@ -1,6 +1,7 @@
 use core_lib::WarnWithDetails;
 use tracing::info;
 
+#[allow(clippy::future_not_send)]
 pub async fn monitor_listener<F>(callback: F)
 where
     F: Fn(&'static str) + 'static + Clone,
@@ -20,6 +21,7 @@ where
         .warn_details("Failed to start monitor added/removed listener");
 }
 
+#[allow(clippy::future_not_send)]
 pub async fn hyprland_config_listener<F>(callback: F)
 where
     F: Fn(&'static str) + 'static,

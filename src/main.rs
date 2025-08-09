@@ -1,10 +1,4 @@
-#![warn(
-    clippy::all,
-    clippy::restriction,
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::cargo
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use anyhow::{Context, bail};
 use clap::Parser;
@@ -29,6 +23,7 @@ mod debug;
 #[cfg(feature = "debug_command")]
 mod default_apps;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> anyhow::Result<()> {
     let cli = cli::App::parse();
     let opts = cli.global_opts.clone();
@@ -72,17 +67,17 @@ fn main() -> anyhow::Result<()> {
             exec_lib::check_version()
                 .warn_details("Unable to check hyprland version, continuing anyway");
             start::start(
-                config_path.unwrap_or(get_default_config_path()),
-                css_file.unwrap_or(get_default_css_path()),
-                data_dir.unwrap_or(get_default_data_dir()),
+                config_path.unwrap_or_else(get_default_config_path),
+                css_file.unwrap_or_else(get_default_css_path),
+                data_dir.unwrap_or_else(get_default_data_dir),
             )?;
         }
         #[cfg(feature = "generate_config_command")]
         cli::Command::Config { command } => match command {
             cli::ConfigCommand::Generate { force, no_systemd } => {
                 use core_lib::Warn;
-                let config_path = config_path.unwrap_or(get_default_config_path());
-                let css_path = css_file.unwrap_or(get_default_css_path());
+                let config_path = config_path.unwrap_or_else(get_default_config_path);
+                let css_path = css_file.unwrap_or_else(get_default_css_path);
 
                 let (override_config, override_css) = config_lib::generate::get_overrides(&force);
                 config_lib::generate::check_file_exist(
@@ -109,11 +104,11 @@ fn main() -> anyhow::Result<()> {
                 core_lib::explain_config(&config_path);
             }
             cli::ConfigCommand::Explain {} => {
-                core_lib::explain_config(&config_path.unwrap_or(get_default_config_path()));
+                core_lib::explain_config(&config_path.unwrap_or_else(get_default_config_path));
             }
             cli::ConfigCommand::Check {} => {
                 if let Err(err) = config_lib::load_and_migrate_config(
-                    &config_path.unwrap_or(get_default_config_path()),
+                    &config_path.unwrap_or_else(get_default_config_path),
                     true,
                 ) {
                     tracing::warn!("Failed to load config: {err}");
@@ -123,17 +118,17 @@ fn main() -> anyhow::Result<()> {
             #[cfg(feature = "config_check")]
             cli::ConfigCommand::CheckIfDefault {} => {
                 let config = config_lib::load_and_migrate_config(
-                    &config_path.unwrap_or(get_default_config_path()),
+                    &config_path.unwrap_or_else(get_default_config_path),
                     false,
                 )?;
                 let config_default = config_lib::Config::default();
-                if config != config_default {
+                if config == config_default {
+                    tracing::info!("Current config matches the default configuration");
+                } else {
                     tracing::warn!("Current config does not match the default configuration");
                     tracing::info!("Default config: {:#?}", config_default);
                     tracing::info!("Current config: {:#?}", config);
                     exit(1);
-                } else {
-                    tracing::info!("Current config matches the default configuration");
                 }
             }
             #[cfg(feature = "config_check")]
@@ -163,20 +158,20 @@ fn main() -> anyhow::Result<()> {
             println!("run with -vv ... to see all logs");
             match command {
                 cli::DebugCommand::ListIcons => {
-                    debug::list_icons();
+                    debug::list_icons().warn_details("Failed to list icons");
                 }
                 cli::DebugCommand::ListDesktopFiles => {
                     debug::list_desktop_files();
                 }
                 cli::DebugCommand::CheckClass { class } => {
-                    debug::check_class(class);
+                    debug::check_class(class).warn_details("Failed to check class");
                 }
                 cli::DebugCommand::Search { text, all } => {
                     debug::search(
                         &text,
                         all,
-                        &config_path.unwrap_or(get_default_config_path()),
-                        &data_dir.unwrap_or(get_default_data_dir()),
+                        &config_path.unwrap_or_else(get_default_config_path),
+                        &data_dir.unwrap_or_else(get_default_data_dir),
                     );
                 }
                 cli::DebugCommand::DefaultApplications { command } => match command {
@@ -198,14 +193,14 @@ fn main() -> anyhow::Result<()> {
                         default_apps::check();
                     }
                 },
-            };
+            }
         }
         cli::Command::Data { command } => match command {
             cli::DataCommand::LaunchHistory { run_cache_weeks } => {
                 data::launch_history(
                     run_cache_weeks,
-                    &config_path.unwrap_or(get_default_config_path()),
-                    &data_dir.unwrap_or(get_default_data_dir()),
+                    &config_path.unwrap_or_else(get_default_config_path),
+                    &data_dir.unwrap_or_else(get_default_data_dir),
                     opts.verbose,
                 );
             }
@@ -213,10 +208,10 @@ fn main() -> anyhow::Result<()> {
         cli::Command::Completions { shell, base_path } => {
             if let Some(shell) = shell {
                 completions::generate(&shell, base_path)
-                    .context("Failed to generate completions")?
+                    .context("Failed to generate completions")?;
             } else {
                 for shell in ["bash", "fish", "zsh"] {
-                    completions::generate(shell, None).context("Failed to generate completions")?
+                    completions::generate(shell, None).context("Failed to generate completions")?;
                 }
             }
         }
@@ -251,7 +246,7 @@ fn check_env() {
             content
                 .lines()
                 .find(|line| line.starts_with("NAME="))
-                .map(|line| line.to_string())
+                .map(ToString::to_string)
         })
         .unwrap_or_else(|| "NAME=Unknown".to_string());
 

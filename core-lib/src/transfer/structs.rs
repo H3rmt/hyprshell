@@ -64,24 +64,28 @@ pub struct Identifier {
 }
 
 impl Identifier {
-    pub fn plugin(plugin: PluginNames) -> Self {
-        Identifier {
+    pub const fn plugin(plugin: PluginNames) -> Self {
+        Self {
             plugin,
             data: None,
             data_additional: None,
         }
     }
 
-    pub fn data(plugin: PluginNames, data: Box<str>) -> Self {
-        Identifier {
+    pub const fn data(plugin: PluginNames, data: Box<str>) -> Self {
+        Self {
             plugin,
             data: Some(data),
             data_additional: None,
         }
     }
 
-    pub fn data_additional(plugin: PluginNames, data: Box<str>, data_additional: Box<str>) -> Self {
-        Identifier {
+    pub const fn data_additional(
+        plugin: PluginNames,
+        data: Box<str>,
+        data_additional: Box<str>,
+    ) -> Self {
+        Self {
             plugin,
             data: Some(data),
             data_additional: Some(data_additional),

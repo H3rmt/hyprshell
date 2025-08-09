@@ -13,9 +13,9 @@ use gtk::{
 };
 use std::collections::HashMap;
 use std::path::Path;
-use tracing::{Level, debug, debug_span, span, warn};
+use tracing::{debug, debug_span, warn};
 
-pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Sender<TransferType>) {
+pub fn update_launcher(data: &mut LauncherData, text: &str, event_sender: &Sender<TransferType>) {
     let _span = debug_span!("update_launcher").entered();
 
     while let Some(child) = data.results_box.first_child() {
@@ -31,7 +31,7 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
     }
 
     let sortable_launch_options =
-        get_sortable_launch_options(&data.config.plugins, &text, &data.config.data_dir);
+        get_sortable_launch_options(&data.config.plugins, text, &data.config.data_dir);
     let mut items = data.config.max_items.min(9);
     for (index, opt) in sortable_launch_options.into_iter().enumerate() {
         if items == 0 {
@@ -43,7 +43,7 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
             match index {
                 0 => "Return".to_string(),
                 i if i <= 9 => format!("{}+{i}", data.config.launch_modifier),
-                _ => "".to_string(),
+                _ => String::new(),
             },
             opt.icon,
             &opt.name,
@@ -57,9 +57,11 @@ pub fn update_launcher(data: &mut LauncherData, text: String, event_sender: Send
         data.sorted_matches.push(opt.iden);
     }
 
-    let static_launch_options =
-        get_static_launch_options(&data.config.plugins, &data.config.default_terminal);
-    for opt in static_launch_options.into_iter() {
+    let static_launch_options = get_static_launch_options(
+        &data.config.plugins,
+        data.config.default_terminal.as_deref(),
+    );
+    for opt in static_launch_options {
         let button = create_static_plugin_box(
             &opt.iden,
             opt.icon,
@@ -193,7 +195,7 @@ fn create_entry(
         .build();
     if let Some(details_long) = details_long {
         exec.set_tooltip_text(Some(&details_long));
-        exec.add_css_class("underline")
+        exec.add_css_class("underline");
     }
     hbox.append(&exec);
 

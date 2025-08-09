@@ -3,27 +3,13 @@ use config_lib::Modifier;
 use hyprland::ctl::plugin;
 use hyprland_plugin::PluginConfig;
 use std::path::Path;
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
 pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
 
     // TODO get plugin list and check if the plugin with same config is already loaded
     unload();
-    // let plugins = plugin::list().unwrap_or_default();
-    // trace!("plugins: {:?}", plugins);
-    // for plugin in plugins {
-    //     if plugin.name == hyprland_plugin::PLUGIN_NAME {
-    //         debug!("plugin already loaded, unloading it");
-    //         plugin::unload(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH)).with_context(|| {
-    //             format!(
-    //                 "unable to unload old plugin at: {}",
-    //                 hyprland_plugin::PLUGIN_OUTPUT_PATH
-    //             )
-    //         })?;
-    //         debug!("plugin unloaded");
-    //     }
-    // }
 
     hyprland_plugin::generate(&PluginConfig {
         xkb_key_switch_mod: Box::from(mod_to_xkb_key(modifier)),
@@ -39,7 +25,22 @@ pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn unload() {
+pub fn unload() {
+    // let plugins = plugin::list().unwrap_or_default();
+    // trace!("plugins: {:?}", plugins);
+    // for plugin in plugins {
+    //     if plugin.name == hyprland_plugin::PLUGIN_NAME {
+    //         debug!("plugin already loaded, unloading it");
+    //         plugin::unload(Path::new(hyprland_plugin::PLUGIN_OUTPUT_PATH)).with_context(|| {
+    //             format!(
+    //                 "unable to unload old plugin at: {}",
+    //                 hyprland_plugin::PLUGIN_OUTPUT_PATH
+    //             )
+    //         })?;
+    //         debug!("plugin unloaded");
+    //     }
+    // }
+
     let mut cmd = std::process::Command::new("sh");
     cmd.args([
         "-c",
@@ -59,7 +60,7 @@ fn unload() {
     }
 }
 
-pub fn mod_to_xkb_key(r#mod: Modifier) -> &'static str {
+pub const fn mod_to_xkb_key(r#mod: Modifier) -> &'static str {
     match r#mod {
         Modifier::Alt => "XKB_KEY_Alt",
         Modifier::Ctrl => "XKB_KEY_Control",

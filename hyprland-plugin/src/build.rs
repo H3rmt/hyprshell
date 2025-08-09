@@ -3,7 +3,7 @@ use anyhow::{Context, bail};
 use std::env;
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
-use tracing::{Level, debug_span, span, trace};
+use tracing::{debug_span, trace};
 
 pub fn build(dir: &TempDir) -> anyhow::Result<()> {
     let _span = debug_span!("build", path =? dir.path()).entered();

@@ -9,9 +9,11 @@ pub fn get_hyprshell_path() -> String {
         .replace("(deleted)", "")
 }
 
+/// # Panics
+/// if the transfer could not be serialized into a string
 pub fn generate_transfer_socat(transfer: &TransferType) -> String {
     format!(
-        r#"{} socat '{}'"#,
+        r"{} socat '{}'",
         get_hyprshell_path(),
         serde_json::to_string(transfer).expect("serialize transfer")
     )

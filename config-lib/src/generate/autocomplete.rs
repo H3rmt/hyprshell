@@ -21,7 +21,7 @@ impl From<Box<[&str]>> for StringAutoCompleter {
         Self {
             strings: value
                 .iter()
-                .map(|s| s.to_string().into_boxed_str())
+                .map(|s| (*s).to_string().into_boxed_str())
                 .collect(),
         }
     }
@@ -33,7 +33,7 @@ impl Autocomplete for StringAutoCompleter {
             .strings
             .iter()
             .filter(|terminal| terminal.starts_with(input))
-            .map(|terminal| terminal.to_string())
+            .map(ToString::to_string)
             .collect())
     }
 
@@ -48,7 +48,7 @@ impl Autocomplete for StringAutoCompleter {
             self.strings
                 .iter()
                 .find(|terminal| terminal.starts_with(input))
-                .map(|suggestion| suggestion.to_string())
+                .map(ToString::to_string)
         })
     }
 }

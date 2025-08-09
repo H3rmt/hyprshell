@@ -1,9 +1,9 @@
 use crate::desktop_map::{add_path_for_icon_by_pid_exec, get_icon_name_by_name_from_desktop_files};
-use core_lib::default;
+use core_lib::{WarnWithDetails, default};
 use gtk::Image;
 use std::fs;
 use std::path::Path;
-use tracing::{Level, debug_span, span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
 pub fn set_icon(class: &str, pid: i32, image: &Image) {
     let image = image.clone();
@@ -33,12 +33,13 @@ pub fn set_icon(class: &str, pid: i32, image: &Image) {
             if let Some(icon_path) = load_icon_from_cache(cmd, &image) {
                 // add the icon path back into cache
                 // to directly link class name to icon without checking pid again
-                add_path_for_icon_by_pid_exec(class, icon_path);
+                add_path_for_icon_by_pid_exec(class, icon_path)
+                    .warn_details("Failed to add icon path to cache");
             }
         }
     } else {
         warn!("Failed to read cmdline for PID {}", pid);
-    };
+    }
 }
 
 // check if the icon is in theme and apply it

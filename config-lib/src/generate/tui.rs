@@ -89,7 +89,7 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
         if open_overview.trim().is_empty() {
             None
         } else {
-            match get_mod_and_key(open_overview) {
+            match get_mod_and_key(&open_overview) {
                 Ok(data) => Some(data),
                 Err(err) => {
                     eprintln!("Invalid Modifier: {err:?}");
@@ -191,12 +191,11 @@ fn get_mod(modifier: &str) -> anyhow::Result<Modifier> {
     }
 }
 
-fn get_mod_and_key(modifier: String) -> anyhow::Result<(Modifier, Box<str>)> {
+fn get_mod_and_key(modifier: &str) -> anyhow::Result<(Modifier, Box<str>)> {
     let split = modifier.split('+').collect::<Vec<_>>();
     let r#mod = get_mod(split.first().unwrap_or(&""))?;
-    if let Some(key) = split.get(1) {
-        Ok((r#mod, Box::from(key.trim())))
-    } else {
-        Ok((r#mod, Box::from(r#mod.to_l_key())))
-    }
+    split.get(1).map_or_else(
+        || Ok((r#mod, Box::from(r#mod.to_l_key()))),
+        |key| Ok((r#mod, Box::from(key.trim()))),
+    )
 }

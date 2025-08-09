@@ -2,9 +2,9 @@ use crate::global::WindowsOverviewData;
 use crate::next::find_next;
 use core_lib::transfer::SwitchOverviewConfig;
 use gtk::prelude::*;
-use tracing::{Level, debug_span, span};
+use tracing::debug_span;
 
-pub fn update_overview(data: &mut WindowsOverviewData, config: SwitchOverviewConfig) {
+pub fn update_overview(data: &mut WindowsOverviewData, config: &SwitchOverviewConfig) {
     let _span = debug_span!("update_overview").entered();
 
     let active = find_next(
@@ -19,20 +19,20 @@ pub fn update_overview(data: &mut WindowsOverviewData, config: SwitchOverviewCon
 
     for monitor_data in data.window_list.values_mut() {
         if config.workspace {
-            for (_, button) in monitor_data.clients.iter_mut() {
+            for button in monitor_data.clients.values_mut() {
                 button.remove_css_class("active");
             }
-            for (id, button) in monitor_data.workspaces.iter_mut() {
+            for (id, button) in &mut monitor_data.workspaces {
                 button.remove_css_class("active");
                 if active.workspace == *id {
                     button.add_css_class("active");
                 }
             }
         } else {
-            for (_, button) in monitor_data.workspaces.iter_mut() {
+            for button in monitor_data.workspaces.values_mut() {
                 button.remove_css_class("active");
             }
-            for (id, button) in monitor_data.clients.iter_mut() {
+            for (id, button) in &mut monitor_data.clients {
                 button.remove_css_class("active");
                 if active.client == Some(*id) {
                     button.add_css_class("active");

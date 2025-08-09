@@ -4,7 +4,7 @@ use exec_lib::switch::{switch_client, switch_workspace};
 use exec_lib::{reset_remain_focused, to_client_address};
 use gtk::glib;
 use gtk::prelude::*;
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
 pub fn switch_already_hidden(data: &WindowsSwitchData) -> bool {
     !data.window.is_visible()
@@ -27,8 +27,7 @@ pub fn close_switch(data: &mut WindowsSwitchData, switch: bool) {
                 data.hypr_data
                     .clients
                     .find_by_first(&id)
-                    .map(|c| c.title.clone())
-                    .unwrap_or_else(|| "<Unknown>".to_string())
+                    .map_or_else(|| "<Unknown>".to_string(), |c| c.title.clone())
             );
             // we need to do this because the window might still be visible and have KeyboardMode::Exclusive
             glib::idle_add_local(move || {
@@ -43,8 +42,7 @@ pub fn close_switch(data: &mut WindowsSwitchData, switch: bool) {
                 data.hypr_data
                     .workspaces
                     .find_by_first(&id)
-                    .map(|c| c.name.clone())
-                    .unwrap_or_else(|| "<Unknown>".to_string())
+                    .map_or_else(|| "<Unknown>".to_string(), |c| c.name.clone())
             );
             glib::idle_add_local(move || {
                 switch_workspace(id).warn_details(&format!(

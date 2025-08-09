@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 use tracing::debug;
 
-pub(crate) fn launch_history(
+pub fn launch_history(
     run_cache_weeks: Option<u8>,
     config_path: &Path,
     data_dir: &Path,
@@ -31,6 +31,7 @@ pub(crate) fn launch_history(
             if let Some(name_line) = content.lines().find(|l| l.starts_with("Name=")) {
                 let name = name_line.trim_start_matches("Name=");
                 // check if verbosity is set, if so, print the name
+                #[allow(clippy::comparison_chain)]
                 if verbose > 0 {
                     println!("{name}: ({run}) {}", path.display());
                 } else if verbose == 0 {

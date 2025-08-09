@@ -1,6 +1,7 @@
 [package]
 name = "hyprshell"
 readme = "README.md"
+categories = []
 documentation = "https://docs.rs/hyprshell"
 version = "4.5.0"
 edition.workspace = true

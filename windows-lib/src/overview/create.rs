@@ -8,7 +8,7 @@ use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, FlowBox, Orientation, Overlay, SelectionMode};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use std::collections::HashMap;
-use tracing::{Level, debug, debug_span, span};
+use tracing::{debug, debug_span};
 
 pub fn create_windows_overview_window(
     app: &Application,
@@ -23,7 +23,7 @@ pub fn create_windows_overview_window(
         let gtk_monitors = display
             .monitors()
             .iter()
-            .filter_map(|m| m.ok())
+            .filter_map(std::result::Result::ok)
             .collect::<Vec<Monitor>>();
 
         for gtk_monitor in gtk_monitors {
@@ -32,8 +32,8 @@ pub fn create_windows_overview_window(
                 let workspaces_flow = FlowBox::builder()
                     .selection_mode(SelectionMode::None)
                     .orientation(Orientation::Horizontal)
-                    .max_children_per_line(windows.items_per_row as u32)
-                    .min_children_per_line(windows.items_per_row as u32)
+                    .max_children_per_line(u32::from(windows.items_per_row))
+                    .min_children_per_line(u32::from(windows.items_per_row))
                     .build();
 
                 let workspaces_flow_overlay = Overlay::builder()

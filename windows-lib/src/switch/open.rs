@@ -10,17 +10,18 @@ use gtk::gdk::Cursor;
 use gtk::prelude::*;
 use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
-use tracing::{Level, debug_span, span, trace};
+use tracing::{debug_span, trace};
 
-fn scale(value: i16, scale: f64) -> i32 {
-    (value as f64 / (15f64 - scale)) as i32
+fn scale<T: Into<f64>>(value: T, scale: f64) -> i32 {
+    (value.into() / (15f64 - scale)) as i32
 }
 
 pub fn switch_already_open(data: &WindowsSwitchData) -> bool {
     data.window.get_visible()
 }
 
-pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::Result<()> {
+#[allow(clippy::too_many_lines)]
+pub fn open_switch(data: &mut WindowsSwitchData, config: &OpenSwitch) -> anyhow::Result<()> {
     let _span = debug_span!("open_switch").entered();
     set_remain_focused().warn_details("Failed to set no follow mouse");
 
@@ -72,14 +73,15 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                 continue;
             }
             let workspace_fixed = Fixed::builder()
-                .width_request(scale(workspace.width as i16, data.config.scale))
-                .height_request(scale(workspace.height as i16, data.config.scale))
+                // TODO
+                .width_request(scale(workspace.width, data.config.scale))
+                .height_request(scale(workspace.height, data.config.scale))
                 .build();
             let id_string = wid.to_string();
-            let title = if !workspace.name.trim().is_empty() {
-                remove_html.replace_all(&workspace.name, "")
-            } else {
+            let title = if workspace.name.trim().is_empty() {
                 Cow::from(&id_string)
+            } else {
+                remove_html.replace_all(&workspace.name, "")
             };
             let workspace_frame = Frame::builder()
                 .label(title)
@@ -108,10 +110,10 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                 }
 
                 let client_button = {
-                    let title = if !client.title.trim().is_empty() {
-                        &client.title
-                    } else {
+                    let title = if client.title.trim().is_empty() {
                         &client.class
+                    } else {
+                        &client.title
                     };
                     let client_label = Label::builder()
                         .label(title)
@@ -130,7 +132,7 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                     if client_h_w > 70 {
                         let image = Image::builder()
                             .css_classes(["client-image"])
-                            .pixel_size((client_h_w.clamp(50, 600) as f64 / 1.6) as i32 - 20)
+                            .pixel_size((f64::from(client_h_w.clamp(50, 600)) / 1.6) as i32 - 20)
                             .build();
                         if !client.enabled {
                             image.add_css_class("monochrome");
@@ -159,8 +161,14 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                 };
                 workspace_fixed.put(
                     &client_button,
-                    scale(client.x - workspace.x as i16, data.config.scale) as f64,
-                    scale(client.y - workspace.y as i16, data.config.scale) as f64,
+                    f64::from(scale(
+                        client.x - i16::try_from(workspace.x)?,
+                        data.config.scale,
+                    )),
+                    f64::from(scale(
+                        client.y - i16::try_from(workspace.y)?,
+                        data.config.scale,
+                    )),
                 );
                 data.clients.insert(*address, client_button);
             }
@@ -171,10 +179,10 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                 continue;
             }
             let client_button = {
-                let title = if !client.title.trim().is_empty() {
-                    &client.title
-                } else {
+                let title = if client.title.trim().is_empty() {
                     &client.class
+                } else {
+                    &client.title
                 };
                 let client_label = Label::builder()
                     .label(title)
@@ -188,15 +196,15 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                     .build();
 
                 // hide picture if client so small
-                let client_h_w =
-                    scale(current_monitor.height as i16, data.config.scale).min(scale(
-                        (current_monitor.height as f32 / current_monitor.scale) as i16,
+                let client_h_w = scale(i16::try_from(current_monitor.height)?, data.config.scale)
+                    .min(scale(
+                        (f32::from(current_monitor.height) / current_monitor.scale) as i16,
                         data.config.scale,
                     ));
                 if client_h_w > 70 {
                     let image = Image::builder()
                         .css_classes(["client-image"])
-                        .pixel_size((client_h_w.clamp(50, 600) as f64 / 1.5) as i32 - 20)
+                        .pixel_size((f64::from(client_h_w.clamp(50, 600)) / 1.5) as i32 - 20)
                         .build();
                     if !client.enabled {
                         image.add_css_class("monochrome");
@@ -213,11 +221,11 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: OpenSwitch) -> anyhow::
                     .child(&client_overlay)
                     .css_classes(["client", "no-hover"])
                     .width_request(scale(
-                        (current_monitor.width as f32 / current_monitor.scale) as i16,
+                        (f32::from(current_monitor.width) / current_monitor.scale) as i16,
                         data.config.scale,
                     ))
                     .height_request(scale(
-                        (current_monitor.height as f32 / current_monitor.scale) as i16,
+                        (f32::from(current_monitor.height) / current_monitor.scale) as i16,
                         data.config.scale,
                     ))
                     .build();

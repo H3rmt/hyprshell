@@ -4,8 +4,8 @@ use std::collections::{BTreeMap, HashMap, VecDeque};
 /// Sorts clients with complex sorting
 ///
 /// * 'clients' - Vector of clients to sort
-/// * 'ignore_workspaces' - Don't split clients into workspaces (treat all clients on monitor as one workspace)
-/// * 'ignore_monitors' - Don't split clients into monitors (treat all clients as one monitor)
+/// * '`ignore_workspaces`' - Don't split clients into workspaces (treat all clients on monitor as one workspace)
+/// * '`ignore_monitors`' - Don't split clients into monitors (treat all clients as one monitor)
 pub fn sort_clients_by_position(
     clients: Vec<(ClientId, ClientData)>,
 ) -> Vec<(ClientId, ClientData)> {
@@ -75,11 +75,7 @@ pub fn sort_clients_by_position(
                             });
 
                             match (on_left, on_left_2) {
-                                (Some((idx, (_, c))), _) => {
-                                    current_bottom = c.y + c.height;
-                                    next_index = Some(idx);
-                                }
-                                (_, Some((idx, (_, c)))) => {
+                                (Some((idx, (_, c))), _) | (_, Some((idx, (_, c)))) => {
                                     current_bottom = c.y + c.height;
                                     next_index = Some(idx);
                                 }
@@ -127,11 +123,11 @@ pub fn sort_workspaces_by_recent(
     clients: &[(ClientId, ClientData)],
 ) {
     let mut ordering = vec![];
-    clients.iter().for_each(|(_, client)| {
+    for (_, client) in clients {
         if !ordering.contains(&client.workspace) {
             ordering.push(client.workspace);
         }
-    });
+    }
 
     workspaces.sort_by(|(a_id, _), (b_id, _)| {
         let a_pos = ordering

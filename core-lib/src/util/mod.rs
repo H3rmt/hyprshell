@@ -7,8 +7,10 @@ pub use r#const::*;
 pub use exec::*;
 pub use helpers::*;
 pub use path::*;
+use std::path::Path;
 
 pub fn get_daemon_socket_path_buff() -> std::path::PathBuf {
+    #[allow(clippy::option_if_let_else)]
     let mut buf = if let Some(runtime_path) = std::env::var_os("XDG_RUNTIME_DIR") {
         std::path::PathBuf::from(runtime_path)
     } else if let Ok(uid) = std::env::var("UID") {
@@ -32,19 +34,22 @@ pub fn daemon_running() -> bool {
     }
 }
 
-pub fn explain_config(config_path: &std::path::Path) {
+pub fn explain_config(config_path: &Path) {
     let config = match config_lib::load_and_migrate_config(config_path, true) {
         Ok(config) => config,
         Err(err) => {
-            eprintln!("\x1b[1m\x1b[31mConfig is invalid ({config_path:?}):\x1b[0m {err:?}\n");
+            eprintln!(
+                "\x1b[1m\x1b[31mConfig is invalid ({}):\x1b[0m {err:?}\n",
+                config_path.display()
+            );
             return;
         }
     };
-    let info = config_lib::explain(config, config_path);
+    let info = config_lib::explain(&config, config_path);
     println!("{info}");
 
     if daemon_running() {
-        println!("Daemon \x1b[32mrunning\x1b[0m")
+        println!("Daemon \x1b[32mrunning\x1b[0m");
     } else {
         eprintln!(
             "Daemon \x1b[31mnot running\x1b[0m, start it with `hyprshell run` or `systemctl --user enable --now hyprshell`"

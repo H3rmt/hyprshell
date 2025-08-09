@@ -6,7 +6,7 @@ use std::path::Path;
 use tracing::{debug, trace, warn};
 
 pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
-    if text.starts_with("/") || text.starts_with("~") {
+    if text.starts_with('/') || text.starts_with('~') {
         let file_manager = get_file_manager_info();
         matches.push(SortableLaunchOption {
             icon: file_manager.icon.clone(),
@@ -41,7 +41,7 @@ pub fn launch_option(text: &str) -> bool {
         format!("{} {}", file_manager.exec, text)
     };
     debug!("Launching file-manger: {}", cmdline);
-    run_program(&cmdline, None, false, &None).warn_details("Failed to run program");
+    run_program(&cmdline, None, false, None).warn_details("Failed to run program");
     true
 }
 
@@ -64,7 +64,7 @@ pub(super) fn get_file_manager_info() -> FilemanagerData {
                     entry.path(),
                     exec,
                 );
-                return Some(Some(FilemanagerData { exec, icon, name }));
+                return Some(Some(FilemanagerData { exec, name, icon }));
             }
         }
         None
@@ -73,9 +73,9 @@ pub(super) fn get_file_manager_info() -> FilemanagerData {
     .unwrap_or_else(|| {
         warn!("No default browser found! (using firefox and gdbus to open)");
         FilemanagerData {
-            exec: Box::from(r#"nautilus --new-window %U"#),
+            exec: Box::from(r"nautilus --new-window %U"),
             icon: Some(Box::from(Path::new("org.gnome.Nautilus"))),
-            name: Box::from(r#"Nautilus"#),
+            name: Box::from(r"Nautilus"),
         }
     })
 }

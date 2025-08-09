@@ -16,7 +16,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
     trace!("Added static shell option");
 }
 
-pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {
+pub fn launch_option(text: &str, default_terminal: Option<&str>) -> bool {
     if text.is_empty() {
         debug!("No text to run in shell");
         return false;
@@ -25,6 +25,6 @@ pub fn launch_option(text: &str, default_terminal: &Option<Box<str>>) -> bool {
     true
 }
 
-pub(crate) fn get_chars() -> Vec<Key> {
+pub fn get_chars() -> Vec<Key> {
     vec![Key::r]
 }

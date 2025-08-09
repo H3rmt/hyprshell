@@ -13,7 +13,7 @@ use gtk::{
 };
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use std::collections::HashMap;
-use tracing::{Level, debug, debug_span, span};
+use tracing::{debug, debug_span};
 
 pub fn create_windows_switch_window(
     app: &Application,
@@ -26,8 +26,8 @@ pub fn create_windows_switch_window(
     let clients_flow = FlowBox::builder()
         .selection_mode(SelectionMode::None)
         .orientation(Orientation::Horizontal)
-        .max_children_per_line(windows.items_per_row as u32)
-        .min_children_per_line(windows.items_per_row as u32)
+        .max_children_per_line(u32::from(windows.items_per_row))
+        .min_children_per_line(u32::from(windows.items_per_row))
         .build();
 
     let clients_flow_overlay = Overlay::builder()
@@ -45,11 +45,11 @@ pub fn create_windows_switch_window(
 
     let key_controller = EventControllerKey::new();
     let event_sender_2 = event_sender.clone();
-    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, event_sender_2.clone()));
-    let event_sender_3 = event_sender.clone();
+    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, &event_sender_2));
+    let event_sender_3 = event_sender;
     let r#mod = switch.modifier;
     key_controller.connect_key_released(move |_, key, _, _| {
-        handle_release(key, r#mod, event_sender_3.clone())
+        handle_release(key, r#mod, &event_sender_3);
     });
     window.add_controller(key_controller);
 
@@ -81,7 +81,7 @@ pub fn create_windows_switch_window(
     })
 }
 
-fn handle_release(key: Key, modifier: Modifier, event_sender: Sender<TransferType>) {
+fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferType>) {
     if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
         || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
         || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
@@ -92,7 +92,7 @@ fn handle_release(key: Key, modifier: Modifier, event_sender: Sender<TransferTyp
     }
 }
 
-fn handle_key(key: Key, event_sender: Sender<TransferType>) -> Propagation {
+fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
     match key {
         Key::Escape => {
             event_sender
@@ -108,15 +108,7 @@ fn handle_key(key: Key, event_sender: Sender<TransferType>) -> Propagation {
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::ISO_Left_Tab => {
-            event_sender
-                .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
-                    reverse: true,
-                }))
-                .warn_details("unable to send");
-            Propagation::Stop
-        }
-        Key::grave => {
+        Key::ISO_Left_Tab | Key::grave => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     reverse: true,

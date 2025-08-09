@@ -7,6 +7,7 @@ use core_lib::transfer::{
 use gtk::prelude::EntryExt;
 use tracing::{debug, trace, warn};
 
+#[allow(clippy::future_not_send)]
 pub async fn event_handler(
     mut globals: Globals,
     event_receiver: Receiver<TransferType>,
@@ -18,12 +19,12 @@ pub async fn event_handler(
             let close_socket = matches!(transfer, TransferType::Restart);
             trace!("handling event: {transfer:?}");
             match transfer {
-                TransferType::OpenOverview => open_overview(&mut globals, event_sender.clone()),
-                TransferType::OpenSwitch(config) => open_switch(&mut globals, config),
-                TransferType::SwitchOverview(config) => switch_overview(&mut globals, config),
-                TransferType::SwitchSwitch(config) => switch_switch(&mut globals, config),
+                TransferType::OpenOverview => open_overview(&mut globals, &event_sender),
+                TransferType::OpenSwitch(config) => open_switch(&mut globals, &config),
+                TransferType::SwitchOverview(config) => switch_overview(&mut globals, &config),
+                TransferType::SwitchSwitch(config) => switch_switch(&mut globals, &config),
                 TransferType::Exit => exit(&mut globals),
-                TransferType::Type(text) => r#type(&mut globals, text, event_sender.clone()),
+                TransferType::Type(text) => r#type(&mut globals, &text, &event_sender),
                 TransferType::CloseOverview(config) => close_overview(&mut globals, config),
                 TransferType::CloseSwitch => close_switch(&mut globals),
                 TransferType::Restart => restart(&globals),
@@ -35,28 +36,27 @@ pub async fn event_handler(
     }
 }
 
-fn r#type(global: &mut Globals, text: String, event_sender: Sender<TransferType>) {
+fn r#type(global: &mut Globals, text: &str, event_sender: &Sender<TransferType>) {
     if let Some(windows) = &mut global.windows {
         if let Some((_overview, launcher)) = &mut windows.overview {
-            launcher_lib::update_launcher(launcher, text, event_sender)
+            launcher_lib::update_launcher(launcher, text, event_sender);
         }
     }
 }
 
-fn open_overview(global: &mut Globals, event_sender: Sender<TransferType>) {
+fn open_overview(global: &mut Globals, event_sender: &Sender<TransferType>) {
     if let Some(windows) = &mut global.windows {
         if let Some((overview, launcher)) = &mut windows.overview {
             if !windows_lib::overview_already_open(overview)
                 && !&windows
                     .switch
                     .as_ref()
-                    .map(windows_lib::switch_already_open)
-                    .unwrap_or(false)
+                    .is_some_and(windows_lib::switch_already_open)
             {
-                windows_lib::open_overview(overview, event_sender.clone())
+                windows_lib::open_overview(overview, event_sender)
                     .warn_details("Failed to open overview window");
                 launcher_lib::open_launcher(launcher);
-                launcher_lib::update_launcher(launcher, "".to_string(), event_sender)
+                launcher_lib::update_launcher(launcher, "", event_sender);
             } else {
                 debug!("Overview or Switch already open");
             }
@@ -65,18 +65,17 @@ fn open_overview(global: &mut Globals, event_sender: Sender<TransferType>) {
         }
     } else {
         warn!("Windows not active");
-    };
+    }
 }
 
-fn open_switch(global: &mut Globals, config: OpenSwitch) {
+fn open_switch(global: &mut Globals, config: &OpenSwitch) {
     if let Some(windows) = &mut global.windows {
         if let Some(switch) = &mut windows.switch {
             if !windows_lib::switch_already_open(switch)
                 && !&windows
                     .overview
                     .as_ref()
-                    .map(|(o, _)| windows_lib::overview_already_open(o))
-                    .unwrap_or(false)
+                    .is_some_and(|(o, _)| windows_lib::overview_already_open(o))
             {
                 windows_lib::open_switch(switch, config)
                     .warn_details("Failed to open switch window");
@@ -91,10 +90,10 @@ fn open_switch(global: &mut Globals, config: OpenSwitch) {
     }
 }
 
-fn switch_switch(global: &mut Globals, config: SwitchSwitchConfig) {
+fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
     if let Some(windows) = &mut global.windows {
         if let Some(switch) = &mut windows.switch {
-            windows_lib::update_switch(switch, config)
+            windows_lib::update_switch(switch, config);
         } else {
             warn!("Window switch not active");
         }
@@ -102,7 +101,7 @@ fn switch_switch(global: &mut Globals, config: SwitchSwitchConfig) {
         warn!("Windows not active");
     }
 }
-fn switch_overview(global: &mut Globals, config: SwitchOverviewConfig) {
+fn switch_overview(global: &mut Globals, config: &SwitchOverviewConfig) {
     if let Some(windows) = &mut global.windows {
         if let Some((overview, launcher)) = &mut windows.overview {
             // don't switch selected window if launcher is active
@@ -122,10 +121,10 @@ fn exit(global: &mut Globals) {
         if let Some((overview, launcher)) = &mut windows.overview {
             windows_lib::close_overview(overview, None);
             launcher_lib::close_launcher_by_char(launcher, None); // this will never open a program and need the default terminal
-        };
+        }
         if let Some(switch) = &mut windows.switch {
             windows_lib::close_switch(switch, false);
-        };
+        }
     }
 }
 
@@ -152,7 +151,7 @@ fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
                         // kill overview, close launcher
                         windows_lib::close_overview(overview, None);
                         launcher_lib::close_launcher_by_char(launcher, Some('0'));
-                    };
+                    }
                 }
                 // clicked on launcher item
                 CloseOverviewConfig::LauncherClick(iden) => {
@@ -191,9 +190,9 @@ fn restart(global: &Globals) {
         if let Some((overview, launcher)) = &windows.overview {
             windows_lib::stop_overview(overview);
             launcher_lib::stop_launcher(launcher);
-        };
+        }
         if let Some(switch) = &windows.switch {
             windows_lib::stop_switch(switch);
-        };
+        }
     }
 }

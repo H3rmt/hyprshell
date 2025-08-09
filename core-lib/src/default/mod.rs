@@ -6,38 +6,44 @@ use std::fs::{DirEntry, read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock, RwLockReadGuard};
 use std::{env, thread};
-use tracing::{debug, debug_span, info_span, trace, warn};
+use tracing::{debug, debug_span, trace, warn};
 
 fn get_desktop_files() -> &'static RwLock<Vec<(DirEntry, IniFileOwned)>> {
     static MAP_LOCK: OnceLock<RwLock<Vec<(DirEntry, IniFileOwned)>>> = OnceLock::new();
-    MAP_LOCK.get_or_init(|| RwLock::new(Default::default()))
+    MAP_LOCK.get_or_init(|| RwLock::new(Vec::default()))
 }
 fn get_mime_files() -> &'static RwLock<Vec<(DirEntry, IniFileOwned)>> {
     static MAP_LOCK: OnceLock<RwLock<Vec<(DirEntry, IniFileOwned)>>> = OnceLock::new();
-    MAP_LOCK.get_or_init(|| RwLock::new(Default::default()))
+    MAP_LOCK.get_or_init(|| RwLock::new(Vec::default()))
 }
 fn get_icons() -> &'static RwLock<BTreeSet<Box<str>>> {
     static MAP_LOCK: OnceLock<RwLock<BTreeSet<Box<str>>>> = OnceLock::new();
-    MAP_LOCK.get_or_init(|| RwLock::new(Default::default()))
+    MAP_LOCK.get_or_init(|| RwLock::new(BTreeSet::default()))
 }
 
-pub fn get_all_desktop_files<'a>() -> RwLockReadGuard<'a, Vec<(DirEntry, IniFileOwned)>> {
+pub fn get_all_desktop_files<'a>()
+-> anyhow::Result<RwLockReadGuard<'a, Vec<(DirEntry, IniFileOwned)>>> {
     get_desktop_files()
         .read()
-        .expect("Failed to lock desktop files mutex")
+        .map_err(|_| anyhow::anyhow!("Failed to lock desktop files mutex"))
 }
-pub fn get_all_mime_files<'a>() -> RwLockReadGuard<'a, Vec<(DirEntry, IniFileOwned)>> {
+pub fn get_all_mime_files<'a>() -> anyhow::Result<RwLockReadGuard<'a, Vec<(DirEntry, IniFileOwned)>>>
+{
     get_mime_files()
         .read()
-        .expect("Failed to lock desktop files mutex")
+        .map_err(|_| anyhow::anyhow!("Failed to lock desktop files mutex"))
 }
-pub fn get_all_icons<'a>() -> RwLockReadGuard<'a, BTreeSet<Box<str>>> {
-    get_icons().read().expect("Failed to lock icon map")
+pub fn get_all_icons<'a>() -> anyhow::Result<RwLockReadGuard<'a, BTreeSet<Box<str>>>> {
+    get_icons()
+        .read()
+        .map_err(|_| anyhow::anyhow!("Failed to lock icon map"))
 }
 
 pub fn theme_has_icon_name(name: &str) -> bool {
-    let map = get_icons().read().expect("Failed to lock icon map");
-    map.contains(&Box::from(name))
+    get_icons()
+        .read()
+        .map(|map| map.contains(&Box::from(name)))
+        .unwrap_or(false)
 }
 
 pub fn get_default_desktop_file<F, R>(mime: &str, r#fn: F) -> Option<R>
@@ -64,13 +70,14 @@ where
             return r#fn(ini);
         }
     }
+    drop((mime_apps, desktop_files));
     None
 }
 
 /// Reloads desktop files and mime files from the system.
 ///
 /// Stores them in global data mutexes.
-pub fn reload_default_files() {
+pub fn reload_default_files() -> anyhow::Result<()> {
     let _span = tracing::span!(tracing::Level::TRACE, "reload_files").entered();
     let mut desktop_files_data = vec![];
     let mut mime_files_data = vec![];
@@ -96,12 +103,15 @@ pub fn reload_default_files() {
 
     let mut desktop_files = get_desktop_files()
         .write()
-        .expect("Failed to lock global data mutex");
+        .map_err(|_| anyhow::anyhow!("Failed to lock desktop files global data mutex"))?;
     *desktop_files = desktop_files_data;
+    drop(desktop_files);
     let mut mime_files = get_mime_files()
         .write()
-        .expect("Failed to lock global data mutex");
+        .map_err(|_| anyhow::anyhow!("Failed to lock mime files global data mutex"))?;
     *mime_files = mime_files_data;
+    drop(mime_files);
+    Ok(())
 }
 
 pub fn reload_available_icons(
@@ -124,11 +134,11 @@ pub fn reload_available_icons(
 
     if env::var_os("HYPRSHELL_NO_ALL_ICONS").is_none() {
         for path in search_path {
-            let _span = span.clone();
+            let span_2 = span.clone();
             if path.exists() {
                 if in_background {
                     thread::spawn(move || {
-                        let _span = _span.entered();
+                        let _span = span_2.entered();
                         let paths = collect_unique_filenames_recursive(&path);
                         debug!(
                             "found {} icons from filesystem in {path:?} paths (in background)",

@@ -2,9 +2,9 @@ use crate::global::WindowsSwitchData;
 use crate::next::find_next;
 use core_lib::transfer::{Direction, SwitchSwitchConfig};
 use gtk::prelude::*;
-use tracing::{Level, debug_span, span};
+use tracing::debug_span;
 
-pub fn update_switch(data: &mut WindowsSwitchData, config: SwitchSwitchConfig) {
+pub fn update_switch(data: &mut WindowsSwitchData, config: &SwitchSwitchConfig) {
     let _span = debug_span!("update_switch").entered();
 
     let active = find_next(
@@ -22,20 +22,20 @@ pub fn update_switch(data: &mut WindowsSwitchData, config: SwitchSwitchConfig) {
     data.active = active;
 
     if data.config.show_workspaces {
-        for (_, button) in data.clients.iter_mut() {
+        for button in data.clients.values() {
             button.remove_css_class("active");
         }
-        for (id, button) in data.workspaces.iter_mut() {
+        for (id, button) in &data.workspaces {
             button.remove_css_class("active");
             if active.workspace == *id {
                 button.add_css_class("active");
             }
         }
     } else {
-        for (_, button) in data.workspaces.iter_mut() {
+        for button in data.workspaces.values() {
             button.remove_css_class("active");
         }
-        for (id, button) in data.clients.iter_mut() {
+        for (id, button) in &data.clients {
             button.remove_css_class("active");
             if active.client == Some(*id) {
                 button.add_css_class("active");

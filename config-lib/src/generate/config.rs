@@ -1,6 +1,9 @@
 use crate::generate::tui::{WEB_SEARCH_ENGINES, configurable_launcher_plugins};
 use crate::structs::{Switch, Windows};
-use crate::{Config, Launcher, Modifier, Overview, Plugins, WebSearchConfig};
+use crate::{
+    ApplicationsPluginConfig, Config, EmptyConfig, Launcher, Modifier, Overview, Plugins,
+    WebSearchConfig,
+};
 use std::path::Path;
 
 pub fn get_overrides(force: &[String]) -> (bool, bool) {
@@ -29,13 +32,15 @@ pub fn check_file_exist(
 ) -> anyhow::Result<()> {
     if !override_config && config_path.exists() {
         eprintln!(
-            "\x1b[31mConfig file {config_path:?} already exists, use -f to override all or -f config to override only the config file\x1b[0m"
-        )
+            "\x1b[31mConfig file {} already exists, use -f to override all or -f config to override only the config file\x1b[0m",
+            config_path.display()
+        );
     }
     if !override_css && css_path.exists() {
         eprintln!(
-            "\x1b[31mCSS file {css_path:?} already exists, use -f to override all or -f css to override only the css file\x1b[0m"
-        )
+            "\x1b[31mCSS file {} already exists, use -f to override all or -f css to override only the css file\x1b[0m",
+            css_path.display()
+        );
     }
     Ok(())
 }
@@ -65,17 +70,17 @@ pub fn generate_config(data: ConfigData) -> Config {
                                 .find(|pl| {
                                     pl.as_ref().eq(configurable_launcher_plugins::APPLICATIONS)
                                 })
-                                .map(|_| Default::default()),
+                                .map(|_| ApplicationsPluginConfig::default()),
                             terminal: data
                                 .launcher_plugins
                                 .iter()
                                 .find(|pl| pl.as_ref().eq(configurable_launcher_plugins::TERMINAL))
-                                .map(|_| Default::default()),
+                                .map(|_| EmptyConfig::default()),
                             shell: data
                                 .launcher_plugins
                                 .iter()
                                 .find(|pl| pl.as_ref().eq(configurable_launcher_plugins::SHELL))
-                                .map(|_| Default::default()),
+                                .map(|_| EmptyConfig::default()),
                             websearch: data
                                 .launcher_plugins
                                 .iter()
@@ -98,8 +103,8 @@ pub fn generate_config(data: ConfigData) -> Config {
                                 .launcher_plugins
                                 .iter()
                                 .find(|pl| pl.as_ref().eq(configurable_launcher_plugins::CALC))
-                                .map(|_| Default::default()),
-                            path: Some(Default::default()),
+                                .map(|_| EmptyConfig::default()),
+                            path: Some(EmptyConfig::default()),
                         },
                         ..Default::default()
                     },

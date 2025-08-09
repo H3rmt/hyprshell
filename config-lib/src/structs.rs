@@ -30,7 +30,7 @@ pub struct Windows {
     pub switch: Option<Switch>,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Overview {
@@ -45,7 +45,7 @@ pub struct Overview {
     pub hide_filtered: bool,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Launcher {
@@ -72,7 +72,7 @@ pub struct Launcher {
 
 // no default for this, if some elements are missing, they should be None.
 // if no config for plugins is provided, use the default value from the launcher.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plugins {
     pub applications: Option<ApplicationsPluginConfig>,
@@ -83,12 +83,12 @@ pub struct Plugins {
     pub path: Option<EmptyConfig>,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct EmptyConfig {}
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct ApplicationsPluginConfig {
@@ -100,7 +100,7 @@ pub struct ApplicationsPluginConfig {
     pub show_actions_submenu: bool,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct WebSearchConfig {
@@ -116,7 +116,7 @@ pub struct WebSearchConfig {
     pub engines: Vec<SearchEngine>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct SearchEngine {
     pub url: Box<str>,
@@ -124,7 +124,7 @@ pub struct SearchEngine {
     pub key: char,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "no-default-config-values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Switch {
@@ -136,7 +136,7 @@ pub struct Switch {
     pub show_workspaces: bool,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilterBy {
     SameClass,

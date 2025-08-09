@@ -7,10 +7,13 @@ use std::fs::{read_to_string, write};
 use tracing::{debug, warn};
 
 pub fn get(mime: &str) -> anyhow::Result<()> {
-    util::reload_desktop_data();
+    util::reload_desktop_data().context("Failed to reload desktop data")?;
 
     let mut mimes = vec![];
-    for (file, ini) in get_all_mime_files().iter() {
+    for (file, ini) in get_all_mime_files()
+        .context("unable to get all mimefiles")?
+        .iter()
+    {
         let default = ini.get_section("Default Applications").and_then(|section| {
             section.get_first(mime).or_else(|| {
                 ini.get_section("Added Associations")
@@ -21,7 +24,7 @@ pub fn get(mime: &str) -> anyhow::Result<()> {
             mimes.push((
                 default.to_string(),
                 file.path().to_string_lossy().to_string(),
-            ))
+            ));
         }
     }
     if mimes.is_empty() {
@@ -45,18 +48,18 @@ pub fn set_default(mime: &str, value: &str) -> anyhow::Result<()> {
     let mut file = get_config_home();
     file.push("mimeapps.list");
     let str = if file.exists() {
-        read_to_string(&file).with_context(|| format!("Failed to read file {file:?}"))?
+        read_to_string(&file).with_context(|| format!("Failed to read file {}", file.display()))?
     } else {
-        "".to_string()
+        String::new()
     };
     let mut ini = IniFile::from_str(&str);
     let section = ini.section_entry("Default Applications").or_default();
     section.set_items(mime, vec![value]);
 
     let str = ini.format();
-    write(&file, str).with_context(|| format!("Failed to write file {file:?}"))?;
+    write(&file, str).with_context(|| format!("Failed to write file {:?}", file.display()))?;
 
-    println!("added {mime}: {value} to {file:?}");
+    println!("added {mime}: {value} to {:?}", file.display());
     Ok(())
 }
 
@@ -71,18 +74,18 @@ pub fn add_association(mime: &str, value: &str) -> anyhow::Result<()> {
     let mut file = get_config_home();
     file.push("mimeapps.list");
     let str = if file.exists() {
-        read_to_string(&file).with_context(|| format!("Failed to read file {file:?}"))?
+        read_to_string(&file).with_context(|| format!("Failed to read file {}", file.display()))?
     } else {
-        "".to_string()
+        String::new()
     };
     let mut ini = IniFile::from_str(&str);
     let section = ini.section_entry("Added Associations").or_default();
     section.insert_item_at_front(mime, value);
 
     let str = ini.format();
-    write(&file, str).with_context(|| format!("Failed to write file {file:?}"))?;
+    write(&file, str).with_context(|| format!("Failed to write file {:?}", file.display()))?;
 
-    println!("added {mime}: {value} to {file:?}");
+    println!("added {mime}: {value} to {:?}", file.display());
     Ok(())
 }
 
@@ -98,7 +101,7 @@ pub fn list(all: bool) {
             debug!("mimeapps.list: {:?}", file.path());
             if let Some(section) = ini.get_section("Default Applications") {
                 for (mime, values) in section {
-                    let mut values = values.iter().map(|v| v.to_string()).collect::<Vec<_>>();
+                    let mut values = values.iter().map(ToString::to_string).collect::<Vec<_>>();
                     mimes
                         .entry(mime.to_string())
                         .or_insert((vec![], vec![]))
@@ -108,7 +111,7 @@ pub fn list(all: bool) {
             }
             if let Some(section) = ini.get_section("Added Associations") {
                 for (mime, values) in section {
-                    let mut values = values.iter().map(|v| v.to_string()).collect::<Vec<_>>();
+                    let mut values = values.iter().map(ToString::to_string).collect::<Vec<_>>();
                     mimes
                         .entry(mime.to_string())
                         .or_insert((vec![], vec![]))
@@ -153,7 +156,7 @@ pub fn check() {
                         warn!("{mime} already exists");
                     }
                     for value in values {
-                        mimes.insert(mime.to_string(), (value.to_string(), file.path()));
+                        mimes.insert(mime.to_string(), ((*value).to_string(), file.path()));
                     }
                 }
             }
@@ -169,7 +172,8 @@ pub fn check() {
             debug!("{mime} in {path:?} has desktop file value: {value}");
         } else {
             eprintln!(
-                "{mime} in {path:?} has desktop file value: {value}, but this desktop-file does not exist!"
+                "{mime} in {} has desktop file value: {value}, but this desktop-file does not exist!",
+                path.display()
             );
         }
     }

@@ -3,7 +3,7 @@ use crate::migrate::check::get_config_version;
 use crate::{CURRENT_CONFIG_VERSION, Config, migrate, write_config};
 use anyhow::{Context, bail};
 use std::path::Path;
-use tracing::{Level, debug_span, info, span, warn};
+use tracing::{debug_span, info, warn};
 
 pub fn migrate(config_path: &Path) -> anyhow::Result<Config> {
     let _span = debug_span!("migrate").entered();
@@ -19,7 +19,7 @@ pub fn migrate(config_path: &Path) -> anyhow::Result<Config> {
         _ => bail!("Unsupported old config version {old_version}, cannot migrate"),
     };
     match write_config(config_path, &new_config, true) {
-        Ok(_) => {
+        Ok(()) => {
             info!("New config written successfully");
         }
         Err(err) => {

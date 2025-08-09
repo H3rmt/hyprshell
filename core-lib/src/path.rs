@@ -38,6 +38,8 @@ pub fn get_default_data_dir() -> PathBuf {
     path
 }
 
+/// # Panics
+/// if neither `XDG_DATA_HOME` nor HOME is set
 pub fn get_data_home() -> PathBuf {
     env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
@@ -48,6 +50,8 @@ pub fn get_data_home() -> PathBuf {
         .expect("Failed to get config dir (XDG_DATA_HOME or HOME not set)")
 }
 
+/// # Panics
+/// if neither `XDG_CONFIG_HOME` nor HOME is set
 pub fn get_config_home() -> PathBuf {
     env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
@@ -59,20 +63,22 @@ pub fn get_config_home() -> PathBuf {
 }
 
 pub fn get_config_dirs() -> Vec<PathBuf> {
-    env::var_os("XDG_CONFIG_DIRS")
-        .map(|val| env::split_paths(&val).collect())
-        .unwrap_or_else(|| vec![PathBuf::from("/etc/xdg/")])
+    env::var_os("XDG_CONFIG_DIRS").map_or_else(
+        || vec![PathBuf::from("/etc/xdg/")],
+        |val| env::split_paths(&val).collect(),
+    )
 }
 
 pub fn get_data_dirs() -> Vec<PathBuf> {
-    let mut dirs = env::var_os("XDG_DATA_DIRS")
-        .map(|val| env::split_paths(&val).collect())
-        .unwrap_or_else(|| {
+    let mut dirs = env::var_os("XDG_DATA_DIRS").map_or_else(
+        || {
             vec![
                 PathBuf::from("/usr/local/share"),
                 PathBuf::from("/usr/share"),
             ]
-        });
+        },
+        |val| env::split_paths(&val).collect(),
+    );
 
     if let Some(data_home) = env::var_os("XDG_DATA_HOME").map(PathBuf::from).map_or_else(
         || {
@@ -85,7 +91,7 @@ pub fn get_data_dirs() -> Vec<PathBuf> {
         },
         Some,
     ) {
-        dirs.push(data_home)
+        dirs.push(data_home);
     }
 
     dirs.into_iter()

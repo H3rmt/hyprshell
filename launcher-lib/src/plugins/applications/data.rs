@@ -23,8 +23,7 @@ pub fn save_run(desktop_file: &Path, data_dir: &Path) -> anyhow::Result<()> {
 
     data[&*desktop_file.to_string_lossy()] = serde_json::json!(
         data.get(&*desktop_file.to_string_lossy())
-            .map(|v| v.as_i64().unwrap_or(0) + 1)
-            .unwrap_or(1)
+            .map_or(1, |v| v.as_i64().unwrap_or(0) + 1)
     );
 
     trace!("Cache saved to {file:?} (added {:?})", desktop_file);
@@ -57,7 +56,7 @@ fn get_all_weeks(run_cache_weeks: u8, data_dir: &Path) -> Vec<Box<Path>> {
 }
 
 fn get_name_from_timestamp(week: u8) -> Box<Path> {
-    let timestamp = Utc::now().timestamp() - (week as i64 * 7 * 24 * 60 * 60);
+    let timestamp = Utc::now().timestamp() - (i64::from(week) * 7 * 24 * 60 * 60);
     let datetime = DateTime::from_timestamp(timestamp, 0).expect("Invalid timestamp");
     Box::from(Path::new(&format!(
         "{}_{}.json",
@@ -90,7 +89,7 @@ pub fn get_stored_runs(run_cache_weeks: u8, data_dir: &Path) -> HashMap<Box<Path
             for (path, runs_count) in obj {
                 runs.entry(PathBuf::from(path).into_boxed_path())
                     .and_modify(|e| *e += runs_count.as_u64().unwrap_or(0))
-                    .or_insert(runs_count.as_u64().unwrap_or(0));
+                    .or_insert_with(|| runs_count.as_u64().unwrap_or(0));
             }
         } else {
             warn!("Cache data is not an object");

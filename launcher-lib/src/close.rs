@@ -1,11 +1,11 @@
 use crate::{LauncherData, plugins};
 use core_lib::transfer::Identifier;
 use gtk::prelude::*;
-use gtk::{ApplicationWindow, Button, Entry, Widget, glib};
+use gtk::{ApplicationWindow, Button, Entry, glib};
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use tracing::{Level, debug_span, span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
 const ANIMATE_LAUNCH_MS: u64 = 500;
 
@@ -15,14 +15,12 @@ pub fn close_launcher_by_char(data: &mut LauncherData, char: Option<char>) {
         data.window.set_keyboard_mode(KeyboardMode::None);
         trace!("Closing launcher with char: {}", char);
         if let Some(iden) = match char {
-            '0'..='9' => data
-                .sorted_matches
-                .get(char.to_digit(10).expect("unable to convert char") as usize),
+            '0'..='9' => char
+                .to_digit(10)
+                .and_then(|a| data.sorted_matches.get(a as usize)),
             _ => data.static_matches.get(&char),
-        }
-        .cloned()
-        {
-            close_launcher(data, &iden)
+        } {
+            close_launcher(data, iden);
         } else {
             warn!("No match found for char: {}", char);
             close_window(&data.entry, &data.window);
@@ -40,14 +38,15 @@ pub fn close_launcher_by_iden(data: &mut LauncherData, iden: &Identifier) {
     close_launcher(data, iden);
 }
 
-fn close_launcher(data: &mut LauncherData, iden: &Identifier) {
-    let _span = debug_span!("close_launcher").entered();
+fn close_launcher(data: &LauncherData, iden: &Identifier) {
+    let span = debug_span!("close_launcher");
+    let _span = span.enter();
     let instant = Instant::now();
 
     let animate = plugins::launch(
         iden,
         &data.entry.text(),
-        &data.config.default_terminal,
+        data.config.default_terminal.as_deref(),
         &data.config.data_dir,
     );
     if animate {
@@ -60,8 +59,9 @@ fn close_launcher(data: &mut LauncherData, iden: &Identifier) {
         show_launch(&data.results_items, &data.plugins_items, iden);
         let window = data.window.clone();
         let entry = data.entry.clone();
+        let span = span.clone();
         glib::timeout_add_local_once(Duration::from_millis(ANIMATE_LAUNCH_MS), move || {
-            let _span = _span.clone();
+            let _span = span.entered();
             close_window(&entry, &window);
             trace!("closed launcher after {:?} time", instant.elapsed());
         });
@@ -83,7 +83,7 @@ fn show_launch(
 ) {
     for (iden, child) in results_items {
         if iden.data == open_iden.data {
-            for (iden_2, row) in child.1.iter() {
+            for (iden_2, row) in &child.1 {
                 if iden_2.data_additional == open_iden.data_additional {
                     row.add_css_class("launch");
                     return;

@@ -5,8 +5,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
     if config
         .windows
         .as_ref()
-        .map(|w| w.scale >= 15f64 || w.scale <= 0f64)
-        .unwrap_or(false)
+        .is_some_and(|w| w.scale >= 15f64 || w.scale <= 0f64)
     {
         bail!("Scale factor must be less than 15 and greater than 0");
     }
@@ -15,8 +14,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .windows
         .as_ref()
         .and_then(|w| w.overview.as_ref())
-        .map(|o| o.launcher.launch_modifier == o.modifier)
-        .unwrap_or(false)
+        .is_some_and(|o| o.launcher.launch_modifier == o.modifier)
     {
         bail!(
             "Launcher modifier cannot be the same as overview open modifier. (pressing the modifier will just close the overview instead of launching an app)"
@@ -27,8 +25,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .windows
         .as_ref()
         .and_then(|w| w.overview.as_ref())
-        .map(|o| matches!(&*o.key, "super" | "alt" | "shift" | "control" | "ctrl"))
-        .unwrap_or(false)
+        .is_some_and(|o| matches!(&*o.key, "super" | "alt" | "shift" | "control" | "ctrl"))
     {
         bail!(
             "If a modifier key is used to open it must include _l or _r at the end. (e.g. super_l, alt_r, etc)\nctrl_l / _r is NOT a valid modifier key, only control_l / _r is"
@@ -45,8 +42,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
             .plugins
             .websearch
             .as_ref()
-            .map(|ws| &ws.engines)
-            .unwrap_or(&vec![])
+            .map_or(&vec![], |ws| &ws.engines)
         {
             if engine.url.is_empty() {
                 bail!("Search engine url cannot be empty");
@@ -56,9 +52,8 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
             }
             if used.contains(&engine.key) {
                 bail!("Duplicate search engine key: {}", engine.key);
-            } else {
-                used.push(engine.key);
             }
+            used.push(engine.key);
         }
         if l.plugins.calc.is_some() {
             #[cfg(not(feature = "launcher_calc_plugin"))]
@@ -66,7 +61,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
                 bail!("Calc Plugin enabled but not compiled in, please enable the calc feature");
             }
         }
-    };
+    }
 
     Ok(())
 }

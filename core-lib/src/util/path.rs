@@ -19,7 +19,6 @@ pub fn collect_desktop_files() -> Vec<DirEntry> {
             }
             Err(e) => {
                 warn!("Failed to read dir {dir:?}: {e}");
-                continue;
             }
         }
     }
@@ -52,7 +51,6 @@ pub fn collect_mime_files() -> Vec<DirEntry> {
             }
             Err(e) => {
                 warn!("Failed to read dir {dir:?}: {e}");
-                continue;
             }
         }
     }

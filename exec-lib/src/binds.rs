@@ -2,7 +2,7 @@ use anyhow::Context;
 use core_lib::binds::ExecBind;
 use core_lib::{LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, SWITCH_NAMESPACE};
 use hyprland::config::binds;
-use hyprland::config::binds::{Binder, Binding, Flag};
+use hyprland::config::binds::{Binder, Binding};
 use hyprland::dispatch::DispatchType;
 use hyprland::keyword::Keyword;
 use tracing::{trace, warn};
@@ -38,7 +38,7 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
         mods: bind
             .mods
             .iter()
-            .flat_map(|m| match m.to_lowercase().as_str() {
+            .filter_map(|m| match m.to_lowercase().as_str() {
                 "alt" => Some(binds::Mod::ALT),
                 "control" | "ctrl" => Some(binds::Mod::CTRL),
                 "super" | "win" => Some(binds::Mod::SUPER),

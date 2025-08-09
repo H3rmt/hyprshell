@@ -1,5 +1,5 @@
 use crate::migrate::m1t2::old_structs;
-use crate::{CURRENT_CONFIG_VERSION, Config, Launcher, Overview, Switch, Windows};
+use crate::{CURRENT_CONFIG_VERSION, Config, EmptyConfig, Launcher, Overview, Switch, Windows};
 
 impl From<old_structs::Config> for Config {
     fn from(value: old_structs::Config) -> Self {
@@ -13,8 +13,8 @@ impl From<old_structs::Config> for Config {
 }
 
 impl From<old_structs::Windows> for Windows {
-    fn from(value: old_structs::Windows) -> Windows {
-        Windows {
+    fn from(value: old_structs::Windows) -> Self {
+        Self {
             scale: value.scale,
             items_per_row: value.items_per_row,
             switch: value.switch.map(old_structs::Switch::into),
@@ -24,8 +24,8 @@ impl From<old_structs::Windows> for Windows {
 }
 
 impl From<old_structs::Overview> for Overview {
-    fn from(value: old_structs::Overview) -> Overview {
-        Overview {
+    fn from(value: old_structs::Overview) -> Self {
+        Self {
             key: value.key,
             modifier: value.modifier.into(),
             filter_by: value.filter_by,
@@ -36,8 +36,8 @@ impl From<old_structs::Overview> for Overview {
 }
 
 impl From<old_structs::Switch> for Switch {
-    fn from(value: old_structs::Switch) -> Switch {
-        Switch {
+    fn from(value: old_structs::Switch) -> Self {
+        Self {
             filter_by: value.filter_by,
             modifier: value.modifier.into(),
             show_workspaces: value.show_workspaces,
@@ -46,13 +46,13 @@ impl From<old_structs::Switch> for Switch {
 }
 
 impl From<old_structs::Launcher> for Launcher {
-    fn from(value: old_structs::Launcher) -> Launcher {
+    fn from(value: old_structs::Launcher) -> Self {
         let mut plugins = value.plugins;
         if let Some(a) = &mut plugins.applications {
-            a.show_actions_submenu = true
-        };
-        plugins.path = Some(Default::default());
-        Launcher {
+            a.show_actions_submenu = true;
+        }
+        plugins.path = Some(EmptyConfig::default());
+        Self {
             default_terminal: value.default_terminal,
             launch_modifier: value.launch_modifier.into(),
             width: value.width,
@@ -66,10 +66,10 @@ impl From<old_structs::Launcher> for Launcher {
 impl From<old_structs::Modifier> for crate::Modifier {
     fn from(value: old_structs::Modifier) -> Self {
         match value {
-            old_structs::Modifier::Alt => crate::Modifier::Alt,
-            old_structs::Modifier::Ctrl => crate::Modifier::Ctrl,
-            old_structs::Modifier::Shift => crate::Modifier::Shift,
-            old_structs::Modifier::Super => crate::Modifier::Super,
+            old_structs::Modifier::Alt => Self::Alt,
+            old_structs::Modifier::Ctrl => Self::Ctrl,
+            old_structs::Modifier::Shift => Self::Shift,
+            old_structs::Modifier::Super => Self::Super,
         }
     }
 }

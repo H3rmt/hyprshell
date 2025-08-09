@@ -14,18 +14,18 @@ pub enum Modifier {
 impl Modifier {
     pub fn to_l_key(&self) -> String {
         match self {
-            Modifier::Alt => "alt_l".to_string(),
-            Modifier::Ctrl => "ctrl_l".to_string(),
-            Modifier::Super => "super_l".to_string(),
-            Modifier::Shift => "shift_l".to_string(),
+            Self::Alt => "alt_l".to_string(),
+            Self::Ctrl => "ctrl_l".to_string(),
+            Self::Super => "super_l".to_string(),
+            Self::Shift => "shift_l".to_string(),
         }
     }
-    pub fn to_str(&self) -> &'static str {
+    pub const fn to_str(&self) -> &'static str {
         match self {
-            Modifier::Alt => "alt",
-            Modifier::Ctrl => "ctrl",
-            Modifier::Super => "super",
-            Modifier::Shift => "shift",
+            Self::Alt => "alt",
+            Self::Ctrl => "ctrl",
+            Self::Super => "super",
+            Self::Shift => "shift",
         }
     }
 }
@@ -36,7 +36,7 @@ impl<'de> Deserialize<'de> for Modifier {
         D: Deserializer<'de>,
     {
         struct ModVisitor;
-        impl<'de> Visitor<'de> for ModVisitor {
+        impl Visitor<'_> for ModVisitor {
             type Value = Modifier;
             fn expecting(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
                 fmt.write_str("one of: alt, ctrl, super, shift")
@@ -69,10 +69,10 @@ impl TryFrom<&str> for Modifier {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
-            "Alt" | "alt" => Ok(Modifier::Alt),
-            "Ctrl" | "ctrl" | "control" | "Control" => Ok(Modifier::Ctrl),
-            "Super" | "super" | "Win" | "win" | "windows" | "Windows" => Ok(Modifier::Super),
-            "Shift" | "shift" => Ok(Modifier::Shift),
+            "Alt" | "alt" => Ok(Self::Alt),
+            "Ctrl" | "ctrl" | "control" | "Control" => Ok(Self::Ctrl),
+            "Super" | "super" | "Win" | "win" | "windows" | "Windows" => Ok(Self::Super),
+            "Shift" | "shift" => Ok(Self::Shift),
             other => bail!("Invalid modifier: {}", other),
         }
     }
@@ -81,10 +81,10 @@ impl TryFrom<&str> for Modifier {
 impl fmt::Display for Modifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Modifier::Alt => write!(f, "Alt"),
-            Modifier::Ctrl => write!(f, "Ctrl"),
-            Modifier::Super => write!(f, "Super"),
-            Modifier::Shift => write!(f, "Shift"),
+            Self::Alt => write!(f, "Alt"),
+            Self::Ctrl => write!(f, "Ctrl"),
+            Self::Super => write!(f, "Super"),
+            Self::Shift => write!(f, "Shift"),
         }
     }
 }

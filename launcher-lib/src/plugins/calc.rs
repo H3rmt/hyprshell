@@ -4,11 +4,11 @@ use gtk::prelude::DisplayExt;
 use std::path::Path;
 use tracing::{debug, trace};
 
-pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
     if text.is_empty() {
         return;
     }
-    let mut context: calc::Context<f64> = Default::default();
+    let mut context: calc::Context<f64> = calc::Context::default();
     let eval = context.evaluate(text);
     if let Ok(eval) = eval {
         matches.push(SortableLaunchOption {
@@ -26,7 +26,7 @@ pub(crate) fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &s
     }
 }
 
-pub fn copy_result(data: &Option<Box<str>>) -> bool {
+pub fn copy_result(data: Option<&str>) -> bool {
     if let Some(data) = data {
         if let Some(clipboard) = Display::default().map(|display| display.clipboard()) {
             debug!("Copying result to clipboard: {}", data);

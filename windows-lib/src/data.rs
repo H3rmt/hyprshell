@@ -7,8 +7,9 @@ use core_lib::{
     WorkspaceId,
 };
 use exec_lib::collect::collect_hypr_data;
-use tracing::{Level, debug_span, span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default)]
 pub struct SortConfig {
     pub sort_recent: bool,
@@ -42,7 +43,7 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
     );
 
     // iterate over all clients and set active to false if the client is not on the active workspace or monitor
-    for (_, client) in client_data.iter_mut() {
+    for (_, client) in &mut client_data {
         client.enabled = (!config.filter_same_class
             || active_client
                 .as_ref()
@@ -70,9 +71,9 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
 }
 
 /// updates clients with workspace and monitor data
-/// * 'clients' - Vector of clients to update
-/// * 'workspace_data' - HashMap of workspace data
-/// * 'monitor_data' - HashMap of monitor data, None if ignore_monitors
+/// * clients - Vector of clients to update
+/// * `workspace_data` - `HashMap` of workspace data
+/// * `monitor_data` - `HashMap` of monitor data, None if `ignore_monitors`
 ///
 /// removes offset by monitor, adds offset by workspace (client on monitor 1 and workspace 2 will be moved left by monitor 1 offset and right by workspace 2 offset (workspace width * 2))
 pub fn update_client_position(

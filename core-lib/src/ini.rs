@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::fmt::Write;
 use std::path::Path;
-use tracing::{Level, debug_span, span, warn};
+use tracing::{debug_span, warn};
 
 #[derive(Debug, Default)]
 pub struct Section<'a> {
@@ -17,12 +18,12 @@ impl<'a> Section<'a> {
         self.entries.get(key)
     }
     pub fn get_first(&self, key: &str) -> Option<&'a str> {
-        self.entries.get(key)?.first().cloned()
+        self.entries.get(key)?.first().copied()
     }
 
     pub fn get_all_as_boxed(&self, key: &str) -> Option<Vec<Box<str>>> {
         self.get_all(key)
-            .map(|vec| vec.iter().cloned().map(Box::from).collect::<Vec<_>>())
+            .map(|vec| vec.iter().copied().map(Box::from).collect::<Vec<_>>())
     }
 
     pub fn get_first_as_boxed(&self, key: &str) -> Option<Box<str>> {
@@ -99,7 +100,7 @@ impl IniFile<'_> {
                 }
                 let values = value
                     .split(';')
-                    .map(|s| s.trim())
+                    .map(str::trim)
                     .filter(|s| !s.is_empty())
                     .collect::<Vec<_>>();
                 current_section.insert_items(key, values);
@@ -117,7 +118,7 @@ impl<'a> IniFile<'a> {
         self.sections.get(section_name)
     }
 
-    pub fn sections(&self) -> &HashMap<&'a str, Section<'a>> {
+    pub const fn sections(&self) -> &HashMap<&'a str, Section<'a>> {
         &self.sections
     }
 
@@ -128,15 +129,15 @@ impl<'a> IniFile<'a> {
         for (name, section) in sections {
             if !name.is_empty() {
                 if str.is_empty() {
-                    str.push_str(&format!("[{name}]\n"));
+                    let _ = str.write_str(&format!("[{name}]\n"));
                 } else {
-                    str.push_str(&format!("\n[{name}]\n"));
+                    let _ = str.write_str(&format!("\n[{name}]\n"));
                 }
             }
             let mut section = section.into_iter().collect::<Vec<_>>();
             section.sort_by_key(|(key, _)| *key);
             for (key, values) in section {
-                str.push_str(&format!("{key}={}\n", values.join(";")));
+                let _ = str.write_str(&format!("{key}={}\n", values.join(";")));
             }
         }
         str
@@ -162,6 +163,13 @@ impl<'a> IniFile<'a> {
     }
 }
 
+impl<'a> IniFile<'a> {
+    #[allow(dead_code)]
+    fn iter(&'a self) -> Box<dyn Iterator<Item = <&'a Self as IntoIterator>::Item> + 'a> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
+}
+
 impl<'a> IntoIterator for &'a IniFile<'a> {
     type Item = (&'a str, &'a str, &'a Vec<&'a str>);
     type IntoIter = Box<dyn Iterator<Item = Self::Item> + 'a>;
@@ -173,6 +181,13 @@ impl<'a> IntoIterator for &'a IniFile<'a> {
                 .map(move |(key, values)| (*section_name, key, values))
         });
         Box::new(iter)
+    }
+}
+
+impl<'a> Section<'a> {
+    #[allow(dead_code)]
+    fn iter(&'a self) -> Box<dyn Iterator<Item = <&'a Self as IntoIterator>::Item> + 'a> {
+        <&Self as IntoIterator>::into_iter(self)
     }
 }
 
@@ -192,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_parse_ini() {
-        let content = r#"[Section1]
+        let content = r"[Section1]
 key1=value1
 key2=value2
 
@@ -206,7 +221,7 @@ baz=qux
 
 [Section With Spaces]
 key with spaces=value with spaces; and more values
-"#;
+";
 
         let ini = IniFile::from_str(content);
 
@@ -264,14 +279,14 @@ key with spaces=value with spaces; and more values
 
     #[test]
     fn test_values_iterator() {
-        let content = r#"
+        let content = r"
     [Section1]
     key1=value1
     key2=value2;values3
 
     [Section2]
     foo=bar
-    "#;
+    ";
         let ini = IniFile::from_str(content);
         let mut values: Vec<_> = ini.into_iter().collect();
         values.sort_by_key(|&(section, key, _)| (section, key));
@@ -287,17 +302,17 @@ key with spaces=value with spaces; and more values
 
     #[test]
     fn test_values_iterator_2() {
-        let content = r#"
+        let content = r"
     [Section1]
     key1=value1
     key2=value2
 
     [Section2]
     foo=bar
-    "#;
+    ";
         let ini = IniFile::from_str(content);
         let mut count = 0;
-        for (section, name, value) in ini.into_iter() {
+        for (section, name, value) in &ini {
             assert!(!section.is_empty(), "Item should not be empty");
             assert!(!name.is_empty(), "Item should not be empty");
             assert!(!value.is_empty(), "Item should not be empty");
@@ -315,20 +330,20 @@ key with spaces=value with spaces; and more values
 
     #[test]
     fn test_format_multiple_sections() {
-        let content = r#"[B]
+        let content = r"[B]
 key1=value1
 key2=value2;value3
 
 [A]
 foo=bar
-"#;
-        let content2 = r#"[A]
+";
+        let content2 = r"[A]
 foo=bar
 
 [B]
 key1=value1
 key2=value2;value3
-"#;
+";
         let ini = IniFile::from_str(content);
         assert_eq!(ini.format(), content2);
     }

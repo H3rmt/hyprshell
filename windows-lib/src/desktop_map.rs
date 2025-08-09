@@ -1,8 +1,9 @@
+use anyhow::Context;
 use core_lib::default::get_all_desktop_files;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{OnceLock, RwLock};
-use tracing::{Level, debug_span, span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Source {
@@ -18,13 +19,16 @@ fn get_icon_path_map() -> &'static RwLock<IconPathMap> {
     MAP_LOCK.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
-pub fn reload_class_to_icon_map() {
+pub fn reload_class_to_icon_map() -> anyhow::Result<()> {
     let _span = debug_span!("reload_class_to_icon_map").entered();
     let mut map = get_icon_path_map()
         .write()
-        .expect("Failed to lock icon path map");
+        .map_err(|_| anyhow::anyhow!("Failed to lock icon path map"))?;
 
-    for (entry, ini) in get_all_desktop_files().iter() {
+    for (entry, ini) in get_all_desktop_files()
+        .context("unable to get desktop files")?
+        .iter()
+    {
         if let Some(section) = ini.get_section("Desktop Entry") {
             let name = section.get_first("Name");
             let icon = section.get_first_as_path("Icon");
@@ -61,7 +65,9 @@ pub fn reload_class_to_icon_map() {
             );
         }
     }
+    drop(map);
     trace!("filled class to icon map");
+    Ok(())
 }
 
 fn extract_exec_name(line: Box<str>) -> Option<String> {
@@ -84,20 +90,26 @@ fn extract_exec_name(line: Box<str>) -> Option<String> {
         .map(|n| n.replace('"', ""))
 }
 
-pub fn add_path_for_icon_by_pid_exec(class: &str, path: Box<Path>) {
+pub fn add_path_for_icon_by_pid_exec(class: &str, path: Box<Path>) -> anyhow::Result<()> {
     let mut map = get_icon_path_map()
         .write()
-        .expect("Failed to lock icon map");
+        .map_err(|_| anyhow::anyhow!("Failed to lock icon path map"))?;
+
     map.insert(
         (Box::from(class.to_ascii_lowercase()), Source::ByPidExec),
         (path, Box::from(Path::new(""))),
     );
+    drop(map);
+    Ok(())
 }
 
 pub fn get_icon_name_by_name_from_desktop_files(
     name: &str,
 ) -> Option<(Box<Path>, Box<Path>, Source)> {
-    let map = get_icon_path_map().read().expect("Failed to lock icon map");
+    let Ok(map) = get_icon_path_map().read() else {
+        warn!("Failed to lock icon path map");
+        return None;
+    };
     // prio: name by pid-exec, desktop file name, startup wm class, exec name
     map.get(&(Box::from(name.to_ascii_lowercase()), Source::ByPidExec))
         .map(|s| (s.0.clone(), s.1.clone(), Source::ByPidExec))

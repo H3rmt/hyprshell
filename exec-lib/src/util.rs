@@ -9,11 +9,11 @@ use std::sync::{Mutex, OnceLock};
 use tracing::{debug, info, trace};
 
 pub fn get_clients() -> Vec<Client> {
-    Clients::get().map_or(vec![], |clients| clients.to_vec())
+    Clients::get().map_or(vec![], hyprland::shared::HyprDataVec::to_vec)
 }
 
 pub fn get_monitors() -> Vec<Monitor> {
-    Monitors::get().map_or(vec![], |monitors| monitors.to_vec())
+    Monitors::get().map_or(vec![], hyprland::shared::HyprDataVec::to_vec)
 }
 
 pub fn get_current_monitor() -> Option<Monitor> {
@@ -35,6 +35,9 @@ pub fn toast(body: &str) {
 }
 
 /// trim 0x from hexadecimal (base-16) string and convert to id
+///
+/// # Panics
+/// Panics if the id cannot be parsed, this should never happen as the id is always a valid hexadecimal string
 pub fn to_client_id(id: &hyprland::shared::Address) -> ClientId {
     u64::from_str_radix(id.to_string().trim_start_matches("0x"), 16)
         .expect("Failed to parse client id, this should never happen")
@@ -64,6 +67,7 @@ pub fn set_remain_focused() -> anyhow::Result<()> {
         trace!("Storing previous follow_mouse value: {}", follow.value);
         *lock = Some(follow.value.to_string());
     }
+    drop(lock);
     Keyword::set("input:follow_mouse", "3").context("keyword failed")?;
     trace!("Set follow_mouse to 3");
 
@@ -79,6 +83,7 @@ pub fn set_remain_focused() -> anyhow::Result<()> {
         );
         *lock = Some(gestures_enabled.value.to_string() == "1");
     }
+    drop(lock);
     Keyword::set("gestures:workspace_swipe", "0").context("keyword failed")?;
     trace!("Set gestures:workspace_swipe to 0");
     Ok(())
@@ -94,6 +99,7 @@ pub fn reset_remain_focused() -> anyhow::Result<()> {
     } else {
         trace!("No previous follow_mouse value stored, skipping reset");
     }
+    drop(follow);
 
     let gestures_enabled = get_gestures_enabled()
         .lock()
@@ -108,6 +114,7 @@ pub fn reset_remain_focused() -> anyhow::Result<()> {
     } else {
         trace!("No previous gestures:workspace_swipe value stored, skipping reset");
     }
+    drop(gestures_enabled);
     Ok(())
 }
 
@@ -131,7 +138,7 @@ pub fn check_version() -> anyhow::Result<()> {
 
     let version = version
         .version
-        .unwrap_or(version.tag.trim_start_matches('v').to_string());
+        .unwrap_or_else(|| version.tag.trim_start_matches('v').to_string());
     info!(
         "Starting hyprshell {} in {} mode on hyprland {}",
         env!("CARGO_PKG_VERSION"),

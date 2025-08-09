@@ -1,9 +1,16 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate
+)]
+
 mod build;
 mod configure;
 mod extract;
 
 use anyhow::Context;
-use tracing::{Level, debug_span, span, trace};
+use tracing::{debug_span, trace};
 
 pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PLUGIN_AUTHOR: &str = env!("CARGO_PKG_AUTHORS");

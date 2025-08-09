@@ -11,7 +11,7 @@ pub enum ExecType {
 const UNKNOWN_EXEC: &str = "unknown";
 
 pub fn analyse_exec(exec: &str) -> ExecType {
-    let exec_trim = exec.replace("'", "").replace("\"", "");
+    let exec_trim = exec.replace(['\'', '"'], "");
     // pwa detection
     if exec.contains("--app-id=") && exec.contains("--profile-directory=") {
         // "flatpak 'run'" = pwa from browser inside flatpak
@@ -70,7 +70,7 @@ pub fn analyse_exec(exec: &str) -> ExecType {
             .and_then(|s| s.split('_').next())
             .unwrap_or(UNKNOWN_EXEC);
         ExecType::AppImage(Box::from(appimage_name), Box::from(exec))
-    } else if exec_trim.starts_with("/") {
+    } else if exec_trim.starts_with('/') {
         let exec_name = exec_trim
             .split_whitespace()
             .next()

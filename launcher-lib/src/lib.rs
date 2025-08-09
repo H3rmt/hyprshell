@@ -1,3 +1,10 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate
+)]
+
 mod close;
 mod create;
 mod css;

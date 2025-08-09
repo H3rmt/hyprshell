@@ -5,7 +5,7 @@ use exec_lib::switch::{switch_client, switch_workspace};
 use exec_lib::{reset_remain_focused, to_client_address};
 use gtk::glib;
 use gtk::prelude::*;
-use tracing::{Level, debug, debug_span, span, trace};
+use tracing::{debug, debug_span, trace};
 
 pub fn overview_already_hidden(data: &WindowsOverviewData) -> bool {
     !data.window_list.iter().any(|w| w.0.get_visible())
@@ -25,11 +25,10 @@ pub fn close_overview(data: &mut WindowsOverviewData, ids: Option<Option<Windows
 
     if let Some(ids) = ids {
         let ids = match ids {
-            None => data
-                .active
-                .client
-                .map(WindowsOverride::ClientId)
-                .unwrap_or_else(|| WindowsOverride::WorkspaceID(data.active.workspace)),
+            None => data.active.client.map_or_else(
+                || WindowsOverride::WorkspaceID(data.active.workspace),
+                WindowsOverride::ClientId,
+            ),
             Some(WindowsOverride::ClientId(client_id)) => WindowsOverride::ClientId(client_id),
             Some(WindowsOverride::WorkspaceID(workspace_id)) => {
                 WindowsOverride::WorkspaceID(workspace_id)
@@ -42,8 +41,7 @@ pub fn close_overview(data: &mut WindowsOverviewData, ids: Option<Option<Windows
                     data.hypr_data
                         .clients
                         .find_by_first(&client_id)
-                        .map(|c| c.title.clone())
-                        .unwrap_or_else(|| "<Unknown>".to_string())
+                        .map_or_else(|| "<Unknown>".to_string(), |c| c.title.clone())
                 );
                 glib::idle_add_local(move || {
                     switch_client(to_client_address(client_id))
@@ -57,8 +55,7 @@ pub fn close_overview(data: &mut WindowsOverviewData, ids: Option<Option<Windows
                     data.hypr_data
                         .workspaces
                         .find_by_first(&workspace_id)
-                        .map(|c| c.name.clone())
-                        .unwrap_or_else(|| "<Unknown>".to_string())
+                        .map_or_else(|| "<Unknown>".to_string(), |c| c.name.clone())
                 );
                 glib::idle_add_local(move || {
                     switch_workspace(workspace_id).warn_details(&format!(
