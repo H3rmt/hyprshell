@@ -26,30 +26,30 @@ pub fn explain(config: &Config, config_path: &Path) -> String {
                 "After opening the Overview the {BOLD}Launcher{RESET} is available:\n"
             ));
             if let Some(_applications) = overview.launcher.plugins.applications.as_ref() {
-                let _ =      builder.write_str(&format!("\tStart typing to search through applications (sorted by how often they were opened). Press {BLUE}return{RESET} to launch the first app, use {BLUE}Ctrl{RESET} + {BLUE}1{RESET}/{BLUE}2{RESET}/{BLUE}3{RESET}/... to open the second, third, etc.\n"));
+                let _ = builder.write_str(&format!("\t- Start typing to search through applications (sorted by how often they were opened). Press {BLUE}return{RESET} to launch the first app, use {BLUE}Ctrl{RESET} + {BLUE}1{RESET}/{BLUE}2{RESET}/{BLUE}3{RESET}/... to open the second, third, etc.\n"));
             }
             if overview.launcher.plugins.terminal.is_some() {
-                let _ =      builder.write_str(&format!(
-                    "\tPress {BLUE}Ctrl{RESET} + {BLUE}t{RESET} to run the typed command in a terminal.\n"
+                let _ = builder.write_str(&format!(
+                    "\t- Press {BLUE}Ctrl{RESET} + {BLUE}t{RESET} to run the typed command in a terminal.\n"
                 ));
             }
             if overview.launcher.plugins.shell.is_some() {
-                let _ =   builder.write_str(&format!(
-                    "\tPress {BLUE}Ctrl{RESET} + {BLUE}r{RESET} to run the typed command in the background.\n",
+                let _ = builder.write_str(&format!(
+                    "\t- Press {BLUE}Ctrl{RESET} + {BLUE}r{RESET} to run the typed command in the background.\n",
                 ));
             }
             if let Some(engines) = &overview.launcher.plugins.websearch {
-                let _ =    builder.write_str(&format!("\tPress {BLUE}Ctrl{RESET} + {BOLD}{BLUE}<key>{RESET} to search the typed text in any of the configured SearchEngines: {}.\n",
+                let _ =    builder.write_str(&format!("\t- Press {BLUE}Ctrl{RESET} + {BOLD}{BLUE}<key>{RESET} to search the typed text in any of the configured SearchEngines: {}.\n",
                                           engines.engines.iter().map(|e| e.name.to_string()).collect::<Vec<_>>().join(", ")));
             }
             if overview.launcher.plugins.calc.is_some() {
                 let _ =   builder.write_str(
-                    "\tTyping a mathematical expression will calculate it and display the result in the launcher.\n",
+                    "\t- Typing a mathematical expression will calculate it and display the result in the launcher.\n",
                 );
             }
             if overview.launcher.plugins.path.is_some() {
                 let _ = builder.write_str(
-                    "\tPaths (starting with ~ or /) can be open in default file-manager.\n",
+                    "\t- Paths (starting with ~ or /) can be open in default file-manager.\n",
                 );
             }
         } else {

@@ -20,7 +20,7 @@ The default values for these configs, which are also the values that get used wh
 - **kill_bind:**_[string]_ Keybinding to kill the hyprshell daemon. It can be used if the overview or switch mode is stuck or if the program crashed and the submap wasn't reset.
   It must be a valid keybinding like `super+alt, q` or `ctrl+alt, k`. By default, this is set to `ctrl+shift+alt, h`.
 - **version:**_[number]_ The version of the config file. Will be used for the migrator in the future.
-- **windows:**_[Windows]_ Configuration for the different windows like overview, switch and launcher.
+- **windows:**_[Windows]_ Configuration for the different windows like overview, switch and launcher (optional).
 
 ## Windows
 
@@ -34,11 +34,10 @@ The default values for these configs, which are also the values that get used wh
 
 This mode displays the windows in a downscaled view of the screen. It also shows the launcher. This option itself is optional, if not set, this mode is disabled.
 
-- **strip_html_from_workspace_title:**_[boolean]_ Strips the HTML tags from the workspace title.
 - **launcher:**_[Launcher]_ Configuration for the launcher.
 - **key:**_[string]_ The key to use to open the Overview mode (like "tab" or "alt_r"). This is used to register the keybinding to open the Overview mode. If you want to only open using a modifier, set this to the modifier name like `super_l`.
 - **modifier:**_[string]_ The modifier that must be pressed together with the key to open the Overview mode (like ctrl). This MUST be one of these modifiers: `alt, ctrl, super, shift`.
-- **filter_by:**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of the following objects.
+- **filter_by:**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of the following objects. (example: `filter_by: [current_workspace]`)
     - **same_class**: Only includes windows of the same class / type. If you currently have alacritty open, only alacritty windows will be shown.
     - **current_workspace**: Only includes windows of the current workspace.
     - **current_monitor**: Only includes windows of the current monitor.
@@ -46,7 +45,7 @@ This mode displays the windows in a downscaled view of the screen. It also shows
 
 ## Launcher
 
-- **default_terminal:**_[string]_ Defined the name of the default terminal to use. This value is optional, if unset a list of [default terminals](./core-lib/src/util.rs) is used to find a default terminal.
+- **default_terminal:**_[string]_ Defined the name of the default terminal to use. This value is optional, if unset a list of [default terminals](./core-lib/src/util/const.rs) is used to find a default terminal.
   This is used to launch programs like micro from the launcher that need to be run in a terminal.
   This terminal is also used by the `terminal` plugin to run the typed command in a terminal.
 - **launch_modifier:**_[string]_ Sets the modifier used to launch apps in the launcher by pressing `<Mod> + 1` to open second, `<Mod> + t` to run in terminal, etc. This MUST be one of these modifiers: `alt, ctrl, super, shift`.
@@ -77,8 +76,8 @@ This mode displays the windows in a downscaled view of the screen. It also shows
 
 This mode displays the windows sorted by their most recent access. This option itself is optional, if not set, this mode is disabled.
 
-- **modifier:**_[string]_ The modifier that must be helled down together with the `navigate > forward` key to open the Switch mode (like alt). Letting go of this key will close the Switch mode. . This MUST be one of these modifiers: `alt, ctrl, super, shift`.
-- **filter_by**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of `FilterBy` objects.
+- **modifier:**_[string]_ The modifier that must be helled down together with `tab` key to open the Switch mode (for example `alt`). Letting go of this key will close the Switch mode. This MUST be one of these modifiers: `alt, ctrl, super, shift`.
+- **filter_by**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of `FilterBy` objects. (example: `filter_by: [current_workspace]`)
     - **same_class:** Only includes windows of the same class / type. If you currently have alacritty open, only alacritty windows will be shown.
     - **current_workspace:** Only includes windows of the current workspace.
     - **current_monitor:** Only includes windows of the current monitor.

@@ -10,10 +10,10 @@ pub struct Config {
     pub layerrules: bool,
     #[default = "ctrl+shift+alt, h"]
     pub kill_bind: Box<str>,
-    #[default(None)]
-    pub windows: Option<Windows>,
     #[default(Some(CURRENT_CONFIG_VERSION))]
     pub version: Option<u16>,
+    #[default(None)]
+    pub windows: Option<Windows>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -96,7 +96,7 @@ pub struct ApplicationsPluginConfig {
     pub run_cache_weeks: u8,
     #[default = true]
     pub show_execs: bool,
-    #[default = false]
+    #[default = true]
     pub show_actions_submenu: bool,
 }
 
