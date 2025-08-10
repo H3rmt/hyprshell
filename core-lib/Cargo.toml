@@ -16,8 +16,7 @@ tracing.workspace = true
 config-lib.workspace = true
 serde_json.workspace = true
 serde.workspace = true
-
-notify = { version = "8.0.0", features = [] }
+notify = { version = "8.2.0", features = [] }
 
 [features]
 json5_config = []

@@ -19,9 +19,9 @@ core-lib.workspace = true
 exec-lib.workspace = true
 serde_json.workspace = true
 async-channel.workspace = true
-chrono = "0.4.41"
 config-lib.workspace = true
 calc = { version = "0.4.0", optional = true, default-features = false, features = [] }
+chrono = "0.4.41"
 
 [features]
 calc = ["dep:calc"]

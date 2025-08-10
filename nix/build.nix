@@ -19,7 +19,15 @@ rec {
   postInstall = ''
     wrapProgram $out/bin/hyprshell \
       --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.gcc ]} \
-      --prefix CPATH : ${pkgs.lib.makeIncludePath (pkgs.hyprland.buildInputs ++ [ pkgs.hyprland pkgs.pixman ])}
+      --prefix CPATH : ${
+        pkgs.lib.makeIncludePath (
+          pkgs.hyprland.buildInputs
+          ++ [
+            pkgs.hyprland
+            pkgs.pixman
+          ]
+        )
+      }
   '';
   commonArgs = {
     inherit
@@ -61,7 +69,7 @@ rec {
   commonArgsCachedRelease = (
     commonArgs
     // {
-      inherit postInstall cargoArtifacts meta;
+      inherit cargoArtifacts meta;
     }
   );
 }

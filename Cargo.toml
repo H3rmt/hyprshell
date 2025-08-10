@@ -22,7 +22,7 @@ tracing.workspace = true
 gtk.workspace = true
 async-channel.workspace = true
 clap = { version = "4.5.23", features = ["derive"] }
-clap_complete = "4.5.54"
+clap_complete = "4.5.56"
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter", "ansi"], default-features = false }
 signal-hook = { version = "0.3.18" }
 
@@ -58,9 +58,9 @@ edition = "2024"
 [workspace.dependencies]
 anyhow = { version = "1.0.98" }
 tracing = { version = "0.1.41" }
-serde_json = { version = "1.0.140" }
+serde_json = { version = "1.0.142" }
 serde = { version = "1.0.219", features = ["derive"] }
-async-channel = { version = "2.3.1", default-features = true }
+async-channel = { version = "2.5.0", default-features = true }
 
 gtk = { version = "0.9.6", package = "gtk4", default-features = false, features = ["v4_14"] }
 gtk4-layer-shell = { version = "0.5.0" }
