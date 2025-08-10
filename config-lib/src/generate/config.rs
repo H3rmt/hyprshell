@@ -115,7 +115,7 @@ pub fn generate_config(data: ConfigData) -> Config {
             },
             switch: data.switch.0.map(|switch_mod| Switch {
                 modifier: switch_mod,
-                show_workspaces: data.switch.1,
+                switch_workspaces: data.switch.1,
                 ..Default::default()
             }),
             ..Default::default()
@@ -170,7 +170,7 @@ mod tests {
             }
             if let Some(switch) = &windows.switch {
                 assert_eq!(switch.modifier, data.switch.0.unwrap());
-                assert_eq!(switch.show_workspaces, data.switch.1);
+                assert_eq!(switch.switch_workspaces, data.switch.1);
             }
         }
     }

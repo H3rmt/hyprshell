@@ -147,11 +147,11 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
         } else {
             match get_mod(&open_switch) {
                 Ok(r#mod) => {
-                    let show_workspaces =
+                    let switch_workspaces =
                         Confirm::new("Switch between workspaces instead of windows in switch mode")
                             .with_default(false)
                             .prompt()?;
-                    (Some(r#mod), show_workspaces)
+                    (Some(r#mod), switch_workspaces)
                 }
                 Err(err) => {
                     eprintln!("Invalid Modifier: {err:?}");

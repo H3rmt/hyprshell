@@ -12,9 +12,9 @@ in
 rec {
   hyprshell-config-check = craneLib.buildPackage (
     buildLib.commonArgsCachedRelease
-    // buildLib.postInstall
     // {
       cargoExtraArgs = "--features config_check";
+      postInstall = buildLib.postInstall;
     }
   );
   hyprshell-test = craneLib.cargoNextest (

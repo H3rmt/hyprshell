@@ -41,7 +41,7 @@ pub struct WindowsSwitchConfig {
     pub filter_current_workspace: bool,
     pub filter_current_monitor: bool,
     pub filter_same_class: bool,
-    pub show_workspaces: bool,
+    pub switch_workspaces: bool,
 }
 
 #[derive(Debug)]

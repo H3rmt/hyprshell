@@ -9,11 +9,19 @@ use tempfile::TempDir;
 use tracing::debug_span;
 
 pub struct PluginConfig {
-    pub xkb_key_switch_mod: Box<str>,
+    pub xkb_key_switch_mod: Option<Box<str>>,
+    pub xkb_key_overview_mod: Option<Box<str>>,
+    pub xkb_key_overview_key: Option<Box<str>>,
 }
 impl Display for PluginConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.xkb_key_switch_mod)
+        write!(
+            f,
+            "{}|{}|{}",
+            self.xkb_key_switch_mod.as_ref().unwrap_or_else("".into()),
+            self.xkb_key_overview_mod.as_ref().unwrap_or_else("".into()),
+            self.xkb_key_overview_key.as_ref().unwrap_or_else("".into())
+        )
     }
 }
 
@@ -43,12 +51,12 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             if cfg!(debug_assertions) { "1" } else { "0" },
         ),
         (
-            "$HYPRSHELL_SWTICH_XKB_KEY_L$",
-            &format!("{}_L", config.xkb_key_switch_mod),
+            "$HYPRSHELL_SWTICH_XKB_MOD_L$",
+            &format!("{}_L", config.xkb_key_switch_mod.as_deref().unwrap_or("")),
         ),
         (
-            "$HYPRSHELL_SWTICH_XKB_KEY_R$",
-            &format!("{}_R", config.xkb_key_switch_mod),
+            "$HYPRSHELL_SWTICH_XKB_MOD_R$",
+            &format!("{}_R", config.xkb_key_switch_mod.as_deref().unwrap_or("")),
         ),
         (
             "$HYPRSHELL_PROGRAM_CLOSE_SWITCH$",

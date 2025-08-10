@@ -70,7 +70,7 @@ pub fn create_windows_switch_window(
             filter_current_workspace: switch.filter_by.contains(&FilterBy::CurrentWorkspace),
             filter_current_monitor: switch.filter_by.contains(&FilterBy::CurrentMonitor),
             filter_same_class: switch.filter_by.contains(&FilterBy::SameClass),
-            show_workspaces: switch.show_workspaces,
+            switch_workspaces: switch.switch_workspaces,
         },
         window,
         main_flow: clients_flow,

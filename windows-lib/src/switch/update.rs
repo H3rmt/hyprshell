@@ -13,7 +13,7 @@ pub fn update_switch(data: &mut WindowsSwitchData, config: &SwitchSwitchConfig) 
         } else {
             Direction::Right
         },
-        data.config.show_workspaces,
+        data.config.switch_workspaces,
         true,
         &data.hypr_data,
         data.active,
@@ -21,7 +21,7 @@ pub fn update_switch(data: &mut WindowsSwitchData, config: &SwitchSwitchConfig) 
     );
     data.active = active;
 
-    if data.config.show_workspaces {
+    if data.config.switch_workspaces {
         for button in data.clients.values() {
             button.remove_css_class("active");
         }

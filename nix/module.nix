@@ -169,7 +169,7 @@ in
             "current_monitor"
             "current_workspace"
           ])) [ ];
-          show_workspaces = mkOpt "Show workspaces" bool false;
+          switch_workspaces = mkOpt "Switch workspaces" bool false;
         };
       };
     };

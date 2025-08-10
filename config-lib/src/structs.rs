@@ -133,7 +133,7 @@ pub struct Switch {
     #[default(Vec::new())]
     pub filter_by: Vec<FilterBy>,
     #[default = false]
-    pub show_workspaces: bool,
+    pub switch_workspaces: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]

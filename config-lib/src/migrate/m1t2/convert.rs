@@ -40,7 +40,7 @@ impl From<old_structs::Switch> for Switch {
         Self {
             filter_by: value.filter_by,
             modifier: value.modifier.into(),
-            show_workspaces: value.show_workspaces,
+            switch_workspaces: value.show_workspaces,
         }
     }
 }

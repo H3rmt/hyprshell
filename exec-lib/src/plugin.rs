@@ -5,14 +5,17 @@ use hyprland_plugin::PluginConfig;
 use std::path::Path;
 use tracing::{debug, debug_span, trace};
 
-pub fn load_plugin(modifier: Modifier) -> anyhow::Result<()> {
+pub fn load_plugin(
+    switch: Option<Modifier>,
+    overview: Option<(Modifier, Box<str>)>,
+) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
 
     // TODO get plugin list and check if the plugin with same config is already loaded
     unload();
 
     hyprland_plugin::generate(&PluginConfig {
-        xkb_key_switch_mod: Box::from(mod_to_xkb_key(modifier)),
+        xkb_key_switch_mod: switch.map(|s| Box::from(mod_to_xkb_key(s))),
     })
     .context("unable to generate plugin")?;
     trace!(

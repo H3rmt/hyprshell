@@ -38,7 +38,7 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: &OpenSwitch) -> anyhow:
         } else {
             Direction::Right
         },
-        data.config.show_workspaces,
+        data.config.switch_workspaces,
         true,
         &clients_data,
         active_prev,
@@ -51,7 +51,7 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: &OpenSwitch) -> anyhow:
 
     let current_monitor = get_current_monitor().context("Failed to get current monitor")?;
 
-    if data.config.show_workspaces {
+    if data.config.switch_workspaces {
         for (wid, workspace) in &clients_data.workspaces {
             let clients: Vec<&(ClientId, ClientData)> = {
                 let mut clients = clients_data
