@@ -1,5 +1,0 @@
-#pragma once
-
-#define $HYPRSHELL_PRINT_DEBUG$ 1
-#define $HYPRSHELL_SWTICH_XKB_MOD_R$ XKB_KEY_Super_R
-#define $HYPRSHELL_SWTICH_XKB_MOD_L$ XKB_KEY_Super_L

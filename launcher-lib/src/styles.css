@@ -68,7 +68,7 @@
 
 .launcher-other-menu-item-inner {
     padding: 2px 5px;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 
     border-radius: calc(var(--border-radius, 12px) / 2);
     background: var(--bg-color, rgba(20, 20, 20, 0.9));

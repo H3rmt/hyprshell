@@ -62,7 +62,9 @@ fn handle_sigterm() {
             info!("Received sig: {sig}, exiting gracefully");
             exec_lib::reset_remain_focused()
                 .warn_details("Failed to reset follow mouse on SIGTERM");
-            exec_lib::plugin::unload();
+            if let Err(err) = exec_lib::plugin::unload() {
+                warn!("Failed to unload plugin: {err}");
+            }
             exit(0);
         }
     });

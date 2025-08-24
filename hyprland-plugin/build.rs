@@ -9,7 +9,7 @@ fn include_plugin() -> Result<(), Box<dyn Error>> {
     let out_dir = env::var("OUT_DIR")?;
 
     let status = std::process::Command::new("make")
-        .arg("prepare")
+        .arg("prepare-combined")
         .current_dir("plugin")
         .status()?;
 
@@ -43,5 +43,5 @@ fn include_plugin() -> Result<(), Box<dyn Error>> {
 
 fn main() {
     include_plugin().expect("Failed to include plugin");
-    println!("cargo:rerun-if-changed=plugin");
+    println!("cargo:rerun-if-changed=plugin/src/*");
 }

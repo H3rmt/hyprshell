@@ -41,9 +41,15 @@ pub fn set_default(mime: &str, value: &str) -> anyhow::Result<()> {
     let desktop_files = core_lib::collect_desktop_files();
 
     // check if valid desktop file
-    if desktop_files.iter().any(|f| f.file_name() == value) {
-        bail!("Invalid desktop file: {value}")
-    }
+    let file = desktop_files.iter().find(|f| f.file_name() == value);
+    match file {
+        Some(file) => println!(
+            "Desktop file {} at {}",
+            file.file_name().display(),
+            file.path().display()
+        ),
+        None => bail!("Invalid desktop file: {value}"),
+    };
 
     let mut file = get_config_home();
     file.push("mimeapps.list");
@@ -67,9 +73,15 @@ pub fn add_association(mime: &str, value: &str) -> anyhow::Result<()> {
     let desktop_files = core_lib::collect_desktop_files();
 
     // check if valid desktop file
-    if desktop_files.iter().any(|f| f.file_name() == value) {
-        bail!("Invalid desktop file: {value}")
-    }
+    let file = desktop_files.iter().find(|f| f.file_name() == value);
+    match file {
+        Some(file) => println!(
+            "Desktop file {} at {}",
+            file.file_name().display(),
+            file.path().display()
+        ),
+        None => bail!("Invalid desktop file: {value}"),
+    };
 
     let mut file = get_config_home();
     file.push("mimeapps.list");
@@ -145,36 +157,63 @@ pub fn check() {
     let mime_files = core_lib::collect_mime_files();
     let desktop_files = core_lib::collect_desktop_files();
 
-    let mut mimes = HashMap::new();
+    let mut mime_files_map = HashMap::new();
     for file in mime_files {
+        let mut default_mimes = HashMap::new();
+        let mut added_mimes = HashMap::new();
         if let Ok(str) = read_to_string(file.path()) {
             let ini = IniFile::from_str(&str);
             if let Some(section) = ini.get_section("Default Applications") {
-                debug!("mimeapps.list: {:?}", file.path());
+                debug!("mimeapps.list: {:?} Default Applications", file.path());
                 for (mime, values) in section {
-                    if mimes.contains_key(mime) {
+                    if default_mimes.contains_key(mime) {
                         warn!("{mime} already exists");
                     }
                     for value in values {
-                        mimes.insert(mime.to_string(), ((*value).to_string(), file.path()));
+                        default_mimes.insert(mime.to_string(), (*value).to_string());
+                    }
+                }
+            }
+            if let Some(section) = ini.get_section("Added Associations") {
+                debug!("mimeapps.list: {:?} Added Associations", file.path());
+                for (mime, values) in section {
+                    if added_mimes.contains_key(mime) {
+                        warn!("{mime} already exists");
+                    }
+                    for value in values {
+                        added_mimes.insert(mime.to_string(), (*value).to_string());
                     }
                 }
             }
         } else {
             warn!("Failed to read file: {:?}", file.path());
         }
+        mime_files_map.insert(file.path(), (default_mimes, added_mimes));
     }
 
-    let mut vec = mimes.iter().collect::<Vec<_>>();
-    vec.sort_by_key(|&(mime, _)| mime.to_string());
-    for (mime, (value, path)) in vec {
-        if desktop_files.iter().any(|d| *d.file_name() == **value) {
-            debug!("{mime} in {path:?} has desktop file value: {value}");
-        } else {
-            eprintln!(
-                "{mime} in {} has desktop file value: {value}, but this desktop-file does not exist!",
-                path.display()
-            );
+    for (file, (default_mimes, added_mimes)) in mime_files_map {
+        println!("{file:?}");
+        let mut vec = default_mimes.iter().collect::<Vec<_>>();
+        vec.sort_by_key(|&(mime, _)| mime.to_string());
+        for (mime, value) in vec {
+            if desktop_files.iter().any(|d| *d.file_name() == **value) {
+                debug!("default {mime} in has desktop file value: {value}");
+            } else {
+                println!(
+                    "default {mime} in has desktop file value: {value}, but this desktop-file does not exist!",
+                );
+            }
+        }
+        let mut vec = added_mimes.iter().collect::<Vec<_>>();
+        vec.sort_by_key(|&(mime, _)| mime.to_string());
+        for (mime, value) in vec {
+            if desktop_files.iter().any(|d| *d.file_name() == **value) {
+                debug!("added {mime} in has desktop file value: {value}");
+            } else {
+                println!(
+                    "added {mime} in has desktop file value: {value}, but this desktop-file does not exist!",
+                );
+            }
         }
     }
 }

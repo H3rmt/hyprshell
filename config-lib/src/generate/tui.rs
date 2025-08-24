@@ -186,7 +186,6 @@ fn get_mod(modifier: &str) -> anyhow::Result<Modifier> {
         "super" => Ok(Modifier::Super),
         "ctrl" => Ok(Modifier::Ctrl),
         "alt" => Ok(Modifier::Alt),
-        "shift" => Ok(Modifier::Shift),
         _ => bail!("Unknown modifier: {}", modifier),
     }
 }

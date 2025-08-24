@@ -1,4 +1,4 @@
-use crate::keybinds::create_binds;
+use crate::keybinds::configure_wm;
 use crate::receive_handle::event_handler;
 use crate::socket::socket_handler;
 use crate::util;
@@ -7,8 +7,7 @@ use async_channel::{Receiver, Sender};
 use config_lib::Config;
 use core_lib::transfer::TransferType;
 use core_lib::{
-    APPLICATION_ID, WarnWithDetails, hyprshell_config_block, hyprshell_config_listener,
-    hyprshell_css_listener,
+    WarnWithDetails, hyprshell_config_block, hyprshell_config_listener, hyprshell_css_listener,
 };
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use exec_lib::toast;
@@ -52,8 +51,13 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
 
     info!("Starting gui loop");
     loop {
+        #[cfg(debug_assertions)]
         let application = Application::builder()
-            .application_id(APPLICATION_ID.to_string())
+            .application_id(core_lib::APPLICATION_TEST_ID.to_string())
+            .build();
+        #[cfg(not(debug_assertions))]
+        let application = Application::builder()
+            .application_id(core_lib::APPLICATION_ID.to_string())
             .build();
         debug!("Application created");
 
@@ -114,7 +118,7 @@ fn activate(
         }
     };
 
-    if let Err(err) = create_binds(&config) {
+    if let Err(err) = configure_wm(&config) {
         error!("Failed to create keybinds: {err:?}");
         toast(&format!("Failed to create keybinds: {err}"));
         if let Err(err) = hyprshell_config_block(config_path) {
@@ -160,6 +164,7 @@ fn create_windows(
                 app,
                 &overview.launcher,
                 overview.modifier,
+                &overview.key,
                 data_dir,
                 &event_sender,
             )

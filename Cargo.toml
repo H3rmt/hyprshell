@@ -11,10 +11,7 @@ authors.workspace = true
 keywords.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-exclude = [
-    ".idea/*",
-    ".github/*",
-]
+exclude = [".idea/*", ".github/*"]
 
 [dependencies]
 anyhow.workspace = true
@@ -43,6 +40,7 @@ config_check = ["config-lib/no-default-config-values"]
 
 [workspace]
 members = ["exec-lib", "core-lib", "windows-lib", "launcher-lib", "config-lib", "hyprland-plugin"]
+exclude = ["hyprland-rs"]
 resolver = "2"
 
 [workspace.package]

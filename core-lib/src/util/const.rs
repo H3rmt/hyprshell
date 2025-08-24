@@ -1,4 +1,5 @@
 pub const APPLICATION_ID: &str = "com.github.h3rmt.hyprshell";
+pub const APPLICATION_TEST_ID: &str = "com.github.h3rmt.hyprshell-test";
 pub const OVERVIEW_NAMESPACE: &str = "hyprshell_overview";
 pub const SWITCH_NAMESPACE: &str = "hyprshell_switch";
 pub const LAUNCHER_NAMESPACE: &str = "hyprshell_launcher";

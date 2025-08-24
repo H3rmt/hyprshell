@@ -7,13 +7,20 @@ pub use r#const::*;
 pub use exec::*;
 pub use helpers::*;
 pub use path::*;
+use std::env::{var, var_os};
 use std::path::Path;
 
 pub fn get_daemon_socket_path_buff() -> std::path::PathBuf {
     #[allow(clippy::option_if_let_else)]
-    let mut buf = if let Some(runtime_path) = std::env::var_os("XDG_RUNTIME_DIR") {
-        std::path::PathBuf::from(runtime_path)
-    } else if let Ok(uid) = std::env::var("UID") {
+    let mut buf = if let Some(runtime_path) = var_os("XDG_RUNTIME_DIR") {
+        if let Some(instance) = var_os("HYPRLAND_INSTANCE_SIGNATURE") {
+            std::path::PathBuf::from(runtime_path)
+                .join("hypr")
+                .join(instance)
+        } else {
+            std::path::PathBuf::from(runtime_path)
+        }
+    } else if let Ok(uid) = var("UID") {
         std::path::PathBuf::from("/run/user/".to_owned() + &uid)
     } else {
         std::path::PathBuf::from("/tmp")

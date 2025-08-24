@@ -71,8 +71,7 @@ pub fn collect_hypr_data() -> anyhow::Result<(
             let mut x_offset: i32 = 0;
             workspaces
                 .iter()
-                // .filter(|ws| ws.monitor_id == Some(*monitor_id))
-                .filter(|ws| ws.monitor_id == *monitor_id)
+                .filter(|ws| ws.monitor_id == Some(*monitor_id))
                 .for_each(|workspace| {
                     wd.push((
                         workspace.id,
@@ -95,10 +94,9 @@ pub fn collect_hypr_data() -> anyhow::Result<(
         let mut cd: Vec<(ClientId, ClientData)> = Vec::with_capacity(clients.len());
 
         for client in clients {
-            // let Some(monitor) = client.monitor else {
-            //     continue;
-            // };
-            let monitor = client.monitor;
+            let Some(monitor) = client.monitor else {
+                continue;
+            };
             if workspace_data.find_by_first(&client.workspace.id).is_some() {
                 cd.push((
                     to_client_id(&client.address),

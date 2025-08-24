@@ -87,7 +87,6 @@ in
             "alt"
             "ctrl"
             "super"
-            "shift"
           ]) "super";
 
           filter_by = mkOpt "Filter by" (listOf (enum [
@@ -102,7 +101,6 @@ in
               "alt"
               "ctrl"
               "super"
-              "shift"
             ]) "ctrl";
             max_items = mkOpt "Max shown items" int 5;
             default_terminal = mkOpt "Default terminal" (nullOr (str)) null;
@@ -162,7 +160,6 @@ in
             "alt"
             "ctrl"
             "super"
-            "shift"
           ]) "alt";
           filter_by = mkOpt "Filter by" (listOf (enum [
             "same_class"

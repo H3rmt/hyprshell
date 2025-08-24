@@ -1,7 +1,8 @@
 use crate::{PLUGIN_AUTHOR, PLUGIN_DESC, PLUGIN_NAME, PLUGIN_VERSION};
 use anyhow::Context;
-use core_lib::binds::generate_transfer_socat;
-use core_lib::transfer::TransferType;
+use core_lib::binds::generate_transfer;
+use core_lib::get_daemon_socket_path_buff;
+use core_lib::transfer::{OpenSwitch, TransferType};
 use std::fmt::Display;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
@@ -18,16 +19,16 @@ impl Display for PluginConfig {
         write!(
             f,
             "{}|{}|{}",
-            self.xkb_key_switch_mod.as_ref().unwrap_or_else("".into()),
-            self.xkb_key_overview_mod.as_ref().unwrap_or_else("".into()),
-            self.xkb_key_overview_key.as_ref().unwrap_or_else("".into())
+            self.xkb_key_switch_mod.as_deref().unwrap_or(""),
+            self.xkb_key_overview_mod.as_deref().unwrap_or(""),
+            self.xkb_key_overview_key.as_deref().unwrap_or(""),
         )
     }
 }
 
 pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
     let _span = debug_span!("configure", path =? dir.path()).entered();
-    let defs = dir.path().join("defs.hpp");
+    let defs = dir.path().join("defs.h");
 
     let mut defs_file = OpenOptions::new()
         .read(true)
@@ -37,8 +38,12 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
     defs_file
         .read_to_string(&mut buffer)
         .context("unable to read defs file")?;
+    let path = get_daemon_socket_path_buff()
+        .to_str()
+        .map(str::to_string)
+        .context("unable to get daemon socket path")?;
     for replace in [
-        ("#include \"defs-test.hpp\"", ""),
+        ("#include \"defs-test.h\"", ""),
         ("$HYPRSHELL_PLUGIN_NAME$", PLUGIN_NAME),
         ("$HYPRSHELL_PLUGIN_AUTHOR$", PLUGIN_AUTHOR),
         (
@@ -50,6 +55,7 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_PRINT_DEBUG$",
             if cfg!(debug_assertions) { "1" } else { "0" },
         ),
+        ("$HYPRSHELL_SOCKET_PATH$", &path),
         (
             "$HYPRSHELL_SWTICH_XKB_MOD_L$",
             &format!("{}_L", config.xkb_key_switch_mod.as_deref().unwrap_or("")),
@@ -59,8 +65,28 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             &format!("{}_R", config.xkb_key_switch_mod.as_deref().unwrap_or("")),
         ),
         (
-            "$HYPRSHELL_PROGRAM_CLOSE_SWITCH$",
-            &generate_transfer_socat(&TransferType::CloseSwitch),
+            "$HYPRSHELL_OVERVIEW_MOD$",
+            &format!("{}", config.xkb_key_overview_mod.as_deref().unwrap_or("")),
+        ),
+        (
+            "$HYPRSHELL_OVERVIEW_KEY$",
+            &format!("{}", config.xkb_key_overview_key.as_deref().unwrap_or("")),
+        ),
+        (
+            "$HYPRSHELL_OPEN_OVERVIEW$",
+            &generate_transfer(&TransferType::OpenOverview),
+        ),
+        (
+            "$HYPRSHELL_CLOSE$",
+            &generate_transfer(&TransferType::CloseSwitch),
+        ),
+        (
+            "$HYPRSHELL_OPEN_SWITCH$",
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: false })),
+        ),
+        (
+            "$HYPRSHELL_OPEN_SWITCH_REVERSE$",
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: true })),
         ),
     ] {
         buffer = buffer.replace(replace.0, replace.1);
@@ -75,6 +101,6 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
     defs_file
         .write_all(buffer.as_bytes())
         .context("unable to write defs file")?;
-    // trace!("Updated defs file: {defs:?}, content:\n{buffer}");
+    // tracing::trace!("Updated defs file: {defs:?}, content:\n{buffer}");
     Ok(())
 }

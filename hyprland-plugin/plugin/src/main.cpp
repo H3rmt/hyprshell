@@ -1,5 +1,5 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include "globals.hpp"
+#include "globals.h"
 
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {

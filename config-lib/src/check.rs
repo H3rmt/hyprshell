@@ -25,7 +25,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .windows
         .as_ref()
         .and_then(|w| w.overview.as_ref())
-        .is_some_and(|o| matches!(&*o.key, "super" | "alt" | "shift" | "control" | "ctrl"))
+        .is_some_and(|o| matches!(&*o.key, "super" | "alt" | "control" | "ctrl"))
     {
         bail!(
             "If a modifier key is used to open it must include _l or _r at the end. (e.g. super_l, alt_r, etc)\nctrl_l / _r is NOT a valid modifier key, only control_l / _r is"

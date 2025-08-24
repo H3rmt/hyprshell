@@ -8,7 +8,6 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
         binds.push(ExecBind {
             mods: vec![overview.modifier.to_str()],
             key: overview.key.clone(),
-
             exec: generate_transfer_socat(&TransferType::OpenOverview).into_boxed_str(),
         });
     }

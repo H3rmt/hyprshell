@@ -8,7 +8,6 @@ pub enum Modifier {
     Alt,
     Ctrl,
     Super,
-    Shift,
 }
 
 impl Modifier {
@@ -17,7 +16,6 @@ impl Modifier {
             Self::Alt => "alt_l".to_string(),
             Self::Ctrl => "ctrl_l".to_string(),
             Self::Super => "super_l".to_string(),
-            Self::Shift => "shift_l".to_string(),
         }
     }
     pub const fn to_str(&self) -> &'static str {
@@ -25,7 +23,6 @@ impl Modifier {
             Self::Alt => "alt",
             Self::Ctrl => "ctrl",
             Self::Super => "super",
-            Self::Shift => "shift",
         }
     }
 }
@@ -39,7 +36,7 @@ impl<'de> Deserialize<'de> for Modifier {
         impl Visitor<'_> for ModVisitor {
             type Value = Modifier;
             fn expecting(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-                fmt.write_str("one of: alt, ctrl, super, shift")
+                fmt.write_str("one of: alt, ctrl, super")
             }
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
             where
@@ -47,7 +44,7 @@ impl<'de> Deserialize<'de> for Modifier {
             {
                 value
                     .try_into()
-                    .map_err(|_e| E::unknown_variant(value, &["alt", "ctrl", "super", "shift"]))
+                    .map_err(|_e| E::unknown_variant(value, &["alt", "ctrl", "super"]))
             }
         }
         deserializer.deserialize_str(ModVisitor)
@@ -72,7 +69,6 @@ impl TryFrom<&str> for Modifier {
             "Alt" | "alt" => Ok(Self::Alt),
             "Ctrl" | "ctrl" | "control" | "Control" => Ok(Self::Ctrl),
             "Super" | "super" | "Win" | "win" | "windows" | "Windows" => Ok(Self::Super),
-            "Shift" | "shift" => Ok(Self::Shift),
             other => bail!("Invalid modifier: {}", other),
         }
     }
@@ -84,7 +80,6 @@ impl fmt::Display for Modifier {
             Self::Alt => write!(f, "Alt"),
             Self::Ctrl => write!(f, "Ctrl"),
             Self::Super => write!(f, "Super"),
-            Self::Shift => write!(f, "Shift"),
         }
     }
 }

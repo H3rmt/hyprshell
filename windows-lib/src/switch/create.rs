@@ -94,12 +94,6 @@ fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferTy
 
 fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
     match key {
-        Key::Escape => {
-            event_sender
-                .send_blocking(TransferType::Exit)
-                .warn_details("unable to send");
-            Propagation::Stop
-        }
         Key::Tab => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {

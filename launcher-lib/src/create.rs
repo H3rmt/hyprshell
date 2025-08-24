@@ -21,6 +21,7 @@ pub fn create_windows_overview_launcher_window(
     app: &Application,
     launcher: &Launcher,
     open_modifier: Modifier,
+    open_key: &Box<str>,
     data_dir: &Path,
     event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<LauncherData> {
@@ -71,14 +72,10 @@ pub fn create_windows_overview_launcher_window(
 
     let event_controller = EventControllerKey::new();
     let plugin_keys = get_static_options_chars(&launcher.plugins);
-    let event_sender_3 = event_sender.clone();
     let event_sender_4 = event_sender.clone();
     let entry_2 = entry.clone();
     let results_2 = results.clone();
     let launch_modifier = launcher.launch_modifier;
-    event_controller.connect_key_released(move |_, key, _, _| {
-        handle_release(key, open_modifier, &event_sender_3);
-    });
     event_controller.connect_key_pressed(move |_, key, _, modt| {
         handle_key(
             &entry_2,
@@ -133,7 +130,15 @@ fn launcher_entry_text_change(text: String, event_sender: &Sender<TransferType>)
         .warn_details("unable to send");
 }
 
-fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferType>) {
+// TODO this doesnt work if key is not a modifier (tab instead of super_l)
+// instead handle close with esc and close with mod again in plugin
+fn handle_release(
+    key: Key,
+    modifier: Modifier,
+    open_key: &Box<str>,
+    mt: ModifierType,
+    event_sender: &Sender<TransferType>,
+) {
     if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
         || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
         || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
@@ -157,7 +162,6 @@ fn handle_key(
     event_sender: &Sender<TransferType>,
 ) -> Propagation {
     let launch_mod = match launch_modifier {
-        Modifier::Shift => modt == ModifierType::SHIFT_MASK,
         Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
         Modifier::Alt => modt == ModifierType::ALT_MASK,
         Modifier::Super => modt == ModifierType::SUPER_MASK,
@@ -178,17 +182,6 @@ fn handle_key(
                 ))
                 .warn_details("unable to send");
         }
-        return Propagation::Stop;
-    }
-
-    if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
-        || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
-        || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
-    {
-        trace!("Modifier key pressed: {:?}", key);
-        event_sender
-            .send_blocking(TransferType::Exit)
-            .warn_details("unable to send");
         return Propagation::Stop;
     }
 

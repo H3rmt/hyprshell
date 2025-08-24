@@ -70,7 +70,7 @@ pub struct IniFile<'a> {
 
 impl IniFile<'_> {
     #[allow(clippy::should_implement_trait)]
-    pub fn from_str(content: &str) -> IniFile {
+    pub fn from_str(content: &str) -> IniFile<'_> {
         let _span = debug_span!("from_str").entered();
 
         let mut sections = HashMap::new();

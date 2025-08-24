@@ -68,7 +68,7 @@ impl From<old_structs::Modifier> for crate::Modifier {
         match value {
             old_structs::Modifier::Alt => Self::Alt,
             old_structs::Modifier::Ctrl => Self::Ctrl,
-            old_structs::Modifier::Shift => Self::Shift,
+            old_structs::Modifier::Shift => Self::Super, // Shift removed
             old_structs::Modifier::Super => Self::Super,
         }
     }

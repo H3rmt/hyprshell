@@ -1,4 +1,4 @@
-#include "globals.hpp"
+#include "globals.h"
 
 void exit() {
     if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
