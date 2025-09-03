@@ -19,12 +19,11 @@ serde_json.workspace = true
 inquire = { version = "0.7.5", optional = true, default-features = false, features = ["termion"] }
 smart-default = { version = "0.7.1" }
 ron = { version = "0.10.1" }
+toml = { version = "0.9.5" }
 serde_json5 = { version = "0.2.1", optional = true }
-toml = { version = "0.9.5", optional = true }
 
 [features]
 json5_config = ["dep:serde_json5"]
-toml_config = ["dep:toml"]
 generate_config = ["dep:inquire"]
 no-default-config-values = []
 launcher_calc_plugin = []

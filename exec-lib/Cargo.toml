@@ -16,5 +16,5 @@ tracing.workspace = true
 core-lib.workspace = true
 config-lib.workspace = true
 hyprland-plugin.workspace = true
-hyprland = { package = "hyprshell-hyprland", path = "../hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config"], default-features = false }
 semver = { version = "1.0.26" }
+hyprland = { package = "hyprshell-hyprland", path = "../hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config"], default-features = false }

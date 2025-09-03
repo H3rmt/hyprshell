@@ -4,7 +4,6 @@ use tracing::{trace, warn};
 
 pub fn get_default_config_path() -> PathBuf {
     let mut path = get_config_home();
-    // use .ron as default (for generating)
     #[cfg(debug_assertions)]
     path.push("hyprshell/config.debug.ron");
     #[cfg(not(debug_assertions))]
@@ -35,17 +34,27 @@ pub fn get_default_config_path() -> PathBuf {
             return path;
         }
     }
+
+    path.set_extension("ron");
     path
 }
 
 pub fn get_default_css_path() -> PathBuf {
     let mut path = get_config_home();
+
+    #[cfg(debug_assertions)]
+    path.push("hyprshell/styles.debug.css");
+    #[cfg(not(debug_assertions))]
     path.push("hyprshell/styles.css");
     path
 }
 
 pub fn get_default_data_dir() -> PathBuf {
     let mut path = get_data_home();
+
+    #[cfg(debug_assertions)]
+    path.push("hyprshell.debug");
+    #[cfg(not(debug_assertions))]
     path.push("hyprshell");
     path
 }

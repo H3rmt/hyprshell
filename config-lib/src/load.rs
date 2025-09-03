@@ -80,7 +80,6 @@ pub fn load_config_file<T: DeserializeOwned>(config_path: &Path) -> anyhow::Resu
             serde_json5::from_reader(file)
                 .with_context(|| format!("Failed to read JSON5 config at ({config_path_display})"))
         }
-        #[cfg(feature = "toml_config")]
         Some("toml") => {
             use std::io::Read;
             let mut file = std::fs::File::open(config_path).with_context(|| {

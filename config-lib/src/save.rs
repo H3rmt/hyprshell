@@ -35,7 +35,6 @@ pub fn write_config(
         Some("json5" | "json") => {
             serde_json::to_string_pretty(config).context("Failed to generate JSON config")
         }
-        #[cfg(feature = "toml_config")]
         Some("toml") => toml::to_string_pretty(config).context("Failed to generate TOML config"),
         Some(ext) => bail!(
             "Invalid config file extension: {} (run with -vv and check `FEATURES: ` debug log to see enabled extensions)",
