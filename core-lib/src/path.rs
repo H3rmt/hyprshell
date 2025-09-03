@@ -5,16 +5,28 @@ use tracing::{trace, warn};
 pub fn get_default_config_path() -> PathBuf {
     let mut path = get_config_home();
     // use .ron as default (for generating)
+    #[cfg(debug_assertions)]
+    path.push("hyprshell/config.debug.ron");
+    #[cfg(not(debug_assertions))]
     path.push("hyprshell/config.ron");
+
     if path.exists() {
         trace!("Found config file at {path:?}");
         return path;
     }
+
+    path.set_extension("toml");
+    if path.exists() {
+        trace!("Found config file at {path:?}");
+        return path;
+    }
+
     path.set_extension("json");
     if path.exists() {
         trace!("Found config file at {path:?}");
         return path;
     }
+
     #[cfg(feature = "json5_config")]
     {
         path.set_extension("json5");
