@@ -26,6 +26,7 @@ pub struct WorkspaceData {
     pub width: u16,
     pub height: u16,
     pub monitor: MonitorId,
+    pub any_client_enabled: bool,
 }
 
 #[derive(Debug, Clone)]

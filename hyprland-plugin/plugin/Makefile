@@ -9,7 +9,7 @@ HEADERS = globals.h handlers.h defs.h send.h
 
 CXXFLAGS = -shared -fPIC --no-gnu-unique -std=c++2b -O2 -I/usr/include/pixman-1
 
-prepare-combined: combine copy-defs
+prepare-combined: clean combine copy-defs
 
 combine:
 # Combine all source files into one for easier compilation

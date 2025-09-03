@@ -27,12 +27,17 @@ pub fn find_next(
                 workspaces_per_row,
             )
         }
+        .unwrap_or(Active {
+            client: None,
+            workspace: active.workspace,
+            monitor: active.monitor,
+        })
     } else if let Some(active_client) = active.client {
-        find_next_client_wrap(reverse, &hypr_data.clients, active_client)
+        find_next_client_wrap(reverse, &hypr_data.clients, active_client).unwrap_or(active)
     } else {
         find_first_client(direction, &hypr_data.clients, &hypr_data.workspaces, active)
-    }
-    .unwrap_or(active);
+            .unwrap_or(active)
+    };
     trace!("Next active: {:?}", next);
     next
 }
@@ -90,7 +95,7 @@ pub fn find_next_client_wrap(
         isize::try_from(clients.iter().filter(|(_, c)| c.enabled).count())
             .warn_details("unable convert clients len")?,
     ) as usize;
-    trace!("Finding next client with offset: {}", offset);
+    trace!("Finding next client wrap with offset: {}", offset);
 
     clients
         .iter()
@@ -130,7 +135,9 @@ pub fn find_next_workspace(
     let current = workspaces.iter().position(|w| w.0 == active).unwrap_or(0);
     #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
     workspaces
-        .get(
+        .iter()
+        .filter(|(_, c)| c.any_client_enabled)
+        .nth(
             (current as isize + offset)
                 .max(0)
                 .min((workspaces.len() - 1) as isize) as usize,
@@ -154,12 +161,13 @@ pub fn find_next_workspace_wrap(
     #[allow(clippy::cast_possible_wrap)]
     let offset =
         (if reverse { -1 } else { 1 } as isize).rem_euclid(workspaces.len() as isize) as usize;
-    trace!("Finding next workspace with offset: {}", offset);
+    trace!("Finding next workspace wrap with offset: {}", offset);
 
     workspaces
         .iter()
         .cycle()
         .skip_while(|(id, _)| *id != active) // skip until current element
+        .filter(|(_, c)| c.any_client_enabled)
         .nth(offset)
         .map(|(id, data)| Active {
             client: None,

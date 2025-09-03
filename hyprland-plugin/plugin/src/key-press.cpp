@@ -46,7 +46,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
             ) {
                 // open overview is only a modifier key
                 if (release && last_press_was_mod_press) {
-                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] mod pressed", GREEN, 2000);
+                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] mod pressed", GREEN, 2000);
+                    }
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_OVERVIEW);
                 } else {
                     last_press_was_mod_press = true;
@@ -58,7 +60,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
                         (strcasecmp(HYPRSHELL_OVERVIEW_MOD, "Super") == 0 && superActive) ||
                         (strcasecmp(HYPRSHELL_OVERVIEW_MOD, "Ctrl") == 0 && ctrlActive))
                 ) {
-                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] mod + overview pressed", GREEN, 2000);
+                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] mod + overview pressed", GREEN, 2000);
+                    }
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_OVERVIEW);
                 }
             }
@@ -74,7 +78,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
                 ) {
-                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (tab) pressed", GREEN, 2000);
+                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (tab) pressed", GREEN, 2000);
+                    }
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH);
                 }
             }
@@ -83,8 +89,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
                 ) {
-                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (shift + tab) pressed", GREEN,
-                                                 2000);
+                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (shift + tab) pressed", GREEN, 2000);
+                    }
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH_REVERSE);
                 }
             }
@@ -93,8 +100,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
                 ) {
-                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (grave) pressed", GREEN,
-                                                 2000);
+                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (grave) pressed", GREEN, 2000);
+                    }
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH_REVERSE);
                 }
             }
@@ -102,7 +110,9 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data) {
 
         // release switch mode
         if (release && (keysym == HYPRSHELL_SWTICH_XKB_MOD_R || keysym == HYPRSHELL_SWTICH_XKB_MOD_L)) {
-            HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] shift mode release pressed", GREEN, 2000);
+            if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] shift mode release pressed", GREEN, 2000);
+            }
             sendStringToHyprshellSocket(HYPRSHELL_CLOSE);
         }
     }

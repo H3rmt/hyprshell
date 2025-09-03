@@ -51,6 +51,12 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
             && (!config.filter_current_workspace || client.workspace == active_ws)
             && (!config.filter_current_monitor || client.monitor == active_monitor);
     }
+    for (id, ws) in &mut workspace_data {
+        ws.any_client_enabled = client_data
+            .iter()
+            .filter(|(_, c)| c.enabled)
+            .any(|(_, c)| c.workspace.eq(id));
+    }
 
     trace!("client_data: {:?}", client_data);
     trace!("workspace_data: {:?}", workspace_data);

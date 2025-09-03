@@ -82,6 +82,7 @@ pub fn collect_hypr_data() -> anyhow::Result<(
                             monitor: *monitor_id,
                             height: monitor_data.height,
                             width: monitor_data.width,
+                            any_client_enabled: false, // gets updated later
                         },
                     ));
                     x_offset += i32::from(monitor_data.width);

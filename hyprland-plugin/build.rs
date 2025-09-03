@@ -7,7 +7,6 @@ use zip::write::FileOptions;
 
 fn include_plugin() -> Result<(), Box<dyn Error>> {
     let out_dir = env::var("OUT_DIR")?;
-
     let status = std::process::Command::new("make")
         .arg("prepare-combined")
         .current_dir("plugin")
