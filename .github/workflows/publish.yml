@@ -12,6 +12,8 @@ jobs:
       should_publish: ${{ steps.check_commit.outputs.should_publish }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: 'true'
       - name: Check commit message
         id: check_commit
         run: |
@@ -32,6 +34,7 @@ jobs:
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.SSH_KEY }}
+          submodules: 'true'
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: Install gtk4-layer-shell
@@ -72,7 +75,6 @@ jobs:
           
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
           cargo ws publish custom $version -m "chore(release): bump rust versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
-          
           
           gh release edit ${{ github.ref_name }} --latest --draft=false --title "hyprshell ${{ github.ref_name }}"
         env:

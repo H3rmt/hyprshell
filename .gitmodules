@@ -1,0 +1,3 @@
+[submodule "hyprland-rs"]
+	path = hyprland-rs
+	url = git@github.com:H3rmt/hyprland-rs.git
