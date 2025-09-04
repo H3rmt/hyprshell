@@ -13,6 +13,6 @@ edition.workspace = true
 ashpd = { version = "0.11.0", default-features = false, features = ["gtk4_wayland", "tracing", "tokio"] }
 anyhow = "1.0.98"
 tokio = { version = "1.45.1", features = ["rt", "rt-multi-thread", "macros"] }
-gtk4 = "0.9.6"
+gtk4 = "0.10.0"
 gtk4-layer-shell = "0.5.0"
 futures-lite = "2.6.0"
