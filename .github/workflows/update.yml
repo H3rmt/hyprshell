@@ -15,6 +15,7 @@ jobs:
       - uses: cachix/install-nix-action@f0fe604f8a612776892427721526b4c7cfb23aba # v31.4.1
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: "download-buffer-size = 1048576000"
       - run: |
           git fetch
           git switch hyprshell

@@ -31,7 +31,6 @@ jobs:
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.SSH_KEY }}
-          token: ${{ secrets.PAT_TOKEN }}
           submodules: 'true'
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
