@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.6.1](https://github.com/H3rmt/hyprshell/compare/v4.6.0...v4.6.1) (2025-09-04)
+
+
+### Bug Fixes
+
+* **deps:** update deps ([108057a](https://github.com/H3rmt/hyprshell/commit/108057aa10525cb710f7785bd7ed3221bbf7c0e8))
+* hyprland plugin now build without make in OUT_DIR ([31bdfb1](https://github.com/H3rmt/hyprshell/commit/31bdfb1392c4086ee6de6805826666ece2a0c18f))
+
+
+### Documentation
+
+* update nix docs ([eac79f1](https://github.com/H3rmt/hyprshell/commit/eac79f1b2dd2f3d5cc634d2cbcecdca40d8cdd4c))
+
 ## [4.6.0](https://github.com/H3rmt/hyprshell/compare/v4.5.0...v4.6.0) (2025-09-04)
 
 
