@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: 'true'
-      - uses: cachix/install-nix-action@f0fe604f8a612776892427721526b4c7cfb23aba # v31.4.1
+      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8 # v31.6.0
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: "download-buffer-size = 1048576000"
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: 'true'
-      - uses: cachix/install-nix-action@f0fe604f8a612776892427721526b4c7cfb23aba # v31.4.1
+      - uses: cachix/install-nix-action@56a7bb7b56d9a92d4fd1bc05758de7eea4a370a8 # v31.6.0
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: "download-buffer-size = 1048576000"
