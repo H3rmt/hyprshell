@@ -10,6 +10,7 @@ pub fn write_systemd_unit(
     config_path: Option<&PathBuf>,
     css_path: Option<&PathBuf>,
     data_dir: Option<&PathBuf>,
+    cache_dir: Option<&PathBuf>,
     data_home_dir: &Path,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("write_systemd_unit").entered();
@@ -33,6 +34,9 @@ pub fn write_systemd_unit(
     }
     if let Some(data_dir) = data_dir {
         let _ = params.write_str(&format!("--data-dir {} ", data_dir.display()));
+    }
+    if let Some(cache_dir) = cache_dir {
+        let _ = params.write_str(&format!("--cache-dir {} ", cache_dir.display()));
     }
 
     let extra = if params.is_empty() {

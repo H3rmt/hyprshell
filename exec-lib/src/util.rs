@@ -6,6 +6,7 @@ use hyprland::keyword::Keyword;
 use hyprland::prelude::*;
 use semver::Version;
 use std::sync::{Mutex, OnceLock};
+use std::time::Duration;
 use tracing::{debug, info, trace};
 
 pub fn get_clients() -> Vec<Client> {
@@ -28,9 +29,18 @@ pub fn reload_hyprland_config() -> anyhow::Result<()> {
 pub fn toast(body: &str) {
     let _ = notify::call(
         notify::Icon::Warning,
-        std::time::Duration::from_secs(10),
+        Duration::from_secs(10),
         Color::new(255, 0, 0, 255),
         format!("hyprshell Error: {body}"),
+    );
+}
+
+pub fn info_toast(body: &str, duration: Duration) {
+    let _ = notify::call(
+        notify::Icon::Info,
+        duration,
+        Color::new(0, 255, 0, 255),
+        format!("hyprshell: {body}"),
     );
 }
 

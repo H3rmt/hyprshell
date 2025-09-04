@@ -59,6 +59,16 @@ pub fn get_default_data_dir() -> PathBuf {
     path
 }
 
+pub fn get_default_cache_dir() -> PathBuf {
+    let mut path = get_cache_home();
+
+    #[cfg(debug_assertions)]
+    path.push("hyprshell.debug");
+    #[cfg(not(debug_assertions))]
+    path.push("hyprshell");
+    path
+}
+
 /// # Panics
 /// if neither `XDG_DATA_HOME` nor HOME is set
 pub fn get_data_home() -> PathBuf {
@@ -69,6 +79,18 @@ pub fn get_data_home() -> PathBuf {
                 .map(|home| PathBuf::from(format!("{}/.local/share", home.to_string_lossy())))
         })
         .expect("Failed to get config dir (XDG_DATA_HOME or HOME not set)")
+}
+
+/// # Panics
+/// if neither `XDG_CACHE_HOME` nor HOME is set
+pub fn get_cache_home() -> PathBuf {
+    env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .or_else(|| {
+            env::var_os("HOME")
+                .map(|home| PathBuf::from(format!("{}/.cache", home.to_string_lossy())))
+        })
+        .expect("Failed to get config dir (XDG_CACHE_HOME or HOME not set)")
 }
 
 /// # Panics

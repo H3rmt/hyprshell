@@ -1,9 +1,13 @@
 use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
 use gtk::{IconTheme, Settings};
+use semver::Version;
 use signal_hook::consts::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
-use std::path::PathBuf;
+use std::cmp::Ordering;
+use std::fs::{File, read_to_string, write};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::thread;
 use tracing::{info, trace, warn};
@@ -85,4 +89,29 @@ fn get_icon_data() -> (Vec<String>, Vec<PathBuf>) {
         .collect::<Vec<_>>();
     trace!("Icon theme search path: {search_path:?}");
     (gtk_icons, search_path)
+}
+
+pub fn check_new_version(cache_dir: &Path) -> anyhow::Result<Ordering> {
+    let version_file = cache_dir.join("version.txt");
+    let current_version = env!("CARGO_PKG_VERSION");
+    let current_version =
+        Version::parse(current_version).context("Failed to parse current version")?;
+    if version_file.exists() {
+        let contents = read_to_string(&version_file).context("Failed to read old version file")?;
+        let cached_version =
+            Version::parse(contents.trim()).context("Failed to parse old version")?;
+        trace!(
+            "Cached version: {cached_version:?}, current version: {current_version:?}: {:?}",
+            cached_version.cmp(&current_version)
+        );
+        write(&version_file, current_version.to_string().as_bytes())
+            .context("Failed to write current version to file")?;
+        Ok(current_version.cmp(&cached_version))
+    } else {
+        std::fs::create_dir_all(cache_dir).context("Failed to create cache directory")?;
+        let mut file = File::create(&version_file).context("Failed to create version file")?;
+        file.write_all(current_version.to_string().as_bytes())
+            .context("Failed to write current version to file")?;
+        Ok(Ordering::Greater)
+    }
 }

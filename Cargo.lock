@@ -1182,6 +1182,7 @@ dependencies = [
  "hyprshell-exec-lib",
  "hyprshell-launcher-lib",
  "hyprshell-windows-lib",
+ "semver",
  "signal-hook",
  "tracing",
  "tracing-subscriber",

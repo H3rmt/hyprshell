@@ -3,8 +3,8 @@
 use anyhow::{Context, bail};
 use clap::Parser;
 use core_lib::{
-    WarnWithDetails, daemon_running, get_default_config_path, get_default_css_path,
-    get_default_data_dir,
+    WarnWithDetails, daemon_running, get_default_cache_dir, get_default_config_path,
+    get_default_css_path, get_default_data_dir,
 };
 use std::process::exit;
 use std::{env, fs};
@@ -56,6 +56,7 @@ fn main() -> anyhow::Result<()> {
     check_env();
 
     let data_dir = cli.global_opts.data_dir;
+    let cache_dir = cli.global_opts.cache_dir;
     let css_file = cli.global_opts.css_file;
     let config_path = cli.global_opts.config_file;
 
@@ -70,6 +71,7 @@ fn main() -> anyhow::Result<()> {
                 config_path.unwrap_or_else(get_default_config_path),
                 css_file.unwrap_or_else(get_default_css_path),
                 data_dir.unwrap_or_else(get_default_data_dir),
+                cache_dir.unwrap_or_else(get_default_cache_dir),
             )?;
         }
         #[cfg(feature = "generate_config_command")]
@@ -97,6 +99,7 @@ fn main() -> anyhow::Result<()> {
                         opts.config_file.as_ref(),
                         opts.css_file.as_ref(),
                         opts.data_dir.as_ref(),
+                        opts.cache_dir.as_ref(),
                         &core_lib::get_data_home(),
                     )
                     .warn();

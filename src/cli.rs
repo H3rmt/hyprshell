@@ -37,8 +37,12 @@ pub struct GlobalOpts {
     pub css_file: Option<PathBuf>,
 
     /// Path to data directory [default: `$XDG_DATA_HOME/hyprshell`]
-    #[arg(long, short = 'd', global = true)]
+    #[arg(long, global = true)]
     pub data_dir: Option<PathBuf>,
+
+    /// Path to cache directory [default: `$XDG_CACHE_HOME/hyprshell`]
+    #[arg(long, global = true)]
+    pub cache_dir: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug, Clone)]

@@ -2,6 +2,7 @@ use crate::keybinds::configure_wm;
 use crate::receive_handle::event_handler;
 use crate::socket::socket_handler;
 use crate::util;
+use crate::util::check_new_version;
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use config_lib::Config;
@@ -10,7 +11,7 @@ use core_lib::{
     WarnWithDetails, hyprshell_config_block, hyprshell_config_listener, hyprshell_css_listener,
 };
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
-use exec_lib::toast;
+use exec_lib::{info_toast, toast};
 use gtk::gdk::Display;
 use gtk::prelude::*;
 use gtk::{
@@ -20,6 +21,7 @@ use gtk::{
 use launcher_lib::{LauncherData, create_windows_overview_launcher_window};
 use std::any::Any;
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Mutex, OnceLock};
@@ -31,10 +33,16 @@ use windows_lib::{
     create_windows_switch_window,
 };
 
-pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyhow::Result<()> {
+pub fn start(
+    config_path: PathBuf,
+    css_path: PathBuf,
+    data_dir: PathBuf,
+    cache_dir: PathBuf,
+) -> anyhow::Result<()> {
     let config_path = Rc::new(config_path);
     let css_path = Rc::new(css_path);
     let data_dir = Rc::new(data_dir);
+    let cache_dir = Rc::new(cache_dir);
 
     util::preactivate().context("Failed to preactivate GTK and reload icons")?;
 
@@ -64,6 +72,7 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
         let config_path = config_path.clone();
         let css_path = css_path.clone();
         let data_dir = data_dir.clone();
+        let cache_dir = cache_dir.clone();
         let event_sender = event_sender.clone();
         let event_receiver = event_receiver.clone();
         application.connect_activate(move |app| {
@@ -72,6 +81,7 @@ pub fn start(config_path: PathBuf, css_path: PathBuf, data_dir: PathBuf) -> anyh
                 &config_path,
                 &css_path,
                 &data_dir,
+                &cache_dir,
                 event_sender.clone(),
                 event_receiver.clone(),
             );
@@ -90,11 +100,14 @@ pub struct WindowsGlobal {
     pub switch: Option<WindowsSwitchData>,
 }
 
+const NEW_VERSION_INFO: &str = "This version uses a hyprland plugin to register keypresses, adds shell completion, improves UI, adds usefull commands and much more.";
+
 fn activate(
     app: &Application,
     config_path: &Path,
     css_path: &Path,
     data_dir: &Path,
+    cache_dir: &Path,
     event_sender: Sender<TransferType>,
     event_receiver: Receiver<TransferType>,
 ) {
@@ -104,6 +117,28 @@ fn activate(
     exec_lib::reload_hyprland_config()
         .context("Failed to reload hyprland config")
         .warn_details("unable to reload hyprland config");
+
+    match check_new_version(cache_dir) {
+        Err(err) => {
+            debug!("Unable to compare previous to current version.\n{err:?}");
+        }
+        Ok(Ordering::Greater) => {
+            info_toast(
+                &format!(
+                    "Hyprshell was updated to a new version ({})",
+                    env!("CARGO_PKG_VERSION")
+                ),
+                Duration::from_secs(5),
+            );
+            info_toast(NEW_VERSION_INFO, Duration::from_secs(10))
+        }
+        Ok(Ordering::Less) => {
+            toast("Hyprshell was downgraded, downgrading config must be done manually if needed");
+        }
+        Ok(Ordering::Equal) => {
+            debug!("Hyprshell is up to date");
+        }
+    }
 
     let config = match config_lib::load_and_migrate_config(config_path, true) {
         Ok(config) => config,
