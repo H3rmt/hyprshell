@@ -1,5 +1,69 @@
 # Changelog
 
+## [4.6.0](https://github.com/H3rmt/hyprshell/compare/v4.5.0...v4.6.0) (2025-09-04)
+
+
+### Features
+
+* added shell completions ([a74fa47](https://github.com/H3rmt/hyprshell/commit/a74fa4777a2f905b6a0f0269401c564e60068692))
+* added toml to ron migration (toml dropped, as it can't store None values) ([9d1e370](https://github.com/H3rmt/hyprshell/commit/9d1e370b7c2223171a6fb92d0aba0f9cc2a9ca01))
+* better config migrations (allow multi version migrations) ([299d388](https://github.com/H3rmt/hyprshell/commit/299d38816d02dadd97160e7a13088f6aaca2d4ea))
+* enhance ini parsing and added new cli command to get, list and set default apps ([2036a3c](https://github.com/H3rmt/hyprshell/commit/2036a3cb1a3588b97eaea5967e8900cff73726c8))
+* show info when new version detected ([e80fe65](https://github.com/H3rmt/hyprshell/commit/e80fe65a86da07448936babfd4a59ee33340217f))
+
+
+### Bug Fixes
+
+* apply user style with user priority ([b700ee0](https://github.com/H3rmt/hyprshell/commit/b700ee0e4954b9e463ba64263953dacfc36ad097))
+* close overview with open key ([aa5be3f](https://github.com/H3rmt/hyprshell/commit/aa5be3f560bd1fd7bf0026d8c9e09b3f4b4d15b4))
+* **deps:** update rust crate anyhow to v1.0.99 ([a7e96f3](https://github.com/H3rmt/hyprshell/commit/a7e96f388deb7c132bf5bd2f35e88be3f7d56d45))
+* **deps:** update rust crate notify to v8.1.0 ([611cde3](https://github.com/H3rmt/hyprshell/commit/611cde3cb681f030a038439f321421d4e875222e))
+* enable show_actions_submenu for nix users ([8c19498](https://github.com/H3rmt/hyprshell/commit/8c1949892c46da3ff24548ccd904741694339fb0))
+* exclude empty workspaces in switch mode ([10786eb](https://github.com/H3rmt/hyprshell/commit/10786eb5001f1ed7abc3bb2483741b30e410152f))
+* exit app when removing / adding monitors ([032a047](https://github.com/H3rmt/hyprshell/commit/032a047597cab6f2dbe0c6e4482c8d05eb7fbdca))
+* fix cargo install cargo-workspaces ([e62a334](https://github.com/H3rmt/hyprshell/commit/e62a33465633ae87653fed679549b4cfc988f73b))
+* fix cargo ws publish, allow buildscript to run make ([14b5b5a](https://github.com/H3rmt/hyprshell/commit/14b5b5a2ab9e6501c2c125203f44808a80314649))
+* fix missing version in dependency of custom hyprland-rs ([94747cc](https://github.com/H3rmt/hyprshell/commit/94747cc81f554faf034bb5b7c5ec04dcbad03119))
+* fix publish workflow check commit ([29e440f](https://github.com/H3rmt/hyprshell/commit/29e440f6f0685e93d24291196b16623d7721bcd6))
+* fixed select window in overview ([71080a9](https://github.com/H3rmt/hyprshell/commit/71080a9211bd63de4aa0c1405810dfa1126c180c))
+* **nix-flake:** update flake.lock ([918e40b](https://github.com/H3rmt/hyprshell/commit/918e40beb8e70649e52ffcf8dd21747bcdc3f27f))
+* **nix-flake:** update flake.lock ([4eeaa57](https://github.com/H3rmt/hyprshell/commit/4eeaa5710aa7503b9a1307c8016879fd8df664ec))
+* **plugin:** fix open overview after mouse button press ([bd03613](https://github.com/H3rmt/hyprshell/commit/bd0361332ca313d527daec85d7cfdc0d057a5fc1))
+* reload desktop files, etc. after opening launcher ([a679985](https://github.com/H3rmt/hyprshell/commit/a67998550abd8069c47a6d2bd762b72208a70b2f))
+* style changes, liquid gras css updated ([6871827](https://github.com/H3rmt/hyprshell/commit/687182774094aa572441ece0ad9b44c52612a196))
+* typos in home manager configuration ([a9fc51e](https://github.com/H3rmt/hyprshell/commit/a9fc51e6e8d1e23302e17cc905f2f8285744c9fc))
+* use bash to start apps ([c86dee1](https://github.com/H3rmt/hyprshell/commit/c86dee15733bc86f0ab81cceeb84bb1671876da3))
+* use new hyprland-rs Instance ([c519605](https://github.com/H3rmt/hyprshell/commit/c51960581592469653380adfc03d3ea2f78e2e3a))
+* use toml extension on lookup config file ([0ab9e9d](https://github.com/H3rmt/hyprshell/commit/0ab9e9dee21e70e80a815dbea7d833a32f5497cc))
+
+
+### Code Refactoring
+
+* add hyprland plugin ([1412e7a](https://github.com/H3rmt/hyprshell/commit/1412e7a46a3945d7a2f76dd1d1c5ac675160a17e))
+* add hyprland plugin ([33ced1c](https://github.com/H3rmt/hyprshell/commit/33ced1cab64d2864de3f3b3d41f53484ec9adedb))
+* better animations for launcher ([9c2a71c](https://github.com/H3rmt/hyprshell/commit/9c2a71cb275516adbd98ef084a9f5dcd564dedb2))
+* build plugin at runtime ([400a93b](https://github.com/H3rmt/hyprshell/commit/400a93bbc340f933d473c393f4d71fcf2b5339ad))
+* check if set desktop file is valid ([b7cfa98](https://github.com/H3rmt/hyprshell/commit/b7cfa982a371300bf523e12dbfd06f2734bc7ebd))
+* fix nix wrap program ([5895432](https://github.com/H3rmt/hyprshell/commit/58954329f521daabaf67cb0c67a3f130ef9f26cc))
+* implement plugin for switch mode ([9e1193e](https://github.com/H3rmt/hyprshell/commit/9e1193e14b7335af4c017593b2bcafb0a1882f90))
+* more strict clippy rules ([fea4993](https://github.com/H3rmt/hyprshell/commit/fea4993df001461e1e0cc7ba64ccedfda605bb3c))
+* return Ok / Err from socket ([61e09b7](https://github.com/H3rmt/hyprshell/commit/61e09b799860451290d68f46a0b98dc279ae2962))
+* separate config crate ([9d1e370](https://github.com/H3rmt/hyprshell/commit/9d1e370b7c2223171a6fb92d0aba0f9cc2a9ca01))
+* split launcher plugin into 2 data ([c0ff0b7](https://github.com/H3rmt/hyprshell/commit/c0ff0b74cce58f0eec04f79754971863770ebac3))
+* store clippy lints in cargo.toml ([4387f52](https://github.com/H3rmt/hyprshell/commit/4387f52881a05780efa34de0457271363400c121))
+* use different dirs for debug mode ([045def3](https://github.com/H3rmt/hyprshell/commit/045def381c611950851d4819b973a791ea896a2c))
+* use global desktopfile and mime cache ([ea64c40](https://github.com/H3rmt/hyprshell/commit/ea64c408bbb4ca1d84eabadab3d6a9db9632b1de))
+* use keymaps in hyprland plugin ([e0cd4da](https://github.com/H3rmt/hyprshell/commit/e0cd4daae2ed88ab7129a1f2c4dffca98d78d371))
+* use make to improve plugin build time ([df032f4](https://github.com/H3rmt/hyprshell/commit/df032f4a1559dd13e60131a731e4d6e8d449de98))
+* using plugin for all keyboard interactions ([ae39988](https://github.com/H3rmt/hyprshell/commit/ae39988bc3206089fb1b729d98b1ead4df1f32b9))
+* using plugin for all keyboard interactions ([9dfa549](https://github.com/H3rmt/hyprshell/commit/9dfa5494bfd526d3acace3730f0edd9f7fbbe1eb))
+
+
+### Documentation
+
+* update CONFIGURE.md ([#304](https://github.com/H3rmt/hyprshell/issues/304)) ([9e590a0](https://github.com/H3rmt/hyprshell/commit/9e590a0339b547dfceea07ee8165eda649b1c8ec))
+* updated docs ([d713230](https://github.com/H3rmt/hyprshell/commit/d713230fe5435b1f75e78b53c8e749423283a8af))
+
 ## [4.5.0](https://github.com/H3rmt/hyprshell/compare/v4.4.3...v4.5.0) (2025-06-27)
 
 
