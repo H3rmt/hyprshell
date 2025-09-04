@@ -15,18 +15,14 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          submodules: 'true'
-          token: ${{ secrets.PAT_TOKEN }}
       - uses: cachix/install-nix-action@f0fe604f8a612776892427721526b4c7cfb23aba # v31.4.1
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ secrets.PAT_TOKEN }}
+          extra_nix_config: "download-buffer-size = 1048576000"
       - uses: cachix/cachix-action@v14
         with:
           name: hyprshell
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - name: Increase nix download-buffer-size
-        run: echo "download-buffer-size = 1048576000" | sudo tee -a /etc/nix/nix.conf && cat /etc/nix/nix.conf
       - name: Run Nix Flake Check build
         run: nix build '.#checks.x86_64-linux.hyprshell-config-check' -L
       - name: Run Nix Flake Check test
@@ -48,11 +44,7 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
       - uses: cachix/install-nix-action@f0fe604f8a612776892427721526b4c7cfb23aba # v31.4.1
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@v14
-        with:
-          name: hyprshell
-      - name: Increase nix download-buffer-size
-        run: echo "download-buffer-size = 1048576000" | sudo tee -a /etc/nix/nix.conf && cat /etc/nix/nix.conf
+          github_access_token: ${{ secrets.PAT_TOKEN }}
+          extra_nix_config: "download-buffer-size = 1048576000"
       - name: Run Nix Flake Check check-all-feature-combinations
         run: nix build '.#checks.x86_64-linux.check-all-feature-combinations' -L
