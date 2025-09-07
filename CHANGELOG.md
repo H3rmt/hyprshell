@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.6.2](https://github.com/H3rmt/hyprshell/compare/v4.6.1...v4.6.2) (2025-09-07)
+
+
+### Bug Fixes
+
+* fix nix packaging ([efe38a2](https://github.com/H3rmt/hyprshell/commit/efe38a2508c50fc6eb9aecb39f1f65fe7047a28c))
+* remove zip dependencies ([efe38a2](https://github.com/H3rmt/hyprshell/commit/efe38a2508c50fc6eb9aecb39f1f65fe7047a28c))
+* use monochrome if path in launcher is a valid path but doesn't exist ([0f59ca3](https://github.com/H3rmt/hyprshell/commit/0f59ca33d4946e1247c5ca937d7f399a03a00f44))
+
+
+### Code Refactoring
+
+* better nix caching ([0f59ca3](https://github.com/H3rmt/hyprshell/commit/0f59ca33d4946e1247c5ca937d7f399a03a00f44))
+
 ## [4.6.1](https://github.com/H3rmt/hyprshell/compare/v4.6.0...v4.6.1) (2025-09-04)
 
 
