@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.6.3](https://github.com/H3rmt/hyprshell/compare/v4.6.2...v4.6.3) (2025-09-11)
+
+
+### Bug Fixes
+
+* allow for removal of shell completions ([9699d32](https://github.com/H3rmt/hyprshell/commit/9699d32212ce1c58784d7c83f925ad043f359a4f))
+* cancel key events when opening hyprshell overview and switch ([92e4ea7](https://github.com/H3rmt/hyprshell/commit/92e4ea7a7990719071eae626feeb3f43911a4def))
+* check for nothing enabled in config ([66b6820](https://github.com/H3rmt/hyprshell/commit/66b682089fb94b426c3d8f7c615b097dfe9f40f4))
+* **deps:** update rust crate regex to v1.11.2 ([272fd94](https://github.com/H3rmt/hyprshell/commit/272fd94aeb8ae47ae7f3523e47ecd162e869cf15))
+* fix reload of hyprland if hyprland config was reloaded ([9c2dd76](https://github.com/H3rmt/hyprshell/commit/9c2dd76e4b0c2ee791f6b4fa80aeb6ea5ca017de))
+* ignore virtual keyboard inputs ([9699d32](https://github.com/H3rmt/hyprshell/commit/9699d32212ce1c58784d7c83f925ad043f359a4f))
+* include /usr/share/applications/mimeapps ([7022cb2](https://github.com/H3rmt/hyprshell/commit/7022cb2c4d5a436cd1ccd63b50b944265a40e9a3))
+* override of desktop files (https://github.com/H3rmt/hyprshell/issues/334) ([18fe033](https://github.com/H3rmt/hyprshell/commit/18fe03365799ce372af832a61335a5cf6f8f029c))
+* plugin now still works if overview or switch are disabled ([66b6820](https://github.com/H3rmt/hyprshell/commit/66b682089fb94b426c3d8f7c615b097dfe9f40f4))
+* print `No runs` if hyprshell data launch-history doesnt find any runs ([c67ab1b](https://github.com/H3rmt/hyprshell/commit/c67ab1b62c23cbf4f5f047a284f62b61a144adfa))
+* use Layer::Top for launcher (fix https://github.com/H3rmt/hyprshell/issues/327) ([8389d58](https://github.com/H3rmt/hyprshell/commit/8389d5871be307919dd0bb37cbc8bcf7f010b8aa))
+
 ## [4.6.2](https://github.com/H3rmt/hyprshell/compare/v4.6.1...v4.6.2) (2025-09-07)
 
 
