@@ -1,5 +1,23 @@
 # Changelog
 
+## [4.6.4](https://github.com/H3rmt/hyprshell/compare/v4.6.3...v4.6.4) (2025-09-14)
+
+
+### Bug Fixes
+
+* allow multiple instances (use wayland socket as part of APPID for gtk) ([8b8bce8](https://github.com/H3rmt/hyprshell/commit/8b8bce807a8d0ad9491396532f2bbfcde037ad0b))
+* allow setting custom hyprland package to fix nix plugin build ([28d0e67](https://github.com/H3rmt/hyprshell/commit/28d0e677eaa4f7032cdacee8fa9ff279188b797b))
+* always apply layerrules ([fbc9cb8](https://github.com/H3rmt/hyprshell/commit/fbc9cb853b986d82b4aac5307b5cb9e8465dcaab))
+* disable gestures disabling (changed in Hyprland 51) ([8b8bce8](https://github.com/H3rmt/hyprshell/commit/8b8bce807a8d0ad9491396532f2bbfcde037ad0b))
+* fix https://github.com/H3rmt/hyprshell/issues/336 by converting open to switch ([5c55ba6](https://github.com/H3rmt/hyprshell/commit/5c55ba6abcd5adb28eb9d216d80e300d942a6997))
+* fix meta for wrapped program ([eabdefb](https://github.com/H3rmt/hyprshell/commit/eabdefbe4ee1cd81c295e049bd3ab0473b5660d0))
+* reload follow mouse prev value on config reload ([8a43141](https://github.com/H3rmt/hyprshell/commit/8a431419941aa6641fc2abaf5e73b576d6f2c40a))
+
+
+### Code Refactoring
+
+* move crates to crate folder ([68633c6](https://github.com/H3rmt/hyprshell/commit/68633c6d776383e2384af9faa7456f15f2fcda1d))
+
 ## [4.6.3](https://github.com/H3rmt/hyprshell/compare/v4.6.2...v4.6.3) (2025-09-11)
 
 
