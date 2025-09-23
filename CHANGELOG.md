@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.7.0](https://github.com/H3rmt/hyprshell/compare/v4.6.4...v4.7.0) (2025-09-23)
+
+
+### Features
+
+* add actions plugin ([559cc8a](https://github.com/H3rmt/hyprshell/commit/559cc8a81e6a55a09c0f637b503e646e80fc2570))
+* add vim keybinds (https://github.com/H3rmt/hyprshell/issues/185) ([dca2dcc](https://github.com/H3rmt/hyprshell/commit/dca2dccc4199c5823959edfef56115d7b010c177))
+
+
+### Bug Fixes
+
+* **nix-flake:** update flake.lock ([590315d](https://github.com/H3rmt/hyprshell/commit/590315d396ff3811f9115f47dd52c228bd23e5bc))
+* remove and update options from homemanager module ([2ae00bf](https://github.com/H3rmt/hyprshell/commit/2ae00bf10c17ab64685fc7458b880b68b7eddf97))
+
 ## [4.6.4](https://github.com/H3rmt/hyprshell/compare/v4.6.3...v4.6.4) (2025-09-14)
 
 
