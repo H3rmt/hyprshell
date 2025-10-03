@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.7.1](https://github.com/H3rmt/hyprshell/compare/v4.7.0...v4.7.1) (2025-10-03)
+
+
+### Bug Fixes
+
+* docs mentioned style.css instead of styles.css as the default location for the CSS file ([a32a317](https://github.com/H3rmt/hyprshell/commit/a32a3171442357ae886fd5a07367a692097dccaf))
+* **nix-flake:** update flake.lock ([944c2b4](https://github.com/H3rmt/hyprshell/commit/944c2b4ad012d7ab963f20c73e6d310d94c1cb33))
+
 ## [4.7.0](https://github.com/H3rmt/hyprshell/compare/v4.6.4...v4.7.0) (2025-09-23)
 
 
