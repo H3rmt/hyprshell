@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/hyprland-plugin", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs"]
+members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/hyprland-plugin", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "crates/config-edit-lib"]
 
 [workspace.package]
 version = "4.7.0"
@@ -29,6 +29,7 @@ clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-
 windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.7.0" }
 launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.7.0" }
 hyprland-plugin = { path = "crates/hyprland-plugin", package = "hyprshell-hyprland-plugin", version = "=4.7.0" }
+config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.7.0" }
 
 [package]
 name = "hyprshell"
@@ -62,6 +63,7 @@ exec-lib.workspace = true
 windows-lib.workspace = true
 launcher-lib.workspace = true
 clipboard-lib.workspace = true
+config-edit-lib.workspace = true
 
 [features]
 default = ["json5_config", "generate_config_command", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]

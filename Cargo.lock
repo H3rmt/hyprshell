@@ -1469,6 +1469,7 @@ dependencies = [
  "clap_complete",
  "gtk4",
  "hyprshell-clipboard-lib",
+ "hyprshell-config-edit-lib",
  "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-exec-lib",
@@ -1496,6 +1497,18 @@ dependencies = [
  "secret-service",
  "tracing",
  "zstd",
+]
+
+[[package]]
+name = "hyprshell-config-edit-lib"
+version = "4.7.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "gtk4",
+ "hyprshell-config-lib",
+ "hyprshell-core-lib",
+ "tracing",
 ]
 
 [[package]]

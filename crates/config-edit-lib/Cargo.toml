@@ -1,0 +1,22 @@
+[package]
+name = "hyprshell-config-edit-lib"
+documentation = "https://docs.rs/hyprshell-config-edit-lib"
+version = "4.7.0"
+description = "A library for editing the config file with a gui"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+keywords.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tracing.workspace = true
+gtk.workspace = true
+core-lib.workspace = true
+config-lib.workspace = true
+async-channel.workspace = true
+
+[lints]
+workspace = true

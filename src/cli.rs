@@ -49,7 +49,7 @@ pub struct GlobalOpts {
 pub enum Command {
     /// Run the hyprshell daemon
     Run {},
-    #[cfg(feature = "generate_config_command")]
+
     /// Generate or check the config file
     Config {
         #[clap(subcommand)]
@@ -97,6 +97,7 @@ pub enum Command {
 #[derive(Subcommand, Debug, Clone)]
 pub enum ConfigCommand {
     /// Generate a default config file
+    #[cfg(feature = "generate_config_command")]
     Generate {
         /// Force overwrite of a config file, can be used multiple times
         #[arg(short = 'f', long, default_missing_value = "all", value_parser = ["config", "css", "all"], num_args(0..=1))]
@@ -106,6 +107,9 @@ pub enum ConfigCommand {
         #[arg(long)]
         no_systemd: bool,
     },
+
+    /// Edit the config file with a GUI
+    Edit {},
 
     /// Check the config file for errors
     Check {},

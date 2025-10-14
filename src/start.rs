@@ -72,7 +72,7 @@ pub fn start(
     loop {
         let application = Application::builder()
             .application_id(format!(
-                "{}-test-{}{}",
+                "{}-{}{}",
                 core_lib::APPLICATION_ID,
                 wayland_socket_index,
                 if cfg!(debug_assertions) { "-test" } else { "" }

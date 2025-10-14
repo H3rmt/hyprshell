@@ -79,8 +79,13 @@ fn main() -> anyhow::Result<()> {
                 cache_dir.unwrap_or_else(get_default_cache_dir),
             )?;
         }
-        #[cfg(feature = "generate_config_command")]
         cli::Command::Config { command } => match command {
+            cli::ConfigCommand::Edit {} => {
+                let config_path = config_path.unwrap_or_else(get_default_config_path);
+                let css_path = css_file.unwrap_or_else(get_default_css_path);
+                config_edit_lib::start(config_path, css_path)
+            }
+            #[cfg(feature = "generate_config_command")]
             cli::ConfigCommand::Generate { force, no_systemd } => {
                 use core_lib::Warn;
                 let config_path = config_path.unwrap_or_else(get_default_config_path);
