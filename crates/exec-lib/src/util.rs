@@ -98,9 +98,16 @@ pub fn set_follow_mouse_default() -> anyhow::Result<()> {
 }
 
 pub fn get_initial_active() -> anyhow::Result<Active> {
-    let active_client = Client::get_active()?.map(|c| to_client_id(&c.address));
-    let active_ws = Workspace::get_active()?.id;
-    let active_monitor = Monitor::get_active()?.id;
+    let active_client = Client::get_active()
+        .ok()
+        .flatten()
+        .map(|c| to_client_id(&c.address));
+    let active_ws = Workspace::get_active()
+        .context("unable to get initial workspace")?
+        .id;
+    let active_monitor = Monitor::get_active()
+        .context("unable to get initial monitor")?
+        .id;
     Ok(Active {
         client: active_client,
         workspace: active_ws,

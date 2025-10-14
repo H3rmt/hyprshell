@@ -70,6 +70,8 @@ pub fn create_windows_overview_window(
             }
         }
     }
+
+    let active = get_initial_active().context("unable to get initial active data")?;
     Ok(WindowsOverviewData {
         config: WindowsOverviewConfig {
             items_per_row: windows.items_per_row,
@@ -80,8 +82,8 @@ pub fn create_windows_overview_window(
             filter_same_class: overview.filter_by.contains(&FilterBy::SameClass),
         },
         window_list,
-        active: get_initial_active()?,
-        initial_active: get_initial_active()?,
+        active,
+        initial_active: active,
         hypr_data: HyprlandData::default(),
     })
 }

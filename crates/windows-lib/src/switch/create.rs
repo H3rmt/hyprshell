@@ -1,4 +1,5 @@
 use crate::global::{WindowsSwitchConfig, WindowsSwitchData};
+use anyhow::Context;
 use async_channel::Sender;
 use config_lib::{FilterBy, Modifier, Switch, Windows};
 use core_lib::transfer::{SwitchSwitchConfig, TransferType};
@@ -62,7 +63,7 @@ pub fn create_windows_switch_window(
     window.present();
     window.set_visible(false);
 
-    debug!("Created switch window ({})", window.id(),);
+    debug!("Created switch window ({})", window.id());
 
     Ok(WindowsSwitchData {
         config: WindowsSwitchConfig {
@@ -77,7 +78,7 @@ pub fn create_windows_switch_window(
         main_flow: clients_flow,
         workspaces: HashMap::default(),
         clients: HashMap::default(),
-        active: get_initial_active()?,
+        active: get_initial_active().context("unable to get initial active data")?,
         hypr_data: HyprlandData::default(),
     })
 }

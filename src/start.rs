@@ -242,8 +242,10 @@ fn create_windows(
         }
         if let Some(switch) = &windows.switch {
             let switch_data = create_windows_switch_window(app, switch, windows, event_sender)
-                .context("failed to create overview window")?;
+                .context("failed to create switch window")?;
             windows_data.switch = Some(switch_data);
+        } else {
+            debug!("Windows switch disabled");
         }
         global.windows = Some(windows_data);
     } else {
