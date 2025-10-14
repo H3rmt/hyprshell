@@ -1,0 +1,13 @@
+.frame {
+    padding: 0.7rem;
+}
+
+.frame-label {
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 0.5rem 0.5rem 0.8rem;
+}
+
+.frame-row {
+    font-size: 1rem;
+}

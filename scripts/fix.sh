@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # Define the libs
-declare -a libs=("hyprshell-config-lib" "hyprshell-core-lib" "hyprshell-exec-lib" "hyprshell-launcher-lib" "hyprshell-windows-lib" "hyprshell-hyprland-plugin" "hyprshell-clipboard-lib")
+declare -a libs=("hyprshell-config-lib" "hyprshell-core-lib" "hyprshell-exec-lib" "hyprshell-launcher-lib" "hyprshell-windows-lib" "hyprshell-hyprland-plugin" "hyprshell-clipboard-lib" "hyprshell-config-edit-lib")
 
 for lib in "${libs[@]}"; do
     echo "Fixing $lib..."

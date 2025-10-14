@@ -1,4 +1,10 @@
+mod bind;
+mod footer;
+mod overview;
 mod start;
+mod structs;
+mod switch;
+mod windows;
 
 pub use start::start;
 

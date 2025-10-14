@@ -1,8 +1,16 @@
 use crate::APPLICATION_EDIT_ID;
-use gtk::prelude::{ApplicationExt, ApplicationExtManual, GtkWindowExt};
-use gtk::{Application, ApplicationWindow};
+use crate::bind::{bind, update_config};
+use crate::footer::footer;
+use crate::structs::GTKConfig;
+use crate::windows::create_windows_view;
+use gtk::gdk::Display;
+use gtk::prelude::*;
+use gtk::{
+    Application, ApplicationWindow, CssProvider, Orientation, STYLE_PROVIDER_PRIORITY_APPLICATION,
+    ScrolledWindow, glib, style_context_add_provider_for_display,
+};
 use std::path::{Path, PathBuf};
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, warn};
 
 #[instrument]
 pub fn start(config_path: PathBuf, css_path: PathBuf) {
@@ -23,22 +31,75 @@ pub fn start(config_path: PathBuf, css_path: PathBuf) {
     debug!("Application exited with code {exit:?}");
 }
 
-fn activate(app: &Application, config_path: &Path, css_path: &Path) {
+fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
+    let provider_app = CssProvider::new();
+    provider_app.load_from_bytes(&glib::Bytes::from_static(include_bytes!("styles.css")));
+    style_context_add_provider_for_display(
+        &Display::default().expect("Could not connect to a display."),
+        &provider_app,
+        STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+
     let window = ApplicationWindow::builder()
         .application(app)
         .title("Hyprshell Config Editor")
-        .resizable(false) // TODO make resizable
-        .default_width(800)
-        .default_height(600)
+        .resizable(true)
+        .default_width(900)
+        .default_height(700)
         .build();
 
-    create_config_view(&window);
+    let config = match config_lib::load_and_migrate_config(config_path, true) {
+        Ok(c) => c,
+        Err(err) => {
+            warn!("Failed to load config: {err:?}");
+            let dialog = gtk::AlertDialog::builder()
+                .modal(true)
+                .buttons(["Ok"])
+                .message("Failed to load config")
+                .detail(format!("{err:#}"))
+                .build();
+            let app = app.clone();
+            glib::spawn_future_local(async move {
+                let res = dialog.choose_future(Some(&window)).await;
+                debug!("Dialog closed: {res:?}");
+                app.quit();
+            });
+            return;
+        }
+    };
 
-    // Present window
+    let settings = gtk::Box::builder()
+        .orientation(Orientation::Vertical)
+        .margin_bottom(12)
+        .margin_top(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    let root = gtk::Box::builder()
+        .orientation(Orientation::Vertical)
+        .margin_bottom(12)
+        .margin_top(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    let scroll = ScrolledWindow::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .child(&settings)
+        .build();
+    root.append(&scroll);
+
+    let (windows_frame, windows) = create_windows_view();
+    settings.append(&windows_frame);
+    let (footer, save) = footer(&window, config_path);
+    root.append(&footer);
+    window.set_child(Some(&root));
+
+    let gtk_config = GTKConfig { windows, save };
+    update_config(&gtk_config, &config);
+    bind(gtk_config, config);
+
     window.present();
-}
-
-fn create_config_view(window: &ApplicationWindow) {
-    // config_lib::load_and_migrate_config();
-    // config_lib::write_config()
 }
