@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.7.2](https://github.com/H3rmt/hyprshell/compare/v4.7.1...v4.7.2) (2025-10-14)
+
+
+### Bug Fixes
+
+* added more logging to creation of windows ([2c57b0f](https://github.com/H3rmt/hyprshell/commit/2c57b0ffb3213b164053090c7c6ef47e8ac0c0ed))
+
 ## [4.7.1](https://github.com/H3rmt/hyprshell/compare/v4.7.0...v4.7.1) (2025-10-03)
 
 
