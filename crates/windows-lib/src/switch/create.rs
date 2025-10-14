@@ -103,7 +103,7 @@ fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::ISO_Left_Tab | Key::grave => {
+        Key::ISO_Left_Tab | Key::grave | Key::dead_grave => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     reverse: true,

@@ -178,7 +178,7 @@ fn handle_key(
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        (_, Key::ISO_Left_Tab | Key::grave) => {
+        (_, Key::ISO_Left_Tab | Key::grave | Key::dead_grave) => {
             event_sender
                 .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
                     workspace: false,

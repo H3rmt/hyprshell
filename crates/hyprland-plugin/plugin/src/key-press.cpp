@@ -116,7 +116,7 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data, SCallback
                     sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH_REVERSE);
                 }
             }
-            if (keysym == XKB_KEY_grave) {
+            if (keysym == XKB_KEY_grave || keysym == XKB_KEY_dead_grave) {
                 if ((HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Alt_L && altActive) ||
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
                     (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
