@@ -34,7 +34,9 @@ cargo install hyprshell
 ```
 
 **hyprland-devel is needed for the hyprland headers (needed to build hyprland plugin)**
+
 Fedora: `sudo dnf install gtk4-layer-shell-devel gtk4-devel hyprland-devel`
+
 Arch: `sudo pacman -Sy gtk4-layer-shell gtk4 hyprland`
 
 Minimum required rustc version: `1.87.0`
@@ -53,7 +55,9 @@ Download from the [releases](https://github.com/h3rmt/hyprshell/releases) page.
 
 ### NixOS
 
-This repository contains a `flake` and a `home-manager` module for configuration.
+This repository contains a `flake` and with a type-save `home-manager` module for configuration.
+
+Hyprshell is also available in [nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/hy/hyprshell/package.nix) repository and can be configured using a generic `home-manager` module.
 
 More information can be found in the [NixOS](NIX.md) section.
 
