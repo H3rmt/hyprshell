@@ -26,9 +26,14 @@ This config enables overview and switch, but is not type-save like the flake hom
     enable = true;
     settings = {
       windows = {
+        scale = 8.0;
         overview = {
+          launcher = {
+            max_items = 6;
+          };
         };
         switch = {
+          modifier = "alt";
         };
       };
     };
@@ -40,16 +45,13 @@ This config enables overview and switch, but is not type-save like the flake hom
 
 Warning: hyprshell builds a hyprland plugin at runtime which **requires the C headers** from the running hyprland instance.
 
-This is trivial for other platforms, but not for NixOS and can cause problems (please report them on github of you encounter any). The default hyprshell program from nixpkgs has access to the hyprland C headers from nixpkgs-unstable.
-The same goes for the default value of the hyprland flake programs output. **If you dont use hyprland from nixpkgs** you must either use the home-manager module and specify the hyprland package or manualy wrap using a helper function.
-If you use the home-manager module you can use the `hyprland` option to specify the hyprland package.
+This is trivial for other platforms, but not for NixOS and can cause problems (please report them on github if you encounter any).
+The default hyprshell program from nixpkgs has access to the hyprland C headers from the latest hyprland flake (updated every ~2 weeks).
+To synchronize the hyprland version with the hyprshell version, you must override the hyprland input in the flake.
 
-The flake exposes a helper function (`wrap-hyprshell`) in the `helpers` output which can be used to wrap the hyprshell program.
-It accepts the hyprland package as the first argument and the current nixpkgs as the second argument.
+### No Home-manager with default hyprland
 
-### No Home-manager
-
-**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell`, please don't override nixpkgs if you use this**
+**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell`, be aware that this will break if you override any inputs**
 
 `flake.nix`:
 
@@ -57,16 +59,20 @@ It accepts the hyprland package as the first argument and the current nixpkgs as
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprshell.url = "github:H3rmt/hyprshell";
+    hyprland-plugins = {
+      url = "github:H3rmt/hyprshell";
+    };
   };
 
   outputs = { nixpkgs, hyprshell }: {
     nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [{ environment.systemPackages = [ 
-        nixpkgs.hyprland
-        hyprshell.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprshell 
-      ]; }];
+      modules = [{ 
+        environment.systemPackages = [ 
+            nixpkgs.hyprland
+            hyprshell.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprshell-nixpkgs 
+        ]; 
+      }];
     };
   };
 }
@@ -74,7 +80,7 @@ It accepts the hyprland package as the first argument and the current nixpkgs as
 
 ### No Home-manager with custom hyprland
 
-**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell`, please don't override nixpkgs if you use this**
+**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell`, be aware that this will break if you override any inputs**
 
 `flake.nix`:
 
@@ -83,16 +89,23 @@ It accepts the hyprland package as the first argument and the current nixpkgs as
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     hyprland.url = "github:hyprwm/Hyprland";
-    hyprshell.url = "github:H3rmt/hyprshell";
+    hyprland-plugins = {
+      url = "github:H3rmt/hyprshell";
+      inputs.hyprland.follows = "hyprland";
+    };
   };
 
   outputs = { nixpkgs, hyprland, hyprshell }@inputs: {
     nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [{ environment.systemPackages = [ 
-        hyprland.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprland
-        (hyprshell.helpers.wrap-hyprshell hyprland nixpkgs)
-      ]; }];
+      modules = [{ 
+        environment.systemPackages = [ 
+          hyprland.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprland
+          hyprshell.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprshell 
+          # Use this if you want the more minimal hyprshell (see Readme.md > Features)
+          # hyprshell.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprshell-slim
+        ]; 
+      }];
     };
   };
 }
@@ -108,7 +121,11 @@ It accepts the hyprland package as the first argument and the current nixpkgs as
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprshell.url = "github:H3rmt/hyprshell";
+    hyprland.url = "github:hyprwm/Hyprland";
+    hyprland-plugins = {
+      url = "github:H3rmt/hyprshell";
+      inputs.hyprland.follows = "hyprland";
+    };
   };
 
   outputs = { nixpkgs, hyprshell }@inputs: {
@@ -148,8 +165,10 @@ Everything is disabled by default, so you need to enable it (even settings.windo
   ];
   programs.hyprshell = {
     enable = true;
-    # use this if you dont use hyprland from nixpkgs
-    hyprland = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    # use this if you want the more minimal hyprshell (see Readme.md > Features)
+    package = inputs.hyprshell.packages.${inputs.nixpkgs.stdenv.hostPlatform.system}.hyprshell-slim;
+    # use this if you dont use hyprland via a flake and override hyprshells hyprland input
+    package = inputs.hyprshell.packages.${inputs.nixpkgs.stdenv.hostPlatform.system}.hyprshell-nixpkgs;
     systemd.args = "-v";
     settings = {
       windows = {

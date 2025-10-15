@@ -67,7 +67,7 @@ config-edit-lib.workspace = true
 
 [features]
 default = ["json5_config", "generate_config_command", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
-slim = ["generate_config_command", "launcher_calc", "debug_command", "clipboard_compress_lz4"]
+slim = ["generate_config_command", "debug_command", "clipboard_compress_lz4"]
 json5_config = ["config-lib/json5_config"]
 generate_config_command = ["config-lib/generate_config"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin"]

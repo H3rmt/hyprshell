@@ -10,6 +10,7 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
+    hyprland.url = "github:hyprwm/Hyprland";
     crane.url = "github:ipetkov/crane";
   };
   outputs =
@@ -18,6 +19,7 @@
       nixpkgs,
       home-manager,
       flake-parts,
+      hyprland,
       crane,
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -34,14 +36,40 @@
         {
           formatter = pkgs.nixfmt-tree;
           packages = rec {
-            hyprshell-no-hyprland-wrap = craneLib.buildPackage (
+            hyprshell = craneLib.buildPackage (
               buildLib.commonArgs
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                preFixup = buildLib.addWrapWithGccArgs;
+                preFixup =
+                  buildLib.addWrapWithGccArgs
+                    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
               }
             );
-            hyprshell = self.helpers.wrap-hyprshell pkgs.hyprland pkgs;
+            hyprshell-nixpkgs = craneLib.buildPackage (
+              buildLib.commonArgs
+              // {
+                cargoArtifacts = buildLib.cargoReleaseArtifacts;
+                preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
+              }
+            );
+            hyprshell-slim = craneLib.buildPackage (
+              buildLib.commonArgs
+              // {
+                cargoArtifacts = buildLib.cargoReleaseArtifacts;
+                cargoExtraArgs = "--no-default-features --features slim";
+                preFixup =
+                  buildLib.addWrapWithGccArgs
+                    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+              }
+            );
+            hyprshell-slim-nixpkgs = craneLib.buildPackage (
+              buildLib.commonArgs
+              // {
+                cargoArtifacts = buildLib.cargoReleaseArtifacts;
+                cargoExtraArgs = "--no-default-features --features slim";
+                preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
+              }
+            );
             default = hyprshell;
           };
           checks = import ./nix/checks.nix {
@@ -65,29 +93,6 @@
         homeModules = rec {
           hyprshell = import ./nix/module.nix self;
           default = hyprshell;
-        };
-        helpers = {
-          wrap-hyprshell =
-            hyprland: pkgs:
-            pkgs.runCommand "hyprshell"
-              {
-                buildInputs = [ pkgs.makeBinaryWrapper ];
-              }
-              ''
-                mkdir -p $out/bin
-                cp ${
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.hyprshell-no-hyprland-wrap
-                }/bin/hyprshell $out/bin/hyprshell
-                wrapProgram $out/bin/hyprshell \
-                  --prefix CPATH : ${
-                    pkgs.lib.makeIncludePath (
-                      hyprland.buildInputs
-                      ++ [
-                        hyprland
-                      ]
-                    )
-                  }
-              '';
         };
       };
     };

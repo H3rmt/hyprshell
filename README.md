@@ -25,22 +25,6 @@ The application also includes a launcher for running applications, doing calcula
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
 
-### From Source
-
-hyprland, gtk4 and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
-
-```bash
-cargo install hyprshell
-```
-
-**hyprland-devel is needed for the hyprland headers (needed to build hyprland plugin)**
-
-Fedora: `sudo dnf install gtk4-layer-shell-devel gtk4-devel hyprland-devel`
-
-Arch: `sudo pacman -Sy gtk4-layer-shell gtk4 hyprland`
-
-Minimum required rustc version: `1.87.0`
-
 ### Arch Linux (AUR)
 
 ```bash
@@ -60,6 +44,28 @@ This repository contains a `flake` and with a type-save `home-manager` module fo
 Hyprshell is also available in [nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/hy/hyprshell/package.nix) repository and can be configured using a generic `home-manager` module.
 
 More information can be found in the [NixOS](NIX.md) section.
+
+### From Source
+
+hyprland, gtk4 and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
+
+```bash
+cargo install hyprshell
+```
+
+Less features in [slim](#feature-flags) mode
+
+```bash
+cargo install hyprshell --no-default-features --features "slim"
+```
+
+**hyprland-devel is needed for the hyprland headers (needed to build hyprland plugin)**
+
+Fedora: `sudo dnf install gtk4-layer-shell-devel gtk4-devel hyprland-devel`
+
+Arch: `sudo pacman -Sy gtk4-layer-shell gtk4 hyprland`
+
+Minimum required rustc version: `1.87.0`
 
 ## Usage
 
@@ -109,6 +115,22 @@ exec-once = hyprshell run &
 
 Debug commands are provided to help troubleshoot desktop files, icons, default applications and launcher functionality, see [Debug.md](DEBUG.md) for detailed information about available commands and their usage.
 
+### Feature Flags
+
+✅ = included in the default feature set.
+
+✨ = included in the slim feature set. (``--no-default-features --features "slim"``)
+
+- `generate_config_command`✅✨: Adds the `hyprshell config generate` command to interactively generate a config file.
+- `json5_config`✅: Adds support for a json5 config file.
+- `launcher_calc`✅: Adds support for the calc plugin in the launcher.
+- `debug_command`✅✨: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
+- `clipboard_compress_lz4`✅✨: Adds support for compressing clipboard content using lz4.
+- `clipboard_compress_zstd`✅: Adds support for compressing clipboard content using zstd.
+- `clipboard_encrypt_chacha20poly1305`✅: Adds support for encrypting clipboard content using chacha20poly1305.
+- `clipboard_encrypt_aes_gcm`✅: Adds support for encrypting clipboard content using aes_256_gcm.
+- `ci_config_check`: (!used for ci tests) Adds a command to check if the loaded config is equal to the default config or the full config. Also diables loading of configs without all values.
+
 ### Env Variables
 
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
@@ -118,12 +140,3 @@ Debug commands are provided to help troubleshoot desktop files, icons, default a
 - `HYPRSHELL_NO_USE_PLUGIN`: Disable the use of the hyprland plugin to capture switch mode events.
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode
-
-### Feature Flags
-
-- default: `["json5_config", "generate_config_command", "launcher_calc", "debug_command"]`
-- generate_config_command: Adds the `hyprshell config generate` command to interactively generate a config file.
-- json5_config: Adds support for a toml config file.
-- launcher_calc: Adds support for the calc plugin in the launcher.
-- debug_command: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
-- ci_config_check: (used for ci tests) Adds a command to check if the loaded config is equal to the default config or the full config. Also diables loading of configs without all values.

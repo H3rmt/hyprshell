@@ -10,10 +10,18 @@ rec {
   src = ../.;
   stdenv = p: p.stdenv;
   # use in preFixup
-  addWrapWithGccArgs = ''
+  addWrapWithGccArgs = hyprland: ''
     gappsWrapperArgs+=(
        --prefix PATH : '${pkgs.lib.makeBinPath [ pkgs.gcc ]}'
-       --prefix CPATH : '${pkgs.lib.makeIncludePath ([ pkgs.pixman ])}'
+       --prefix CPATH : '${
+         pkgs.lib.makeIncludePath (
+           hyprland.buildInputs
+           ++ [
+             hyprland
+             pkgs.pixman
+           ]
+         )
+       }'
      )
   '';
   commonArgs = {
@@ -35,7 +43,6 @@ rec {
     nativeBuildInputs = [
       pkgs.pkg-config
       pkgs.wrapGAppsHook4
-      pkgs.makeBinaryWrapper
     ];
 
     buildInputs = [

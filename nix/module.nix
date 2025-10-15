@@ -33,14 +33,7 @@ in
     package = lib.mkOption {
       description = "The Hyprshell package";
       type = nullOr package;
-      default = null;
-    };
-
-    hyprland = lib.mkOption {
-      description = "The hyprland package (needed to build plugin if hyprland version is different from nixos-unstable or what has been set with inputs.nixpkgs-lib.follows in hyprshell flake)";
-      type = nullOr package;
-      example = "inputs.hyprland";
-      default = pkgs.hyprland;
+      default = self.packages.hyprshell;
     };
 
     systemd = {
@@ -241,60 +234,48 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (
-    let
-      pkg =
-        if cfg.package == null then
-          if cfg.hyprland == null then
-            (throw "Either package or hyprland option must be set")
-          else
-            self.helpers.wrap-hyprshell cfg.hyprland pkgs
-        else
-          (cfg.package);
-    in
-    ({
-      home.packages = [ pkg ];
+  config = lib.mkIf cfg.enable ({
+    home.packages = [ cfg.hyprland ];
 
-      systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
-        Unit = {
-          Description = "Starts Hyprshell daemon";
-          After = [ cfg.systemd.target ];
-        };
-        Service = {
-          Type = "simple";
-          ExecStart = "${lib.getExe pkg} run ${cfg.systemd.args}";
-          Restart = "on-failure";
-        };
-        Install.WantedBy = [ cfg.systemd.target ];
+    systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
+      Unit = {
+        Description = "Starts Hyprshell daemon";
+        After = [ cfg.systemd.target ];
       };
+      Service = {
+        Type = "simple";
+        ExecStart = "${lib.getExe pkg} run ${cfg.systemd.args}";
+        Restart = "on-failure";
+      };
+      Install.WantedBy = [ cfg.systemd.target ];
+    };
 
-      xdg.configFile."hyprshell/config.json" =
-        if (lib.isPath cfg.configFile || lib.isStorePath cfg.configFile) then
-          {
-            source = cfg.configFile;
-          }
-        else if (builtins.isString cfg.configFile) then
-          {
-            text = cfg.configFile;
-          }
-        else
-          {
-            text = builtins.toJSON (customLib.filterDisabledAndDropEnable cfg.settings);
-          };
+    xdg.configFile."hyprshell/config.json" =
+      if (lib.isPath cfg.configFile || lib.isStorePath cfg.configFile) then
+        {
+          source = cfg.configFile;
+        }
+      else if (builtins.isString cfg.configFile) then
+        {
+          text = cfg.configFile;
+        }
+      else
+        {
+          text = builtins.toJSON (customLib.filterDisabledAndDropEnable cfg.settings);
+        };
 
-      xdg.configFile."hyprshell/styles.css" =
-        if (lib.isPath cfg.styleFile || lib.isStorePath cfg.styleFile) then
-          {
-            source = cfg.styleFile;
-          }
-        else if (builtins.isString cfg.styleFile) then
-          {
-            text = cfg.styleFile;
-          }
-        else
-          {
-            text = "";
-          };
-    })
-  );
+    xdg.configFile."hyprshell/styles.css" =
+      if (lib.isPath cfg.styleFile || lib.isStorePath cfg.styleFile) then
+        {
+          source = cfg.styleFile;
+        }
+      else if (builtins.isString cfg.styleFile) then
+        {
+          text = cfg.styleFile;
+        }
+      else
+        {
+          text = "";
+        };
+  });
 }
