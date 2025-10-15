@@ -33,7 +33,7 @@ in
     package = lib.mkOption {
       description = "The Hyprshell package";
       type = nullOr package;
-      default = self.packages.hyprshell;
+      default = self.packages.${pkgs.stdenv.hostPlatform.system}.hyprshell;
     };
 
     systemd = {
