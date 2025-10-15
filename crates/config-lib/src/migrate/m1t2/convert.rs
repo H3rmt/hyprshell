@@ -41,6 +41,7 @@ impl From<old_structs::Switch> for crate::Switch {
             filter_by: value.filter_by,
             modifier: value.modifier.into(),
             switch_workspaces: value.show_workspaces,
+            vim_mode: false,
         }
     }
 }

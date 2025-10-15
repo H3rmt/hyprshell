@@ -33,7 +33,7 @@ pub struct SwitchOverviewConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchSwitchConfig {
-    pub reverse: bool,
+    pub direction: Direction,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

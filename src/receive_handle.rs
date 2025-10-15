@@ -3,7 +3,8 @@ use crate::util;
 use async_channel::{Receiver, Sender};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{
-    CloseOverviewConfig, OpenSwitch, SwitchOverviewConfig, SwitchSwitchConfig, TransferType,
+    CloseOverviewConfig, Direction, OpenSwitch, SwitchOverviewConfig, SwitchSwitchConfig,
+    TransferType,
 };
 use gtk::prelude::{ApplicationExt, EntryExt};
 use gtk::{gio, glib};
@@ -95,7 +96,11 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
                 windows_lib::update_switch(
                     switch,
                     &SwitchSwitchConfig {
-                        reverse: config.reverse,
+                        direction: if config.reverse {
+                            Direction::Left
+                        } else {
+                            Direction::Right
+                        },
                     },
                 );
             }

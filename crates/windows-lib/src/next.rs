@@ -18,7 +18,16 @@ pub fn find_next(
     let reverse = matches!(direction, Direction::Left | Direction::Up);
     let next = if workspace {
         if wrap_workspaces {
-            find_next_workspace_wrap(reverse, &hypr_data.workspaces, active.workspace)
+            if matches!(direction, Direction::Up | Direction::Down) && workspaces_per_row > 0 {
+                find_next_workspace_grid(
+                    direction,
+                    &hypr_data.workspaces,
+                    active.workspace,
+                    workspaces_per_row,
+                )
+            } else {
+                find_next_workspace_wrap(reverse, &hypr_data.workspaces, active.workspace)
+            }
         } else {
             find_next_workspace(
                 direction,
@@ -33,7 +42,17 @@ pub fn find_next(
             monitor: active.monitor,
         })
     } else if let Some(active_client) = active.client {
-        find_next_client_wrap(reverse, &hypr_data.clients, active_client).unwrap_or(active)
+        if matches!(direction, Direction::Up | Direction::Down) && workspaces_per_row > 0 {
+            find_next_client_grid(
+                direction,
+                &hypr_data.clients,
+                active_client,
+                workspaces_per_row,
+            )
+            .unwrap_or(active)
+        } else {
+            find_next_client_wrap(reverse, &hypr_data.clients, active_client).unwrap_or(active)
+        }
     } else {
         find_first_client(direction, &hypr_data.clients, &hypr_data.workspaces, active)
             .unwrap_or(active)
@@ -110,6 +129,63 @@ pub fn find_next_client_wrap(
         })
 }
 
+pub fn find_next_client_grid(
+    direction: &Direction,
+    clients: &[(ClientId, ClientData)],
+    active: ClientId,
+    items_per_row: usize,
+) -> Option<Active> {
+    if clients.is_empty() {
+        debug!("No clients available, returning None");
+        return None;
+    }
+
+    let enabled_clients: Vec<_> = clients.iter().filter(|(_, c)| c.enabled).collect();
+    if enabled_clients.is_empty() {
+        debug!("No enabled clients, returning None");
+        return None;
+    }
+
+    let current_pos = enabled_clients.iter().position(|(id, _)| *id == active)?;
+    let total = enabled_clients.len();
+
+    let new_pos = match direction {
+        Direction::Down => {
+            let current_row = current_pos / items_per_row;
+            let next_row_start = (current_row + 1) * items_per_row;
+
+            // Check if there's a row below
+            if next_row_start < total {
+                let target = current_pos + items_per_row;
+                if target < total {
+                    // Target position exists, move there
+                    target
+                } else {
+                    // Target doesn't exist, go to last item in the next row
+                    total - 1
+                }
+            } else {
+                // No row below, stay at current position
+                current_pos
+            }
+        }
+        Direction::Up => {
+            if current_pos >= items_per_row {
+                current_pos - items_per_row
+            } else {
+                current_pos
+            }
+        }
+        _ => return None,
+    };
+
+    enabled_clients.get(new_pos).map(|(id, data)| Active {
+        client: Some(*id),
+        workspace: data.workspace,
+        monitor: data.monitor,
+    })
+}
+
 pub fn find_next_workspace(
     direction: &Direction,
     workspaces: &[(WorkspaceId, WorkspaceData)],
@@ -174,6 +250,67 @@ pub fn find_next_workspace_wrap(
             workspace: *id,
             monitor: data.monitor,
         })
+}
+
+pub fn find_next_workspace_grid(
+    direction: &Direction,
+    workspaces: &[(WorkspaceId, WorkspaceData)],
+    active: WorkspaceId,
+    items_per_row: usize,
+) -> Option<Active> {
+    if workspaces.is_empty() {
+        debug!("No workspaces available, returning None");
+        return None;
+    }
+
+    let enabled_workspaces: Vec<_> = workspaces
+        .iter()
+        .filter(|(_, w)| w.any_client_enabled)
+        .collect();
+    if enabled_workspaces.is_empty() {
+        debug!("No enabled workspaces, returning None");
+        return None;
+    }
+
+    let current_pos = enabled_workspaces
+        .iter()
+        .position(|(id, _)| *id == active)?;
+    let total = enabled_workspaces.len();
+
+    let new_pos = match direction {
+        Direction::Down => {
+            let current_row = current_pos / items_per_row;
+            let next_row_start = (current_row + 1) * items_per_row;
+
+            // Check if there's a row below
+            if next_row_start < total {
+                let target = current_pos + items_per_row;
+                if target < total {
+                    // Target position exists, move there
+                    target
+                } else {
+                    // Target doesn't exist, go to last item in the next row
+                    total - 1
+                }
+            } else {
+                // No row below, stay at current position
+                current_pos
+            }
+        }
+        Direction::Up => {
+            if current_pos >= items_per_row {
+                current_pos - items_per_row
+            } else {
+                current_pos
+            }
+        }
+        _ => return None,
+    };
+    enabled_workspaces.get(new_pos).map(|(id, data)| Active {
+        client: None,
+        workspace: *id,
+        monitor: data.monitor,
+    })
 }
 
 // TODO add some tests here
