@@ -31,6 +31,13 @@ pub fn switch_client_by_initial_class(class: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn kill_client(address: Address) -> anyhow::Result<()> {
+    Dispatch::call(DispatchType::CloseWindow(WindowIdentifier::Address(
+        address,
+    )))?;
+    Ok(())
+}
+
 pub fn switch_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     deactivate_special_workspace_if_needed().warn();
 

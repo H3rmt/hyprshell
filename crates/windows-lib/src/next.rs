@@ -1,6 +1,7 @@
 use core_lib::transfer::Direction;
 use core_lib::{
-    Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, FindByFirst, GetFirstOrLast, HyprlandData, RevIf,
+    WarnWithDetails, WorkspaceData, WorkspaceId,
 };
 use std::cmp::{max, min};
 use tracing::{debug, instrument, trace, trace_span, warn};
@@ -567,3 +568,168 @@ mod tests {
         assert_eq!(next.client, Some(2));
     }
 }
+
+pub fn get_curr_client_pos(clients: &[(ClientId, ClientData)], active: ClientId) -> Option<usize> {
+    let mut enabled_iter = clients.iter().filter(|(_, data)| data.enabled);
+    if enabled_iter.clone().next().is_none() {
+        debug!("Cannot get current client position. No enabled clients, returning None");
+        return None;
+    }
+
+    enabled_iter.position(|(id, _)| *id == active)
+}
+
+pub fn get_curr_workspace_pos(
+    workspaces: &[(WorkspaceId, WorkspaceData)],
+    active: WorkspaceId,
+) -> Option<usize> {
+    if !workspaces.iter().any(|(_, data)| data.any_client_enabled) {
+        debug!("Cannot get current workspace position. No enabled workspaces, returning None");
+        return None;
+    }
+
+    workspaces.iter().position(|(id, _)| *id == active)
+}
+
+/// Determines which workspace should be active after a refresh.
+///
+/// After killing a workspace (all its clients), this selects the workspace at the same
+/// position. If the workspace still has clients, it remains selected.
+pub fn select_next_active_workspace(
+    current_workspace_id: WorkspaceId,
+    current_pos: Option<usize>,
+    clients_data: &HyprlandData,
+    active_prev: Active,
+    items_per_row: usize,
+) -> Active {
+    // Check if current workspace still has enabled clients
+    let workspace_still_valid = clients_data
+        .workspaces
+        .find_by_first(&current_workspace_id)
+        .is_some_and(|w| w.any_client_enabled);
+
+    if workspace_still_valid {
+        // Workspace still has clients, keep it selected (non-kill refresh case)
+        return Active {
+            client: None,
+            workspace: current_workspace_id,
+            monitor: clients_data
+                .workspaces
+                .find_by_first(&current_workspace_id)
+                .map_or(active_prev.monitor, |w| w.monitor),
+        };
+    }
+
+    // Workspace was killed or lost all clients - select item at same position
+    select_next_workspace_at_position(current_pos, clients_data, active_prev, items_per_row)
+}
+
+/// Selects the workspace at the given position.
+/// Falls back to using `find_next` if position is unavailable or no workspaces remain.
+fn select_next_workspace_at_position(
+    position: Option<usize>,
+    clients_data: &HyprlandData,
+    active_prev: Active,
+    items_per_row: usize,
+) -> Active {
+    let enabled_workspaces: Vec<_> = clients_data
+        .workspaces
+        .iter()
+        .filter(|(_, w)| w.any_client_enabled)
+        .collect();
+
+    if enabled_workspaces.is_empty() {
+        // No workspaces with clients remain
+        return active_prev;
+    }
+
+    let Some(pos) = position else {
+        // Couldn't determine position, use find_next to pick one
+        return find_next_workspace(
+            &Direction::Right,
+            true,
+            clients_data,
+            active_prev,
+            items_per_row as u8,
+        );
+    };
+
+    // Select workspace at same position (clamped to list bounds)
+    let new_pos = pos.min(enabled_workspaces.len() - 1);
+    let (id, workspace) = enabled_workspaces[new_pos];
+    Active {
+        client: None,
+        workspace: *id,
+        monitor: workspace.monitor,
+    }
+}
+
+/// Determines which client should be active after a refresh.
+///
+/// After killing a client, this selects the client at the same position.
+/// If the client still exists, it remains selected.
+pub fn select_next_active_client(
+    current_client_id: Option<ClientId>,
+    current_pos: Option<usize>,
+    clients_data: &HyprlandData,
+    active_prev: Active,
+    items_per_row: usize,
+) -> Active {
+    // Check if we have a current client and if it still exists
+    if let Some(client_id) = current_client_id {
+        if clients_data.clients.find_by_first(&client_id).is_some() {
+            // Current client still exists, keep it selected (non-kill refresh case)
+            let client = clients_data.clients.find_by_first(&client_id).unwrap();
+            return Active {
+                client: Some(client_id),
+                workspace: client.workspace,
+                monitor: client.monitor,
+            };
+        }
+    }
+
+    // Client was killed or doesn't exist - select item at same position
+    select_next_client_at_position(current_pos, clients_data, active_prev, items_per_row)
+}
+
+/// Selects the client at the given position.
+/// Falls back to using `find_next` if position is unavailable or no clients remain.
+fn select_next_client_at_position(
+    position: Option<usize>,
+    clients_data: &HyprlandData,
+    active_prev: Active,
+    items_per_row: usize,
+) -> Active {
+    let enabled_clients: Vec<_> = clients_data
+        .clients
+        .iter()
+        .filter(|(_, c)| c.enabled)
+        .collect();
+
+    if enabled_clients.is_empty() {
+        // No clients remain
+        return active_prev;
+    }
+
+    let Some(pos) = position else {
+        // Couldn't determine position, use find_next to pick one
+        return find_next_client(
+            &Direction::Right,
+            true,
+            clients_data,
+            active_prev,
+            items_per_row as u8,
+        );
+    };
+
+    // Select client at same position (clamped to list bounds)
+    let new_pos = pos.min(enabled_clients.len() - 1);
+    let (id, client) = enabled_clients[new_pos];
+    Active {
+        client: Some(*id),
+        workspace: client.workspace,
+        monitor: client.monitor,
+    }
+}
+
+// TODO add some tests here

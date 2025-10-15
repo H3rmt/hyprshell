@@ -128,6 +128,12 @@ fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
                 .warn_details("unable to send");
             Propagation::Stop
         }
+        Key::w => {
+            event_sender
+                .send_blocking(TransferType::CloseSwitchItem)
+                .warn_details("unable to send");
+            Propagation::Stop
+        }
         _ => Propagation::Proceed,
     }
 }

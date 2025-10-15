@@ -31,6 +31,10 @@ pub async fn event_handler(
                 TransferType::CloseOverview(config) => close_overview(&mut globals, config),
                 TransferType::CloseSwitch => close_switch(&mut globals),
                 TransferType::Restart => restart(&globals),
+                TransferType::CloseSwitchItem => close_switch_item(&mut globals, &event_sender),
+                TransferType::RefreshSwitch(transfer_type) => {
+                    refresh_switch(&mut globals, &transfer_type);
+                }
             }
             if close_socket {
                 return;
@@ -116,6 +120,31 @@ fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
     if let Some(windows) = &mut global.windows {
         if let Some(switch) = &mut windows.switch {
             windows_lib::update_switch(switch, config);
+        } else {
+            warn!("Window switch not active");
+        }
+    } else {
+        warn!("Windows not active");
+    }
+}
+
+fn close_switch_item(global: &mut Globals, event_sender: &Sender<TransferType>) {
+    if let Some(windows) = &mut global.windows {
+        if let Some(switch) = &mut windows.switch {
+            windows_lib::close_switch_item(switch, event_sender);
+        } else {
+            warn!("Window switch not active");
+        }
+    } else {
+        warn!("Windows not active");
+    }
+}
+
+fn refresh_switch(global: &mut Globals, transfer_type: &TransferType) {
+    if let Some(windows) = &mut global.windows {
+        if let Some(switch) = &mut windows.switch {
+            windows_lib::refresh_switch(switch, transfer_type)
+                .warn_details("Failed to refresh switch");
         } else {
             warn!("Window switch not active");
         }

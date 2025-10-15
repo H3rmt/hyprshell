@@ -18,6 +18,6 @@ pub use overview::{
     overview_already_open, stop_overview, update_overview,
 };
 pub use switch::{
-    close_switch, create_windows_switch_window, open_switch, stop_switch, switch_already_hidden,
-    switch_already_open, update_switch,
+    close_switch, close_switch_item, create_windows_switch_window, open_switch, refresh_switch,
+    render_switch, stop_switch, switch_already_hidden, switch_already_open, update_switch,
 };

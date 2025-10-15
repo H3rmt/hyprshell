@@ -1,9 +1,12 @@
 use crate::global::WindowsSwitchData;
 use adw::gtk::glib;
 use adw::gtk::prelude::*;
+use async_channel::Sender;
+use core_lib::transfer::TransferType;
 use core_lib::{FindByFirst, WarnWithDetails};
-use exec_lib::switch::{switch_client, switch_workspace};
+use exec_lib::switch::{kill_client, switch_client, switch_workspace};
 use exec_lib::{reset_no_follow_mouse, to_client_address};
+use std::time::Duration;
 use tracing::{debug, debug_span, trace};
 
 #[must_use]
@@ -52,5 +55,54 @@ pub fn close_switch(data: &mut WindowsSwitchData, switch: bool) {
                 glib::ControlFlow::Break
             });
         }
+    }
+}
+
+pub fn close_switch_item(data: &WindowsSwitchData, event_sender: &Sender<TransferType>) {
+    if data.config.switch_workspaces {
+        kill_switch_workspace(data);
+    } else {
+        kill_switch_client(data);
+    }
+
+    let sender = event_sender.clone();
+    glib::timeout_add_local(Duration::from_millis(50), move || {
+        sender
+            .try_send(TransferType::RefreshSwitch(Box::new(
+                TransferType::CloseSwitchItem,
+            )))
+            .warn_details("Failed to send RefreshSwitch event");
+        glib::ControlFlow::Break
+    });
+}
+
+fn kill_switch_client(data: &WindowsSwitchData) {
+    if let Some(id) = data.active.client {
+        let addr = to_client_address(id);
+        let _ = kill_client(addr);
+    }
+}
+
+fn kill_switch_workspace(data: &WindowsSwitchData) {
+    let workspace_id = data.active.workspace;
+    debug!(
+        "Killing all clients in workspace {}",
+        data.hypr_data
+            .workspaces
+            .find_by_first(&workspace_id)
+            .map_or_else(|| workspace_id.to_string(), |w| w.name.clone())
+    );
+
+    let clients_to_kill: Vec<_> = data
+        .hypr_data
+        .clients
+        .iter()
+        .filter(|(_, client)| client.workspace == workspace_id && client.enabled)
+        .map(|(id, _)| *id)
+        .collect();
+
+    for client_id in clients_to_kill {
+        let addr = to_client_address(client_id);
+        let _ = kill_client(addr);
     }
 }
