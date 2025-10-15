@@ -247,11 +247,15 @@ fn main() -> anyhow::Result<()> {
 
 fn check_features() {
     tracing::debug!(
-        "FEATURES: JSON5 support: {}, Config command: {}, Debug command: {}, Launcher calc: {}",
+        "FEATURES: json5_config: {}, generate_config_command: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
         cfg!(feature = "json5_config"),
         cfg!(feature = "generate_config_command"),
         cfg!(feature = "debug_command"),
         cfg!(feature = "launcher_calc"),
+        cfg!(feature = "clipboard_compress_lz4"),
+        cfg!(feature = "clipboard_compress_zstd"),
+        cfg!(feature = "clipboard_encrypt_chacha20poly1305"),
+        cfg!(feature = "clipboard_encrypt_aes_gcm"),
     );
 }
 

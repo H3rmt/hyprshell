@@ -235,7 +235,7 @@ in
   };
 
   config = lib.mkIf cfg.enable ({
-    home.packages = [ cfg.hyprland ];
+    home.packages = [ cfg.package ];
 
     systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
       Unit = {
@@ -244,7 +244,7 @@ in
       };
       Service = {
         Type = "simple";
-        ExecStart = "${lib.getExe pkg} run ${cfg.systemd.args}";
+        ExecStart = "${lib.getExe cfg.package} run ${cfg.systemd.args}";
         Restart = "on-failure";
       };
       Install.WantedBy = [ cfg.systemd.target ];

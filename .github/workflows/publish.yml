@@ -76,21 +76,43 @@ jobs:
       - name: Build binary for x86_64-unknown-linux-gnu
         run: |
           ./scripts/ci/build-x86.sh
-          gh release upload ${{ github.ref_name }} "target/x86_64-unknown-linux-gnu/release/hyprshell#hyprshell-x86_64-unknown-linux-gnu"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-x86_64.tar.zst"
       - name: Build binary for aarch64-unknown-linux-gnu
         run: |
           ./scripts/ci/install-gtk4-layer-shell-aarch64.sh
           ./scripts/ci/build-aarch64.sh
-          gh release upload ${{ github.ref_name }} "target/aarch64-unknown-linux-gnu/release/hyprshell#hyprshell-aarch64-unknown-linux-gnu"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-aarch64.tar.zst"
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
         with:
           pkgname: hyprshell
-          pkgbuild: ./PKGBUILD
+          pkgbuild: ./pkgbuild/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update hyprshell AUR package
+          updpkgsums: true
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Publish AUR slim package
+        uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
+        with:
+          pkgname: hyprshell-slim
+          pkgbuild: ./pkgbuild/PKGBUILD-slim
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update hyprshell-slim AUR package
+          updpkgsums: true
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Publish AUR bin package
+        uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
+        with:
+          pkgname: hyprshell-bin
+          pkgbuild: ./pkgbuild/PKGBUILD-bin
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update hyprshell-bin AUR package
           updpkgsums: true
           ssh_keyscan_types: rsa,ecdsa,ed25519
       - uses: cachix/install-nix-action@7be5dee1421f63d07e71ce6e0a9f8a4b07c2a487 # v31.6.1

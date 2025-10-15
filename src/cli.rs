@@ -32,7 +32,7 @@ pub struct GlobalOpts {
     #[arg(short = 'c', long, global = true)]
     pub config_file: Option<PathBuf>,
 
-    /// Path to css [default: `$XDG_CONFIG_HOME/hyprshell/style.css`]
+    /// Path to css [default: `$XDG_CONFIG_HOME/hyprshell/styles.css`]
     #[arg(long, short = 's', global = true)]
     pub css_file: Option<PathBuf>,
 

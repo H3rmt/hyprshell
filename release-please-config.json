@@ -10,7 +10,15 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "PKGBUILD"
+          "path": "pkgbuild/PKGBUILD"
+        },
+        {
+          "type": "generic",
+          "path": "pkgbuild/PKGBUILD-slim"
+        },
+        {
+          "type": "generic",
+          "path": "pkgbuild/PKGBUILD-bin"
         }
       ]
     }

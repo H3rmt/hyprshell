@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/hyprshell.svg)](https://crates.io/crates/hyprshell) [![Docs](https://docs.rs/built/badge.svg)](https://docs.rs/hyprshell)
 
-![img.png](imgs/img-3.png)
+![img.png](.github/imgs/img-3.png)
 
 ## Overview
 
@@ -14,12 +14,12 @@ The application also includes a launcher for running applications, doing calcula
 
 - **Window Switching**: Switch between windows using keyboard shortcuts in a GUI.
 - **Customizable Keybindings**: Define your own keybindings for window switching and GUI interactions.
-- **Config**: Interactive [config file](./CONFIGURE.md) generation for easy setup.
+- **Config**: Interactive [config file](docs/CONFIGURE.md) generation for easy setup.
 - **Launcher Integration**: Launch applications directly from the GUI, sorted by usage frequency.
 - **Launcher Plugins**: Different plugins like Web search, actions or calculations can be enabled.
-- **Theming**: Customize the GUI appearance (gtk4) using [CSS](./CONFIGURE.md).
+- **Theming**: Customize the GUI appearance (gtk4) using [CSS](docs/CONFIGURE.md).
 - **Dynamic Configuration**: Automatically reloads configuration/style changes without restarting the application.
-- **Debug command**: Many [Commands](DEBUG.md) to debug desktop files, icons and default applications.
+- **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons and default applications.
 
 ## Installation
 
@@ -33,17 +33,21 @@ paru -S hyprshell
 yay -S hyprshell
 ```
 
+Use `hyprshell-bin` for the pre-built binaries from github releases.
+
+Use `hyprshell-slim` for the [slim](#feature-flags) version (faster buildtime).
+
 ### Binary pre-built packages (only for x86_64 and aarch64)
 
-Download from the [releases](https://github.com/h3rmt/hyprshell/releases) page.
+Download and extract from the latest release on the [releases](https://github.com/h3rmt/hyprshell/releases) page.
 
 ### NixOS
 
 This repository contains a `flake` and with a type-save `home-manager` module for configuration.
 
-Hyprshell is also available in [nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/hy/hyprshell/package.nix) repository and can be configured using a generic `home-manager` module.
+Hyprshell is also available in `nixpkgs` repository and can be configured using a generic `home-manager` module.
 
-More information can be found in the [NixOS](NIX.md) section.
+More information can be found in the [NixOS](docs/NIX.md) section.
 
 ### From Source
 
@@ -82,7 +86,7 @@ hyprshell config generate
 This launches an interactive prompt to set up your configuration.
 The generated file will be located at `~/.config/hyprshell/config.ron`.
 
-If you want to modify these settings, look at the [Documentation](CONFIGURE.md) for the config file.
+If you want to modify these settings, look at the [Documentation](docs/CONFIGURE.md) for the config file.
 
 ### Config validation
 
@@ -108,18 +112,18 @@ Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.co
 exec-once = hyprshell run &
 ```
 
-![image.png](imgs/swappy-20250420_000818.png)
-![img.png](imgs/img-2.png)
+![image.png](.github/imgs/swappy-20250420_000818.png)
+![img.png](.github/imgs/img-2.png)
 
 ### Debugging
 
-Debug commands are provided to help troubleshoot desktop files, icons, default applications and launcher functionality, see [Debug.md](DEBUG.md) for detailed information about available commands and their usage.
+Debug commands are provided to help troubleshoot desktop files, icons, default applications and launcher functionality, see [Debug.md](docs/DEBUG.md) for detailed information about available commands and their usage.
 
 ### Feature Flags
 
 ✅ = included in the default feature set.
 
-✨ = included in the slim feature set. (``--no-default-features --features "slim"``)
+✨ = included in the slim feature set. (build with ``--no-default-features --features "slim"``)
 
 - `generate_config_command`✅✨: Adds the `hyprshell config generate` command to interactively generate a config file.
 - `json5_config`✅: Adds support for a json5 config file.

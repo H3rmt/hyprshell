@@ -16,7 +16,7 @@
 
 `./user.nix`:
 
-All the settings are optional and can be found in the [config](./CONFIGURE.md)
+All the settings are optional and can be found in the [config](CONFIGURE.md)
 
 This config enables overview and switch, but is not type-save like the flake home-manager config.
 
@@ -154,7 +154,7 @@ To synchronize the hyprland version with the hyprshell version, you must overrid
 
 `./user.nix`:
 
-All the settings are optional and can be found in the [module.nix](./nix/module.nix)
+All the settings are optional and can be found in the [module.nix](../nix/module.nix)
 
 Everything is disabled by default, so you need to enable it (even settings.windows if settings.windows.overview is enabled).
 
