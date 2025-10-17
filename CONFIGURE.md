@@ -94,7 +94,6 @@ This mode displays the windows sorted by their most recent access. This option i
     - **current_workspace:** Only includes windows of the current workspace.
     - **current_monitor:** Only includes windows of the current monitor.
 - **switch_workspaces:**_[boolean]_ Show the workspaces in the Switch mode instead of the windows.
-- **vim_mode:**_[boolean]_ Enable vim-like navigation (hjkl) in the Switch mode. When enabled, `h` moves left, `j` moves down, `k` moves up, and `l` moves right. Default: `false`.
 
 # CSS
 

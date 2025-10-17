@@ -46,9 +46,7 @@ pub fn create_windows_switch_window(
 
     let key_controller = EventControllerKey::new();
     let event_sender_2 = event_sender.clone();
-    let vim_mode = switch.vim_mode;
-    key_controller
-        .connect_key_pressed(move |_, key, _, _| handle_key(key, vim_mode, &event_sender_2));
+    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, &event_sender_2));
     let event_sender_3 = event_sender;
     let r#mod = switch.modifier;
     key_controller.connect_key_released(move |_, key, _, _| {
@@ -75,7 +73,6 @@ pub fn create_windows_switch_window(
             filter_current_monitor: switch.filter_by.contains(&FilterBy::CurrentMonitor),
             filter_same_class: switch.filter_by.contains(&FilterBy::SameClass),
             switch_workspaces: switch.switch_workspaces,
-            vim_mode: switch.vim_mode,
         },
         window,
         main_flow: clients_flow,
@@ -97,7 +94,7 @@ fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferTy
     }
 }
 
-fn handle_key(key: Key, vim_mode: bool, event_sender: &Sender<TransferType>) -> Propagation {
+fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
     match key {
         Key::Tab => {
             event_sender
@@ -115,7 +112,7 @@ fn handle_key(key: Key, vim_mode: bool, event_sender: &Sender<TransferType>) -> 
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::h | Key::Left if vim_mode => {
+        Key::h | Key::Left => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Left,
@@ -123,7 +120,7 @@ fn handle_key(key: Key, vim_mode: bool, event_sender: &Sender<TransferType>) -> 
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::j | Key::Down if vim_mode => {
+        Key::j | Key::Down => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Down,
@@ -131,7 +128,7 @@ fn handle_key(key: Key, vim_mode: bool, event_sender: &Sender<TransferType>) -> 
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::k | Key::Up if vim_mode => {
+        Key::k | Key::Up => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Up,
@@ -139,7 +136,7 @@ fn handle_key(key: Key, vim_mode: bool, event_sender: &Sender<TransferType>) -> 
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::l | Key::Right if vim_mode => {
+        Key::l | Key::Right => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Right,
