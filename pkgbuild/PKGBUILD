@@ -11,26 +11,26 @@ url="https://github.com/h3rmt/hyprshell/"
 license=("MIT")
 makedepends=('cargo')
 depends=('hyprland' 'gtk4-layer-shell' 'gtk4' 'gcc' 'pixman')
-source=("$pkgname-$pkgver.tar.gz::https://static.crates.io/crates/$pkgname/$pkgname-$pkgver.crate")
+source=("hyprshell-$pkgver.tar.gz::https://static.crates.io/crates/hyprshell/hyprshell-$pkgver.crate")
 
 prepare() {
     export RUSTUP_TOOLCHAIN=stable
-    cd "$pkgname-$pkgver"
+    cd "hyprshell-$pkgver"
     cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
 }
 
 build() {
     export RUSTUP_TOOLCHAIN=stable
     export CARGO_TARGET_DIR=target
-    cd "$pkgname-$pkgver"
+    cd "hyprshell-$pkgver"
     cargo build --frozen --release
 }
 
 package() {
-    install -Dm755 "$pkgname-$pkgver/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
-    install -Dm644 "$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm755 "hyprshell-$pkgver/target/release/hyprshell" "$pkgdir/usr/bin/hyprshell"
+    install -Dm644 "hyprshell-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/hyprshell/LICENSE"
 
-    "$pkgdir/usr/bin/$pkgname" completions bash -p "$pkgdir/usr/share/bash-completion/completions"
-    "$pkgdir/usr/bin/$pkgname" completions fish -p "$pkgdir/usr/share/fish/vendor_completions.d"
-    "$pkgdir/usr/bin/$pkgname" completions zsh -p "$pkgdir/usr/share/zsh/site-functions"
+    "$pkgdir/usr/bin/hyprshell" completions bash -p "$pkgdir/usr/share/bash-completion/completions"
+    "$pkgdir/usr/bin/hyprshell" completions fish -p "$pkgdir/usr/share/fish/vendor_completions.d"
+    "$pkgdir/usr/bin/hyprshell" completions zsh -p "$pkgdir/usr/share/zsh/site-functions"
 }

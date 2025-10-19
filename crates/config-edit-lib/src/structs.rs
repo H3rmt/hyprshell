@@ -1,4 +1,4 @@
-use gtk::{Button, CheckButton, Grid, SpinButton};
+use adw::gtk::{Button, CheckButton, Grid, SpinButton};
 
 pub struct GTKConfig {
     pub windows: GTKWindows,

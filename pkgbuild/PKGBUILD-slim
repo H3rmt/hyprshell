@@ -1,9 +1,9 @@
 pkgname=hyprshell-slim
 # x-release-please-start-version
-pkgver=4.7.0
+pkgver=4.7.2
 # x-release-please-end
 pkgrel=1
-pkgdesc="A modern GTK4-based window switcher and application launcher for Hyprland (lightweight version)
+pkgdesc="A modern GTK4-based window switcher and application launcher for Hyprland (lightweight version)"
 arch=('x86_64' 'aarch64')
 conflicts=('hyprshell')
 provides=('hyprshell')
@@ -22,15 +22,15 @@ prepare() {
 build() {
     export RUSTUP_TOOLCHAIN=stable
     export CARGO_TARGET_DIR=target
-    cd "$pkgname-$pkgver"
+    cd "hyprshell-$pkgver"
     cargo build --frozen --release --no-default-features --features=slim
 }
 
 package() {
-    install -Dm755 "$pkgname-$pkgver/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
-    install -Dm644 "$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm755 "hyprshell-$pkgver/target/release/hyprshell" "$pkgdir/usr/bin/hyprshell"
+    install -Dm644 "hyprshell-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/hyprshell/LICENSE"
 
-    "$pkgdir/usr/bin/$pkgname" completions bash -p "$pkgdir/usr/share/bash-completion/completions"
-    "$pkgdir/usr/bin/$pkgname" completions fish -p "$pkgdir/usr/share/fish/vendor_completions.d"
-    "$pkgdir/usr/bin/$pkgname" completions zsh -p "$pkgdir/usr/share/zsh/site-functions"
+    "$pkgdir/usr/bin/hyprshell" completions bash -p "$pkgdir/usr/share/bash-completion/completions"
+    "$pkgdir/usr/bin/hyprshell" completions fish -p "$pkgdir/usr/share/fish/vendor_completions.d"
+    "$pkgdir/usr/bin/hyprshell" completions zsh -p "$pkgdir/usr/share/zsh/site-functions"
 }

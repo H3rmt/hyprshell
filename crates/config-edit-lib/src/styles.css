@@ -9,5 +9,27 @@
 }
 
 .frame-row {
-    font-size: 1rem;
+
+}
+
+.entry {
+    padding: 0 10px;
+    /* todo make smaller */
+}
+
+.footer {
+    padding: 5px 2px;
+}
+
+
+.expander > box > revealer {
+    border-radius: 8px;
+    background-color: var(--popover-bg-color);
+}
+
+.expander > box > list > .header {
+    border-radius: 8px;
+    /* yoinked from https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_buttons.scss */
+    /* adjusts bg color the the same as the buttons */
+    background-color: color-mix(in srgb, currentColor 10%, transparent);
 }

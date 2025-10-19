@@ -1,7 +1,7 @@
 use crate::structs::GTKConfig;
 use config_lib::{Config, Windows};
-use gtk::prelude::{ButtonExt, CheckButtonExt, WidgetExt};
 
+use adw::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tracing::{info, trace};

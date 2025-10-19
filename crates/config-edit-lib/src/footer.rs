@@ -1,14 +1,18 @@
-use gtk::gdk::Cursor;
-use gtk::prelude::*;
-use gtk::{ApplicationWindow, Button, Orientation};
+use adw::gdk::Cursor;
+use adw::gtk::{ActionBar, Button, Orientation};
+use adw::prelude::*;
+use adw::{ApplicationWindow, gtk};
 use std::path::Path;
 
-pub fn footer(window: &ApplicationWindow, config_path: &Path) -> (gtk::Box, Button) {
+pub fn footer(window: &ApplicationWindow, config_path: &Path) -> (ActionBar, Button) {
     let footer = gtk::Box::builder()
         .spacing(20)
         .hexpand(true)
+        .css_classes(["footer"])
         .orientation(Orientation::Horizontal)
         .build();
+    let bar = ActionBar::builder().build();
+    bar.set_center_widget(Some(&footer));
 
     let version_label = gtk::Label::builder()
         .label(format!("Hyprshell v{}", env!("CARGO_PKG_VERSION")))
@@ -42,5 +46,5 @@ pub fn footer(window: &ApplicationWindow, config_path: &Path) -> (gtk::Box, Butt
     cancel.connect_clicked(move |_| {
         window.close();
     });
-    (footer, save)
+    (bar, save)
 }

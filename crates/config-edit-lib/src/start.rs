@@ -2,13 +2,16 @@ use crate::APPLICATION_EDIT_ID;
 use crate::bind::{bind, update_config};
 use crate::footer::footer;
 use crate::structs::GTKConfig;
-use crate::windows::create_windows_view;
-use gtk::gdk::Display;
-use gtk::prelude::*;
-use gtk::{
-    Application, ApplicationWindow, CssProvider, Orientation, STYLE_PROVIDER_PRIORITY_APPLICATION,
-    ScrolledWindow, glib, style_context_add_provider_for_display,
+use crate::views::windows::create_windows_view;
+use adw::ffi::AdwToolbarView;
+use adw::gdk::Display;
+use adw::gtk::{
+    CssProvider, Orientation, STYLE_PROVIDER_PRIORITY_APPLICATION, ScrolledWindow,
+    style_context_add_provider_for_display,
 };
+use adw::prelude::*;
+use adw::subclass::prelude::*;
+use adw::{AlertDialog, Application, ApplicationWindow, ToolbarStyle, ToolbarView, glib, gtk};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument, warn};
 
@@ -52,15 +55,16 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
         Ok(c) => c,
         Err(err) => {
             warn!("Failed to load config: {err:?}");
-            let dialog = gtk::AlertDialog::builder()
-                .modal(true)
-                .buttons(["Ok"])
-                .message("Failed to load config")
-                .detail(format!("{err:#}"))
+            let dialog = AlertDialog::builder()
+                .heading("Failed to load config")
+                .body(format!("{err:#}"))
+                .close_response("close")
                 .build();
+            dialog.add_responses(&[("close", "Close")]);
+            window.present();
             let app = app.clone();
             glib::spawn_future_local(async move {
-                let res = dialog.choose_future(Some(&window)).await;
+                let res = dialog.choose_future(&window).await;
                 debug!("Dialog closed: {res:?}");
                 app.quit();
             });
@@ -94,8 +98,24 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
     let (windows_frame, windows) = create_windows_view();
     settings.append(&windows_frame);
     let (footer, save) = footer(&window, config_path);
-    root.append(&footer);
-    window.set_child(Some(&root));
+    // root.append(&footer);
+
+    let header = adw::HeaderBar::builder()
+        // .show_title_buttons(true)
+        // .use_native_controls(true)
+        .build();
+
+    let view = ToolbarView::builder()
+        .top_bar_style(ToolbarStyle::Raised)
+        .bottom_bar_style(ToolbarStyle::Raised)
+        .extend_content_to_bottom_edge(true)
+        .reveal_bottom_bars(true)
+        .reveal_top_bars(true)
+        .content(&root)
+        .build();
+    view.add_top_bar(&header);
+    view.add_bottom_bar(&footer);
+    window.set_content(Some(&view));
 
     let gtk_config = GTKConfig { windows, save };
     update_config(&gtk_config, &config);
