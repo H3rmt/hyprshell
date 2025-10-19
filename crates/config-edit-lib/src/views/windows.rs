@@ -4,14 +4,17 @@ use crate::views::switch::generate_switch_view;
 use adw::gdk::Cursor;
 use adw::gtk::{Adjustment, Label, Orientation, SpinButton};
 use adw::prelude::*;
-use adw::{ExpanderRow, gtk};
+use adw::{ExpanderRow, ViewStack, gtk};
 
-pub fn create_windows_view(settings: &gtk::Box) -> GTKWindows {
-    let windows_grid = gtk::Box::builder()
+pub fn create_windows_view(view_stack: &ViewStack) -> GTKWindows {
+    let row_box = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
-        .css_classes(["frame-row"])
-        .spacing(30)
+        .margin_bottom(10)
+        .margin_end(10)
+        .margin_start(10)
+        .margin_top(10)
         .build();
+    view_stack.add_titled_with_icon(&row_box, None, "Windows", "configure");
 
     let row = ExpanderRow::builder()
         .title_selectable(true)
@@ -20,11 +23,17 @@ pub fn create_windows_view(settings: &gtk::Box) -> GTKWindows {
         .css_classes(["enable-frame"])
         .title("Windows (Overview and Switch)")
         .build();
-    row.add_row(&windows_grid);
-    settings.append(&row);
+    row_box.append(&row);
 
-    let scale = scale(&windows_grid);
-    let items_per_row = items_per_row(&windows_grid);
+    let windows_box = gtk::Box::builder()
+        .orientation(Orientation::Horizontal)
+        .css_classes(["frame-row"])
+        .spacing(30)
+        .build();
+    row.add_row(&windows_box);
+
+    let scale = scale(&windows_box);
+    let items_per_row = items_per_row(&windows_box);
 
     let overview = generate_overview_view(&row);
     let switch = generate_switch_view(&row);

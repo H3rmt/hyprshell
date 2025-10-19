@@ -3,20 +3,24 @@ use crate::bind::bind;
 use crate::footer::footer;
 use crate::structs::GTKConfig;
 use crate::update::update_config;
+use crate::views::json_preview::create_preview_view;
+use crate::views::launcher::create_launcher_view;
 use crate::views::windows::create_windows_view;
 use adw::gdk::Display;
 use adw::gtk::{
-    CssProvider, Orientation, STYLE_PROVIDER_PRIORITY_APPLICATION, ScrolledWindow,
+    CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, ScrolledWindow,
     style_context_add_provider_for_display,
 };
 use adw::prelude::*;
-use adw::{AlertDialog, Application, ApplicationWindow, ToolbarStyle, ToolbarView, glib, gtk};
+use adw::{
+    AlertDialog, Application, ApplicationWindow, ToolbarStyle, ToolbarView, ViewStack,
+    ViewSwitcherBar, glib,
+};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument, warn};
 
 #[instrument]
 pub fn start(config_path: PathBuf, css_path: PathBuf) {
-    // Create a new application
     let application = Application::builder()
         .application_id(format!(
             "{}{}",
@@ -71,48 +75,35 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
         }
     };
 
-    let settings = gtk::Box::builder()
-        .orientation(Orientation::Vertical)
-        .margin_bottom(12)
-        .margin_top(12)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
+    let view_stack = ViewStack::builder().build();
+    let windows = create_windows_view(&view_stack);
+    let _launcher = create_launcher_view(&view_stack);
+    let _ = create_preview_view(&view_stack);
 
-    let root = gtk::Box::builder()
-        .orientation(Orientation::Vertical)
-        .margin_bottom(12)
-        .margin_top(12)
-        .margin_start(12)
-        .margin_end(12)
-        .build();
-
-    let scroll = ScrolledWindow::builder()
-        .hexpand(true)
-        .vexpand(true)
-        .child(&settings)
-        .build();
-    root.append(&scroll);
-
-    let windows = create_windows_view(&settings);
-    let (footer, save) = footer(&window, config_path);
-    // root.append(&footer);
-
-    let header = adw::HeaderBar::builder()
-        // .show_title_buttons(true)
-        // .use_native_controls(true)
-        .build();
-
+    let scroll = ScrolledWindow::builder().child(&view_stack).build();
     let view = ToolbarView::builder()
         .top_bar_style(ToolbarStyle::Raised)
-        .bottom_bar_style(ToolbarStyle::Raised)
-        .extend_content_to_bottom_edge(true)
+        .bottom_bar_style(ToolbarStyle::Flat)
         .reveal_bottom_bars(true)
         .reveal_top_bars(true)
-        .content(&root)
+        .content(&scroll)
+        .build();
+
+    let switcher = ViewSwitcherBar::builder()
+        .reveal(true)
+        .stack(&view_stack)
+        .build();
+    let header = adw::HeaderBar::builder()
+        .show_end_title_buttons(true)
+        .show_start_title_buttons(true)
+        .show_back_button(true) // TODO find out why this is not working
+        .title_widget(&switcher)
         .build();
     view.add_top_bar(&header);
+
+    let (footer, save) = footer(&window, config_path);
     view.add_bottom_bar(&footer);
+
     window.set_content(Some(&view));
 
     let gtk_config = GTKConfig { windows, save };

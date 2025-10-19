@@ -1,5 +1,4 @@
 use crate::structs::{GTKOverview, GTKWindowsFilter};
-use crate::views::launcher::generate_launcher_view;
 use adw::gdk::Cursor;
 use adw::gtk::{Align, DropDown, Entry, InputPurpose, Label, Orientation, Switch};
 use adw::prelude::*;
@@ -31,8 +30,6 @@ pub fn generate_overview_view(windows_grid: &ExpanderRow) -> GTKOverview {
     row.add_row(&overview_row_1);
     row.add_row(&overview_row_2);
     windows_grid.add_row(&row);
-
-    generate_launcher_view(&row);
 
     GTKOverview {
         row,
