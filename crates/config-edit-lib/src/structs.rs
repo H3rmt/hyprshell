@@ -11,19 +11,27 @@ pub struct GTKWindows {
     pub scale: SpinButton,
     pub items_per_row: SpinButton,
     pub overview: GTKOverview,
+    pub switch: GTKSwitch,
 }
 
 pub struct GTKOverview {
     pub row: ExpanderRow,
     pub key: Entry,
     pub modifier: DropDown,
-    pub filter: GTKOverviewFilter,
+    pub filter: GTKWindowsFilter,
     pub hide_filtered: Switch,
 }
 
-pub struct GTKOverviewFilter {
+pub struct GTKWindowsFilter {
     pub row: ExpanderRow,
     pub same_class: SwitchRow,
     pub workspace: SwitchRow,
     pub monitor: SwitchRow,
+}
+
+pub struct GTKSwitch {
+    pub row: ExpanderRow,
+    pub modifier: DropDown,
+    pub filter: GTKWindowsFilter,
+    pub switch_workspaces: Switch,
 }

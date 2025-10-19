@@ -1,67 +1,35 @@
-use crate::structs::{GTKOverview, GTKWindowsFilter};
-use crate::views::launcher::generate_launcher_view;
+use crate::structs::{GTKSwitch, GTKWindowsFilter};
 use adw::gdk::Cursor;
-use adw::gtk::{Align, DropDown, Entry, InputPurpose, Label, Orientation, Switch};
+use adw::gtk::{Align, DropDown, Label, Orientation, Switch};
 use adw::prelude::*;
 use adw::{ExpanderRow, SwitchRow, gtk};
 
-pub fn generate_overview_view(windows_grid: &ExpanderRow) -> GTKOverview {
-    let overview_row_1 = gtk::Box::builder()
+pub fn generate_switch_view(windows_grid: &ExpanderRow) -> GTKSwitch {
+    let switch_row_1 = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
         .css_classes(["frame-row"])
         .spacing(30)
         .build();
-    let key = key(&overview_row_1);
-    let modifier = modifier(&overview_row_1);
-    let overview_row_2 = gtk::Box::builder()
-        .orientation(Orientation::Horizontal)
-        .css_classes(["frame-row"])
-        .spacing(30)
-        .build();
-    let filter = filter(&overview_row_2);
-    let hide_filtered = hide_filtered(&overview_row_2);
+    let modifier = modifier(&switch_row_1);
+    let filter = filter(&switch_row_1);
+    let switch_workspaces = switch_workspaces(&switch_row_1);
 
     let row = ExpanderRow::builder()
         .title_selectable(true)
         .show_enable_switch(true)
         .hexpand(true)
         .css_classes(["enable-frame"])
-        .title("Overview + Launcher")
+        .title("Switch")
         .build();
-    row.add_row(&overview_row_1);
-    row.add_row(&overview_row_2);
+    row.add_row(&switch_row_1);
     windows_grid.add_row(&row);
 
-    generate_launcher_view(&row);
-
-    GTKOverview {
+    GTKSwitch {
         row,
-        key,
         modifier,
         filter,
-        hide_filtered,
+        switch_workspaces,
     }
-}
-
-fn key(windows_box: &gtk::Box) -> Entry {
-    let key_row = gtk::Box::builder()
-        .orientation(Orientation::Horizontal)
-        .spacing(10)
-        .build();
-    key_row.append(&Label::new(Some("Key")));
-    let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
-    info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
-    key_row.append(&info_icon);
-    let key_entry = Entry::builder()
-        .input_purpose(InputPurpose::FreeForm)
-        .placeholder_text("super_l")
-        .css_classes(["entry"])
-        .hexpand(true)
-        .build();
-    key_row.append(&key_entry);
-    windows_box.append(&key_row);
-    key_entry
 }
 
 fn modifier(windows_box: &gtk::Box) -> DropDown {
@@ -77,6 +45,7 @@ fn modifier(windows_box: &gtk::Box) -> DropDown {
     // DO NOT CHANGE ORDER OF THESE ITEMS
     let dropdown = DropDown::from_strings(&["Alt", "Ctrl", "Super"]);
     dropdown.set_hexpand(true);
+    dropdown.set_valign(Align::Center);
     mod_row.append(&dropdown);
     windows_box.append(&mod_row);
     dropdown
@@ -107,8 +76,8 @@ fn filter(windows_box: &gtk::Box) -> GTKWindowsFilter {
     let sw_monitor = SwitchRow::new();
     sw_monitor.set_title("Current monitor");
     expander.add_row(&sw_monitor);
-
     filter_row.append(&expander);
+
     windows_box.append(&filter_row);
     GTKWindowsFilter {
         row: expander,
@@ -118,12 +87,12 @@ fn filter(windows_box: &gtk::Box) -> GTKWindowsFilter {
     }
 }
 
-fn hide_filtered(windows_box: &gtk::Box) -> Switch {
+fn switch_workspaces(windows_box: &gtk::Box) -> Switch {
     let hide_row = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
         .spacing(10)
         .build();
-    hide_row.append(&Label::new(Some("Hide filtered")));
+    hide_row.append(&Label::new(Some("Switch Workspaces")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
     info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());

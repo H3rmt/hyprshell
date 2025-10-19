@@ -1,77 +1,11 @@
-use crate::structs::{GTKConfig, GTKOverviewFilter};
-use config_lib::{Config, FilterBy, Overview, Windows};
+use crate::structs::{GTKConfig, GTKWindowsFilter};
+use config_lib::{Config, FilterBy, Overview, Switch, Windows};
 
+use crate::update::{update_config, update_windows_filter};
 use adw::prelude::*;
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 use tracing::{info, trace};
-
-pub fn update_config(gtk_config: &GTKConfig, config: &Config) {
-    match &config.windows {
-        Some(windows) => {
-            let g_windows = &gtk_config.windows;
-            g_windows.row.set_enable_expansion(true);
-            g_windows.row.set_expanded(true);
-            g_windows.scale.set_value(windows.scale);
-            g_windows
-                .items_per_row
-                .set_value(f64::from(windows.items_per_row));
-            match &windows.overview {
-                Some(overview) => {
-                    let g_overview = &gtk_config.windows.overview;
-                    g_overview.row.set_enable_expansion(true);
-                    g_overview.row.set_expanded(true);
-                    g_overview.key.set_text(&overview.key);
-                    g_overview.modifier.set_selected(match overview.modifier {
-                        config_lib::Modifier::Alt => 0,
-                        config_lib::Modifier::Ctrl => 1,
-                        config_lib::Modifier::Super => 2,
-                    });
-
-                    update_overview_filter(&g_overview.filter, &overview.filter_by);
-
-                    gtk_config
-                        .windows
-                        .overview
-                        .hide_filtered
-                        .set_active(overview.hide_filtered);
-                }
-                None => {
-                    gtk_config.windows.overview.row.set_enable_expansion(false);
-                }
-            }
-        }
-        None => {
-            gtk_config.windows.row.set_enable_expansion(false);
-        }
-    }
-}
-
-fn update_overview_filter(g_filter: &GTKOverviewFilter, filter: &Vec<FilterBy>) {
-    g_filter
-        .same_class
-        .set_active(filter.contains(&FilterBy::SameClass));
-    g_filter
-        .workspace
-        .set_active(filter.contains(&FilterBy::CurrentWorkspace));
-    g_filter
-        .monitor
-        .set_active(filter.contains(&FilterBy::CurrentMonitor));
-    g_filter.row.set_expanded(filter.len() > 0);
-    g_filter.row.set_title(&if filter.len() == 0 {
-        String::from("Filter")
-    } else if filter.len() == 1 {
-        format!("Filter: {:?}", filter[0])
-    } else if filter.len() == 2 {
-        format!("Filter: {:?} + {:?}", filter[0], filter[1])
-    } else {
-        // should not be possible, maybe if loaded from config
-        format!(
-            "Filter: {:?} + {:?} + {:?}",
-            filter[0], filter[1], filter[2]
-        )
-    })
-}
 
 pub fn bind(gtk_config: GTKConfig, config: Config) {
     let config = Rc::new(RefCell::new(config));
@@ -134,11 +68,12 @@ fn bind_windows(
         }
     });
 
-    bind_overview(gtk_conf, gtk_config.clone(), config.clone());
+    bind_overview(&gtk_conf, gtk_config.clone(), config.clone());
+    bind_switch(&gtk_conf, gtk_config.clone(), config.clone());
 }
 
 fn bind_overview(
-    gtk_conf: Ref<GTKConfig>,
+    gtk_conf: &Ref<GTKConfig>,
     gtk_config: Rc<RefCell<GTKConfig>>,
     config: Rc<RefCell<Config>>,
 ) {
@@ -219,7 +154,7 @@ fn bind_overview(
 }
 
 fn bind_overview_filter(
-    filter: &GTKOverviewFilter,
+    filter: &GTKWindowsFilter,
     gtk_config: Rc<RefCell<GTKConfig>>,
     config: Rc<RefCell<Config>>,
 ) {
@@ -239,7 +174,7 @@ fn bind_overview_filter(
                         overview.filter_by.retain(|f| *f != FilterBy::SameClass);
                     }
                     // use update function to update other parts of ui
-                    update_overview_filter(
+                    update_windows_filter(
                         &gtk_config_clone.borrow().windows.overview.filter,
                         &overview.filter_by,
                     )
@@ -272,7 +207,7 @@ fn bind_overview_filter(
                             .retain(|f| *f != FilterBy::CurrentWorkspace);
                     }
                     // use update function to update other parts of ui
-                    update_overview_filter(
+                    update_windows_filter(
                         &gtk_config_clone.borrow().windows.overview.filter,
                         &overview.filter_by,
                     )
@@ -305,9 +240,170 @@ fn bind_overview_filter(
                             .retain(|f| *f != FilterBy::CurrentMonitor);
                     }
                     // use update function to update other parts of ui
-                    update_overview_filter(
+                    update_windows_filter(
                         &gtk_config_clone.borrow().windows.overview.filter,
                         &overview.filter_by,
+                    )
+                }
+            }
+        }
+    });
+}
+
+fn bind_switch(
+    gtk_conf: &Ref<GTKConfig>,
+    gtk_config: Rc<RefCell<GTKConfig>>,
+    config: Rc<RefCell<Config>>,
+) {
+    let switch = &gtk_conf.windows.switch;
+
+    let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
+    switch.row.connect_enable_expansion_notify(move |button| {
+        trace!(
+            "windows.switch.row changed to {}",
+            button.enables_expansion()
+        );
+        if button.enables_expansion() {
+            if let Ok(mut c) = config_clone.try_borrow_mut() {
+                if let Some(windows) = c.windows.as_mut() {
+                    windows.switch = Some(Switch::default());
+                }
+            }
+            // ensure that all inputs show the data from default
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
+        } else {
+            if let Ok(mut c) = config_clone.try_borrow_mut() {
+                if let Some(windows) = c.windows.as_mut() {
+                    windows.switch = None
+                }
+            }
+        }
+    });
+
+    let config_clone = config.clone();
+    switch.modifier.connect_selected_notify(move |dropdown| {
+        trace!("windows.switch.modifier changed to {}", dropdown.selected(),);
+        if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                if let Some(switch) = windows.switch.as_mut() {
+                    switch.modifier = match dropdown.selected() {
+                        0 => config_lib::Modifier::Alt,
+                        1 => config_lib::Modifier::Ctrl,
+                        2 => config_lib::Modifier::Super,
+                        _ => panic!("Invalid modifier selected"),
+                    }
+                }
+            }
+        }
+    });
+
+    bind_switch_filter(&switch.filter, gtk_config.clone(), config.clone());
+
+    let config_clone = config.clone();
+    switch
+        .switch_workspaces
+        .connect_active_notify(move |entry| {
+            trace!(
+                "windows.switch.switch_workspaces changed to {}",
+                entry.is_active()
+            );
+            if let Ok(mut c) = config_clone.try_borrow_mut() {
+                if let Some(windows) = c.windows.as_mut() {
+                    if let Some(switch) = windows.switch.as_mut() {
+                        switch.switch_workspaces = entry.is_active();
+                    }
+                }
+            }
+        });
+}
+
+fn bind_switch_filter(
+    filter: &GTKWindowsFilter,
+    gtk_config: Rc<RefCell<GTKConfig>>,
+    config: Rc<RefCell<Config>>,
+) {
+    let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
+    filter.same_class.connect_active_notify(move |entry| {
+        trace!(
+            "windows.switch.filter.same_class changed to {}",
+            entry.is_active()
+        );
+        if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                if let Some(switch) = windows.switch.as_mut() {
+                    if entry.is_active() {
+                        switch.filter_by.push(FilterBy::SameClass);
+                    } else {
+                        switch.filter_by.retain(|f| *f != FilterBy::SameClass);
+                    }
+                    // use update function to update other parts of ui
+                    update_windows_filter(
+                        &gtk_config_clone.borrow().windows.switch.filter,
+                        &switch.filter_by,
+                    )
+                }
+            }
+        }
+    });
+
+    let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
+    filter.workspace.connect_active_notify(move |entry| {
+        trace!(
+            "windows.switch.filter.workspace changed to {}",
+            entry.is_active()
+        );
+        if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                if let Some(switch) = windows.switch.as_mut() {
+                    if entry.is_active() {
+                        switch.filter_by.push(FilterBy::CurrentWorkspace);
+                        // current monitor and current workspace are mutually exclusive (not really, but it doesn't make sense)
+                        if switch.filter_by.contains(&FilterBy::CurrentMonitor) {
+                            switch.filter_by.retain(|f| *f != FilterBy::CurrentMonitor);
+                        }
+                    } else {
+                        switch
+                            .filter_by
+                            .retain(|f| *f != FilterBy::CurrentWorkspace);
+                    }
+                    // use update function to update other parts of ui
+                    update_windows_filter(
+                        &gtk_config_clone.borrow().windows.switch.filter,
+                        &switch.filter_by,
+                    )
+                }
+            }
+        }
+    });
+
+    let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
+    filter.monitor.connect_active_notify(move |entry| {
+        trace!(
+            "windows.switch.filter.monitor changed to {}",
+            entry.is_active()
+        );
+        if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                if let Some(switch) = windows.switch.as_mut() {
+                    if entry.is_active() {
+                        switch.filter_by.push(FilterBy::CurrentMonitor);
+                        // current monitor and current workspace are mutually exclusive (not really, but it doesn't make sense)
+                        if switch.filter_by.contains(&FilterBy::CurrentWorkspace) {
+                            switch
+                                .filter_by
+                                .retain(|f| *f != FilterBy::CurrentWorkspace);
+                        }
+                    } else {
+                        switch.filter_by.retain(|f| *f != FilterBy::CurrentMonitor);
+                    }
+                    // use update function to update other parts of ui
+                    update_windows_filter(
+                        &gtk_config_clone.borrow().windows.switch.filter,
+                        &switch.filter_by,
                     )
                 }
             }

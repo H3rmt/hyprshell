@@ -2,6 +2,7 @@ mod bind;
 mod footer;
 mod start;
 mod structs;
+mod update;
 mod views;
 
 pub use start::start;

@@ -13,10 +13,8 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
-#gtk.workspace = true
 core-lib.workspace = true
 config-lib.workspace = true
-async-channel.workspace = true
 adw = { version = "0.8.0", package = "libadwaita", features = ["v1_6", "gtk_v4_18"] }
 
 [lints]

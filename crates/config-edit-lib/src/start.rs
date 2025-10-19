@@ -1,7 +1,8 @@
 use crate::APPLICATION_EDIT_ID;
-use crate::bind::{bind, update_config};
+use crate::bind::bind;
 use crate::footer::footer;
 use crate::structs::GTKConfig;
+use crate::update::update_config;
 use crate::views::windows::create_windows_view;
 use adw::gdk::Display;
 use adw::gtk::{

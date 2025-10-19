@@ -1,9 +1,13 @@
 # Config
 
-The main config file is located at `~/.config/hyprshell/config.ron` but can be configured using the `-c` argument. You can also use `.json` and `.json5` as config file formats.
-The config is loaded at startup but is reloaded when the file changes.
+**Use `hyprshell config edit` to open the hyprshell config editor. It also contains documentation of all the options.**
 
-To generate a default config file with all possible options set, run the following command:
+---
+
+The main config file is located at `~/.config/hyprshell/config.ron` but can be configured using the `-c` argument. You can also use `.toml` and `.json(5)` as config file formats.
+The config is loaded at startup and is reloaded when the file changes.
+
+To interactively generate a default config file with all possible options set, run the following command:
 
 ```bash
 hyprshell config generate
@@ -15,16 +19,16 @@ The default values for these configs, which are also the values that get used wh
 
 ## Config Options
 
-- **version:**_[number]_ The version of the config file. Will be used for the migrator in the future.
-- **windows:**_[Windows]_ Configuration for the different windows like overview, switch and launcher (optional).
+- **version:**_[number]_ The version of the config file. When loading the config this is value checked to migrate the file if needed.
+- **windows:**_[Windows?]_ Configuration for the different windows like overview, switch and launcher (optional).
 
 ## Windows
 
 - **scale:**_[number]_ The scale used to scale down the real dimension the windows displayed in the overview. Can be set from `0.0 < X > to 15.0`
 - **items_per_row:**_[number]_ The number of workspaces or windows to show per row in the overview. If you have 6 workspaces open and set this to 3, you will see 2 rows of 3 workspaces.
   Pressing arrow up or down switches between the rows.
-- **overview:**_[Overview]_ Configuration for the overview mode (optional).
-- **switch:**_[Switch]_ Configuration for the switch mode (optional).
+- **overview:**_[Overview?]_ Configuration for the overview mode (optional).
+- **switch:**_[Switch?]_ Configuration for the switch mode (optional).
 
 ### Overview
 
@@ -93,11 +97,12 @@ This mode displays the windows sorted by their most recent access. This option i
     - **same_class:** Only includes windows of the same class / type. If you currently have alacritty open, only alacritty windows will be shown.
     - **current_workspace:** Only includes windows of the current workspace.
     - **current_monitor:** Only includes windows of the current monitor.
-- **show_workspaces:**_[boolean]_ Show the workspaces in the Switch mode instead of the windows.
+- **switch_workspaces:**_[boolean]_ Switch between workspaces in the Switch mode instead of windows.
 
 # CSS
 
-The CSS file is located at `~/.config/hyprshell/styles.css` but can be configured using the `-s` argument. The config is loaded at startup but is reloaded when the file changes. (removing styles will not work, adding or overriding styles works)
+The CSS file is located at `~/.config/hyprshell/styles.css` but can be configured using the `-s` argument.
+The config is loaded at startup and is reloaded when the file changes. (removing styles will not work, adding or overriding styles works)
 
 **Some examples can be found in the [CSS Examples folder](css-examples).**
 

@@ -180,7 +180,7 @@ pub struct SearchEngine {
 pub struct Switch {
     #[default(Modifier::Alt)]
     pub modifier: Modifier,
-    #[default(Vec::new())]
+    #[default(vec![FilterBy::CurrentMonitor])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]
     pub switch_workspaces: bool,
