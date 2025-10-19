@@ -54,12 +54,11 @@ fn scale(windows_box: &gtk::Box) -> SpinButton {
         .build();
     scale_row.append(&Label::new(Some("Scale")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
+    info_icon.set_tooltip_text(Some("TODO"));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
     scale_row.append(&info_icon);
     let scale_spin = SpinButton::builder()
-        .adjustment(&Adjustment::new(1.0, 0.5, 15.0, 0.1, 1.0, 0.0))
-        .climb_rate(0.5)
+        .adjustment(&Adjustment::new(1.0, 0.5, 15.0, 0.5, 1.0, 0.0))
         .hexpand(true)
         .digits(2)
         .build();
@@ -75,12 +74,11 @@ fn items_per_row(windows_box: &gtk::Box) -> SpinButton {
         .build();
     ipr_row.append(&Label::new(Some("Items per row")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the number of items per row in the overview."));
+    info_icon.set_tooltip_text(Some("TODO"));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
     ipr_row.append(&info_icon);
     let ipr_spin = SpinButton::builder()
         .adjustment(&Adjustment::new(1.0, 0.0, 50.0, 1.0, 5.0, 0.0))
-        .climb_rate(1.0)
         .hexpand(true)
         .digits(0)
         .build();

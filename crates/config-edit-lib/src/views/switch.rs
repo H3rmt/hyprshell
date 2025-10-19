@@ -39,7 +39,7 @@ fn modifier(windows_box: &gtk::Box) -> DropDown {
         .build();
     mod_row.append(&Label::new(Some("Modifier")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
+    info_icon.set_tooltip_text(Some("TODO"));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
     mod_row.append(&info_icon);
     // DO NOT CHANGE ORDER OF THESE ITEMS
@@ -58,7 +58,7 @@ fn filter(windows_box: &gtk::Box) -> GTKWindowsFilter {
         .build();
     filter_row.append(&Label::new(Some("Filter")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
+    info_icon.set_tooltip_text(Some("TODO"));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
     filter_row.append(&info_icon);
 
@@ -94,15 +94,15 @@ fn switch_workspaces(windows_box: &gtk::Box) -> Switch {
         .build();
     hide_row.append(&Label::new(Some("Switch Workspaces")));
     let info_icon = gtk::Image::from_icon_name("dialog-information-symbolic");
-    info_icon.set_tooltip_text(Some("Adjust the scale factor for window previews."));
+    info_icon.set_tooltip_text(Some("TODO"));
     info_icon.set_cursor(Cursor::from_name("help", None).as_ref());
     hide_row.append(&info_icon);
     let switch_box = gtk::Box::builder()
         .orientation(Orientation::Vertical)
-        .halign(Align::Center)
+        .halign(Align::Start)
         .valign(Align::Center)
         .build();
-    let hide_switch = Switch::builder().hexpand(true).build();
+    let hide_switch = Switch::builder().build();
     switch_box.append(&hide_switch);
     hide_row.append(&switch_box);
     windows_box.append(&hide_row);
