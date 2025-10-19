@@ -23,6 +23,8 @@ fn handle_values(val: CallbackData) -> bool {
         encryption: Encryption::default(),
         compression: Compression::default(),
     };
+    config.encryption = Encryption::default();
+    config.compression = Compression::default();
     #[cfg(feature = "compress_zstd")]
     {
         config.compression = Compression::Zstd(1);

@@ -1,4 +1,5 @@
-use adw::gtk::{Button, CheckButton, Grid, SpinButton};
+use adw::gtk::{Button, DropDown, Entry, SpinButton, Switch};
+use adw::{ExpanderRow, SwitchRow};
 
 pub struct GTKConfig {
     pub windows: GTKWindows,
@@ -6,8 +7,23 @@ pub struct GTKConfig {
 }
 
 pub struct GTKWindows {
-    pub enabled: CheckButton,
-    pub view: Grid,
+    pub row: ExpanderRow,
     pub scale: SpinButton,
     pub items_per_row: SpinButton,
+    pub overview: GTKOverview,
+}
+
+pub struct GTKOverview {
+    pub row: ExpanderRow,
+    pub key: Entry,
+    pub modifier: DropDown,
+    pub filter: GTKOverviewFilter,
+    pub hide_filtered: Switch,
+}
+
+pub struct GTKOverviewFilter {
+    pub row: ExpanderRow,
+    pub same_class: SwitchRow,
+    pub workspace: SwitchRow,
+    pub monitor: SwitchRow,
 }

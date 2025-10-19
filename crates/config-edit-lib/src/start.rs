@@ -3,14 +3,12 @@ use crate::bind::{bind, update_config};
 use crate::footer::footer;
 use crate::structs::GTKConfig;
 use crate::views::windows::create_windows_view;
-use adw::ffi::AdwToolbarView;
 use adw::gdk::Display;
 use adw::gtk::{
     CssProvider, Orientation, STYLE_PROVIDER_PRIORITY_APPLICATION, ScrolledWindow,
     style_context_add_provider_for_display,
 };
 use adw::prelude::*;
-use adw::subclass::prelude::*;
 use adw::{AlertDialog, Application, ApplicationWindow, ToolbarStyle, ToolbarView, glib, gtk};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument, warn};
@@ -95,8 +93,7 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
         .build();
     root.append(&scroll);
 
-    let (windows_frame, windows) = create_windows_view();
-    settings.append(&windows_frame);
+    let windows = create_windows_view(&settings);
     let (footer, save) = footer(&window, config_path);
     // root.append(&footer);
 

@@ -1,35 +1,53 @@
-.frame {
+/* border around full expander row + items */
+.enable-frame > box {
+    padding: 4px;
+    border-radius: 18px;
+    border: 2px solid var(--border-color);
+}
+
+/* make hover for row rounded */
+.enable-frame > box > list > .activatable:hover {
+    border-radius: 18px;
+}
+
+/* remove background for row, increase font for title */
+.enable-frame > box > list {
+    background: transparent;
+    border-radius: 12px;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+/* remove background that interferes with rounden borders */
+.enable-frame > box > revealer > list {
+    background: unset;
+}
+
+/* disable hover effect on expanded row */
+.enable-frame > box > revealer > list > .activatable:hover {
+    background: unset;
+}
+
+/* some padding around the grid */
+.frame-grid {
     padding: 0.7rem;
 }
 
-.frame-label {
-    font-size: 1.4rem;
-    font-weight: 600;
-    padding: 0.5rem 0.5rem 0.8rem;
-}
-
-.frame-row {
-
-}
-
-.entry {
-    padding: 0 10px;
-    /* todo make smaller */
-}
-
-.footer {
-    padding: 5px 2px;
-}
-
-
-.expander > box > revealer {
+/* set background color for the expander to bg color */
+.item-expander > box > revealer {
     border-radius: 8px;
     background-color: var(--popover-bg-color);
 }
 
-.expander > box > list > .header {
+/* make it look like a button */
+.item-expander > box > list > .header {
     border-radius: 8px;
     /* yoinked from https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_buttons.scss */
     /* adjusts bg color the the same as the buttons */
     background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+
+.footer {
+    padding: 6px 2px;
 }
