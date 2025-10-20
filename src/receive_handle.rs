@@ -131,7 +131,8 @@ fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
 fn close_switch_item(global: &mut Globals, event_sender: &Sender<TransferType>) {
     if let Some(windows) = &mut global.windows {
         if let Some(switch) = &mut windows.switch {
-            windows_lib::close_switch_item(switch, event_sender);
+            windows_lib::close_switch_item(switch, event_sender)
+                .warn_details("Failed to close switch item");
         } else {
             warn!("Window switch not active");
         }
