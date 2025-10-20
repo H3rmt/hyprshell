@@ -4,7 +4,6 @@ use crate::footer::footer;
 use crate::structs::GTKConfig;
 use crate::update::update_config;
 use crate::views::json_preview::create_preview_view;
-use crate::views::launcher::create_launcher_view;
 use crate::views::windows::create_windows_view;
 use adw::gdk::Display;
 use adw::gtk::{
@@ -76,9 +75,9 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
     };
 
     let view_stack = ViewStack::builder().build();
-    let windows = create_windows_view(&view_stack);
-    let _launcher = create_launcher_view(&view_stack);
     let _ = create_preview_view(&view_stack);
+    let windows = create_windows_view(&view_stack);
+    view_stack.set_visible_child_name("overview");
 
     let scroll = ScrolledWindow::builder().child(&view_stack).build();
     let view = ToolbarView::builder()
@@ -106,7 +105,11 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
 
     window.set_content(Some(&view));
 
-    let gtk_config = GTKConfig { windows, save };
+    let gtk_config = GTKConfig {
+        windows,
+        save,
+        view_stack,
+    };
     update_config(&gtk_config, &config);
     bind(gtk_config, config);
 

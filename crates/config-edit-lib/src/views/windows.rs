@@ -14,7 +14,7 @@ pub fn create_windows_view(view_stack: &ViewStack) -> GTKWindows {
         .margin_start(10)
         .margin_top(10)
         .build();
-    view_stack.add_titled_with_icon(&row_box, None, "Windows", "configure");
+    view_stack.add_titled_with_icon(&row_box, Some("overview"), "Windows", "configure");
 
     let row = ExpanderRow::builder()
         .title_selectable(true)

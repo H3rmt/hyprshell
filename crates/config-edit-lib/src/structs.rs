@@ -1,9 +1,10 @@
 use adw::gtk::{Button, DropDown, Entry, SpinButton, Switch};
-use adw::{ExpanderRow, SwitchRow};
+use adw::{ExpanderRow, SwitchRow, ViewStack, gtk};
 
 pub struct GTKConfig {
     pub windows: GTKWindows,
     pub save: Button,
+    pub view_stack: ViewStack,
 }
 
 pub struct GTKWindows {
@@ -15,6 +16,7 @@ pub struct GTKWindows {
 }
 
 pub struct GTKOverview {
+    pub launcher: GTKLauncher,
     pub row: ExpanderRow,
     pub key: Entry,
     pub modifier: DropDown,
@@ -27,6 +29,34 @@ pub struct GTKWindowsFilter {
     pub same_class: SwitchRow,
     pub workspace: SwitchRow,
     pub monitor: SwitchRow,
+}
+
+pub struct GTKLauncher {
+    pub view: gtk::Box,
+    pub row: ExpanderRow,
+    pub modifier: DropDown,
+    pub width: SpinButton,
+    pub max_items: SpinButton,
+    pub show_when_empty: Switch,
+    pub dont_use_default_terminal: Switch,
+    pub terminal: Entry,
+    pub plugins: GTKPlugins,
+}
+
+pub struct GTKPlugins {
+    pub row: ExpanderRow,
+    pub terminal: Switch,
+    pub shell: Switch,
+    pub calc: Switch,
+    pub path: Switch,
+    pub applications: GTKApplications,
+}
+
+pub struct GTKApplications {
+    pub row: ExpanderRow,
+    pub cache_weeks: SpinButton,
+    pub submenu: Switch,
+    pub show_exec: Switch,
 }
 
 pub struct GTKSwitch {

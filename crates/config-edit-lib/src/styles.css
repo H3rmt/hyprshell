@@ -61,3 +61,9 @@
     font-size: 1.4rem;
     font-weight: 600;
 }
+
+/* disabled style if calc plugin in not available */
+.disabled {
+    opacity: 0.5;
+    background: unset;
+}
