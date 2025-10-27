@@ -3,8 +3,9 @@ use crate::bind::bind;
 use crate::footer::footer;
 use crate::structs::GTKConfig;
 use crate::update::update_config;
+use crate::views::changes::create_changes_view;
 use crate::views::json_preview::create_preview_view;
-use crate::views::windows::create_windows_view;
+use crate::views::windows::windows::create_windows_view;
 use adw::gdk::Display;
 use adw::gtk::{
     CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, ScrolledWindow,
@@ -76,6 +77,7 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
 
     let view_stack = ViewStack::builder().build();
     let _ = create_preview_view(&view_stack);
+    let changes = create_changes_view(&view_stack);
     let windows = create_windows_view(&view_stack);
     view_stack.set_visible_child_name("overview");
 
@@ -106,6 +108,7 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
     window.set_content(Some(&view));
 
     let gtk_config = GTKConfig {
+        changes,
         windows,
         save,
         view_stack,

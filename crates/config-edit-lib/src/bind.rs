@@ -3,7 +3,7 @@ use config_lib::{
     ApplicationsPluginConfig, Config, EmptyConfig, FilterBy, Overview, Switch, Windows,
 };
 
-use crate::update::{update_config, update_launcher, update_plugins, update_windows_filter};
+use crate::update::update_config;
 use adw::prelude::*;
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
@@ -39,19 +39,16 @@ fn bind_windows(
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 c.windows = Some(Windows::default());
             }
-            // ensure that all inputs show the data from default
-            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         } else {
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 c.windows = None;
             }
-            // ensure that launcher gets hidden
-            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    // Scale
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     windows.scale.connect_value_changed(move |button| {
         trace!("windows.scale changed to {}", button.value());
         if let Ok(mut c) = config_clone.try_borrow_mut() {
@@ -59,17 +56,19 @@ fn bind_windows(
                 windows.scale = (button.value() * 100.0).round() / 100.0;
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    // Items per row
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     windows.items_per_row.connect_value_changed(move |button| {
         trace!("windows.items_per_row changed to {}", button.value());
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
                 windows.items_per_row = button.value() as u8;
             }
-        }
+        };
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_overview(&gtk_conf, gtk_config.clone(), config.clone());
@@ -96,21 +95,19 @@ fn bind_overview(
                     windows.overview = Some(Overview::default());
                 }
             }
-            // ensure that all inputs show the data from default
-            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         } else {
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 if let Some(windows) = c.windows.as_mut() {
                     windows.overview = None
                 }
             }
-            // ensure that launcher gets hidden
-            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
-    overview.key.connect_text_notify(move |entry| {
+    let gtk_config_clone = gtk_config.clone();
+    overview.key.connect_changed(move |entry| {
         trace!("windows.overview.key changed to {}", entry.text());
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
@@ -119,9 +116,11 @@ fn bind_overview(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     overview.modifier.connect_selected_notify(move |dropdown| {
         trace!(
             "windows.overview.modifier changed to {}",
@@ -139,11 +138,13 @@ fn bind_overview(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_overview_filter(&overview.filter, gtk_config.clone(), config.clone());
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     overview.hide_filtered.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.hide_filtered changed to {}",
@@ -155,7 +156,8 @@ fn bind_overview(
                     overview.hide_filtered = entry.is_active();
                 }
             }
-        }
+        };
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_launcher(&gtk_conf, gtk_config.clone(), config.clone())
@@ -181,14 +183,10 @@ fn bind_overview_filter(
                     } else {
                         overview.filter_by.retain(|f| *f != FilterBy::SameClass);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.overview.filter,
-                        &overview.filter_by,
-                    )
                 }
             }
-        }
+        };
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
@@ -214,14 +212,10 @@ fn bind_overview_filter(
                             .filter_by
                             .retain(|f| *f != FilterBy::CurrentWorkspace);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.overview.filter,
-                        &overview.filter_by,
-                    )
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
@@ -247,14 +241,10 @@ fn bind_overview_filter(
                             .filter_by
                             .retain(|f| *f != FilterBy::CurrentMonitor);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.overview.filter,
-                        &overview.filter_by,
-                    )
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 }
 
@@ -278,8 +268,6 @@ fn bind_switch(
                     windows.switch = Some(Switch::default());
                 }
             }
-            // ensure that all inputs show the data from default
-            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         } else {
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 if let Some(windows) = c.windows.as_mut() {
@@ -287,9 +275,11 @@ fn bind_switch(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     switch.modifier.connect_selected_notify(move |dropdown| {
         trace!("windows.switch.modifier changed to {}", dropdown.selected(),);
         if let Ok(mut c) = config_clone.try_borrow_mut() {
@@ -304,11 +294,13 @@ fn bind_switch(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_switch_filter(&switch.filter, gtk_config.clone(), config.clone());
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     switch
         .switch_workspaces
         .connect_active_notify(move |entry| {
@@ -323,6 +315,7 @@ fn bind_switch(
                     }
                 }
             }
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         });
 }
 
@@ -346,14 +339,10 @@ fn bind_switch_filter(
                     } else {
                         switch.filter_by.retain(|f| *f != FilterBy::SameClass);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.switch.filter,
-                        &switch.filter_by,
-                    )
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
@@ -377,14 +366,10 @@ fn bind_switch_filter(
                             .filter_by
                             .retain(|f| *f != FilterBy::CurrentWorkspace);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.switch.filter,
-                        &switch.filter_by,
-                    )
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
@@ -408,14 +393,10 @@ fn bind_switch_filter(
                     } else {
                         switch.filter_by.retain(|f| *f != FilterBy::CurrentMonitor);
                     }
-                    // use update function to update other parts of ui
-                    update_windows_filter(
-                        &gtk_config_clone.borrow().windows.switch.filter,
-                        &switch.filter_by,
-                    )
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 }
 
@@ -427,6 +408,7 @@ fn bind_launcher(
     let launcher = &gtk_conf.windows.overview.launcher;
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     launcher.modifier.connect_selected_notify(move |dropdown| {
         trace!(
             "windows.overview.launcher.modifier changed to {}",
@@ -444,9 +426,11 @@ fn bind_launcher(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     launcher.max_items.connect_value_changed(move |button| {
         trace!(
             "windows.overview.launcher.max_items changed to {}",
@@ -459,9 +443,11 @@ fn bind_launcher(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     launcher.width.connect_value_changed(move |button| {
         trace!(
             "windows.overview.launcher.width changed to {}",
@@ -474,9 +460,11 @@ fn bind_launcher(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     launcher
         .show_when_empty
         .connect_active_notify(move |entry| {
@@ -491,6 +479,7 @@ fn bind_launcher(
                     }
                 }
             }
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         });
 
     let config_clone = config.clone();
@@ -513,19 +502,12 @@ fn bind_launcher(
                     }
                 }
             }
-            update_launcher(
-                &gtk_config_clone.borrow().windows.overview.launcher,
-                config_clone
-                    .borrow()
-                    .windows
-                    .as_ref()
-                    .and_then(|w| w.overview.as_ref().map(|o| &o.launcher)),
-                &gtk_config_clone.borrow().view_stack,
-            );
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         });
 
     let config_clone = config.clone();
-    launcher.terminal.connect_text_notify(move |button| {
+    let gtk_config_clone = gtk_config.clone();
+    launcher.terminal.connect_changed(move |button| {
         trace!(
             "windows.overview.launcher.terminal changed to {}",
             button.text()
@@ -537,6 +519,7 @@ fn bind_launcher(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_plugins(&gtk_conf, gtk_config.clone(), config.clone())
@@ -550,6 +533,7 @@ fn bind_plugins(
     let plugins = &gtk_conf.windows.overview.launcher.plugins;
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     plugins.terminal.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.terminal changed to {}",
@@ -566,9 +550,11 @@ fn bind_plugins(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     plugins.shell.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.shell changed to {}",
@@ -585,9 +571,11 @@ fn bind_plugins(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     plugins.calc.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.calc changed to {}",
@@ -604,9 +592,11 @@ fn bind_plugins(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     plugins.path.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.path changed to {}",
@@ -623,6 +613,7 @@ fn bind_plugins(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     bind_application_plugin(gtk_conf, gtk_config.clone(), config.clone());
@@ -662,18 +653,11 @@ fn bind_application_plugin(
                     }
                 }
             }
-            // ensure that all inputs show the data from default
-            update_plugins(
-                &gtk_config_clone.borrow().windows.overview.launcher.plugins,
-                config_clone
-                    .borrow()
-                    .windows
-                    .as_ref()
-                    .and_then(|w| w.overview.as_ref().map(|o| &o.launcher.plugins)),
-            );
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     applications
         .cache_weeks
         .connect_value_changed(move |entry| {
@@ -692,9 +676,11 @@ fn bind_application_plugin(
                     }
                 }
             }
+            update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
         });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     applications.show_exec.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.applications.show_exec changed to {}",
@@ -709,9 +695,11 @@ fn bind_application_plugin(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     applications.submenu.connect_active_notify(move |entry| {
         trace!(
             "windows.overview.launcher.plugins.applications.submenu changed to {}",
@@ -726,5 +714,6 @@ fn bind_application_plugin(
                 }
             }
         }
+        update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 }

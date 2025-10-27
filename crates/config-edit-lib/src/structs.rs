@@ -5,6 +5,7 @@ pub struct GTKConfig {
     pub windows: GTKWindows,
     pub save: Button,
     pub view_stack: ViewStack,
+    pub changes: gtk::Box,
 }
 
 pub struct GTKWindows {

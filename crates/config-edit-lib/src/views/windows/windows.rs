@@ -1,6 +1,6 @@
 use crate::structs::GTKWindows;
-use crate::views::overview::generate_overview_view;
-use crate::views::switch::generate_switch_view;
+use crate::views::windows::overview::generate_overview_view;
+use crate::views::windows::switch::generate_switch_view;
 use adw::gdk::Cursor;
 use adw::gtk::{Adjustment, Label, Orientation, SpinButton};
 use adw::prelude::*;
