@@ -65,6 +65,7 @@ fn filter(windows_box: &gtk::Box) -> GTKWindowsFilter {
     let expander = ExpanderRow::builder()
         .title("Filter")
         .hexpand(true)
+        .title_lines(2)
         .css_classes(["item-expander"])
         .build();
     let sw_same = SwitchRow::new();

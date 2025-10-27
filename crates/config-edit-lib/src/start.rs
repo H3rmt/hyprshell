@@ -3,6 +3,7 @@ use crate::bind::bind;
 use crate::footer::footer;
 use crate::structs::GTKConfig;
 use crate::update::update_config;
+use crate::update_changes_view::set_previous_config;
 use crate::views::changes::create_changes_view;
 use crate::views::json_preview::create_preview_view;
 use crate::views::windows::windows::create_windows_view;
@@ -74,10 +75,11 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
             return;
         }
     };
+    set_previous_config(config.clone());
 
     let view_stack = ViewStack::builder().build();
     let _ = create_preview_view(&view_stack);
-    let changes = create_changes_view(&view_stack);
+    let (changes, how_to_use) = create_changes_view(&view_stack);
     let windows = create_windows_view(&view_stack);
     view_stack.set_visible_child_name("overview");
 
@@ -109,9 +111,11 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
 
     let gtk_config = GTKConfig {
         changes,
+        how_to_use,
         windows,
         save,
         view_stack,
+        path: PathBuf::from(config_path).into_boxed_path(),
     };
     update_config(&gtk_config, &config);
     bind(gtk_config, config);

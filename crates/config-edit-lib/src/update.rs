@@ -1,6 +1,7 @@
 use crate::structs::{
     GTKConfig, GTKLauncher, GTKOverview, GTKPlugins, GTKSwitch, GTKWindowsFilter,
 };
+use crate::update_changes_view::update_changes_view;
 use adw::ViewStack;
 use adw::prelude::{EditableExt, ExpanderRowExt, PreferencesRowExt, WidgetExt};
 use config_lib::{Config, FilterBy, Launcher, Overview, Plugins, Switch};
@@ -25,11 +26,17 @@ pub fn update_config(gtk_config: &GTKConfig, config: &Config) {
             update_switch(&g_windows.switch, windows.switch.as_ref());
         }
         None => {
-            gtk_config.windows.row.set_enable_expansion(false);
+            g_windows.row.set_enable_expansion(false);
             update_overview(&g_windows.overview, None, view_stack);
             update_switch(&g_windows.switch, None);
         }
     }
+    update_changes_view(
+        &gtk_config.changes,
+        &gtk_config.how_to_use,
+        config,
+        &gtk_config.path,
+    );
 }
 
 fn update_overview(g_overview: &GTKOverview, overview: Option<&Overview>, view_stack: &ViewStack) {

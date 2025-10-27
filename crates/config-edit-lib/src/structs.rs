@@ -1,11 +1,14 @@
-use adw::gtk::{Button, DropDown, Entry, SpinButton, Switch};
+use adw::gtk::{Button, DropDown, Entry, ListBox, SpinButton, Switch, TextView};
 use adw::{ExpanderRow, SwitchRow, ViewStack, gtk};
+use std::path::Path;
 
 pub struct GTKConfig {
     pub windows: GTKWindows,
     pub save: Button,
     pub view_stack: ViewStack,
-    pub changes: gtk::Box,
+    pub changes: ListBox,
+    pub how_to_use: TextView,
+    pub path: Box<Path>,
 }
 
 pub struct GTKWindows {

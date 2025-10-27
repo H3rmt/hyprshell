@@ -9,7 +9,12 @@ const GREEN: &str = "\x1b[32m";
 const RESET: &str = "\x1b[0m";
 
 #[must_use]
-pub fn explain(config: &Config, config_path: &Path, enable_color: bool) -> String {
+pub fn explain(
+    config: &Config,
+    config_path: &Path,
+    enable_color: bool,
+    enable_header: bool,
+) -> String {
     let (bold, italic, blue, green, reset) = if enable_color {
         (BOLD, ITALIC, BLUE, GREEN, RESET)
     } else {
@@ -17,9 +22,13 @@ pub fn explain(config: &Config, config_path: &Path, enable_color: bool) -> Strin
     };
 
     let config_path_display = config_path.display();
-    let mut builder = format!(
-        "{bold}{green}Config is valid{reset} ({config_path_display})\n{bold}Explanation{reset} ({blue}blue{reset} are keys, {bold}{blue}bold blue{reset} keys can be configured in config):{reset}\n",
-    );
+    let mut builder = if enable_header {
+        format!(
+            "{bold}{green}Config is valid{reset} ({config_path_display})\n{bold}Explanation{reset} ({blue}blue{reset} are keys, {bold}{blue}bold blue{reset} keys can be configured in config):{reset}\n",
+        )
+    } else {
+        String::new()
+    };
 
     if let Some(windows) = &config.windows {
         if let Some(overview) = &windows.overview {
@@ -79,13 +88,10 @@ pub fn explain(config: &Config, config_path: &Path, enable_color: bool) -> Strin
                 ));
             }
         } else {
-            let _ = builder.write_str(&format!("{italic}<Overview move disabled>{reset}\n"));
+            let _ = builder.write_str(&format!("{italic}<Overview disabled>{reset}\n"));
         }
-    }
+        builder.push('\n');
 
-    builder.push('\n');
-
-    if let Some(windows) = &config.windows {
         if let Some(switch) = &windows.switch {
             let _ = builder.write_str(&format!(
                 "Press {bold}{blue}{}{reset} + {blue}tab{reset} and hold {bold}{blue}{}{reset} to view recently used applications. Press {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
@@ -96,6 +102,8 @@ pub fn explain(config: &Config, config_path: &Path, enable_color: bool) -> Strin
         } else {
             let _ = builder.write_str(&format!("{italic}<Switch mode disabled>{reset}\n"));
         }
+    } else {
+        let _ = builder.write_str(&format!("{italic}<Windows disabled>{reset}\n"));
     }
 
     builder
@@ -136,7 +144,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
 ";
         let config = create_test_config();
         let path = PathBuf::from("/test/config.ron");
-        let result = explain(&config, &path, false);
+        let result = explain(&config, &path, false, true);
         assert_eq!(result, CONFIG);
     }
 
@@ -155,7 +163,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             .expect("config option missing")
             .overview = None;
         let path = PathBuf::from("/test/config.ron");
-        let result = explain(&config, &path, false);
+        let result = explain(&config, &path, false, true);
         assert_eq!(result, CONFIG);
     }
 
@@ -182,15 +190,13 @@ After opening the Overview the Launcher is available:
             .expect("config option missing")
             .switch = None;
         let path = PathBuf::from("/test/config.ron");
-        let result = explain(&config, &path, false);
+        let result = explain(&config, &path, false, true);
         assert_eq!(result, CONFIG);
     }
 
     #[test]
     fn test_explain_without_plugins() {
-        const CONFIG: &str = r"Config is valid (/test/config.ron)
-Explanation (blue are keys, bold blue keys can be configured in config):
-Use Super + super_l to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
+        const CONFIG: &str = r"Use Super + super_l to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
 You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
 After opening the Overview the Launcher is available:
 	<No plugins enabled in launcher>
@@ -216,7 +222,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             actions: None,
         };
         let path = PathBuf::from("/test/config.ron");
-        let result = explain(&config, &path, false);
+        let result = explain(&config, &path, false, true);
         assert_eq!(result, CONFIG);
     }
 }

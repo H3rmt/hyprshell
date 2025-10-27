@@ -67,3 +67,18 @@
     opacity: 0.5;
     background: unset;
 }
+
+.changes-list {
+    padding: 8px;
+    border-radius: 12px;
+}
+
+.changes-list > row {
+    padding: 6px;
+}
+
+.changes-text {
+    padding: 16px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+}
