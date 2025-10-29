@@ -70,7 +70,7 @@ fn main() -> anyhow::Result<()> {
             }
             exec_lib::check_version()
                 .warn_details("Unable to check hyprland version, continuing anyway");
-            clipboard_lib::store::test_clipboard();
+            // clipboard_lib::store::test_clipboard();
 
             start::start(
                 config_path.unwrap_or_else(get_default_config_path),
@@ -83,7 +83,7 @@ fn main() -> anyhow::Result<()> {
             cli::ConfigCommand::Edit {} => {
                 let config_path = config_path.unwrap_or_else(get_default_config_path);
                 let css_path = css_file.unwrap_or_else(get_default_css_path);
-                config_edit_lib::start(config_path, css_path)
+                config_edit_lib::start(config_path, css_path);
             }
             #[cfg(feature = "generate_config_command")]
             cli::ConfigCommand::Generate { force, no_systemd } => {

@@ -37,6 +37,12 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .as_ref()
         .and_then(|w| w.overview.as_ref().map(|o| &o.launcher))
     {
+        if let Some(dt) = &l.default_terminal {
+            if dt.is_empty() {
+                bail!("Default terminal command cannot be empty");
+            }
+        }
+
         let mut used: Vec<char> = vec![];
         for engine in l
             .plugins
@@ -185,6 +191,21 @@ mod tests {
         if let Some(ws) = launcher.plugins.websearch.as_mut() {
             ws.engines[0].name = Box::from("");
         }
+        assert!(check(&config).is_err());
+    }
+
+    #[test]
+    fn test_empty_terminal() {
+        let mut config = full();
+        let launcher = &mut config
+            .windows
+            .as_mut()
+            .expect("config option missing")
+            .overview
+            .as_mut()
+            .expect("config option missing")
+            .launcher;
+        launcher.default_terminal = Some(Box::from(""));
         assert!(check(&config).is_err());
     }
 }

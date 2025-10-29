@@ -27,7 +27,7 @@ pub fn footer(window: &ApplicationWindow, config_path: &Path) -> (ActionBar, But
         .build();
     footer.append(&buttons);
     let save = Button::builder()
-        .label("Print to console")
+        .label("Save Changes")
         .css_classes(["suggested-action"])
         .tooltip_text(format!("Config file: {}", config_path.display()))
         .build();
@@ -39,8 +39,6 @@ pub fn footer(window: &ApplicationWindow, config_path: &Path) -> (ActionBar, But
         .build();
     cancel.set_cursor(Cursor::from_name("pointer", None).as_ref());
     buttons.append(&cancel);
-
-    save.connect_clicked(move |_| {});
 
     let window = window.clone();
     cancel.connect_clicked(move |_| {

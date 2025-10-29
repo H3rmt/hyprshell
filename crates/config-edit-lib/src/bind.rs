@@ -1,13 +1,17 @@
+#![allow(clippy::too_many_lines)]
+
 use crate::structs::{GTKConfig, GTKWindowsFilter};
 use config_lib::{
     ApplicationsPluginConfig, Config, EmptyConfig, FilterBy, Overview, Switch, Windows,
 };
 
 use crate::update::update_config;
+use crate::update_changes_view::set_previous_config;
+use adw::AlertDialog;
 use adw::prelude::*;
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
-use tracing::{info, trace};
+use tracing::{debug, trace, warn};
 
 pub fn bind(gtk_config: GTKConfig, config: Config) {
     let config = Rc::new(RefCell::new(config));
@@ -16,18 +20,31 @@ pub fn bind(gtk_config: GTKConfig, config: Config) {
     let gtk_conf = gtk_conf.borrow();
 
     let config_clone = config.clone();
+    let gtk_config_clone = gtk_config.clone();
     gtk_conf.save.connect_clicked(move |_button| {
         let c = config_clone.borrow();
-        info!("{c:#?}");
+        if let Err(err) = config_lib::write_config(&gtk_config_clone.borrow().path, &c, true) {
+            warn!("Failed to save config: {err:?}");
+            let dialog = AlertDialog::builder()
+                .heading("Failed to save config")
+                .body(format!("{err:#}"))
+                .close_response("close")
+                .build();
+            dialog.add_responses(&[("close", "Close")]);
+            return;
+        }
+        debug!("{c:#?}");
+        set_previous_config(c.clone());
+        update_config(&gtk_config_clone.borrow(), &c);
     });
 
-    bind_windows(gtk_conf, gtk_config, config.clone());
+    bind_windows(&gtk_conf, &gtk_config, &config);
 }
 
 fn bind_windows(
-    gtk_conf: Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_conf: &Ref<GTKConfig>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let windows = &gtk_conf.windows;
 
@@ -39,10 +56,8 @@ fn bind_windows(
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 c.windows = Some(Windows::default());
             }
-        } else {
-            if let Ok(mut c) = config_clone.try_borrow_mut() {
-                c.windows = None;
-            }
+        } else if let Ok(mut c) = config_clone.try_borrow_mut() {
+            c.windows = None;
         }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
@@ -65,20 +80,23 @@ fn bind_windows(
         trace!("windows.items_per_row changed to {}", button.value());
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                windows.items_per_row = button.value() as u8;
+                #[allow(clippy::cast_sign_loss)]
+                {
+                    windows.items_per_row = button.value() as u8;
+                }
             }
-        };
+        }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_overview(&gtk_conf, gtk_config.clone(), config.clone());
-    bind_switch(&gtk_conf, gtk_config.clone(), config.clone());
+    bind_overview(gtk_conf, gtk_config, config);
+    bind_switch(gtk_conf, gtk_config, config);
 }
 
 fn bind_overview(
     gtk_conf: &Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let overview = &gtk_conf.windows.overview;
 
@@ -95,11 +113,9 @@ fn bind_overview(
                     windows.overview = Some(Overview::default());
                 }
             }
-        } else {
-            if let Ok(mut c) = config_clone.try_borrow_mut() {
-                if let Some(windows) = c.windows.as_mut() {
-                    windows.overview = None
-                }
+        } else if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                windows.overview = None;
             }
         }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
@@ -107,7 +123,7 @@ fn bind_overview(
 
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
-    overview.key.connect_changed(move |entry| {
+    overview.key.connect_text_notify(move |entry| {
         trace!("windows.overview.key changed to {}", entry.text());
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
@@ -141,7 +157,7 @@ fn bind_overview(
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_overview_filter(&overview.filter, gtk_config.clone(), config.clone());
+    bind_overview_filter(&overview.filter, gtk_config, config);
 
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
@@ -156,17 +172,17 @@ fn bind_overview(
                     overview.hide_filtered = entry.is_active();
                 }
             }
-        };
+        }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_launcher(&gtk_conf, gtk_config.clone(), config.clone())
+    bind_launcher(gtk_conf, gtk_config, config);
 }
 
 fn bind_overview_filter(
     filter: &GTKWindowsFilter,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
@@ -185,7 +201,7 @@ fn bind_overview_filter(
                     }
                 }
             }
-        };
+        }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
@@ -250,8 +266,8 @@ fn bind_overview_filter(
 
 fn bind_switch(
     gtk_conf: &Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let switch = &gtk_conf.windows.switch;
 
@@ -268,11 +284,9 @@ fn bind_switch(
                     windows.switch = Some(Switch::default());
                 }
             }
-        } else {
-            if let Ok(mut c) = config_clone.try_borrow_mut() {
-                if let Some(windows) = c.windows.as_mut() {
-                    windows.switch = None
-                }
+        } else if let Ok(mut c) = config_clone.try_borrow_mut() {
+            if let Some(windows) = c.windows.as_mut() {
+                windows.switch = None;
             }
         }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
@@ -297,7 +311,7 @@ fn bind_switch(
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_switch_filter(&switch.filter, gtk_config.clone(), config.clone());
+    bind_switch_filter(&switch.filter, gtk_config, config);
 
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
@@ -321,8 +335,8 @@ fn bind_switch(
 
 fn bind_switch_filter(
     filter: &GTKWindowsFilter,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
@@ -402,8 +416,8 @@ fn bind_switch_filter(
 
 fn bind_launcher(
     gtk_conf: &Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let launcher = &gtk_conf.windows.overview.launcher;
 
@@ -439,7 +453,11 @@ fn bind_launcher(
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
                 if let Some(overview) = windows.overview.as_mut() {
-                    overview.launcher.max_items = ((button.value() * 100.0).round() / 100.0) as u8;
+                    #[allow(clippy::cast_sign_loss)]
+                    {
+                        overview.launcher.max_items =
+                            ((button.value() * 100.0).round() / 100.0) as u8;
+                    }
                 }
             }
         }
@@ -456,7 +474,10 @@ fn bind_launcher(
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
                 if let Some(overview) = windows.overview.as_mut() {
-                    overview.launcher.width = ((button.value() * 100.0).round() / 100.0) as u32;
+                    #[allow(clippy::cast_sign_loss)]
+                    {
+                        overview.launcher.width = ((button.value() * 100.0).round() / 100.0) as u32;
+                    }
                 }
             }
         }
@@ -507,7 +528,7 @@ fn bind_launcher(
 
     let config_clone = config.clone();
     let gtk_config_clone = gtk_config.clone();
-    launcher.terminal.connect_changed(move |button| {
+    launcher.terminal.connect_text_notify(move |button| {
         trace!(
             "windows.overview.launcher.terminal changed to {}",
             button.text()
@@ -522,13 +543,13 @@ fn bind_launcher(
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_plugins(&gtk_conf, gtk_config.clone(), config.clone())
+    bind_plugins(gtk_conf, gtk_config, config);
 }
 
 fn bind_plugins(
     gtk_conf: &Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let plugins = &gtk_conf.windows.overview.launcher.plugins;
 
@@ -616,13 +637,13 @@ fn bind_plugins(
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
     });
 
-    bind_application_plugin(gtk_conf, gtk_config.clone(), config.clone());
+    bind_application_plugin(gtk_conf, gtk_config, config);
 }
 
 fn bind_application_plugin(
     gtk_conf: &Ref<GTKConfig>,
-    gtk_config: Rc<RefCell<GTKConfig>>,
-    config: Rc<RefCell<Config>>,
+    gtk_config: &Rc<RefCell<GTKConfig>>,
+    config: &Rc<RefCell<Config>>,
 ) {
     let applications = &gtk_conf.windows.overview.launcher.plugins.applications;
 
@@ -644,12 +665,10 @@ fn bind_application_plugin(
                         }
                     }
                 }
-            } else {
-                if let Ok(mut c) = config_clone.try_borrow_mut() {
-                    if let Some(windows) = c.windows.as_mut() {
-                        if let Some(overview) = windows.overview.as_mut() {
-                            overview.launcher.plugins.applications = None;
-                        }
+            } else if let Ok(mut c) = config_clone.try_borrow_mut() {
+                if let Some(windows) = c.windows.as_mut() {
+                    if let Some(overview) = windows.overview.as_mut() {
+                        overview.launcher.plugins.applications = None;
                     }
                 }
             }
@@ -670,8 +689,11 @@ fn bind_application_plugin(
                     if let Some(overview) = windows.overview.as_mut() {
                         if let Some(applications) = overview.launcher.plugins.applications.as_mut()
                         {
-                            applications.run_cache_weeks =
-                                ((entry.value() * 100.0).round() / 100.0) as u8;
+                            #[allow(clippy::cast_sign_loss)]
+                            {
+                                applications.run_cache_weeks =
+                                    ((entry.value() * 100.0).round() / 100.0) as u8;
+                            }
                         }
                     }
                 }

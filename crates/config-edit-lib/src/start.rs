@@ -78,7 +78,7 @@ fn activate(app: &Application, config_path: &Path, _css_path: &Path) {
     set_previous_config(config.clone());
 
     let view_stack = ViewStack::builder().build();
-    let _ = create_preview_view(&view_stack);
+    create_preview_view(&view_stack);
     let (changes, how_to_use) = create_changes_view(&view_stack);
     let windows = create_windows_view(&view_stack);
     view_stack.set_visible_child_name("overview");

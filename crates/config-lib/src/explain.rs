@@ -152,7 +152,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
     fn test_explain_without_overview() {
         const CONFIG: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
-<Overview move disabled>
+<Overview disabled>
 
 Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
 ";
@@ -222,7 +222,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             actions: None,
         };
         let path = PathBuf::from("/test/config.ron");
-        let result = explain(&config, &path, false, true);
+        let result = explain(&config, &path, false, false);
         assert_eq!(result, CONFIG);
     }
 }
