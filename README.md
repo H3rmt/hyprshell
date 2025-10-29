@@ -51,7 +51,7 @@ More information can be found in the [NixOS](docs/NIX.md) section.
 
 ### From Source
 
-hyprland, gtk4 and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
+hyprland, libadwaita and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
 
 ```bash
 cargo install hyprshell
@@ -65,9 +65,9 @@ cargo install hyprshell --no-default-features --features "slim"
 
 **hyprland-devel is needed for the hyprland headers (needed to build hyprland plugin)**
 
-Fedora: `sudo dnf install gtk4-layer-shell-devel gtk4-devel hyprland-devel`
+Fedora: `sudo dnf install gtk4-layer-shell-devel libadwaita-devel hyprland-devel`
 
-Arch: `sudo pacman -Sy gtk4-layer-shell gtk4 hyprland`
+Arch: `sudo pacman -Sy gtk4-layer-shell libadwaita hyprland`
 
 Minimum required rustc version: `1.87.0`
 

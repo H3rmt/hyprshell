@@ -1,6 +1,6 @@
 use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
-use gtk::gdk::Display;
-use gtk::prelude::DisplayExt;
+use adw::gtk::gdk::Display;
+use adw::gtk::prelude::DisplayExt;
 use std::path::Path;
 use tracing::{debug, trace};
 

@@ -1,17 +1,17 @@
 use crate::global::{WindowsSwitchConfig, WindowsSwitchData};
+use adw::gtk::gdk::Key;
+use adw::gtk::glib::Propagation;
+use adw::gtk::prelude::*;
+use adw::gtk::{
+    Application, ApplicationWindow, EventControllerKey, FlowBox, Orientation, Overlay,
+    SelectionMode,
+};
 use anyhow::Context;
 use async_channel::Sender;
 use config_lib::{FilterBy, Modifier, Switch, Windows};
 use core_lib::transfer::{SwitchSwitchConfig, TransferType};
 use core_lib::{HyprlandData, SWITCH_NAMESPACE, WarnWithDetails};
 use exec_lib::get_initial_active;
-use gtk::gdk::Key;
-use gtk::glib::Propagation;
-use gtk::prelude::*;
-use gtk::{
-    Application, ApplicationWindow, EventControllerKey, FlowBox, Orientation, Overlay,
-    SelectionMode,
-};
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use std::collections::HashMap;
 use tracing::{debug, debug_span};
@@ -58,7 +58,7 @@ pub fn create_windows_switch_window(
     window.set_namespace(Some(SWITCH_NAMESPACE));
     window.set_layer(Layer::Top);
     // we only have one window, so we can do this
-    // we also don't use gtk::Popover which doesnt work with exclusive mode
+    // we also don't use adw::gtk::Popover which doesnt work with exclusive mode
     window.set_keyboard_mode(KeyboardMode::Exclusive);
     window.present();
     window.set_visible(false);

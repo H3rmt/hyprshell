@@ -19,7 +19,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 async-channel = { version = "2.5.0", default-features = true }
 semver = { version = "1.0.26" }
 
-gtk = { version = "0.10.0", package = "gtk4", default-features = false, features = ["v4_18"] }
+adw = { version = "0.8.0", package = "libadwaita", features = ["v1_6", "gtk_v4_18"] }
 gtk4-layer-shell = { version = "0.6.3" }
 
 config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.7.0" }
@@ -49,7 +49,7 @@ exclude = [".idea/*", ".github/*"]
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
-gtk.workspace = true
+adw.workspace = true
 async-channel.workspace = true
 semver.workspace = true
 clap = { version = "4.5.47", features = ["derive"] }

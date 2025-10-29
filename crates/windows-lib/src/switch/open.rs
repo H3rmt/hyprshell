@@ -2,13 +2,13 @@ use crate::data::{SortConfig, collect_data};
 use crate::global::WindowsSwitchData;
 use crate::icon::set_icon;
 use crate::next::find_next;
+use adw::gtk::gdk::Cursor;
+use adw::gtk::prelude::*;
+use adw::gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use anyhow::Context;
 use core_lib::transfer::{Direction, OpenSwitch};
 use core_lib::{ClientData, ClientId, WarnWithDetails};
 use exec_lib::{get_current_monitor, set_no_follow_mouse};
-use gtk::gdk::Cursor;
-use gtk::prelude::*;
-use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
 use tracing::{debug_span, trace};
 

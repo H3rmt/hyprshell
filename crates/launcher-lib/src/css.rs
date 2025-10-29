@@ -1,8 +1,8 @@
-use anyhow::Context;
-use gtk::gdk::Display;
-use gtk::{
+use adw::gtk::gdk::Display;
+use adw::gtk::{
     CssProvider, STYLE_PROVIDER_PRIORITY_USER, glib, style_context_add_provider_for_display,
 };
+use anyhow::Context;
 
 pub fn get_css() -> anyhow::Result<()> {
     let provider_app = CssProvider::new();

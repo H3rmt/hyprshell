@@ -1,5 +1,5 @@
+use adw::gtk::gdk::Key;
 use config_lib::Plugins;
-use gtk::gdk::Key;
 use std::path::Path;
 use tracing::debug_span;
 

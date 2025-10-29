@@ -1,6 +1,6 @@
+use adw::gtk::{IconTheme, Settings};
 use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
-use gtk::{IconTheme, Settings};
 use semver::Version;
 use signal_hook::consts::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
@@ -42,7 +42,7 @@ pub fn reload_desktop_data() -> anyhow::Result<()> {
 }
 
 pub fn init_gtk() {
-    gtk::init().expect("Failed to initialize GTK");
+    adw::gtk::init().expect("Failed to initialize GTK");
 }
 
 pub fn check_themes() {

@@ -1,6 +1,6 @@
 use crate::LauncherData;
-use gtk::glib;
-use gtk::prelude::*;
+use adw::gtk::glib;
+use adw::gtk::prelude::*;
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
 use tracing::{debug_span, trace};
 

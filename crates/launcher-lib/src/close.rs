@@ -1,8 +1,8 @@
 use crate::plugins::PluginReturn;
 use crate::{LauncherData, plugins};
+use adw::gtk::prelude::*;
+use adw::gtk::{ApplicationWindow, Button, Entry, glib};
 use core_lib::transfer::Identifier;
-use gtk::prelude::*;
-use gtk::{ApplicationWindow, Button, Entry, glib};
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -77,7 +77,7 @@ fn close_window(entry: &Entry, window: &ApplicationWindow) {
 }
 
 fn show_launch(
-    results_items: &HashMap<Identifier, (gtk::Box, HashMap<Identifier, gtk::ListBoxRow>)>,
+    results_items: &HashMap<Identifier, (adw::gtk::Box, HashMap<Identifier, adw::gtk::ListBoxRow>)>,
     plugins_items: &HashMap<Identifier, Button>,
     open_iden: &Identifier,
 ) {

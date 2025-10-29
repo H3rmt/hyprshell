@@ -1,7 +1,7 @@
 use crate::global::WindowsOverviewData;
+use adw::gtk::prelude::*;
 use core_lib::WarnWithDetails;
 use exec_lib::reset_no_follow_mouse;
-use gtk::prelude::*;
 use tracing::{debug_span, trace};
 
 pub fn stop_overview(data: &WindowsOverviewData) {

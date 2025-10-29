@@ -1,7 +1,7 @@
 use crate::global::WindowsSwitchData;
 use crate::next::find_next;
+use adw::gtk::prelude::*;
 use core_lib::transfer::{Direction, SwitchSwitchConfig};
-use gtk::prelude::*;
 use tracing::debug_span;
 
 pub fn update_switch(data: &mut WindowsSwitchData, config: &SwitchSwitchConfig) {

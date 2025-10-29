@@ -13,7 +13,7 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
-gtk.workspace = true
+adw.workspace = true
 gtk4-layer-shell.workspace = true
 core-lib.workspace = true
 exec-lib.workspace = true

@@ -17,7 +17,7 @@ EOF
 dpkg --add-architecture arm64 && apt update
 apt -y install --no-install-recommends \
   crossbuild-essential-arm64 \
-  libgtk-4-dev:arm64 \
+  libgtk-4-dev:arm64 libadwaita-1-dev:arm64 \
   gobject-introspection \
   libgirepository1.0-dev:arm64
 

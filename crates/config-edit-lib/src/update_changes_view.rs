@@ -53,7 +53,7 @@ pub fn update_changes_view(
         }
         (Some(pw), Some(cw)) => {
             #[allow(clippy::cast_sign_loss)]
-            if pw.scale as u8 == cw.scale as u8 {
+            if (pw.scale - cw.scale).abs() > 0.001 {
                 add_info_subtitle(
                     changes,
                     "Changed windows scale",

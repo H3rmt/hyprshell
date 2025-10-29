@@ -1,14 +1,14 @@
 use crate::data::{SortConfig, collect_data};
 use crate::global::WindowsOverviewData;
 use crate::icon::set_icon;
+use adw::gtk::gdk::Cursor;
+use adw::gtk::prelude::*;
+use adw::gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use anyhow::Context;
 use async_channel::Sender;
 use core_lib::transfer::{CloseOverviewConfig, TransferType, WindowsOverride};
 use core_lib::{ClientData, ClientId, WarnWithDetails};
 use exec_lib::set_no_follow_mouse;
-use gtk::gdk::Cursor;
-use gtk::prelude::*;
-use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
 use tracing::{debug, debug_span, trace};
 
@@ -77,7 +77,7 @@ pub fn open_overview(
 
             let workspace_button = {
                 let workspace_overlay = Overlay::builder().child(&workspace_frame).build();
-                let button = gtk::Box::builder().css_classes(["workspace"]).build();
+                let button = adw::gtk::Box::builder().css_classes(["workspace"]).build();
                 button.append(&workspace_overlay);
                 if active.client.is_none() && active.workspace == *wid {
                     button.add_css_class("active");

@@ -3,17 +3,17 @@ use crate::plugins::{
     SortableLaunchOption, StaticLaunchOption, get_sortable_launch_options,
     get_static_launch_options,
 };
+use adw::gtk::gdk::Cursor;
+use adw::gtk::pango::EllipsizeMode;
+use adw::gtk::prelude::*;
+use adw::gtk::{
+    Align, Button, IconSize, Image, Label, ListBox, ListBoxRow, Orientation, Overflow, Popover,
+    SelectionMode, glib,
+};
 use async_channel::Sender;
 use config_lib::Modifier;
 use core_lib::transfer::{CloseOverviewConfig, Identifier, TransferType};
 use core_lib::{WarnWithDetails, default};
-use gtk::gdk::Cursor;
-use gtk::pango::EllipsizeMode;
-use gtk::prelude::*;
-use gtk::{
-    Align, Button, IconSize, Image, Label, ListBox, ListBoxRow, Orientation, Overflow, Popover,
-    SelectionMode, glib,
-};
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, debug_span, warn};
@@ -78,7 +78,7 @@ fn create_static_plugin_box(
     launch_modifier: Modifier,
     event_sender: Sender<TransferType>,
 ) -> Button {
-    let hbox = gtk::Box::builder()
+    let hbox = adw::gtk::Box::builder()
         .orientation(Orientation::Horizontal)
         .css_classes(["launcher-plugin-inner"])
         .spacing(10)
@@ -93,7 +93,7 @@ fn create_static_plugin_box(
         hbox.append(&icon);
     }
 
-    let vbox = gtk::Box::builder()
+    let vbox = adw::gtk::Box::builder()
         .orientation(Orientation::Vertical)
         .spacing(2)
         .build();
@@ -135,8 +135,8 @@ fn create_entry(
     opt: &SortableLaunchOption,
     key: impl Into<glib::GString>,
     event_sender: Sender<TransferType>,
-) -> (gtk::Box, HashMap<Identifier, ListBoxRow>) {
-    let hbox = gtk::Box::builder()
+) -> (adw::gtk::Box, HashMap<Identifier, ListBoxRow>) {
+    let hbox = adw::gtk::Box::builder()
         .css_classes(["launcher-item-inner"])
         .orientation(Orientation::Horizontal)
         .height_request(45)
@@ -241,7 +241,9 @@ fn create_entry(
         .build();
     hbox.append(&index_label);
 
-    let outer_box = gtk::Box::builder().css_classes(["launcher-item"]).build();
+    let outer_box = adw::gtk::Box::builder()
+        .css_classes(["launcher-item"])
+        .build();
     outer_box.append(&hbox);
     if opt.grayed {
         outer_box.add_css_class("monochrome");
@@ -263,8 +265,8 @@ fn click_plugin(button: &Button, iden: Identifier, event_sender: Sender<Transfer
     });
 }
 
-fn click_entry(button: &gtk::Box, iden: Identifier, event_sender: Sender<TransferType>) {
-    let gesture = gtk::GestureClick::new();
+fn click_entry(button: &adw::gtk::Box, iden: Identifier, event_sender: Sender<TransferType>) {
+    let gesture = adw::gtk::GestureClick::new();
     gesture.connect_released(move |_, _, _, _| {
         debug!("Exiting on click of launcher entry");
         event_sender

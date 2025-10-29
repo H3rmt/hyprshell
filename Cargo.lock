@@ -1467,7 +1467,6 @@ dependencies = [
  "async-channel",
  "clap",
  "clap_complete",
- "gtk4",
  "hyprshell-clipboard-lib",
  "hyprshell-config-edit-lib",
  "hyprshell-config-lib",
@@ -1475,6 +1474,7 @@ dependencies = [
  "hyprshell-exec-lib",
  "hyprshell-launcher-lib",
  "hyprshell-windows-lib",
+ "libadwaita",
  "semver",
  "signal-hook",
  "tracing",
@@ -1503,9 +1503,7 @@ dependencies = [
 name = "hyprshell-config-edit-lib"
 version = "4.7.0"
 dependencies = [
- "anyhow",
  "hyprshell-config-lib",
- "hyprshell-core-lib",
  "libadwaita",
  "tracing",
 ]
@@ -1596,11 +1594,11 @@ dependencies = [
  "async-channel",
  "calc",
  "chrono",
- "gtk4",
  "gtk4-layer-shell",
  "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-exec-lib",
+ "libadwaita",
  "serde_json",
  "tracing",
 ]
@@ -1611,11 +1609,11 @@ version = "4.7.0"
 dependencies = [
  "anyhow",
  "async-channel",
- "gtk4",
  "gtk4-layer-shell",
  "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-exec-lib",
+ "libadwaita",
  "regex",
  "tracing",
 ]

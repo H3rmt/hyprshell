@@ -1,5 +1,5 @@
+use adw::gtk::{ApplicationWindow, Button, FlowBox};
 use core_lib::{Active, ClientId, HyprlandData, MonitorId, WorkspaceId};
-use gtk::{ApplicationWindow, Button, FlowBox};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -48,7 +48,7 @@ pub struct WindowsSwitchConfig {
 pub struct WindowsOverviewMonitorData {
     pub id: MonitorId,
     pub workspaces_flow: FlowBox,
-    pub workspaces: HashMap<WorkspaceId, gtk::Box>,
+    pub workspaces: HashMap<WorkspaceId, adw::gtk::Box>,
     pub clients: HashMap<ClientId, Button>,
 }
 
