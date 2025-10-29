@@ -227,7 +227,7 @@ in
             "same_class"
             "current_monitor"
             "current_workspace"
-          ])) [ ];
+          ])) [ "current_monitor" ];
           switch_workspaces = mkOpt "Switch workspaces" bool false;
         };
       };

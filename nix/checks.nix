@@ -23,14 +23,14 @@ rec {
     // {
       doCheck = true;
       CARGO_PROFILE = "dev";
-      cargoNextestExtraArgs = "--all-targets --all-features -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-hyprland-plugin";
+      cargoNextestExtraArgs = "--all-targets --all-features -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-hyprland-plugin -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib";
     }
   );
   hyprshell-clippy = craneLib.cargoClippy (
     buildLib.commonArgsFullCached
     // {
       CARGO_PROFILE = "dev";
-      cargoClippyExtraArgs = "--all-targets --all-features  -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-hyprland-plugin -- --deny warnings";
+      cargoClippyExtraArgs = "--all-targets --all-features  -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-hyprland-plugin  -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings";
     }
   );
   hyprshell-fmt = craneLib.cargoFmt buildLib.commonArgs;
