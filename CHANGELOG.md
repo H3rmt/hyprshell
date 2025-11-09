@@ -1,5 +1,42 @@
 # Changelog
 
+## [4.8.0](https://github.com/H3rmt/hyprshell/compare/v4.7.2...v4.8.0) (2025-11-09)
+
+
+### Features
+
+* add special workspace support ([0604d21](https://github.com/H3rmt/hyprshell/commit/0604d21371552666b8e62e29ef4a782948c864fc))
+* Add vim navigation to the switcher ([#360](https://github.com/H3rmt/hyprshell/issues/360)) ([cc0797d](https://github.com/H3rmt/hyprshell/commit/cc0797d8f18a970170619ad3b8e17ca8646d8d93))
+* added brotli compression to clipboard lib ([dd0fb3d](https://github.com/H3rmt/hyprshell/commit/dd0fb3d29939775807fa372e280b688c8001e0da))
+* added gui config editor ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+* added hyprshell-slim and hyprshell-bin aur packages ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+* added libadwaita instead of gtk4, added more config options ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+* remove nix wrapper fn and add hyprland input instead ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+
+
+### Bug Fixes
+
+* add `Edit via `hyprshell config edit`` to config file ([e9b9ca4](https://github.com/H3rmt/hyprshell/commit/e9b9ca40c705c050f91859ebe8984cf778494c7b))
+* disable hyprland plugin after loading fails once ([96cb6e6](https://github.com/H3rmt/hyprshell/commit/96cb6e6f2ab97fe4fc0f2d0eb53a13104c8685cf))
+* dont generate systemd file if config is generated in debug mode ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+* downgrad gtk version ([914bc34](https://github.com/H3rmt/hyprshell/commit/914bc34ceba8add1aec1691ace18740ef629b3da))
+* downgrad libadwaita version ([7b6cced](https://github.com/H3rmt/hyprshell/commit/7b6ccedb29db0af4af7ee4a96198ad41c6762ba6))
+* fix selecting client in a special workspace ([97d707c](https://github.com/H3rmt/hyprshell/commit/97d707cca2affd27f9a9cbc356224e96ecd831d2))
+* Fix version check for Hyprshell Plugin ([#373](https://github.com/H3rmt/hyprshell/issues/373)) ([da03596](https://github.com/H3rmt/hyprshell/commit/da035960aadb971c518e415ac273443eceaad19c))
+* **nix-flake:** update flake.lock ([2d6e0ee](https://github.com/H3rmt/hyprshell/commit/2d6e0eee010f88f67d97624a44ebe00abc00bd30))
+* **nix-flake:** update flake.lock ([67e720e](https://github.com/H3rmt/hyprshell/commit/67e720e953bfcd0e30fa53ba9abafbaf2dff8cd7))
+
+
+### Code Refactoring
+
+* use adw instead of gtk4 ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+
+
+### Documentation
+
+* add explanations to tooltips ([2d7009c](https://github.com/H3rmt/hyprshell/commit/2d7009c22efadcace58f099f7f86173ec1f8dbcb))
+* update readme ([bb29010](https://github.com/H3rmt/hyprshell/commit/bb29010eb262dc22335e2c51d7bc5b78042e7553))
+
 ## [4.7.2](https://github.com/H3rmt/hyprshell/compare/v4.7.1...v4.7.2) (2025-10-14)
 
 
