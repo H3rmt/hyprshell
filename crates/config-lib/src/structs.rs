@@ -26,8 +26,8 @@ pub struct Windows {
     pub items_per_row: u8,
     #[default(None)]
     pub overview: Option<Overview>,
-    #[default(None)]
-    pub switch: Option<Switch>,
+    #[default(Vec::new())]
+    pub switch: Vec<Switch>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -180,6 +180,8 @@ pub struct SearchEngine {
 pub struct Switch {
     #[default(Modifier::Alt)]
     pub modifier: Modifier,
+    #[default(Box::from("tab"))]
+    pub key: Box<str>,
     #[default(Vec::new())]
     pub filter_by: Vec<FilterBy>,
     #[default = false]

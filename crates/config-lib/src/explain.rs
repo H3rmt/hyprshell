@@ -86,14 +86,15 @@ pub fn explain(config: &Config, config_path: &Path, enable_color: bool) -> Strin
     builder.push('\n');
 
     if let Some(windows) = &config.windows {
-        if let Some(switch) = &windows.switch {
+        for switch in &windows.switch {
             let _ = builder.write_str(&format!(
                 "Press {bold}{blue}{}{reset} + {blue}tab{reset} and hold {bold}{blue}{}{reset} to view recently used applications. Press {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
                 switch.modifier,
                 switch.modifier,
                 switch.modifier,
             ));
-        } else {
+        }
+        if windows.switch.len() == 0 {
             let _ = builder.write_str(&format!("{italic}<Switch mode disabled>{reset}\n"));
         }
     }
@@ -111,7 +112,7 @@ mod tests {
         Config {
             windows: Some(Windows {
                 overview: Some(Overview::default()),
-                switch: Some(Switch::default()),
+                switch: vec!(Switch::default()),
                 ..Default::default()
             }),
             ..Default::default()
@@ -172,7 +173,7 @@ After opening the Overview the Launcher is available:
 <Switch mode disabled>
 ";
         let mut config = create_test_config();
-        config.windows.as_mut().unwrap().switch = None;
+        config.windows.as_mut().unwrap().switch = Vec::new();
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, &path, false);
         assert_eq!(result, CONFIG);

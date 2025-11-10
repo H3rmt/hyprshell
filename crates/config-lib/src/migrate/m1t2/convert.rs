@@ -40,6 +40,7 @@ impl From<old_structs::Switch> for crate::Switch {
         Self {
             filter_by: value.filter_by,
             modifier: value.modifier.into(),
+            key: value.key,
             switch_workspaces: value.show_workspaces,
         }
     }

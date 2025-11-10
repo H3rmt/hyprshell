@@ -75,7 +75,7 @@ mod tests {
         Config {
             windows: Some(Windows {
                 overview: Some(Overview::default()),
-                switch: Some(Switch::default()),
+                switch: vec!(Switch::default()),
                 ..Default::default()
             }),
             ..Default::default()

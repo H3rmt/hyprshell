@@ -34,6 +34,8 @@ pub(super) struct Windows {
 pub(super) struct Switch {
     #[default(Modifier::Alt)]
     pub modifier: Modifier,
+    #[default(Box::from("tab"))]
+    pub key: Box<str>,
     #[default(Vec::new())]
     pub filter_by: Vec<crate::FilterBy>,
     #[default = false]

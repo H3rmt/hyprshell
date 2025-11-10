@@ -52,8 +52,8 @@ fn open_overview(global: &mut Globals, event_sender: &Sender<TransferType>) {
             if !windows_lib::overview_already_open(overview)
                 && !&windows
                     .switch
-                    .as_ref()
-                    .is_some_and(windows_lib::switch_already_open)
+                    .iter()
+                    .any(windows_lib::switch_already_open)
             {
                 trace!("Opening overview");
                 windows_lib::open_overview(overview, event_sender)
@@ -210,9 +210,7 @@ fn restart(global: &Globals) {
             windows_lib::stop_overview(overview);
             launcher_lib::stop_launcher(launcher);
         }
-        if let Some(switch) = &windows.switch {
-            windows_lib::stop_switch(switch);
-        }
+        windows.switch.iter().for_each(windows_lib::stop_switch)
     }
     let app = global.app.clone();
     glib::idle_add_local_once(move || {

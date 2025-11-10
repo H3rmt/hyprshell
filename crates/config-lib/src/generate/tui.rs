@@ -181,7 +181,7 @@ pub fn prompt_config() -> anyhow::Result<(ConfigData, StyleData)> {
         ConfigData {
             default_terminal: launcher.as_ref().and_then(|l| l.0.clone()),
             overview: open_overview,
-            switch,
+            switch: switch.0.iter().map(|i| (*i, switch.1)).collect(),
             launcher_plugins: launcher.as_ref().map(|l| l.1.clone()).unwrap_or_default(),
             launcher_engines: launcher.map(|l| l.2).unwrap_or_default(),
         },

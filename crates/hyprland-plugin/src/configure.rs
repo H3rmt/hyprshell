@@ -10,7 +10,7 @@ use tempfile::TempDir;
 use tracing::debug_span;
 
 pub struct PluginConfig {
-    pub xkb_key_switch_mod: Option<Box<str>>,
+    pub xkb_key_switch_mod: Vec<Box<str>>,
     pub xkb_key_overview_mod: Option<Box<str>>,
     pub xkb_key_overview_key: Option<Box<str>>,
 }
@@ -19,7 +19,7 @@ impl Display for PluginConfig {
         write!(
             f,
             "{}|{}|{}",
-            self.xkb_key_switch_mod.as_deref().unwrap_or(""),
+            self.xkb_key_switch_mod.join(","),
             self.xkb_key_overview_mod.as_deref().unwrap_or(""),
             self.xkb_key_overview_key.as_deref().unwrap_or(""),
         )

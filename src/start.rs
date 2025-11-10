@@ -109,7 +109,7 @@ pub struct Globals {
 #[derive(Debug, Default)]
 pub struct WindowsGlobal {
     pub overview: Option<(WindowsOverviewData, LauncherData)>,
-    pub switch: Option<WindowsSwitchData>,
+    pub switch: Vec<WindowsSwitchData>,
 }
 
 #[allow(clippy::cognitive_complexity)]
@@ -168,7 +168,7 @@ fn activate(
 
     // TODO remove in future if more is available
     if config.windows.is_none()
-        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
+        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.len() == 0)
     {
         warn!("Nothing is enabled in the config");
         toast("Nothing is enabled in the config");
@@ -239,10 +239,12 @@ fn create_windows(
         } else {
             debug!("Windows overview disabled");
         }
-        if let Some(switch) = &windows.switch {
-            let switch_data = create_windows_switch_window(app, switch, windows, event_sender)
-                .context("failed to create switch window")?;
-            windows_data.switch = Some(switch_data);
+        if windows.switch.len() > 0 {
+             windows_data.switch = windows.switch.iter().map(|switch| {
+            let switch_data = create_windows_switch_window(app, switch, windows, event_sender.clone())
+                .context("failed to create switch window");
+            switch_data.unwrap()
+             }).collect()
         } else {
             debug!("Windows switch disabled");
         }
