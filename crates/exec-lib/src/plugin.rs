@@ -13,7 +13,7 @@ use tracing::{debug, debug_span, info, trace};
 static PLUGIN_COULD_BE_BUILD: OnceLock<bool> = OnceLock::new();
 
 pub fn load_plugin(
-    switch: Option<Modifier>,
+    switch: Vec<Modifier>,
     overview: Option<(Modifier, Box<str>)>,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
@@ -23,7 +23,7 @@ pub fn load_plugin(
     }
 
     let config = PluginConfig {
-        xkb_key_switch_mod: switch.map(|s| Box::from(mod_to_xkb_key(s))),
+        xkb_key_switch_mod: switch.iter().map(|s| Box::from(mod_to_xkb_key(*s))).collect(),
         xkb_key_overview_mod: overview
             .as_ref()
             .map(|(r#mod, _)| Box::from(r#mod.to_string())),

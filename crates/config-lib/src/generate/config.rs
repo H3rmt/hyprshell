@@ -51,7 +51,7 @@ pub fn check_file_exist(
 pub struct ConfigData {
     pub default_terminal: Option<Box<str>>,
     pub overview: Option<(Modifier, Box<str>)>,
-    pub switch: (Option<Modifier>, bool),
+    pub switch: Vec<(Modifier, bool)>,
     pub launcher_plugins: Vec<Box<str>>,
     pub launcher_engines: Vec<Box<str>>,
 }
@@ -122,11 +122,11 @@ pub fn generate_config(data: ConfigData) -> Config {
             } else {
                 None
             },
-            switch: data.switch.0.map(|switch_mod| Switch {
-                modifier: switch_mod,
-                switch_workspaces: data.switch.1,
+            switch: data.switch.iter().map(|(switch_mod, switch_ws)| Switch {
+                modifier: *switch_mod,
+                switch_workspaces: *switch_ws,
                 ..Default::default()
-            }),
+            }).collect(),
             ..Default::default()
         }),
         ..Default::default()
@@ -183,13 +183,12 @@ mod tests {
                         .any(|p| p.as_ref() == configurable_launcher_plugins::CALC)
                 );
             }
-            if let Some(switch) = &windows.switch {
-                assert_eq!(
-                    switch.modifier,
-                    data.switch.0.expect("config option missing")
-                );
-                assert_eq!(switch.switch_workspaces, data.switch.1);
-            }
+            windows.switch.iter()
+            .enumerate()
+            .for_each(|(i, switch)| {
+                assert_eq!(switch.modifier, data.switch[i].0);
+                assert_eq!(switch.switch_workspaces, data.switch[0].1);
+            });
         }
     }
 
@@ -199,26 +198,17 @@ mod tests {
         let data = ConfigData {
             default_terminal: None,
             overview: None,
-            switch: (None, false),
+            switch: vec![],
             launcher_plugins: vec![],
             launcher_engines: vec![],
         };
 
         let config = generate_config(data);
         assert!(
-            config
-                .windows
-                .as_ref()
-                .expect("config option missing")
-                .overview
-                .is_none()
+            config.windows.as_ref().expect("config option missing").overview.is_none()
         );
         assert!(
-            config
-                .windows
-                .expect("config option missing")
-                .switch
-                .is_none()
+            config.windows.expect("config option missing").switch.len() == 0
         );
     }
 
@@ -228,7 +218,7 @@ mod tests {
         let data = ConfigData {
             default_terminal: Some("alacritty".into()),
             overview: Some((Modifier::Super, "super_l".into())),
-            switch: (Some(Modifier::Alt), true),
+            switch: vec![(Modifier::Alt, true)],
             launcher_plugins: vec![
                 configurable_launcher_plugins::APPLICATIONS.into(),
                 configurable_launcher_plugins::TERMINAL.into(),
@@ -249,7 +239,7 @@ mod tests {
         let data = ConfigData {
             default_terminal: Some("xterm".into()),
             overview: Some((Modifier::Ctrl, "ctrl_l".into())),
-            switch: (Some(Modifier::Alt), false),
+            switch: vec![(Modifier::Alt, false)],
             launcher_plugins: vec![
                 configurable_launcher_plugins::APPLICATIONS.into(),
                 configurable_launcher_plugins::CALC.into(),

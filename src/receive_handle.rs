@@ -5,8 +5,7 @@ use adw::gtk::{gio, glib};
 use async_channel::{Receiver, Sender};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{
-    CloseOverviewConfig, Direction, OpenSwitch, SwitchOverviewConfig, SwitchSwitchConfig,
-    TransferType,
+    CloseOverviewConfig, CloseSwitchConfig, Direction, OpenSwitch, SwitchOverviewConfig, SwitchSwitchConfig, TransferType
 };
 use tracing::{debug, trace, warn};
 
@@ -29,7 +28,7 @@ pub async fn event_handler(
                 TransferType::Exit => exit(&mut globals),
                 TransferType::Type(text) => r#type(&mut globals, &text, &event_sender),
                 TransferType::CloseOverview(config) => close_overview(&mut globals, config),
-                TransferType::CloseSwitch => close_switch(&mut globals),
+                TransferType::CloseSwitch(config) => close_switch(&mut globals, config),
                 TransferType::Restart => restart(&globals),
             }
             if close_socket {
@@ -53,8 +52,8 @@ fn open_overview(global: &mut Globals, event_sender: &Sender<TransferType>) {
             if !windows_lib::overview_already_open(overview)
                 && !&windows
                     .switch
-                    .as_ref()
-                    .is_some_and(windows_lib::switch_already_open)
+                    .iter()
+                    .any(windows_lib::switch_already_open)
             {
                 trace!("Opening overview");
                 windows_lib::open_overview(overview, event_sender)
@@ -82,7 +81,7 @@ fn open_overview(global: &mut Globals, event_sender: &Sender<TransferType>) {
 
 fn open_switch(global: &mut Globals, config: &OpenSwitch) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        if let Some(switch) = windows.switch.iter_mut().find(|s| s.config.key == config.key && s.config.modifier == config.modifier) {
             if !windows_lib::switch_already_open(switch)
                 && !&windows
                     .overview
@@ -101,6 +100,8 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
                         } else {
                             Direction::Right
                         },
+                        key: config.key.clone(),
+                        modifier: config.modifier.clone(),
                     },
                 );
             }
@@ -114,7 +115,7 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
 
 fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        if let Some(switch) = &mut windows.switch.iter_mut().find(|s| s.config.key == config.key && s.config.modifier == config.modifier) {
             windows_lib::update_switch(switch, config);
         } else {
             warn!("Window switch not active");
@@ -146,9 +147,9 @@ fn exit(global: &mut Globals) {
             windows_lib::close_overview(overview, None);
             launcher_lib::close_launcher_by_char(launcher, None); // this will never open a program and need the default terminal
         }
-        if let Some(switch) = &mut windows.switch {
+        windows.switch.iter_mut().for_each(|switch| {
             windows_lib::close_switch(switch, false);
-        }
+        })
     }
 }
 
@@ -197,15 +198,15 @@ fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
     }
 }
 
-fn close_switch(global: &mut Globals) {
+fn close_switch(global: &mut Globals, config: CloseSwitchConfig) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        windows.switch.iter_mut().filter(|switch| switch.config.key == config.key && switch.config.modifier == config.modifier).for_each(|switch| {
             if windows_lib::switch_already_hidden(switch) {
                 debug!("Switch is already closed");
                 return;
             }
             windows_lib::close_switch(switch, true);
-        }
+        })
     }
 }
 
@@ -215,9 +216,7 @@ fn restart(global: &Globals) {
             windows_lib::stop_overview(overview);
             launcher_lib::stop_launcher(launcher);
         }
-        if let Some(switch) = &windows.switch {
-            windows_lib::stop_switch(switch);
-        }
+        windows.switch.iter().for_each(windows_lib::stop_switch)
     }
     let app = global.app.clone();
     glib::idle_add_local_once(move || {

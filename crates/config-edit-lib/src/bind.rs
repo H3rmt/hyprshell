@@ -264,12 +264,12 @@ fn bind_switch(
         if button.enables_expansion() {
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 if let Some(windows) = c.windows.as_mut() {
-                    windows.switch = Some(Switch::default());
+                    windows.switch = vec![Switch::default()];
                 }
             }
         } else if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                windows.switch = None;
+                windows.switch = Vec::new();
             }
         }
         update_config(&gtk_config_clone.borrow(), &config_clone.borrow());
@@ -281,7 +281,8 @@ fn bind_switch(
         trace!("windows.switch.modifier changed to {}", dropdown.selected(),);
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                if let Some(switch) = windows.switch.as_mut() {
+                // TODO: Multi Switch editing
+                if let Some(switch) = windows.switch.first_mut() {
                     switch.modifier = match dropdown.selected() {
                         0 => config_lib::Modifier::Alt,
                         1 => config_lib::Modifier::Ctrl,
@@ -307,7 +308,8 @@ fn bind_switch(
             );
             if let Ok(mut c) = config_clone.try_borrow_mut() {
                 if let Some(windows) = c.windows.as_mut() {
-                    if let Some(switch) = windows.switch.as_mut() {
+                    // TODO: support multiple switches
+                    if let Some(switch) = windows.switch.first_mut() {
                         switch.switch_workspaces = entry.is_active();
                     }
                 }
@@ -330,7 +332,8 @@ fn bind_switch_filter(
         );
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                if let Some(switch) = windows.switch.as_mut() {
+                // TODO: support multiple switches
+                if let Some(switch) = windows.switch.first_mut() {
                     if entry.is_active() {
                         switch.filter_by.push(FilterBy::SameClass);
                     } else {
@@ -351,7 +354,8 @@ fn bind_switch_filter(
         );
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                if let Some(switch) = windows.switch.as_mut() {
+                // TODO: support multiple switches
+                if let Some(switch) = windows.switch.first_mut() {
                     if entry.is_active() {
                         switch.filter_by.push(FilterBy::CurrentWorkspace);
                         // current monitor and current workspace are mutually exclusive (not really, but it doesn't make sense)
@@ -378,7 +382,8 @@ fn bind_switch_filter(
         );
         if let Ok(mut c) = config_clone.try_borrow_mut() {
             if let Some(windows) = c.windows.as_mut() {
-                if let Some(switch) = windows.switch.as_mut() {
+                // TODO: support multiple switches
+                if let Some(switch) = windows.switch.first_mut() {
                     if entry.is_active() {
                         switch.filter_by.push(FilterBy::CurrentMonitor);
                         // current monitor and current workspace are mutually exclusive (not really, but it doesn't make sense)

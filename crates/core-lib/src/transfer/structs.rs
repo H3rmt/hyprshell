@@ -12,7 +12,7 @@ pub enum TransferType {
     /// send from the keybinds like arrow keys or tab on switch
     SwitchSwitch(SwitchSwitchConfig),
     CloseOverview(CloseOverviewConfig),
-    CloseSwitch,
+    CloseSwitch(CloseSwitchConfig),
     /// send from the gui itself when typing the launcher
     Type(String),
     /// send from pressing ESC or repressing openOverview
@@ -23,6 +23,8 @@ pub enum TransferType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenSwitch {
     pub reverse: bool,
+    pub key: Box<str>,
+    pub modifier: Box<str>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,6 +36,14 @@ pub struct SwitchOverviewConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchSwitchConfig {
     pub direction: Direction,
+    pub modifier: Box<str>,
+    pub key: Box<str>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CloseSwitchConfig {
+    pub modifier: Box<str>,
+    pub key: Box<str>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

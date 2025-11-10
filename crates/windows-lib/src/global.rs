@@ -41,6 +41,8 @@ pub struct WindowsSwitchConfig {
     pub filter_current_monitor: bool,
     pub filter_same_class: bool,
     pub switch_workspaces: bool,
+    pub key: Box<str>,
+    pub modifier: Box<str>,
 }
 
 #[derive(Debug)]

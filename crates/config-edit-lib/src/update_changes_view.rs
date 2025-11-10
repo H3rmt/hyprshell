@@ -156,38 +156,39 @@ pub fn update_changes_view(
                     add_plugin_changes(changes, &po.launcher.plugins, &co.launcher.plugins);
                 }
             }
-            match (&pw.switch, &cw.switch) {
-                (None, None) => {}
-                (Some(_), None) => {
-                    add_info(changes, "Disabled Switch view");
-                }
-                (None, Some(_)) => {
-                    add_info(changes, "Enabled Switch view");
-                }
-                (Some(ps), Some(cs)) => {
-                    if ps.modifier != cs.modifier {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch modifier",
-                            format!("{} -> {}", ps.modifier, cs.modifier),
-                        );
-                    }
-                    if ps.filter_by != cs.filter_by {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch filter by",
-                            format!("{:?} -> {:?}", ps.filter_by, cs.filter_by),
-                        );
-                    }
-                    if ps.switch_workspaces != cs.switch_workspaces {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch switch workspaces",
-                            format!("{} -> {}", ps.switch_workspaces, cs.switch_workspaces),
-                        );
-                    }
-                }
-            }
+            // TODO: support multiple switches
+            // match (&pw.switch, &cw.switch) {
+            //     (None, None) => {}
+            //     (Some(_), None) => {
+            //         add_info(changes, "Disabled Switch view");
+            //     }
+            //     (None, Some(_)) => {
+            //         add_info(changes, "Enabled Switch view");
+            //     }
+            //     (Some(ps), Some(cs)) => {
+            //         if ps.modifier != cs.modifier {
+            //             add_info_subtitle(
+            //                 changes,
+            //                 "Changed switch modifier",
+            //                 format!("{} -> {}", ps.modifier, cs.modifier),
+            //             );
+            //         }
+            //         if ps.filter_by != cs.filter_by {
+            //             add_info_subtitle(
+            //                 changes,
+            //                 "Changed switch filter by",
+            //                 format!("{:?} -> {:?}", ps.filter_by, cs.filter_by),
+            //             );
+            //         }
+            //         if ps.switch_workspaces != cs.switch_workspaces {
+            //             add_info_subtitle(
+            //                 changes,
+            //                 "Changed switch switch workspaces",
+            //                 format!("{} -> {}", ps.switch_workspaces, cs.switch_workspaces),
+            //             );
+            //         }
+            //     }
+            // }
         }
     }
     drop(previous_config);

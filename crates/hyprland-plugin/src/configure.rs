@@ -1,7 +1,7 @@
 use crate::{PLUGIN_AUTHOR, PLUGIN_DESC, PLUGIN_NAME, PLUGIN_VERSION};
 use anyhow::Context;
 use core_lib::binds::generate_transfer;
-use core_lib::transfer::{OpenSwitch, TransferType};
+use core_lib::transfer::{CloseSwitchConfig, OpenSwitch, TransferType};
 use core_lib::util::get_daemon_socket_path_buff;
 use std::fmt::Display;
 use std::fs::OpenOptions;
@@ -10,7 +10,8 @@ use tempfile::TempDir;
 use tracing::debug_span;
 
 pub struct PluginConfig {
-    pub xkb_key_switch_mod: Option<Box<str>>,
+    // TODO
+    pub xkb_key_switch_mod: Vec<Box<str>>, //Vec<(Box<str>, Box<str>)>,
     pub xkb_key_overview_mod: Option<Box<str>>,
     pub xkb_key_overview_key: Option<Box<str>>,
 }
@@ -19,7 +20,9 @@ impl Display for PluginConfig {
         write!(
             f,
             "{}|{}|{}",
-            self.xkb_key_switch_mod.as_deref().unwrap_or(""),
+            // TODO
+            // self.xkb_key_switch_mod.iter().map(|(k, v)| format!("{k}+{v}")).collect::<Vec<_>>().join(","),
+            self.xkb_key_switch_mod.iter().map(|k| format!("{k}")).collect::<Vec<_>>().join(","),
             self.xkb_key_overview_mod.as_deref().unwrap_or(""),
             self.xkb_key_overview_key.as_deref().unwrap_or(""),
         )
@@ -60,14 +63,20 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_SWTICH_XKB_MOD_L$",
             &config
                 .xkb_key_switch_mod
-                .as_deref()
+                .iter()
+                //.map(|(m, _)| m.clone())
+                // TODO
+                .nth(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_L")),
         ),
         (
             "$HYPRSHELL_SWTICH_XKB_MOD_R$",
             &config
                 .xkb_key_switch_mod
-                .as_deref()
+                // TODO
+                .iter()
+                //.map(|(m, _)| m.clone())
+                .nth(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_R")),
         ),
         (
@@ -84,15 +93,21 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
         ),
         (
             "$HYPRSHELL_CLOSE$",
-            &generate_transfer(&TransferType::CloseSwitch),
+            &generate_transfer(&TransferType::CloseSwitch(CloseSwitchConfig {
+                modifier: config.xkb_key_switch_mod
+                    .get(0)
+                    .map(|m| m.as_ref())
+                    .unwrap_or("").into(),
+                key: "Tab".into(), // TODO: need to pass key here
+            }))
         ),
         (
             "$HYPRSHELL_OPEN_SWITCH$",
-            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: false })),
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { key: "tab".into(), modifier: "alt".into(), reverse: false })),
         ),
         (
             "$HYPRSHELL_OPEN_SWITCH_REVERSE$",
-            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: true })),
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { key: "tab".into(), modifier: "alt".into(), reverse: true })),
         ),
     ] {
         buffer = buffer.replace(replace.0, replace.1);

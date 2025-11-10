@@ -7,7 +7,7 @@ mod tests {
     #[test_log(default_log_filter = "trace")]
     fn build_plugin() {
         let test_config = PluginConfig {
-            xkb_key_switch_mod: Some(Box::from("XKB_KEY_Alt")),
+            xkb_key_switch_mod: vec!(Box::from("XKB_KEY_Alt")),
             xkb_key_overview_mod: Some(Box::from("XKB_KEY_Super")),
             xkb_key_overview_key: Some(Box::from("tab")),
         };
