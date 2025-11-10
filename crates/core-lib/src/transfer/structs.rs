@@ -23,6 +23,7 @@ pub enum TransferType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OpenSwitch {
     pub reverse: bool,
+    pub id: usize
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub struct SwitchOverviewConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchSwitchConfig {
+    pub id: usize,
     pub reverse: bool,
 }
 

@@ -81,7 +81,7 @@ fn open_overview(global: &mut Globals, event_sender: &Sender<TransferType>) {
 
 fn open_switch(global: &mut Globals, config: &OpenSwitch) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        if let Some(switch) = &mut windows.switch.get_mut(config.id) {
             if !windows_lib::switch_already_open(switch)
                 && !&windows
                     .overview
@@ -95,6 +95,7 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
                 windows_lib::update_switch(
                     switch,
                     &SwitchSwitchConfig {
+                        id: config.id,
                         reverse: config.reverse,
                     },
                 );
@@ -109,7 +110,7 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
 
 fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        if let Some(switch) = &mut windows.switch.get_mut(config.id) {
             windows_lib::update_switch(switch, config);
         } else {
             warn!("Window switch not active");
@@ -141,9 +142,9 @@ fn exit(global: &mut Globals) {
             windows_lib::close_overview(overview, None);
             launcher_lib::close_launcher_by_char(launcher, None); // this will never open a program and need the default terminal
         }
-        if let Some(switch) = &mut windows.switch {
+        windows.switch.iter_mut().for_each(|switch| {
             windows_lib::close_switch(switch, false);
-        }
+        })
     }
 }
 
@@ -194,13 +195,13 @@ fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
 
 fn close_switch(global: &mut Globals) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
+        windows.switch.iter_mut().for_each(|switch| {
             if windows_lib::switch_already_hidden(switch) {
                 debug!("Switch is already closed");
                 return;
             }
             windows_lib::close_switch(switch, true);
-        }
+        })
     }
 }
 

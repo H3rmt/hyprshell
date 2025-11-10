@@ -10,7 +10,8 @@ use tempfile::TempDir;
 use tracing::debug_span;
 
 pub struct PluginConfig {
-    pub xkb_key_switch_mod: Vec<Box<str>>,
+    // TODO
+    pub xkb_key_switch_mod: Vec<Box<str>>, //Vec<(Box<str>, Box<str>)>,
     pub xkb_key_overview_mod: Option<Box<str>>,
     pub xkb_key_overview_key: Option<Box<str>>,
 }
@@ -19,7 +20,9 @@ impl Display for PluginConfig {
         write!(
             f,
             "{}|{}|{}",
-            self.xkb_key_switch_mod.join(","),
+            // TODO
+            // self.xkb_key_switch_mod.iter().map(|(k, v)| format!("{k}+{v}")).collect::<Vec<_>>().join(","),
+            self.xkb_key_switch_mod.iter().map(|k| format!("{k}")).collect::<Vec<_>>().join(","),
             self.xkb_key_overview_mod.as_deref().unwrap_or(""),
             self.xkb_key_overview_key.as_deref().unwrap_or(""),
         )
@@ -60,14 +63,20 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_SWTICH_XKB_MOD_L$",
             &config
                 .xkb_key_switch_mod
-                .as_deref()
+                .iter()
+                //.map(|(m, _)| m.clone())
+                // TODO
+                .nth(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_L")),
         ),
         (
             "$HYPRSHELL_SWTICH_XKB_MOD_R$",
             &config
                 .xkb_key_switch_mod
-                .as_deref()
+                // TODO
+                .iter()
+                //.map(|(m, _)| m.clone())
+                .nth(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_R")),
         ),
         (
@@ -88,11 +97,11 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
         ),
         (
             "$HYPRSHELL_OPEN_SWITCH$",
-            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: false })),
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { id: 0, reverse: false })),
         ),
         (
             "$HYPRSHELL_OPEN_SWITCH_REVERSE$",
-            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { reverse: true })),
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { id: 0, reverse: true })),
         ),
     ] {
         buffer = buffer.replace(replace.0, replace.1);

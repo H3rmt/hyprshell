@@ -12,23 +12,23 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             exec: generate_transfer_socat(&TransferType::OpenOverview).into_boxed_str(),
         });
     }
-    windows.switch.iter().for_each(|switch|{
+    windows.switch.iter().enumerate().for_each(|(id, switch)|{
         binds.push(ExecBind {
             mods: vec![switch.modifier.to_str()],
             key: Box::from("tab"),
-            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { reverse: false }))
+            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { id, reverse: false }))
                 .into_boxed_str(),
         });
         binds.push(ExecBind {
             mods: vec![switch.modifier.to_str()],
             key: Box::from("grave"),
-            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { reverse: true }))
+            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { id, reverse: true }))
                 .into_boxed_str(),
         });
         binds.push(ExecBind {
             mods: vec![switch.modifier.to_str(), "shift"],
             key: Box::from("tab"),
-            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { reverse: true }))
+            exec: generate_transfer_socat(&TransferType::OpenSwitch(OpenSwitch { id, reverse: true }))
                 .into_boxed_str(),
         });
     });
