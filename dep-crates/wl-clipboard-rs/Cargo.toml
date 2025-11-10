@@ -26,11 +26,11 @@ wayland-protocols = { version = "0.32.6", features = ["client", "staging"] }
 wayland-protocols-wlr = { version = "0.3.6", features = ["client"] }
 
 [dev-dependencies]
-wayland-server = "0.31.7"
-wayland-protocols = { version = "0.32.6", features = ["server", "staging"] }
-wayland-protocols-wlr = { version = "0.3.6", features = ["server"] }
-proptest = "1.6.0"
-proptest-derive = "0.5.1"
+wayland-server = "=0.31.7"
+wayland-protocols = { version = "=0.32.6", features = ["server", "staging"] }
+wayland-protocols-wlr = { version = "=0.3.6", features = ["server"] }
+proptest = "=1.6.0"
+proptest-derive = "=0.5.1"
 
 [features]
 # Link to libwayland-client.so instead of using the Rust implementation.
