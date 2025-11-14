@@ -2,6 +2,7 @@ use crate::data::{SortConfig, collect_data};
 use crate::global::WindowsSwitchData;
 use crate::next::{find_next_client, find_next_workspace};
 use crate::switch::render::render_switch;
+use adw::gtk::prelude::*;
 use anyhow::Context;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Direction, OpenSwitch};

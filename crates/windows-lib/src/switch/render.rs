@@ -1,11 +1,11 @@
 use crate::global::WindowsSwitchData;
 use crate::icon::set_icon;
+use adw::gtk::gdk::Cursor;
+use adw::gtk::prelude::*;
+use adw::gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use anyhow::Context;
 use core_lib::{Active, HyprlandData};
 use exec_lib::get_current_monitor;
-use gtk::gdk::Cursor;
-use gtk::prelude::*;
-use gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
 use std::borrow::Cow;
 use tracing::debug_span;
 
@@ -138,14 +138,8 @@ pub fn render_switch(
                 };
                 workspace_fixed.put(
                     &client_button,
-                    f64::from(scale(
-                        client.x - i16::try_from(workspace.x)?,
-                        data.config.scale,
-                    )),
-                    f64::from(scale(
-                        client.y - i16::try_from(workspace.y)?,
-                        data.config.scale,
-                    )),
+                    f64::from(scale(client.x, data.config.scale)),
+                    f64::from(scale(client.y, data.config.scale)),
                 );
                 data.clients.insert(*address, client_button);
             }

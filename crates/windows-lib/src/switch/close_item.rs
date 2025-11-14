@@ -1,11 +1,11 @@
 use crate::global::WindowsSwitchData;
+use adw::gtk::glib;
 use anyhow::{Context, Ok, anyhow};
 use async_channel::Sender;
 use core_lib::transfer::TransferType;
 use core_lib::{FindByFirst, WarnWithDetails};
 use exec_lib::switch::{kill_client};
 use exec_lib::{ to_client_address};
-use gtk::glib;
 use std::time::Duration;
 use tracing::{debug};
 

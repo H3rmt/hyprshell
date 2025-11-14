@@ -1,7 +1,7 @@
 use core_lib::transfer::Direction;
 use core_lib::{
-    Active, ClientData, ClientId, FindByFirst, GetFirstOrLast, HyprlandData, RevIf,
-    WarnWithDetails, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, FindByFirst, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData,
+    WorkspaceId,
 };
 use std::cmp::{max, min};
 use tracing::{debug, instrument, trace, trace_span, warn};
