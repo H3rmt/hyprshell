@@ -160,7 +160,7 @@ fn main() -> anyhow::Result<()> {
                 let config_all = config_lib::Config {
                     windows: Some(config_lib::Windows {
                         overview: Some(config_lib::Overview::default()),
-                        switch: Some(config_lib::Switch::default()),
+                        switch: vec![config_lib::Switch::default()],
                         ..Default::default()
                     }),
                     ..Default::default()
