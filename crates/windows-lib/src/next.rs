@@ -82,7 +82,7 @@ pub fn find_next_client(
 
     #[allow(clippy::option_if_let_else)]
     let next_active = match active.client {
-        None => find_first_client(direction, &hypr_data.clients, &hypr_data.workspaces, active),
+        None => Some(find_first_client(direction, &hypr_data.clients, &hypr_data.workspaces, active)),
         Some(client_id) => {
             let filtered = hypr_data
                 .clients
@@ -101,12 +101,17 @@ pub fn find_next_client(
                     workspace: data.workspace,
                     monitor: data.monitor,
                 })
-                .expect("unable to find next client!")
         }
     };
 
     trace!("Next active: {next_active:?}");
-    next_active
+    match next_active {
+        Some(active) => active,
+        None => {
+            warn!("Unable to find next client, returning current active");
+            active
+        }
+    }
 }
 
 #[allow(clippy::cast_possible_wrap)] // wrapping wont happen here, number of workspaces or clients are way lower than isize::MAX
