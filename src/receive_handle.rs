@@ -28,7 +28,7 @@ pub async fn event_handler(
                 TransferType::Exit => exit(&mut globals),
                 TransferType::Type(text) => r#type(&mut globals, &text, &event_sender),
                 TransferType::CloseOverview(config) => close_overview(&mut globals, config),
-                TransferType::CloseSwitch(config) => close_switch(&mut globals, config),
+                TransferType::CloseSwitch(config) => close_switch(&mut globals, &config),
                 TransferType::Restart => restart(&globals),
             }
             if close_socket {
@@ -199,7 +199,7 @@ fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
     }
 }
 
-fn close_switch(global: &mut Globals, config: CloseSwitchConfig) {
+fn close_switch(global: &mut Globals, config: &CloseSwitchConfig) {
     if let Some(windows) = &mut global.windows {
         windows.switch.iter_mut().filter(|switch| switch.config.key == config.key && switch.config.modifier == config.modifier).for_each(|switch| {
             if windows_lib::switch_already_hidden(switch) {

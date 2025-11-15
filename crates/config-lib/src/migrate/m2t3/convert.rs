@@ -14,7 +14,7 @@ impl From<old_structs::Windows> for crate::Windows {
         Self {
             scale: value.scale,
             items_per_row: value.items_per_row,
-            switch: value.switch.iter().map(|i| i.clone()).collect(),
+            switch: value.switch.iter().map(std::clone::Clone::clone).collect(),
             overview: value.overview.map(old_structs::Overview::into),
         }
     }

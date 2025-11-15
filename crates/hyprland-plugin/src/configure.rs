@@ -63,10 +63,9 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_SWTICH_XKB_MOD_L$",
             &config
                 .xkb_key_switch_mod
-                .iter()
                 //.map(|(m, _)| m.clone())
                 // TODO
-                .nth(0)
+                .get(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_L")),
         ),
         (
@@ -74,9 +73,8 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             &config
                 .xkb_key_switch_mod
                 // TODO
-                .iter()
                 //.map(|(m, _)| m.clone())
-                .nth(0)
+                .get(0)
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_R")),
         ),
         (
