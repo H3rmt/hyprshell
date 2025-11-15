@@ -217,7 +217,7 @@ fn restart(global: &Globals) {
             windows_lib::stop_overview(overview);
             launcher_lib::stop_launcher(launcher);
         }
-        windows.switch.iter().for_each(windows_lib::stop_switch)
+        windows.switch.iter().for_each(windows_lib::stop_switch);
     }
     let app = global.app.clone();
     glib::idle_add_local_once(move || {

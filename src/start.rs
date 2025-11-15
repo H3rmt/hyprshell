@@ -234,14 +234,14 @@ fn create_windows(
         } else {
             debug!("Windows overview disabled");
         }
-        if windows.switch.len() > 0 {
-             windows_data.switch = windows.switch.iter().map(|switch| {
-            let switch_data = create_windows_switch_window(app, switch, windows, event_sender.clone())
-                .context("failed to create switch window");
-            switch_data.unwrap()
-             }).collect()
-        } else {
+        if windows.switch.is_empty() {
             debug!("Windows switch disabled");
+        } else {
+            windows_data.switch = windows.switch.iter().map(|switch| {
+                let switch_data = create_windows_switch_window(app, switch, windows, event_sender.clone())
+                    .context("failed to create switch window");
+                switch_data.expect("failed to create switch window")
+          }).collect();
         }
         global.windows = Some(windows_data);
     } else {
