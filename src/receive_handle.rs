@@ -120,7 +120,7 @@ fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
         // TODO: only switch the active one?
         windows.switch.iter_mut().for_each(|switch| {
             windows_lib::update_switch(switch, config);
-        })
+        });
     } else {
         warn!("Windows not active");
     }
@@ -150,7 +150,7 @@ fn exit(global: &mut Globals) {
         }
         windows.switch.iter_mut().for_each(|switch| {
             windows_lib::close_switch(switch, false);
-        })
+        });
     }
 }
 
@@ -207,7 +207,7 @@ fn close_switch(global: &mut Globals, config: &CloseSwitchConfig) {
                 return;
             }
             windows_lib::close_switch(switch, true);
-        })
+        });
     }
 }
 
