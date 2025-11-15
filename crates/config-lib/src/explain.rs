@@ -100,7 +100,7 @@ pub fn explain(
                 switch.modifier,
             ));
         }
-        if windows.switch.len() == 0 {
+        if windows.switch.is_empty() {
             let _ = builder.write_str(&format!("{italic}<Switch mode disabled>{reset}\n"));
         }
     } else {
@@ -120,7 +120,7 @@ mod tests {
         Config {
             windows: Some(Windows {
                 overview: Some(Overview::default()),
-                switch: vec!(Switch::default()),
+                switch: vec![Switch::default()],
                 ..Default::default()
             }),
             ..Default::default()

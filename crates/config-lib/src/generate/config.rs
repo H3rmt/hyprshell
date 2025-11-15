@@ -208,7 +208,7 @@ mod tests {
             config.windows.as_ref().expect("config option missing").overview.is_none()
         );
         assert!(
-            config.windows.expect("config option missing").switch.len() == 0
+            config.windows.expect("config option missing").switch.is_empty()
         );
     }
 

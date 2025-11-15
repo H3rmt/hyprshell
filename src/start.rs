@@ -166,7 +166,7 @@ fn activate(
 
     // TODO remove in future if more is available
     if config.windows.is_none()
-        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.len() == 0)
+        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_empty())
     {
         notify_warn("Nothing is enabled in the config");
         if let Err(err) = hyprshell_config_block(config_path) {
