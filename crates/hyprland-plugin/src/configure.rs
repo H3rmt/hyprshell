@@ -106,8 +106,9 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { key: "tab".into(), modifier: "alt".into(), reverse: false })),
         ),
         (
+            // TODO: instead support multi switch keys instead
             "$HYPRSHELL_OPEN_SWITCH_REVERSE$",
-            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { key: "tab".into(), modifier: "alt".into(), reverse: true })),
+            &generate_transfer(&TransferType::OpenSwitch(OpenSwitch { key: "grave".into(), modifier: "alt".into(), reverse: false })),
         ),
     ] {
         buffer = buffer.replace(replace.0, replace.1);
