@@ -36,8 +36,6 @@ pub struct SwitchOverviewConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchSwitchConfig {
     pub direction: Direction,
-    pub modifier: Box<str>,
-    pub key: Box<str>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

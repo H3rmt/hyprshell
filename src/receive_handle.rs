@@ -100,8 +100,6 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
                         } else {
                             Direction::Right
                         },
-                        key: config.key.clone(),
-                        modifier: config.modifier.clone(),
                     },
                 );
             }
@@ -115,11 +113,14 @@ fn open_switch(global: &mut Globals, config: &OpenSwitch) {
 
 fn switch_switch(global: &mut Globals, config: &SwitchSwitchConfig) {
     if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch.iter_mut().find(|s| s.config.key == config.key && s.config.modifier == config.modifier) {
-            windows_lib::update_switch(switch, config);
-        } else {
-            warn!("Window switch not active");
+        if windows.switch.is_empty() {
+            warn!("No window switches configured");
+            return;
         }
+        // TODO: only switch the active one?
+        windows.switch.iter_mut().for_each(|switch| {
+            windows_lib::update_switch(switch, config);
+        })
     } else {
         warn!("Windows not active");
     }

@@ -5,7 +5,7 @@ use config_lib::{FilterBy, Modifier, Switch, Windows};
 use core_lib::transfer::{CloseSwitchConfig, Direction, SwitchSwitchConfig, TransferType};
 use core_lib::{HyprlandData, SWITCH_NAMESPACE, WarnWithDetails};
 use exec_lib::get_initial_active;
-use adw::gtk::gdk::{Key, ModifierType};
+use adw::gtk::gdk::{Key};
 use adw::gtk::glib::Propagation;
 use adw::gtk::prelude::*;
 use adw::gtk::{
@@ -14,7 +14,7 @@ use adw::gtk::{
 };
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use std::collections::HashMap;
-use tracing::{debug, debug_span, warn};
+use tracing::{debug, debug_span};
 
 pub fn create_windows_switch_window(
     app: &Application,
@@ -46,9 +46,8 @@ pub fn create_windows_switch_window(
 
     let key_controller = EventControllerKey::new();
     let event_sender_2 = event_sender.clone();
-    let switch_key = switch.key.clone();
     let modifier = switch.modifier;
-    key_controller.connect_key_pressed(move |_, key, _, mods| handle_key(key, mods, &switch_key, modifier, &event_sender_2));
+    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, &event_sender_2));
     let event_sender_3 = event_sender;
     let switch_key_2 = switch.key.clone();
     key_controller.connect_key_released(move |_, key, _, _| {
@@ -101,18 +100,7 @@ fn handle_release(key: Key, switch_key: &Box<str>, switch_mod: Modifier, event_s
     }
 }
 
-fn handle_key(key: Key, mods: ModifierType, switch_key: &Box<str>, switch_mod: Modifier, event_sender: &Sender<TransferType>) -> Propagation {
-    let s_key = if &**switch_key == "tab" { "Tab" } else { switch_key };
-    let k = Key::from_name(s_key);
-    let mm = match switch_mod {
-        Modifier::Alt => ModifierType::ALT_MASK,
-        Modifier::Ctrl => ModifierType::CONTROL_MASK,
-        Modifier::Super => ModifierType::SUPER_MASK,
-    };
-    // TODO: handle arrow keys and hjkl
-    // a SwitchSwitch maybe doesn't need to take care of mod/key checks?!
-    /*
-    fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
+fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
     match key {
         Key::Tab | Key::l | Key::Right => {
             event_sender
@@ -147,27 +135,5 @@ fn handle_key(key: Key, mods: ModifierType, switch_key: &Box<str>, switch_mod: M
             Propagation::Stop
         }
         _ => Propagation::Proceed,
-     */
-    if let Some(k) = k {
-        match key {
-            x if x.eq(&k) && mods.contains(mm) => {
-                event_sender
-                    .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
-                        modifier: switch_mod.to_string().to_lowercase().into(),
-                        key: switch_key.clone(),
-                        direction: if mods.contains(ModifierType::SHIFT_MASK) {
-                            Direction::Left
-                        } else {
-                            Direction::Right
-                        },
-                    }))
-                    .warn_details("unable to send");
-                Propagation::Stop
-            }
-            _ => Propagation::Proceed,
-        }
-    } else {
-        warn!("Unable to find key name: {}", switch_key);
-        Propagation::Proceed
     }
 }
