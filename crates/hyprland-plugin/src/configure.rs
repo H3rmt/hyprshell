@@ -65,7 +65,7 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
                 .xkb_key_switch_mod
                 //.map(|(m, _)| m.clone())
                 // TODO
-                .get(0)
+                .first()
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_L")),
         ),
         (
@@ -74,7 +74,7 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
                 .xkb_key_switch_mod
                 // TODO
                 //.map(|(m, _)| m.clone())
-                .get(0)
+                .first()
                 .map_or_else(|| "-1".to_string(), |m| format!("{m}_R")),
         ),
         (
@@ -93,8 +93,8 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_CLOSE$",
             &generate_transfer(&TransferType::CloseSwitch(CloseSwitchConfig {
                 modifier: config.xkb_key_switch_mod
-                    .get(0)
-                    .map(|m| m.as_ref())
+                    .first()
+                    .map(std::convert::AsRef::as_ref)
                     .unwrap_or("").into(),
                 key: "Tab".into(), // TODO: need to pass key here
             }))
