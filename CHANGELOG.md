@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.8.1](https://github.com/H3rmt/hyprshell/compare/v4.8.0...v4.8.1) (2025-11-17)
+
+
+### Bug Fixes
+
+* crash when filtering windows or clients ([#379](https://github.com/H3rmt/hyprshell/issues/379)) ([13e0105](https://github.com/H3rmt/hyprshell/commit/13e010558b47e416322c8961e5dd1a3e75008503))
+* dont check for a hyprland session on commands other than run ([c93b2dc](https://github.com/H3rmt/hyprshell/commit/c93b2dc95347f32904c45fe820fa5f9e596fcdc0))
+* increase waiting time if no initial workspace is being found ([b6e2782](https://github.com/H3rmt/hyprshell/commit/b6e27827f89670c90b11401d8931beea74dcf57c))
+* **nix-flake:** update flake.lock ([b166440](https://github.com/H3rmt/hyprshell/commit/b16644046b712881d8bafbdd99f8acda9f39b6d6))
+* use xdg notifications instead of hyprland notifications ([0db43a7](https://github.com/H3rmt/hyprshell/commit/0db43a7b905529bf5447fd373a01c78fb804972b))
+
+
+### Code Refactoring
+
+* update dependencies ([a1c00c7](https://github.com/H3rmt/hyprshell/commit/a1c00c782ae3ffac8b4a9f7c1793c5e8daddd061))
+
+
+### Documentation
+
+* updated nix docs ([facdf5a](https://github.com/H3rmt/hyprshell/commit/facdf5a3b40544b49d26886edb65b3726129ac9c))
+
 ## [4.8.0](https://github.com/H3rmt/hyprshell/compare/v4.7.2...v4.8.0) (2025-11-09)
 
 
