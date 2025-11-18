@@ -4,10 +4,10 @@ use anyhow::{Context, Ok, anyhow};
 use async_channel::Sender;
 use core_lib::transfer::TransferType;
 use core_lib::{FindByFirst, WarnWithDetails};
-use exec_lib::switch::{kill_client};
-use exec_lib::{ to_client_address};
+use exec_lib::switch::kill_client;
+use exec_lib::to_client_address;
 use std::time::Duration;
-use tracing::{debug};
+use tracing::debug;
 
 pub fn close_switch_item(
     data: &WindowsSwitchData,
@@ -20,7 +20,7 @@ pub fn close_switch_item(
     }
 
     let sender = event_sender.clone();
-    glib::timeout_add_local(Duration::from_millis(50), move || {
+    glib::timeout_add_local(Duration::from_millis(100), move || {
         sender
             .try_send(TransferType::RefreshSwitch(Box::new(
                 TransferType::CloseSwitchItem,
