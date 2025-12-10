@@ -15,10 +15,10 @@ anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
 tempfile = { version = "3.20.0", default-features = false }
-zip = { version = "5.0.0", default-features = false }
+zip = { version = "6.0.0", default-features = false }
 
 [build-dependencies]
-zip = { version = "5.0.0", default-features = false }
+zip = { version = "6.0.0", default-features = false }
 
 [lints]
 workspace = true
