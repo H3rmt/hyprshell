@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.8.2](https://github.com/H3rmt/hyprshell/compare/v4.8.1...v4.8.2) (2025-12-25)
+
+
+### Bug Fixes
+
+* fix systemd unit generation ([f0fdc99](https://github.com/H3rmt/hyprshell/commit/f0fdc99832510eee5862df6b5826d07e8b16cb9e))
+* **nix-flake:** update flake.lock ([01531df](https://github.com/H3rmt/hyprshell/commit/01531df3820ab6346814f83abd5852a88ccf2c69))
+* **nix-flake:** update flake.lock ([b8827a3](https://github.com/H3rmt/hyprshell/commit/b8827a3b2e0528991b22eacf41ad9f07b4cbbc73))
+
 ## [4.8.1](https://github.com/H3rmt/hyprshell/compare/v4.8.0...v4.8.1) (2025-11-17)
 
 
