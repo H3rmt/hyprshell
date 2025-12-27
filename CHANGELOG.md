@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.8.3](https://github.com/H3rmt/hyprshell/compare/v4.8.2...v4.8.3) (2025-12-27)
+
+
+### Bug Fixes
+
+* fix bin package for aur ([443febe](https://github.com/H3rmt/hyprshell/commit/443febe5d54f2b32b3eb3c5c3b8d6f0af3e7276b))
+
 ## [4.8.2](https://github.com/H3rmt/hyprshell/compare/v4.8.1...v4.8.2) (2025-12-25)
 
 
