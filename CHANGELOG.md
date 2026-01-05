@@ -1,5 +1,46 @@
 # Changelog
 
+## [4.9.0](https://github.com/H3rmt/hyprshell/compare/v4.8.3...v4.9.0) (2026-01-05)
+
+
+### Features
+
+* add generate page ([1f9cb52](https://github.com/H3rmt/hyprshell/commit/1f9cb52edf6f48c446b92ec3398e19fe3e5cb224))
+* add terminal settings and overview keyboard shortcut chooser to generate setup ([f7ae9bf](https://github.com/H3rmt/hyprshell/commit/f7ae9bf3d2b5769627faa2735fb7c6058a6de998))
+* added data file to themes ([9e13a4a](https://github.com/H3rmt/hyprshell/commit/9e13a4a3e2273cd9be56438f0b6515e3fa593c52))
+* added debug info command ([efa1010](https://github.com/H3rmt/hyprshell/commit/efa10109c0af9ed04912f1e2066632650d460494))
+* added theme chooser ([8deccc2](https://github.com/H3rmt/hyprshell/commit/8deccc2dba445411bca4f781b93d9ddab52ac942))
+* added theme settings to config editor ([178f60b](https://github.com/H3rmt/hyprshell/commit/178f60b975a85ec54840801d627bdfd0a1bfd0b3))
+* allow custom key for switch mode ([3d07d3c](https://github.com/H3rmt/hyprshell/commit/3d07d3ceac3f1233f58498e7725c34c867450016))
+* generate config from gui ([c6237a2](https://github.com/H3rmt/hyprshell/commit/c6237a25ef6d0b676aedd48aa5260fd12e6b39f8))
+* retry getting version for 40 times ([9207c2a](https://github.com/H3rmt/hyprshell/commit/9207c2a9485211b3ba8c86c5e15cac35ca5e7c1d))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate ron to 0.12.0 ([1c6038a](https://github.com/H3rmt/hyprshell/commit/1c6038a3f546d56da6ce18a2cccdeaedc7fdd90b))
+* fix bin package for aur ([4906ccb](https://github.com/H3rmt/hyprshell/commit/4906ccb8344d3022298d225841276e89b703702a))
+* fix bin package for aur ([22a9b3b](https://github.com/H3rmt/hyprshell/commit/22a9b3b33e30ce810da9a806bbc61418f85537d9))
+* fix systemd unit generation ([4318bf5](https://github.com/H3rmt/hyprshell/commit/4318bf5442ac08dfde638caa97417d5ad67bd5c9))
+* **nix-flake:** update flake.lock ([54fb1d0](https://github.com/H3rmt/hyprshell/commit/54fb1d06a1e63a3abc3004caae96a306a0cdd98d))
+* **nix-flake:** update flake.lock ([cfe263a](https://github.com/H3rmt/hyprshell/commit/cfe263a09189d92c218f2223d6b4552200777410))
+* **nix-flake:** update flake.lock ([66e4a85](https://github.com/H3rmt/hyprshell/commit/66e4a85b98b06febd33036e8f14ed12bff923941))
+* update hyprland plugin ([3d07d3c](https://github.com/H3rmt/hyprshell/commit/3d07d3ceac3f1233f58498e7725c34c867450016))
+
+
+### Code Refactoring
+
+* add remaining plugin options ([ad9359f](https://github.com/H3rmt/hyprshell/commit/ad9359f6fb99042dbc94d229a343a5dffb789186))
+* fix clippy fixes ([219f14c](https://github.com/H3rmt/hyprshell/commit/219f14c2d857975cdd6f9f6149df6085956e39ef))
+* use justfile ([c6237a2](https://github.com/H3rmt/hyprshell/commit/c6237a25ef6d0b676aedd48aa5260fd12e6b39f8))
+* use relm4 as base for adw and gtk ([d95e69e](https://github.com/H3rmt/hyprshell/commit/d95e69e783de3333458eb2aa112ed9a22844355c))
+* use relm4 as base for adw and gtk ([f2e158c](https://github.com/H3rmt/hyprshell/commit/f2e158c0611773cb96d288451b965421ee4d1b3c))
+
+
+### Documentation
+
+* add minimum gtk and adwaita versions to README.md ([c33f431](https://github.com/H3rmt/hyprshell/commit/c33f431c3ef32e8530ca56589c5e107693ef4a2c))
+
 ## [4.8.3](https://github.com/H3rmt/hyprshell/compare/v4.8.2...v4.8.3) (2025-12-27)
 
 
