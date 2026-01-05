@@ -2,7 +2,7 @@
 members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/hyprland-plugin", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "crates/config-edit-lib"]
 
 [workspace.package]
-version = "4.8.3"
+version = "4.9.0"
 description = "A modern GTK4-based window switcher and application launcher for Hyprland"
 license = "MIT"
 authors = ["h3rmt"]
@@ -25,17 +25,17 @@ relm4 = { version = "0.10.0", default-features = false, features = ["libadwaita"
 relm4-components = "0.10.0"
 gtk4-layer-shell = { version = "0.7.1" }
 
-config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.8.3" }
-core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.8.3" }
-exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.8.3" }
-hyprland-plugin = { path = "crates/hyprland-plugin", package = "hyprshell-hyprland-plugin", version = "=4.8.3" }
+config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.9.0" }
+core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.9.0" }
+exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.9.0" }
+hyprland-plugin = { path = "crates/hyprland-plugin", package = "hyprshell-hyprland-plugin", version = "=4.9.0" }
 
 [package]
 name = "hyprshell"
 readme = "README.md"
 categories = []
 documentation = "https://docs.rs/hyprshell"
-version = "4.8.3"
+version = "4.9.0"
 edition.workspace = true
 description.workspace = true
 license.workspace = true
@@ -59,10 +59,10 @@ signal-hook = { version = "0.4.1" }
 config-lib.workspace = true
 core-lib.workspace = true
 exec-lib.workspace = true
-clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.8.3" }
-windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.8.3" }
-launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.8.3" }
-config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.8.3", optional = true }
+clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.9.0" }
+windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.9.0" }
+launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.9.0" }
+config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.9.0", optional = true }
 
 [dev-dependencies]
 test-log.workspace = true
