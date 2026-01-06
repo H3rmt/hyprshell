@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.2](https://github.com/H3rmt/hyprshell/compare/v4.9.1...v4.9.2) (2026-01-06)
+
+
+### Bug Fixes
+
+* fix release ci workflow ([eada938](https://github.com/H3rmt/hyprshell/commit/eada9385f52846c6468891cb061c5a879fd16098))
+
 ## [4.9.1](https://github.com/H3rmt/hyprshell/compare/v4.9.0...v4.9.1) (2026-01-06)
 
 
