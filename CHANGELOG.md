@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.9.1](https://github.com/H3rmt/hyprshell/compare/v4.9.0...v4.9.1) (2026-01-06)
+
+
+### Bug Fixes
+
+* add websearch and actions configs ([923055e](https://github.com/H3rmt/hyprshell/commit/923055ea721fd01a3abce376564cb7b2f81449dd))
+* reduce image size ([923055e](https://github.com/H3rmt/hyprshell/commit/923055ea721fd01a3abce376564cb7b2f81449dd))
+
 ## [4.9.0](https://github.com/H3rmt/hyprshell/compare/v4.8.3...v4.9.0) (2026-01-05)
 
 
