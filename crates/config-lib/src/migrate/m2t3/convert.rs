@@ -4,7 +4,7 @@ impl From<old_structs::Config> for crate::Config {
     fn from(value: old_structs::Config) -> Self {
         Self {
             windows: value.windows.map(old_structs::Windows::into),
-            version: Some(NEXT_CONFIG_VERSION),
+            version: NEXT_CONFIG_VERSION,
         }
     }
 }
@@ -15,6 +15,7 @@ impl From<old_structs::Windows> for crate::Windows {
             scale: value.scale,
             items_per_row: value.items_per_row,
             switch: value.switch,
+            switch_2: None,
             overview: value.overview.map(old_structs::Overview::into),
         }
     }
@@ -28,6 +29,7 @@ impl From<old_structs::Overview> for crate::Overview {
             filter_by: value.filter_by,
             hide_filtered: value.hide_filtered,
             launcher: value.launcher.into(),
+            exclude_special_workspaces: "".into(),
         }
     }
 }

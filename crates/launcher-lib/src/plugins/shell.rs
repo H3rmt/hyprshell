@@ -1,7 +1,7 @@
 use crate::plugins::{Identifier, PluginNames, PluginReturn, StaticLaunchOption};
-use adw::gtk::gdk::Key;
 use core_lib::WarnWithDetails;
 use exec_lib::run::run_program;
+use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
 use tracing::{debug, trace};
 

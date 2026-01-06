@@ -1,6 +1,5 @@
 //! Getting the offered MIME types and the clipboard contents.
 
-use os_pipe::{pipe, PipeReader};
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::io::Read;
@@ -8,6 +7,8 @@ use std::os::fd::AsFd;
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 use std::{io, thread};
+
+use os_pipe::{pipe, PipeReader};
 use wayland_client::globals::GlobalListContents;
 use wayland_client::protocol::wl_registry::WlRegistry;
 use wayland_client::protocol::wl_seat::WlSeat;

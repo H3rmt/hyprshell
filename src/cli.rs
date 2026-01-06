@@ -43,6 +43,10 @@ pub struct GlobalOpts {
     /// Path to cache directory [default: `$XDG_CACHE_HOME/hyprshell`]
     #[arg(long, global = true)]
     pub cache_dir: Option<PathBuf>,
+
+    /// Path to system data directory [default: `/usr/share/hyprshell`]
+    #[arg(long, global = true)]
+    pub system_data_dir: Option<PathBuf>,
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -96,17 +100,8 @@ pub enum Command {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum ConfigCommand {
-    /// Generate a default config file
-    #[cfg(feature = "generate_config_command")]
-    Generate {
-        /// Force overwrite of a config file, can be used multiple times
-        #[arg(short = 'f', long, default_missing_value = "all", value_parser = ["config", "css", "all"], num_args(0..=1))]
-        force: Vec<String>,
-
-        /// dont generate systemd unit file
-        #[arg(long)]
-        no_systemd: bool,
-    },
+    /// Generate a default config file (just opens GUI editor)
+    Generate {},
 
     /// Edit the config file with a GUI
     Edit {},
@@ -166,6 +161,9 @@ pub enum DebugCommand {
         #[clap(subcommand)]
         command: DefaultApplicationsCommand,
     },
+
+    /// print debug info
+    Info {},
 }
 
 #[derive(Subcommand, Debug, Clone)]

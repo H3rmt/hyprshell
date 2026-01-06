@@ -1,5 +1,5 @@
 use crate::LauncherData;
-use adw::gtk::prelude::*;
+use relm4::adw::gtk::prelude::*;
 use tracing::{debug_span, trace};
 
 pub fn stop_launcher(data: &LauncherData) {

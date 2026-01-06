@@ -14,17 +14,6 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .windows
         .as_ref()
         .and_then(|w| w.overview.as_ref())
-        .is_some_and(|o| o.launcher.launch_modifier == o.modifier)
-    {
-        bail!(
-            "Launcher modifier cannot be the same as overview open modifier. (pressing the modifier will just close the overview instead of launching an app)"
-        );
-    }
-
-    if config
-        .windows
-        .as_ref()
-        .and_then(|w| w.overview.as_ref())
         .is_some_and(|o| matches!(&*o.key, "super" | "alt" | "control" | "ctrl"))
     {
         bail!(
@@ -37,10 +26,10 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         .as_ref()
         .and_then(|w| w.overview.as_ref().map(|o| &o.launcher))
     {
-        if let Some(dt) = &l.default_terminal {
-            if dt.is_empty() {
-                bail!("Default terminal command cannot be empty");
-            }
+        if let Some(dt) = &l.default_terminal
+            && dt.is_empty()
+        {
+            bail!("Default terminal command cannot be empty");
         }
 
         let mut used: Vec<char> = vec![];
@@ -110,21 +99,6 @@ mod tests {
             .as_mut()
             .expect("config option missing")
             .scale = 0.0;
-        assert!(check(&config).is_err());
-    }
-
-    #[test_log::test]
-    #[test_log(default_log_filter = "trace")]
-    fn test_same_modifier() {
-        let mut config = full();
-        let overview = config
-            .windows
-            .as_mut()
-            .expect("config option missing")
-            .overview
-            .as_mut()
-            .expect("config option missing");
-        overview.launcher.launch_modifier = overview.modifier;
         assert!(check(&config).is_err());
     }
 

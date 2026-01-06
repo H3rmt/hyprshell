@@ -1,6 +1,6 @@
 use crate::desktop_map::{add_path_for_icon_by_pid_exec, get_icon_name_by_name_from_desktop_files};
-use adw::gtk::Image;
 use core_lib::{WarnWithDetails, default};
+use relm4::adw::gtk::Image;
 use std::fs;
 use std::path::Path;
 use tracing::{debug_span, trace, warn};

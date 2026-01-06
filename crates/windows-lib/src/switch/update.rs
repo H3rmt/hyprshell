@@ -1,7 +1,7 @@
 use crate::global::WindowsSwitchData;
 use crate::next::{find_next_client, find_next_workspace};
-use adw::prelude::WidgetExt;
 use core_lib::transfer::SwitchSwitchConfig;
+use relm4::adw::prelude::WidgetExt;
 use tracing::debug_span;
 
 pub fn update_switch(data: &mut WindowsSwitchData, config: &SwitchSwitchConfig) {

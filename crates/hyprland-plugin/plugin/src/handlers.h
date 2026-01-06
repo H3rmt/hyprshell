@@ -1,6 +1,6 @@
 #pragma once
 #include <hyprland/src/devices/IPointer.hpp>
-#include <hyprland/src/desktop/LayerSurface.hpp>
+#include <hyprland/src/desktop/view/LayerSurface.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 
 

@@ -24,7 +24,7 @@ The application also includes a launcher for running applications, doing calcula
 
 ## Installation
 
-**Minimum hyprland version: 0.52.0**
+**Minimum hyprland version: 0.52.1**
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
 
@@ -54,13 +54,13 @@ More information can be found in the [NixOS](docs/NIX.md) section.
 
 ### From Source
 
-hyprland, libadwaita and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
+hyprland, gtk4[v4_18], libadwaita[v1_8] and [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell)[1.1.1] must be installed
 
 ```bash
 cargo install hyprshell
 ```
 
-Less features in [slim](#feature-flags) mode
+Build with less features in [slim](#feature-flags) mode
 
 ```bash
 cargo install hyprshell --no-default-features --features "slim"
@@ -72,7 +72,7 @@ Fedora: `sudo dnf install gtk4-layer-shell-devel libadwaita-devel hyprland-devel
 
 Arch: `sudo pacman -Sy gtk4-layer-shell libadwaita hyprland`
 
-Minimum required rustc version: `1.87.0`
+Minimum required rustc version: `1.92.0`
 
 ## Usage
 
@@ -127,7 +127,7 @@ Debug commands are provided to help troubleshoot desktop files, icons, default a
 
 ✨ = included in the slim feature set. (build with ``--no-default-features --features "slim"``)
 
-- `generate_config_command`✅✨: Adds the `hyprshell config generate` command to interactively generate a config file.
+- `gui_settings_editor`✅✨: Adds the `hyprshell config edit` command to open the settings editor.
 - `json5_config`✅: Adds support for a json5 config file.
 - `launcher_calc`✅: Adds support for the calc plugin in the launcher.
 - `debug_command`✅✨: Adds the `hyprshell debug` command to debug icons, desktop files, etc.

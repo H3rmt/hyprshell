@@ -1,10 +1,12 @@
 mod boot;
 mod exec;
+mod exists;
 mod helpers;
 mod path;
 
 pub use boot::*;
 pub use exec::*;
+pub use exists::*;
 pub use helpers::*;
 pub use path::*;
 use std::env::{var, var_os};

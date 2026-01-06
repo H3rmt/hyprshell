@@ -27,7 +27,7 @@ pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
 
 fn plugin(config: &Config) -> anyhow::Result<()> {
     if let Some(windows) = &config.windows {
-        let switch = windows.switch.as_ref().map(|s| s.modifier);
+        let switch = windows.switch.as_ref().map(|s| (s.modifier, s.key.clone()));
         let overview = windows
             .overview
             .as_ref()

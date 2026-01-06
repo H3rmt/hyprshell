@@ -8,13 +8,13 @@ use std::ffi::OsStr;
 use std::path::Path;
 use tracing::{debug, debug_span, info, trace, warn};
 
-pub fn load_and_migrate_config(config_path: &Path, allow_migrate: bool) -> anyhow::Result<Config> {
-    let _span = debug_span!("load_config", path =? config_path).entered();
-    if !config_path.exists() {
+pub fn load_and_migrate_config(config_file: &Path, allow_migrate: bool) -> anyhow::Result<Config> {
+    let _span = debug_span!("load_config", path =? config_file).entered();
+    if !config_file.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
 
-    if check_migration_needed(config_path)
+    if check_migration_needed(config_file)
         .inspect_err(|e| warn!("Failed to check if migration is needed: {e:?}"))
         .unwrap_or(false)
     {
@@ -22,7 +22,7 @@ pub fn load_and_migrate_config(config_path: &Path, allow_migrate: bool) -> anyho
         if !allow_migrate {
             bail!("Config file needs migration, but migration is not allowed.");
         }
-        let migrated = crate::migrate::migrate(config_path);
+        let migrated = crate::migrate::migrate(config_file);
         match migrated {
             Ok(config) => {
                 info!("Config migrated successfully");
@@ -36,10 +36,10 @@ pub fn load_and_migrate_config(config_path: &Path, allow_migrate: bool) -> anyho
     }
     trace!("No migration needed");
 
-    let config: Config = load_config_file(config_path).with_context(|| {
+    let config: Config = load_config_file(config_file).with_context(|| {
         format!(
             "Failed to load config from file ({})",
-            config_path.display()
+            config_file.display()
         )
     })?;
     debug!("Loaded config");
@@ -49,44 +49,44 @@ pub fn load_and_migrate_config(config_path: &Path, allow_migrate: bool) -> anyho
     Ok(config)
 }
 
-pub fn load_config_file<T: DeserializeOwned>(config_path: &Path) -> anyhow::Result<T> {
-    let config_path_display = config_path.display();
-    match config_path.extension().and_then(OsStr::to_str) {
+pub fn load_config_file<T: DeserializeOwned>(config_file: &Path) -> anyhow::Result<T> {
+    let config_file_display = config_file.display();
+    match config_file.extension().and_then(OsStr::to_str) {
         None | Some("ron") => {
             let options = Options::default()
                 .with_default_extension(Extensions::IMPLICIT_SOME)
                 .with_default_extension(Extensions::UNWRAP_NEWTYPES)
                 .with_default_extension(Extensions::UNWRAP_VARIANT_NEWTYPES);
-            let file = std::fs::File::open(config_path)
-                .with_context(|| format!("Failed to open RON config at ({config_path_display})"))?;
+            let file = std::fs::File::open(config_file)
+                .with_context(|| format!("Failed to open RON config at ({config_file_display})"))?;
             options
                 .from_reader(file)
-                .with_context(|| format!("Failed to read RON config at ({config_path_display})"))
+                .with_context(|| format!("Failed to read RON config at ({config_file_display})"))
         }
         #[cfg(not(feature = "json5_config"))]
         Some("json") => {
-            let file = std::fs::File::open(config_path).with_context(|| {
-                format!("Failed to open JSON5 config at ({config_path_display})")
+            let file = std::fs::File::open(config_file).with_context(|| {
+                format!("Failed to open JSON5 config at ({config_file_display})")
             })?;
             serde_json::from_reader(file)
-                .with_context(|| format!("Failed to read JSON5 config at ({config_path_display})"))
+                .with_context(|| format!("Failed to read JSON5 config at ({config_file_display})"))
         }
         #[cfg(feature = "json5_config")]
         Some("json5" | "json") => {
-            let file = std::fs::File::open(config_path).with_context(|| {
-                format!("Failed to open JSON5 config at ({config_path_display})")
+            let file = std::fs::File::open(config_file).with_context(|| {
+                format!("Failed to open JSON5 config at ({config_file_display})")
             })?;
             serde_json5::from_reader(file)
-                .with_context(|| format!("Failed to read JSON5 config at ({config_path_display})"))
+                .with_context(|| format!("Failed to read JSON5 config at ({config_file_display})"))
         }
         Some("toml") => {
             use std::io::Read;
-            let mut file = std::fs::File::open(config_path).with_context(|| {
-                format!("Failed to open TOML config at ({config_path_display})")
+            let mut file = std::fs::File::open(config_file).with_context(|| {
+                format!("Failed to open TOML config at ({config_file_display})")
             })?;
             let mut content = String::new();
             file.read_to_string(&mut content).with_context(|| {
-                format!("Failed to read TOML config at ({config_path_display})")
+                format!("Failed to read TOML config at ({config_file_display})")
             })?;
             toml::from_str(&content).context("Failed to parse TOML config")
         }

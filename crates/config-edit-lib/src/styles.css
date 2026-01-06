@@ -68,12 +68,12 @@
     background: unset;
 }
 
-.changes-list {
+.items-list {
     padding: 8px;
     border-radius: 12px;
 }
 
-.changes-list > row {
+.items-list > row {
     padding: 6px;
 }
 
@@ -81,4 +81,43 @@
     padding: 16px;
     border-radius: 12px;
     border: 2px solid var(--border-color);
+}
+
+.theme-carousel {
+    /*border: 2px solid var(--border-color);*/
+    border-radius: 24px;
+}
+
+.theme {
+    padding: 24px;
+    /*background: red;*/
+}
+
+.theme-image {
+    border-radius: 18px;
+    border: 2px solid var(--border-color);
+    min-height: 100px;
+    min-width: 100px;
+}
+
+.blue-label {
+    color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
+}
+
+.gray-label {
+    color: color-mix(in srgb, currentColor 40%, #464444 60%);
+}
+
+.generate-min-width {
+    min-width: 270px;
+}
+
+button.active {
+    border: 2px solid #62a600;
+    box-shadow: inset 0 0 12px #62a600;
+}
+
+button.not-active {
+    border: 2px solid transparent;
+    box-shadow: none;
 }

@@ -20,6 +20,7 @@ PluginDescriptionInfo init(HANDLE handle) {
 
     // ignore that this can return XKB_KEY_NoSymbol, it is only used to check if keysym equals
     OVERVIEW_KEY = xkb_keysym_from_name(HYPRSHELL_OVERVIEW_KEY, XKB_KEYSYM_CASE_INSENSITIVE);
+    SWITCH_KEY = xkb_keysym_from_name(HYPRSHELL_SWITCH_KEY, XKB_KEYSYM_CASE_INSENSITIVE);
     if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
         const auto info = std::string("Config: ") +
                           HYPRSHELL_OVERVIEW_KEY + ", " +

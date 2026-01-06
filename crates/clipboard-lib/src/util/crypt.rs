@@ -1,22 +1,17 @@
 use anyhow::Context;
+use crypto_common::Generate;
 use std::io::Write;
 use tracing::trace;
 
-pub fn generate_new_cha_cha_key() -> anyhow::Result<Vec<u8>> {
-    #[cfg(feature = "encrypt_chacha20poly1305")]
-    {
-        use chacha20poly1305::KeyInit;
-        chacha20poly1305::ChaCha20Poly1305::generate_key()
-            .map_err(|_| anyhow::anyhow!("Failed to generate new encryption key"))
-            .map(|k| k.to_vec())
-    }
-    #[cfg(all(not(feature = "encrypt_chacha20poly1305"), feature = "encrypt_aes_gcm"))]
-    {
-        use aes_gcm::KeyInit;
-        aes_gcm::Aes256Gcm::generate_key()
-            .map_err(|_| anyhow::anyhow!("Failed to generate new encryption key"))
-            .map(|k| k.to_vec())
-    }
+#[cfg(feature = "encrypt_chacha20poly1305")]
+type K = chacha20poly1305::Key;
+#[cfg(all(not(feature = "encrypt_chacha20poly1305"), feature = "encrypt_aes_gcm"))]
+type K = aes_gcm::Key<aes_gcm::Aes256Gcm>;
+
+pub fn generate_new_key() -> anyhow::Result<Vec<u8>> {
+    K::try_generate()
+        .map_err(|_| anyhow::anyhow!("Failed to generate new encryption key"))
+        .map(|k| k.to_vec())
 }
 
 pub struct SecretEncryptWriter<W: Write> {
@@ -48,8 +43,8 @@ impl<W: Write> SecretEncryptWriter<W> {
         match self.config {
             #[cfg(feature = "encrypt_chacha20poly1305")]
             Config::ChaCha20Poly1305 => {
-                use chacha20poly1305::{AeadCore, KeyInit, aead::Aead};
-                let nonce = chacha20poly1305::ChaCha20Poly1305::generate_nonce()
+                use chacha20poly1305::{KeyInit, aead::Aead};
+                let nonce = chacha20poly1305::Nonce::try_generate()
                     .map_err(|_| anyhow::anyhow!("Failed to generate nonce"))?;
                 let cypher = chacha20poly1305::ChaCha20Poly1305::new_from_slice(&self.key)
                     .context("Failed to generate cypher with encryption key")?;
@@ -62,8 +57,8 @@ impl<W: Write> SecretEncryptWriter<W> {
             }
             #[cfg(feature = "encrypt_aes_gcm")]
             Config::AesGcm => {
-                use aes_gcm::{AeadCore, KeyInit, aead::Aead};
-                let nonce = aes_gcm::Aes256Gcm::generate_nonce()
+                use aes_gcm::{KeyInit, aead::Aead};
+                let nonce = aes_gcm::Nonce::try_generate()
                     .map_err(|_| anyhow::anyhow!("Failed to generate nonce"))?;
                 let cypher = aes_gcm::Aes256Gcm::new_from_slice(&self.key)
                     .context("Failed to generate cypher with encryption key")?;

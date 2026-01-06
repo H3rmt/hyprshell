@@ -13,7 +13,7 @@ use tracing::{debug, warn};
 use wl_clipboard::paste::{CallbackData, Seat, get_all_contents_callback};
 
 /// # Panics
-pub fn test_clipboard(cache_dir: PathBuf) {
+pub fn test_clipboard(_data_dir: PathBuf, cache_dir: PathBuf) {
     debug!("Starting clipboard listener");
     let cl_config = Arc::new(RwLock::new(conf()));
 

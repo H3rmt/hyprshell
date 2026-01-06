@@ -1,13 +1,13 @@
 use crate::start::Globals;
 use crate::util;
-use adw::gtk::prelude::{ApplicationExt, EntryExt};
-use adw::gtk::{gio, glib};
 use async_channel::{Receiver, Sender};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{
     CloseOverviewConfig, Direction, OpenSwitch, SwitchOverviewConfig, SwitchSwitchConfig,
     TransferType,
 };
+use relm4::adw::gtk::prelude::{ApplicationExt, EntryExt};
+use relm4::adw::gtk::{gio, glib};
 use tracing::{debug, trace, warn};
 
 #[allow(clippy::future_not_send)]
@@ -44,10 +44,10 @@ pub async fn event_handler(
 }
 
 fn r#type(global: &mut Globals, text: &str, event_sender: &Sender<TransferType>) {
-    if let Some(windows) = &mut global.windows {
-        if let Some((_overview, launcher)) = &mut windows.overview {
-            launcher_lib::update_launcher(launcher, text, event_sender);
-        }
+    if let Some(windows) = &mut global.windows
+        && let Some((_overview, launcher)) = &mut windows.overview
+    {
+        launcher_lib::update_launcher(launcher, text, event_sender);
     }
 }
 
@@ -183,63 +183,64 @@ fn exit(global: &mut Globals) {
 }
 
 fn close_overview(global: &mut Globals, config: CloseOverviewConfig) {
-    if let Some(windows) = &mut global.windows {
-        if let Some((overview, launcher)) = &mut windows.overview {
-            if windows_lib::overview_already_hidden(overview) {
-                debug!("Overview is already closed");
-                return;
-            }
-            match config {
-                // return (focus active)
-                CloseOverviewConfig::None => {
-                    let launcher_empty = launcher.entry.text_length() == 0;
-                    let other_active = overview.active != overview.initial_active;
-                    let launcher_no_items = launcher.sorted_matches.is_empty();
-                    if launcher_empty && other_active {
-                        // close overview, kill launcher
-                        windows_lib::close_overview(overview, Some(None));
-                        launcher_lib::close_launcher_by_char(launcher, None);
-                    } else if launcher_no_items {
-                        debug!("Launcher is empty, not closing");
-                    } else {
-                        // kill overview, close launcher
-                        windows_lib::close_overview(overview, None);
-                        launcher_lib::close_launcher_by_char(launcher, Some('0'));
-                    }
-                }
-                // clicked on launcher item
-                CloseOverviewConfig::LauncherClick(iden) => {
-                    windows_lib::close_overview(overview, None);
-                    launcher_lib::close_launcher_by_iden(launcher, &iden);
-                }
-                // typed a character in launcher
-                CloseOverviewConfig::LauncherPress(iden) => {
-                    windows_lib::close_overview(overview, None);
-                    launcher_lib::close_launcher_by_char(launcher, Some(iden));
-                }
-                // clicked on window
-                CloseOverviewConfig::Windows(iden) => {
-                    windows_lib::close_overview(overview, Some(Some(iden)));
+    if let Some(windows) = &mut global.windows
+        && let Some((overview, launcher)) = &mut windows.overview
+    {
+        if windows_lib::overview_already_hidden(overview) {
+            debug!("Overview is already closed");
+            return;
+        }
+        match config {
+            // return (focus active)
+            CloseOverviewConfig::None => {
+                let launcher_empty = launcher.entry.text_length() == 0;
+                let other_active = overview.active != overview.initial_active;
+                let launcher_no_items = launcher.sorted_matches.is_empty();
+                if launcher_empty && other_active {
+                    // close overview, kill launcher
+                    windows_lib::close_overview(overview, Some(None));
                     launcher_lib::close_launcher_by_char(launcher, None);
+                } else if launcher_no_items {
+                    debug!("Launcher is empty, not closing");
+                } else {
+                    // kill overview, close launcher
+                    windows_lib::close_overview(overview, None);
+                    launcher_lib::close_launcher_by_char(launcher, Some('0'));
                 }
+            }
+            // clicked on launcher item
+            CloseOverviewConfig::LauncherClick(iden) => {
+                windows_lib::close_overview(overview, None);
+                launcher_lib::close_launcher_by_iden(launcher, &iden);
+            }
+            // typed a character in launcher
+            CloseOverviewConfig::LauncherPress(iden) => {
+                windows_lib::close_overview(overview, None);
+                launcher_lib::close_launcher_by_char(launcher, Some(iden));
+            }
+            // clicked on window
+            CloseOverviewConfig::Windows(iden) => {
+                windows_lib::close_overview(overview, Some(Some(iden)));
+                launcher_lib::close_launcher_by_char(launcher, None);
             }
         }
     }
 }
 
 fn close_switch(global: &mut Globals) {
-    if let Some(windows) = &mut global.windows {
-        if let Some(switch) = &mut windows.switch {
-            if windows_lib::switch_already_hidden(switch) {
-                debug!("Switch is already closed");
-                return;
-            }
-            windows_lib::close_switch(switch, true);
+    if let Some(windows) = &mut global.windows
+        && let Some(switch) = &mut windows.switch
+    {
+        if windows_lib::switch_already_hidden(switch) {
+            debug!("Switch is already closed");
+            return;
         }
+        windows_lib::close_switch(switch, true);
     }
 }
 
 fn restart(global: &Globals) {
+    // TODO block some time after recreating windows
     if let Some(windows) = &global.windows {
         if let Some((overview, launcher)) = &windows.overview {
             windows_lib::stop_overview(overview);

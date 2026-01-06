@@ -1,11 +1,4 @@
 use crate::global::{WindowsSwitchConfig, WindowsSwitchData};
-use adw::gtk::gdk::Key;
-use adw::gtk::glib::Propagation;
-use adw::gtk::prelude::*;
-use adw::gtk::{
-    Application, ApplicationWindow, EventControllerKey, FlowBox, Orientation, Overlay,
-    SelectionMode,
-};
 use anyhow::Context;
 use async_channel::Sender;
 use config_lib::{FilterBy, Modifier, Switch, Windows};
@@ -13,6 +6,13 @@ use core_lib::transfer::{Direction, SwitchSwitchConfig, TransferType};
 use core_lib::{HyprlandData, SWITCH_NAMESPACE, WarnWithDetails};
 use exec_lib::get_initial_active;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
+use relm4::adw::gtk::gdk::Key;
+use relm4::adw::gtk::glib::Propagation;
+use relm4::adw::gtk::prelude::*;
+use relm4::adw::gtk::{
+    Application, ApplicationWindow, EventControllerKey, FlowBox, Orientation, Overlay,
+    SelectionMode,
+};
 use std::collections::HashMap;
 use tracing::{debug, debug_span};
 
@@ -44,9 +44,10 @@ pub fn create_windows_switch_window(
         .default_width(10)
         .build();
 
+    let s_key = Key::from_name(switch.key.to_string()).context("invalid switch key")?;
     let key_controller = EventControllerKey::new();
     let event_sender_2 = event_sender.clone();
-    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, &event_sender_2));
+    key_controller.connect_key_pressed(move |_, key, _, _| handle_key(key, s_key, &event_sender_2));
     let event_sender_3 = event_sender;
     let r#mod = switch.modifier;
     key_controller.connect_key_released(move |_, key, _, _| {
@@ -58,10 +59,8 @@ pub fn create_windows_switch_window(
     window.set_namespace(Some(SWITCH_NAMESPACE));
     window.set_layer(Layer::Top);
     // we only have one window, so we can do this
-    // we also don't use adw::gtk::Popover which doesnt work with exclusive mode
+    // we also don't use relm4::adw::gtk::Popover which doesnt work with exclusive mode
     window.set_keyboard_mode(KeyboardMode::Exclusive);
-    window.present();
-    window.set_visible(false);
 
     debug!("Created switch window ({})", window.id());
 
@@ -94,9 +93,9 @@ fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferTy
     }
 }
 
-fn handle_key(key: Key, event_sender: &Sender<TransferType>) -> Propagation {
+fn handle_key(key: Key, s_key: Key, event_sender: &Sender<TransferType>) -> Propagation {
     match key {
-        Key::Tab | Key::l | Key::Right => {
+        k if k == s_key || k == Key::l || k == Key::Right => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Right,

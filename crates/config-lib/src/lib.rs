@@ -1,12 +1,12 @@
+pub mod actions;
 mod check;
 mod explain;
-#[cfg(feature = "generate_config")]
-pub mod generate;
 mod load;
 mod migrate;
 mod modifier;
 mod save;
 mod structs;
+pub mod style;
 
 pub use check::check;
 pub use explain::explain;
@@ -15,4 +15,4 @@ pub use modifier::*;
 pub use save::write_config;
 pub use structs::*;
 
-pub(crate) const CURRENT_CONFIG_VERSION: u16 = 3;
+pub const CURRENT_CONFIG_VERSION: u16 = 3;

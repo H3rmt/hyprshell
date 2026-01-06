@@ -1,7 +1,7 @@
 use crate::plugins::{Identifier, PluginNames, SortableLaunchOption};
-use adw::gtk::gdk::Display;
-use adw::gtk::prelude::DisplayExt;
 use core_lib::WarnWithDetails;
+use relm4::adw::gtk::gdk::Display;
+use relm4::adw::gtk::prelude::DisplayExt;
 use std::path::Path;
 use std::sync::{OnceLock, RwLock};
 use tracing::{debug, trace};
@@ -56,11 +56,11 @@ pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
 }
 
 pub fn copy_result(data: Option<&str>) -> bool {
-    if let Some(data) = data {
-        if let Some(clipboard) = Display::default().map(|display| display.clipboard()) {
-            debug!("Copying result to clipboard: {}", data);
-            clipboard.set_text(data.as_ref());
-        }
+    if let Some(data) = data
+        && let Some(clipboard) = Display::default().map(|display| display.clipboard())
+    {
+        debug!("Copying result to clipboard: {}", data);
+        clipboard.set_text(data.as_ref());
     }
     false
 }

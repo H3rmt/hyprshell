@@ -1,17 +1,14 @@
 use crate::Modifier;
 use serde::{Deserialize, Serialize};
 use smart_default::SmartDefault;
+use std::path::Path;
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    #[cfg_attr(
-        not(feature = "ci_no_default_config_values"),
-        default(Some(crate::CURRENT_CONFIG_VERSION))
-    )]
-    #[cfg_attr(feature = "ci_no_default_config_values", default(None))]
-    pub version: Option<u16>,
+    #[default(crate::CURRENT_CONFIG_VERSION)]
+    pub version: u16,
     #[default(None)]
     pub windows: Option<Windows>,
 }
@@ -28,6 +25,8 @@ pub struct Windows {
     pub overview: Option<Overview>,
     #[default(None)]
     pub switch: Option<Switch>,
+    #[default(None)]
+    pub switch_2: Option<Switch>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -35,7 +34,7 @@ pub struct Windows {
 #[serde(deny_unknown_fields)]
 pub struct Overview {
     pub launcher: Launcher,
-    #[default = "super_l"]
+    #[default = "Super_L"]
     pub key: Box<str>,
     #[default(Modifier::Super)]
     pub modifier: Modifier,
@@ -43,6 +42,8 @@ pub struct Overview {
     pub filter_by: Vec<FilterBy>,
     #[default = false]
     pub hide_filtered: bool,
+    #[default = ""]
+    pub exclude_special_workspaces: Box<str>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -105,13 +106,13 @@ pub struct ActionsPluginConfig {
             names: vec!["Kill".into(), "Stop".into()],
             details: "Kill or stop a process by name".into(),
             command: "pkill \"{}\" && notify-send hyprshell \"stopped {}\"".into(),
-            icon: "remove".into(),
+            icon: Box::from(Path::new("remove")),
         }),
         ActionsPluginAction::Custom(ActionsPluginActionCustom {
             names: vec!["Reload Hyprshell".into()],
             details: "Reload Hyprshell".into(),
             command: "sleep 1; hyprshell socat '\"Restart\"'".into(),
-            icon: "system-restart".into(),
+            icon: Box::from(Path::new("system-restart")),
         }),
     ])]
     pub actions: Vec<ActionsPluginAction>,
@@ -147,7 +148,7 @@ pub struct ActionsPluginActionCustom {
     pub names: Vec<Box<str>>,
     pub details: Box<str>,
     pub command: Box<str>,
-    pub icon: Box<str>,
+    pub icon: Box<Path>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -180,11 +181,14 @@ pub struct SearchEngine {
 pub struct Switch {
     #[default(Modifier::Alt)]
     pub modifier: Modifier,
+    #[default = "Tab"]
+    pub key: Box<str>,
     #[default(vec![FilterBy::CurrentMonitor])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]
     pub switch_workspaces: bool,
-    // TODO add option to include special workspace
+    #[default = ""]
+    pub exclude_special_workspaces: Box<str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

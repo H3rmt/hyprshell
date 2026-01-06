@@ -1,5 +1,5 @@
 #include "globals.h"
-#include <hyprland/src/desktop/LayerSurface.hpp>
+#include <hyprland/src/desktop/view/LayerSurface.hpp>
 
 void onKeyboardFocus(const SP<CWLSurfaceResource> &surface) {
     if (LAYER_VISIBLE) {

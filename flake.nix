@@ -43,6 +43,7 @@
                 preFixup =
                   buildLib.addWrapWithGccArgs
                     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+                postInstall = buildLib.postInstall;
               }
             );
             hyprshell-nixpkgs = craneLib.buildPackage (
@@ -50,6 +51,7 @@
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
                 preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
+                postInstall = buildLib.postInstall;
               }
             );
             hyprshell-slim = craneLib.buildPackage (
@@ -60,6 +62,7 @@
                 preFixup =
                   buildLib.addWrapWithGccArgs
                     inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
+                postInstall = buildLib.postInstall;
               }
             );
             hyprshell-slim-nixpkgs = craneLib.buildPackage (
@@ -68,6 +71,7 @@
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
                 cargoExtraArgs = "--no-default-features --features slim";
                 preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
+                postInstall = buildLib.postInstall;
               }
             );
             default = hyprshell;

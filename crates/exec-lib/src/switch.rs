@@ -43,11 +43,11 @@ pub fn switch_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
 
     // check if already on workspace (if so, don't switch because it throws an error `Previous workspace doesn't exist`)
     let current_workspace = Workspace::get_active();
-    if let Ok(workspace) = current_workspace {
-        if workspace_id == workspace.id {
-            trace!("Already on workspace {}", workspace_id);
-            return Ok(());
-        }
+    if let Ok(workspace) = current_workspace
+        && workspace_id == workspace.id
+    {
+        trace!("Already on workspace {}", workspace_id);
+        return Ok(());
     }
 
     if workspace_id < 0 {

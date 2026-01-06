@@ -1,0 +1,16 @@
+:root {
+    --border-color: rgba(45, 45, 45, 1);
+    --border-color-active: rgba(0, 180, 255, 1);
+
+    --bg-color: rgba(12, 12, 12, 0.8);
+    --bg-color-hover: rgba(28, 28, 28, 1);
+
+    --border-radius: 12px;
+    --border-size: 3px;
+    --border-style: solid;
+
+    --text-color: rgba(245, 245, 245, 1);
+
+    --window-padding: 3px;
+    --bg-window-color: rgba(18, 18, 18, 0.95);
+}

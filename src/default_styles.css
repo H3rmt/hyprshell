@@ -58,6 +58,10 @@ flowboxchild {
     text-decoration-style: wavy;
 }
 
+.text-grayed {
+    color: color-mix(in srgb, currentColor 40%, #464444 60%);
+}
+
 tooltip {
     font-size: 1rem;
     padding: 5px;
@@ -69,4 +73,6 @@ tooltip {
 /* window text color */
 .window {
     color: var(--text-color, rgba(245, 245, 245, 1));
+    /* padding for the window */
+    padding: 18px;
 }

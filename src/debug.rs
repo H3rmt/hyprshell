@@ -87,8 +87,8 @@ pub fn list_desktop_files() {
     }
 }
 
-pub fn search(text: &str, all: bool, config_path: &Path, data_dir: &Path) {
-    let (plugins, max_items) = config_lib::load_and_migrate_config(config_path, true)
+pub fn search(text: &str, all: bool, config_file: &Path, data_dir: &Path) {
+    let (plugins, max_items) = config_lib::load_and_migrate_config(config_file, true)
         .ok()
         .and_then(|c| c.windows)
         .and_then(|w| w.overview)
@@ -100,4 +100,63 @@ pub fn search(text: &str, all: bool, config_path: &Path, data_dir: &Path) {
             |o| (o.launcher.plugins, o.launcher.max_items),
         );
     launcher_lib::debug::get_matches(&plugins, text, all, max_items, data_dir);
+}
+
+pub fn info(
+    data_dir: &Path,
+    cache_dir: &Path,
+    css_file: &Path,
+    config_file: &Path,
+    system_data_dir: &Path,
+) {
+    println!("config version: {}", config_lib::CURRENT_CONFIG_VERSION);
+
+    println!("css_file: {}", css_file.display());
+    println!("config_file: {}", config_file.display());
+    println!("data_dir: {}", data_dir.display());
+    println!("cache_dir: {}", cache_dir.display());
+    println!("system_data_dir: {}", system_data_dir.display());
+
+    let dirs = [
+        ("data_dir", data_dir),
+        ("cache_dir", cache_dir),
+        ("system_data_dir", system_data_dir),
+    ];
+
+    for (name, path) in dirs {
+        if path.exists() && path.is_dir() {
+            let (folders, files) = count_dir(path);
+            println!("{name}: {folders} folders, {files} files (recursive)");
+        } else {
+            println!(
+                "{name}: not a directory or does not exist: {}",
+                path.display()
+            );
+        }
+    }
+}
+
+fn count_dir(path: &Path) -> (usize, usize) {
+    let mut folders = 0usize;
+    let mut files = 0usize;
+    let mut stack = vec![path.to_path_buf()];
+    while let Some(p) = stack.pop() {
+        match fs::read_dir(&p) {
+            Ok(rd) => {
+                for entry in rd.flatten() {
+                    let path = entry.path();
+                    match entry.file_type() {
+                        Ok(ft) if ft.is_dir() => {
+                            folders += 1;
+                            stack.push(path);
+                        }
+                        Ok(ft) if ft.is_file() => files += 1,
+                        _ => {}
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+    (folders, files)
 }

@@ -1,15 +1,8 @@
 use crate::plugins::{Identifier, PluginNames, PluginReturn, SortableLaunchOption};
-use config_lib::ActionsPluginConfig;
+use config_lib::actions::ToAction;
+use config_lib::{ActionsPluginActionCustom, ActionsPluginConfig};
 use core_lib::WarnWithDetails;
-use std::path::{Path, PathBuf};
 use tracing::{info, trace};
-
-struct Action {
-    names: Vec<Box<str>>,
-    details: Box<str>,
-    command: Box<str>,
-    icon: Box<Path>,
-}
 
 pub fn get_actions_options(
     matches: &mut Vec<SortableLaunchOption>,
@@ -24,8 +17,9 @@ pub fn get_actions_options(
     let actions = config
         .actions
         .iter()
-        .map(get_action)
-        .collect::<Vec<Action>>();
+        .cloned()
+        .map(ToAction::to_action)
+        .collect::<Vec<ActionsPluginActionCustom>>();
 
     for action in actions {
         if action.names.iter().any(|name| {
@@ -90,52 +84,5 @@ pub fn run_action(data: Option<&str>) -> PluginReturn {
 
     PluginReturn {
         show_animation: true,
-    }
-}
-
-fn get_action(action: &config_lib::ActionsPluginAction) -> Action {
-    match action {
-        config_lib::ActionsPluginAction::LockScreen => Action {
-            names: vec![Box::from("Lock Screen")],
-            details: Box::from("Lock the screen"),
-            command: Box::from("loginctl lock-session"),
-            icon: PathBuf::from("system-lock-screen").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Hibernate => Action {
-            names: vec![Box::from("Hibernate")],
-            details: Box::from("Hibernate the computer"),
-            command: Box::from("systemctl hibernate"),
-            icon: PathBuf::from("system-hibernate").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Logout => Action {
-            names: vec![Box::from("Log Out"), Box::from("Logout")],
-            details: Box::from("Log out of the session"),
-            command: Box::from("loginctl terminate-session self"),
-            icon: PathBuf::from("system-log-out").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Reboot => Action {
-            names: vec![Box::from("Reboot"), Box::from("Restart")],
-            details: Box::from("Reboot the computer"),
-            command: Box::from("systemctl reboot"),
-            icon: PathBuf::from("system-reboot").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Shutdown => Action {
-            names: vec![Box::from("Shut Down"), Box::from("Power off")],
-            details: Box::from("Shut down the computer"),
-            command: Box::from("systemctl poweroff"),
-            icon: PathBuf::from("system-shutdown").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Suspend => Action {
-            names: vec![Box::from("Sleep"), Box::from("Suspend")],
-            details: Box::from("Put the computer to sleep"),
-            command: Box::from("systemctl suspend"),
-            icon: PathBuf::from("system-suspend").into_boxed_path(),
-        },
-        config_lib::ActionsPluginAction::Custom(custom) => Action {
-            names: custom.names.clone(),
-            details: custom.details.clone(),
-            command: custom.command.clone(),
-            icon: Box::from(Path::new(&*custom.icon)),
-        },
     }
 }

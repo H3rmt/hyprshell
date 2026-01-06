@@ -2,11 +2,12 @@ use crate::store::util::create_storage_path;
 use anyhow::Context;
 use image::{ImageEncoder, ImageReader};
 use std::fs::File;
-use std::io::{BufWriter, Cursor};
+use std::io::{Cursor, Write};
 use std::path::Path;
 use tracing::trace;
 
 use crate::config::Config;
+use crate::store::write::get_storage_writer;
 use fast_image_resize::images::Image;
 use fast_image_resize::{IntoImageView, ResizeAlg, ResizeOptions, Resizer};
 use image::codecs::png::PngEncoder;
@@ -51,18 +52,22 @@ pub fn compress_and_store_image(
         now.elapsed()?
     );
 
-    let storage_path = create_storage_path(cache_dir, "images", "png")
-        .context("Failed to get storage path for clipboard image")?;
-    let mut file = File::create(&storage_path).context("Failed to create clipboard image file")?;
+    let mut cursor = Cursor::new(Vec::new());
     {
-        let mut result_buf = BufWriter::new(&mut file);
-        PngEncoder::new(&mut result_buf).write_image(
+        let (mut write, _ext) = get_storage_writer(&mut cursor, config, false);
+        PngEncoder::new(&mut write).write_image(
             dst_image.buffer(),
             dst_image.width(),
             dst_image.height(),
             img2.color().into(),
         )?;
     }
+
+    let storage_path = create_storage_path(cache_dir, "images", "png")
+        .context("Failed to get storage path for clipboard image")?;
+    let mut file = File::create(&storage_path).context("Failed to create clipboard image file")?;
+    file.write_all(&cursor.into_inner())
+        .context("Failed to write clipboard data")?;
     trace!(
         "Wrote image to {:?} ({} bytes)",
         storage_path.display(),

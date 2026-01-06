@@ -1,0 +1,64 @@
+.window {
+    background: rgba(90, 45, 45, 0.9);
+}
+
+.monitor {
+    background: rgba(90, 70, 45, 0.9);
+}
+
+.workspace {
+    background: rgba(80, 90, 45, 0.9);
+}
+
+.client {
+    background: rgba(45, 80, 90, 0.9);
+}
+
+.client-image {
+    background: rgba(45, 60, 90, 0.9);
+}
+
+.launcher {
+    background: rgba(60, 45, 90, 0.9);
+}
+
+.launcher-input {
+    background: rgba(90, 45, 75, 0.9);
+}
+
+.launcher-results {
+    background: rgba(45, 90, 75, 0.9);
+}
+
+.launcher-item {
+    background: rgba(70, 70, 70, 0.9);
+}
+
+.launcher-item-inner {
+    background: rgba(90, 90, 45, 0.9);
+}
+
+.launcher-exec {
+    background: rgba(45, 90, 60, 0.9);
+}
+
+.launcher-key {
+    background: rgba(61, 148, 150, 0.9);
+}
+
+
+.launcher-plugins {
+    background: rgba(55, 45, 65, 0.9);
+}
+
+.launcher-plugin {
+    background: rgba(75, 45, 90, 0.9);
+}
+
+.launcher-plugin-inner {
+    background: rgba(90, 65, 45, 0.9);
+}
+
+.launcher-plugin-key {
+    background: rgba(90, 45, 60, 0.9);
+}

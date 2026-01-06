@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use core_lib::{Active, ClientId, notify_warn};
 use hyprland::ctl::reload;
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace};
@@ -11,11 +11,11 @@ use std::time::Duration;
 use tracing::{debug, info, trace, warn};
 
 pub fn get_clients() -> Vec<Client> {
-    Clients::get().map_or(vec![], hyprland::shared::HyprDataVec::to_vec)
+    Clients::get().map_or(vec![], HyprDataVec::to_vec)
 }
 
 pub fn get_monitors() -> Vec<Monitor> {
-    Monitors::get().map_or(vec![], hyprland::shared::HyprDataVec::to_vec)
+    Monitors::get().map_or(vec![], HyprDataVec::to_vec)
 }
 
 #[must_use]
@@ -90,12 +90,12 @@ pub fn get_initial_active() -> anyhow::Result<Active> {
         match internal_get_initial_active() {
             Ok(a) => break Ok(a),
             Err(e) => {
+                if tries > 40 {
+                    break Err(e);
+                }
                 warn!("waiting for correct initial active state: {e:?}");
                 thread::sleep(Duration::from_millis(500));
             }
-        }
-        if tries > 40 {
-            break internal_get_initial_active();
         }
         tries += 1;
     }
@@ -121,9 +121,9 @@ fn internal_get_initial_active() -> anyhow::Result<Active> {
 }
 
 pub fn check_version() -> anyhow::Result<()> {
-    pub const MIN_VERSION: Version = Version::new(0, 52, 0);
+    pub const MIN_VERSION: Version = Version::new(0, 52, 1);
 
-    let version = hyprland::data::Version::get()
+    let version = get_version()
         .context("Failed to get version! (hyprland is probably outdated or too new??)")?;
     trace!("hyprland {version:?}");
 
@@ -146,4 +146,21 @@ pub fn check_version() -> anyhow::Result<()> {
         ));
     }
     Ok(())
+}
+
+fn get_version() -> anyhow::Result<hyprland::data::Version> {
+    let mut tries = 0;
+    loop {
+        match hyprland::data::Version::get() {
+            Ok(a) => break Ok(a),
+            Err(e) => {
+                if tries > 40 {
+                    break Err(anyhow!(e));
+                }
+                warn!("waiting for correct initial active state: {e:?}");
+                thread::sleep(Duration::from_millis(500));
+            }
+        }
+        tries += 1;
+    }
 }

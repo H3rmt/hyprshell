@@ -1,12 +1,14 @@
 use crate::global::{WindowsOverviewConfig, WindowsOverviewData, WindowsOverviewMonitorData};
-use adw::gtk::gdk::{Display, Monitor};
-use adw::gtk::prelude::*;
-use adw::gtk::{Application, ApplicationWindow, FlowBox, Orientation, Overlay, SelectionMode};
 use anyhow::Context;
 use config_lib::{FilterBy, Overview, Windows};
 use core_lib::{HyprlandData, OVERVIEW_NAMESPACE};
 use exec_lib::{get_initial_active, get_monitors};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use relm4::adw::gtk::gdk::{Display, Monitor};
+use relm4::adw::gtk::prelude::*;
+use relm4::adw::gtk::{
+    Application, ApplicationWindow, FlowBox, Orientation, Overlay, SelectionMode,
+};
 use std::collections::HashMap;
 use tracing::{debug, debug_span};
 
@@ -53,11 +55,9 @@ pub fn create_windows_overview_window(
                 window.set_namespace(Some(OVERVIEW_NAMESPACE));
                 window.set_layer(Layer::Top);
                 window.set_anchor(Edge::Top, true);
-                window.set_margin(Edge::Top, 435i32);
+                window.set_margin(Edge::Top, 430i32);
                 window.set_keyboard_mode(KeyboardMode::None);
                 window.set_monitor(Some(&gtk_monitor));
-                window.present();
-                window.set_visible(false);
 
                 debug!(
                     "Created overview window ({}) for monitor {monitor_name:?}",

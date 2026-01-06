@@ -1,6 +1,7 @@
-use adw::gtk::{IconTheme, Settings};
 use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
+use relm4::adw::gtk::{IconTheme, Settings};
+use relm4::gtk;
 use semver::Version;
 use signal_hook::consts::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
@@ -42,7 +43,7 @@ pub fn reload_desktop_data() -> anyhow::Result<()> {
 }
 
 pub fn init_gtk() {
-    adw::gtk::init().expect("Failed to initialize GTK");
+    gtk::init().expect("Failed to initialize GTK");
 }
 
 pub fn check_themes() {
@@ -100,6 +101,10 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
     (
         "4.8.0",
         "Version 4.8.0 adds a graphical settings Editor, support for special workspaces and vim motions",
+    ),
+    (
+        "4.9.0",
+        "Version 4.9.0 adds a new Settings Editor, replaces tui config generation",
     ),
 ];
 

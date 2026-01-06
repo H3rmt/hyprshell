@@ -11,7 +11,7 @@ jobs:
     outputs:
       should_publish: ${{ steps.check_commit.outputs.should_publish }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Check commit message
         id: check_commit
         run: |
@@ -26,16 +26,16 @@ jobs:
   publish:
     needs: check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/h3rmt/actions-image:latest
+      options: --privileged
     if: needs.check.outputs.should_publish == 'true'
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: rustup default stable
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
           ssh-key: ${{ secrets.SSH_KEY }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
       - name: Install gtk4-layer-shell
         run: ./scripts/ci/install-gtk4-layer-shell.sh
       - name: Install cargo-workspaces
@@ -57,7 +57,8 @@ jobs:
           git switch hyprshell-release
           
           current_sha=$(git rev-parse HEAD)
-          jq --arg sha "$current_sha" '.["last-release-sha"]=$sha' release-please-config.json > tmp.json && mv tmp.json release-please-config.json
+          jq --arg sha "$current_sha" '.["last-release-sha"]=$sha' release-please-config.json > tmp.json
+          mv tmp.json release-please-config.json
           git add release-please-config.json
           git commit -m "chore(release): update last-release-sha"
           git push origin hyprshell-release
@@ -66,7 +67,7 @@ jobs:
           git push --delete origin ${{ github.ref_name }}
           
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
-          cargo ws publish custom $version -m "chore(release): bump rust versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
+          cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
           
           # push current branch to hyprshell branch (for development)
           git fetch origin hyprshell
@@ -75,26 +76,11 @@ jobs:
           gh release edit ${{ github.ref_name }} --latest --draft=false --title "hyprshell ${{ github.ref_name }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build binary for x86_64-unknown-linux-gnu
-        run: |
-          ./scripts/ci/build-x86.sh
-          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-x86_64.tar.zst"
-          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-x86_64-slim.tar.zst"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build binary for aarch64-unknown-linux-gnu
-        run: |
-          ./scripts/ci/install-gtk4-layer-shell-aarch64.sh
-          ./scripts/ci/build-aarch64.sh
-          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-aarch64.tar.zst"
-          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-aarch64-slim.tar.zst"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
         with:
           pkgname: hyprshell
-          pkgbuild: ./pkgbuild/PKGBUILD
+          pkgbuild: ./packaging/pkgbuild/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
@@ -105,33 +91,51 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
         with:
           pkgname: hyprshell-slim
-          pkgbuild: ./pkgbuild/PKGBUILD-slim
+          pkgbuild: ./packaging/pkgbuild/PKGBUILD-slim
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update hyprshell-slim AUR package
           updpkgsums: true
           ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Build binary for x86_64-unknown-linux-gnu
+        run: |
+          version=$(echo ${{ github.ref_name }} | sed 's/v//')
+          ./scripts/ci/build-x86.sh
+          mv "/tmp/hyprshell-x86_64.tar.zst" "/tmp/hyprshell-$version-x86_64.tar.zst"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-$version-x86_64.tar.zst"
+          mv "/tmp/hyprshell-slim-x86_64.tar.zst" "/tmp/hyprshell-slim-$version-x86_64.tar.zst"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-slim-$version-x86_64.tar.zst"
+          cargo clean
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build binary for aarch64-unknown-linux-gnu
+        run: |
+          version=$(echo ${{ github.ref_name }} | sed 's/v//')
+          ./scripts/ci/install-gtk4-layer-shell-aarch64.sh
+          ./scripts/ci/build-aarch64.sh
+          mv "/tmp/hyprshell-aarch64.tar.zst" "/tmp/hyprshell-$version-aarch64.tar.zst"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-$version-aarch64.tar.zst"
+          mv "/tmp/hyprshell-slim-aarch64.tar.zst" "/tmp/hyprshell-slim-$version-aarch64.tar.zst"
+          gh release upload ${{ github.ref_name }} "/tmp/hyprshell-slim-$version-aarch64.tar.zst"
+          cargo clean
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish AUR bin package
         uses: KSXGitHub/github-actions-deploy-aur@2ac5a4c1d7035885d46b10e3193393be8460b6f1 # v4.1.1
         with:
           pkgname: hyprshell-bin
-          pkgbuild: ./pkgbuild/PKGBUILD-bin
+          pkgbuild: ./packaging/pkgbuild/PKGBUILD-bin
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update hyprshell-bin AUR package
           updpkgsums: true
           ssh_keyscan_types: rsa,ecdsa,ed25519
-      - uses: cachix/install-nix-action@7be5dee1421f63d07e71ce6e0a9f8a4b07c2a487 # v31.6.1
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: "download-buffer-size = 5368709120"
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
         with:
           name: hyprshell
-          extraPullNames: hyprshell-dev
+          extraPullNames: hyprshell-dev, hyprland
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - name: Run Nix Flake Check build
+      - name: Run Nix Flake Build
         run: nix build '.#packages.x86_64-linux.hyprshell' -L
-

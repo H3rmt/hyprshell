@@ -108,6 +108,14 @@ hyprshell data launch-history
 hyprshell data launch-history 4
 ```
 
+## Info Command
+
+Show info about the current Hyprshell installation.
+
+```bash
+hyprshell debug info
+```
+
 ## Global Options
 
 These options can be used with any command:

@@ -79,13 +79,14 @@ in
         items_per_row = mkOpt "Workspaces per row" int 5;
         overview = {
           enable = lib.mkEnableOption "Enable overview";
-          key = mkOpt "Key to open overview" str "super_l";
+          key = mkOpt "Key to open overview" str "Super_L";
           modifier = mkOpt "Modifier key" (enum [
             "alt"
             "ctrl"
             "super"
           ]) "super";
 
+          exclude_special_workspaces = mkOpt "Exclude special workspaces regex" str "";
           filter_by = mkOpt "Filter by" (listOf (enum [
             "same_class"
             "current_monitor"
@@ -218,6 +219,7 @@ in
         };
         switch = {
           enable = mkOpt "Enable recent window switcher" bool true;
+          key = mkOpt "Key to open switch" str "Tab";
           modifier = mkOpt "Modifier key" (enum [
             "alt"
             "ctrl"
@@ -229,6 +231,23 @@ in
             "current_workspace"
           ])) [ "current_monitor" ];
           switch_workspaces = mkOpt "Switch workspaces" bool false;
+          exclude_special_workspaces = mkOpt "Exclude special workspaces regex" str "";
+        };
+        switch_2 = {
+          enable = mkOpt "Enable recent window switcher" bool false;
+          key = mkOpt "Key to open switch" str "Tab";
+          modifier = mkOpt "Modifier key" (enum [
+            "alt"
+            "ctrl"
+            "super"
+          ]) "alt";
+          filter_by = mkOpt "Filter by" (listOf (enum [
+            "same_class"
+            "current_monitor"
+            "current_workspace"
+          ])) [ "current_monitor" ];
+          switch_workspaces = mkOpt "Switch workspaces" bool false;
+          exclude_special_workspaces = mkOpt "Exclude special workspaces regex" str "";
         };
       };
     };
@@ -261,7 +280,7 @@ in
         }
       else
         {
-          text = builtins.toJSON (customLib.filterDisabledAndDropEnable cfg.settings);
+          text = builtins.toJSON ((customLib.filterDisabledAndDropEnable cfg.settings) // { version = 3; });
         };
 
     xdg.configFile."hyprshell/styles.css" =

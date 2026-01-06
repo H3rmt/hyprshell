@@ -1,6 +1,4 @@
-#include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/devices/IPointer.hpp>
-#include <hyprland/src/desktop/LayerSurface.hpp>
 
 #include "globals.h"
 

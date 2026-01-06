@@ -89,12 +89,11 @@ fn run_command(run: &str, path: Option<&Path>) -> anyhow::Result<()> {
         let start = std::time::Instant::now();
         let output = out.wait_with_output();
         trace!("Command [{cmd:?}] finished");
-        if let Ok(output) = output {
-            if start.elapsed().as_secs() < 2
-                && (!output.stdout.is_empty() || !output.stderr.is_empty())
-            {
-                trace!("Output from [{cmd:?}]: {output:?}");
-            }
+        if let Ok(output) = output
+            && start.elapsed().as_secs() < 2
+            && (!output.stdout.is_empty() || !output.stderr.is_empty())
+        {
+            trace!("Output from [{cmd:?}]: {output:?}");
         }
     });
     Ok(())

@@ -1,22 +1,35 @@
+/* please add layerrules to hyprland config:
+
+layerrule = blur, hyprshell_overview
+layerrule = ignorezero, hyprshell_overview
+layerrule = blur, hyprshell_switch
+layerrule = ignorezero, hyprshell_switch
+layerrule = blur, hyprshell_launcher
+layerrule = ignorezero, hyprshell_launcher
+*/
+
+
 :root {
     --border-color: rgba(255, 255, 255, 0);
     --border-color-active: rgba(120, 245, 255, 0.85);
 
-    --box-shadow-color: rgba(255, 255, 255, 0.7);
-    --box-shadow-color-hover: rgba(255, 255, 255, 0.85);
-
     --bg-color: rgba(255, 255, 255, 0.01);
     --bg-color-hover: rgba(255, 255, 255, 0.05);
 
-    --border-radius: 24px;
+    --border-radius: 20px;
     --border-size: 3px;
     --border-style: solid;
 
     --text-color: rgba(245, 245, 245, 1);
 
-    --window-padding: 2px;
+    --window-padding: 0;
+    --bg-window-color: rgba(255, 255, 255, 0.01);
 }
 
+:root {
+    --box-shadow-color: rgba(255, 255, 255, 0.7);
+    --box-shadow-color-hover: rgba(255, 255, 255, 0.85);
+}
 
 .monitor {
     border: unset;
@@ -31,10 +44,6 @@
     box-shadow: inset 0 0 30px var(--box-shadow-color-hover);
 }
 
-.workspace:hover {
-    box-shadow: inset 0 0 35px var(--box-shadow-color-hover);
-}
-
 .client {
     box-shadow: inset 0 0 25px var(--box-shadow-color);
 }
@@ -46,10 +55,6 @@
 .client:hover {
     box-shadow: inset 0 0 35px var(--box-shadow-color-hover);
 }
-
-.client-image {
-}
-
 
 .launcher {
     border: unset;
@@ -66,34 +71,39 @@
     box-shadow: inset 0 0 12px var(--box-shadow-color-hover);
 }
 
-.launcher-results {
-}
-
 .launcher-item {
     padding: 0 10px;
     border-radius: 16px;
     box-shadow: inset 0 0 12px var(--box-shadow-color);
 }
 
+.launcher-plugin-inner {
+    background: unset;
+}
+
 .launcher-item:hover {
     box-shadow: inset 0 0 14px var(--box-shadow-color-hover);
 }
 
-.launcher-exec {
-}
-
-.launcher-key {
-}
-
-.launcher-plugins {
-}
-
 .launcher-plugin {
-    padding: 8px;
-    border-radius: 24px;
+    padding: 6px;
+    border-radius: 20px;
     box-shadow: inset 0 0 20px var(--box-shadow-color);
+}
+
+.launcher-item-inner {
+    background: unset;
 }
 
 .launcher-plugin:hover {
     box-shadow: inset 0 0 20px var(--box-shadow-color-hover);
+}
+
+@keyframes background-moving {
+    0% {
+        background: linear-gradient(90deg, rgba(120, 245, 255, 0.35) 0%, transparent 0%);
+    }
+    100% {
+        background: linear-gradient(90deg, rgba(120, 245, 255, 0.35) 100%, transparent 100%);
+    }
 }

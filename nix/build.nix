@@ -78,4 +78,16 @@ rec {
       cargoArtifacts = cargoFullArtifacts;
     }
   );
+
+  postInstall = ''
+    # Desktop entry
+    install -Dm644 packaging/hyprshell-settings.desktop $out/share/applications/hyprshell-settings.desktop
+
+    # Icon
+    install -Dm644 packaging/hyprshell-settings.png $out/share/pixmaps/hyprshell-settings.png
+
+    # Extract runtime data
+    mkdir -p $out/share/hyprshell
+    tar -xf packaging/usr-share.tar -C $out/share/hyprshell
+  '';
 }

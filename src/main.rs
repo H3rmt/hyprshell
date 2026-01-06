@@ -3,7 +3,7 @@ use anyhow::{Context, bail};
 use clap::Parser;
 use core_lib::WarnWithDetails;
 use core_lib::path::{
-    get_default_cache_dir, get_default_config_path, get_default_css_path, get_default_data_dir,
+    get_default_cache_dir, get_default_config_file, get_default_css_file, get_default_data_dir,
 };
 use core_lib::util::daemon_running;
 use std::{env, fs};
@@ -60,10 +60,27 @@ fn main() -> anyhow::Result<()> {
     check_features();
     check_env();
 
-    let data_dir = cli.global_opts.data_dir;
-    let cache_dir = cli.global_opts.cache_dir;
-    let css_file = cli.global_opts.css_file;
-    let config_path = cli.global_opts.config_file;
+    let data_dir = cli
+        .global_opts
+        .data_dir
+        .unwrap_or_else(get_default_data_dir);
+    let cache_dir = cli
+        .global_opts
+        .cache_dir
+        .unwrap_or_else(get_default_cache_dir);
+    let css_file = cli
+        .global_opts
+        .css_file
+        .unwrap_or_else(get_default_css_file);
+    let config_file = cli
+        .global_opts
+        .config_file
+        .unwrap_or_else(get_default_config_file);
+    #[cfg(any(feature = "gui_settings_editor", feature = "debug_command"))]
+    let system_data_dir = cli
+        .global_opts
+        .system_data_dir
+        .unwrap_or_else(core_lib::path::get_default_system_data_dir);
 
     match cli.command {
         cli::Command::Run {} => {
@@ -73,74 +90,41 @@ fn main() -> anyhow::Result<()> {
                 bail!("Daemon already running");
             }
             if env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v.eq("1")) {
-                clipboard_lib::store::test_clipboard(
-                    cache_dir.unwrap_or_else(get_default_cache_dir),
-                );
+                clipboard_lib::store::test_clipboard(data_dir, cache_dir);
                 return Ok(());
             }
 
-            start::start(
-                config_path.unwrap_or_else(get_default_config_path),
-                css_file.unwrap_or_else(get_default_css_path),
-                data_dir.unwrap_or_else(get_default_data_dir),
-                cache_dir.unwrap_or_else(get_default_cache_dir),
-            )?;
+            start::start(config_file, css_file, data_dir, cache_dir)?;
         }
         cli::Command::Config { command } => match command {
             cli::ConfigCommand::Edit {} => {
-                let config_path = config_path.unwrap_or_else(get_default_config_path);
-                let css_path = css_file.unwrap_or_else(get_default_css_path);
-                config_edit_lib::start(config_path, css_path);
+                #[cfg(feature = "gui_settings_editor")]
+                config_edit_lib::start(config_file, css_file, system_data_dir, false);
+                #[cfg(not(feature = "gui_settings_editor"))]
+                core_lib::notify_warn(
+                    "GUI settings editor not available, compile with `gui_settings_editor` feature",
+                );
             }
-            #[cfg(feature = "generate_config_command")]
-            cli::ConfigCommand::Generate { force, no_systemd } => {
-                use core_lib::Warn;
-                let config_path = config_path.unwrap_or_else(get_default_config_path);
-                let css_path = css_file.unwrap_or_else(get_default_css_path);
-
-                let (override_config, override_css) = config_lib::generate::get_overrides(&force);
-                config_lib::generate::check_file_exist(
-                    &config_path,
-                    &css_path,
-                    override_config,
-                    override_css,
-                )?;
-
-                let (config_data, css_data) = config_lib::generate::prompt_config()?;
-                let config = config_lib::generate::generate_config(config_data);
-                tracing::trace!("Generated config: {:#?}", config);
-                config_lib::write_config(&config_path, &config, override_config).warn();
-                config_lib::generate::write_css(&css_path, &css_data, override_css).warn();
-                if cfg!(debug_assertions) || no_systemd {
-                    config_lib::generate::write_systemd_unit(
-                        opts.config_file.as_ref(),
-                        opts.css_file.as_ref(),
-                        opts.data_dir.as_ref(),
-                        opts.cache_dir.as_ref(),
-                        &core_lib::path::get_data_home(),
-                    )
-                    .warn();
-                }
-                explain_config(&config_path, true);
+            cli::ConfigCommand::Generate {} => {
+                #[cfg(feature = "gui_settings_editor")]
+                config_edit_lib::start(config_file, css_file, system_data_dir, true);
+                #[cfg(not(feature = "gui_settings_editor"))]
+                core_lib::notify_warn(
+                    "GUI settings editor not available, compile with `gui_settings_editor` feature",
+                );
             }
             cli::ConfigCommand::Explain {} => {
-                explain_config(&config_path.unwrap_or_else(get_default_config_path), false);
+                explain_config(&config_file, false);
             }
             cli::ConfigCommand::Check {} => {
-                if let Err(err) = config_lib::load_and_migrate_config(
-                    &config_path.unwrap_or_else(get_default_config_path),
-                    true,
-                ) {
+                if let Err(err) = config_lib::load_and_migrate_config(&config_file, true) {
                     tracing::warn!("Failed to load config: {err:?}");
                     std::process::exit(1);
                 }
             }
             #[cfg(feature = "ci_config_check")]
             cli::ConfigCommand::CheckIfDefault {} => {
-                let config = config_lib::load_and_migrate_config(
-                    &config_path.unwrap_or_else(get_default_config_path),
-                    false,
-                )?;
+                let config = config_lib::load_and_migrate_config(&config_file, false)?;
                 let config_default = config_lib::Config::default();
                 if config == config_default {
                     tracing::info!("Current config matches the default configuration");
@@ -153,10 +137,7 @@ fn main() -> anyhow::Result<()> {
             }
             #[cfg(feature = "ci_config_check")]
             cli::ConfigCommand::CheckIfFull {} => {
-                let config = config_lib::load_and_migrate_config(
-                    &config_path.unwrap_or_else(get_default_config_path),
-                    false,
-                )?;
+                let config = config_lib::load_and_migrate_config(&config_file, false)?;
                 let config_all = config_lib::Config {
                     windows: Some(config_lib::Windows {
                         overview: Some(config_lib::Overview::default()),
@@ -178,7 +159,7 @@ fn main() -> anyhow::Result<()> {
         #[cfg(feature = "debug_command")]
         #[allow(clippy::print_stderr, clippy::print_stdout)]
         cli::Command::Debug { command } => {
-            println!("run with -vv ... to see all logs");
+            println!("run with -vv as args to see all logs");
             match command {
                 cli::DebugCommand::ListIcons => {
                     debug::list_icons().warn_details("Failed to list icons");
@@ -190,12 +171,7 @@ fn main() -> anyhow::Result<()> {
                     debug::check_class(class).warn_details("Failed to check class");
                 }
                 cli::DebugCommand::Search { text, all } => {
-                    debug::search(
-                        &text,
-                        all,
-                        &config_path.unwrap_or_else(get_default_config_path),
-                        &data_dir.unwrap_or_else(get_default_data_dir),
-                    );
+                    debug::search(&text, all, &config_file, &data_dir);
                 }
                 cli::DebugCommand::DefaultApplications { command } => match command {
                     cli::DefaultApplicationsCommand::Get { mime } => {
@@ -216,16 +192,20 @@ fn main() -> anyhow::Result<()> {
                         default_apps::check();
                     }
                 },
+                cli::DebugCommand::Info {} => {
+                    debug::info(
+                        &data_dir,
+                        &cache_dir,
+                        &css_file,
+                        &config_file,
+                        &system_data_dir,
+                    );
+                }
             }
         }
         cli::Command::Data { command } => match command {
             cli::DataCommand::LaunchHistory { run_cache_weeks } => {
-                data::launch_history(
-                    run_cache_weeks,
-                    &config_path.unwrap_or_else(get_default_config_path),
-                    &data_dir.unwrap_or_else(get_default_data_dir),
-                    opts.verbose,
-                );
+                data::launch_history(run_cache_weeks, &config_file, &data_dir, opts.verbose);
             }
         },
         cli::Command::Completions {
@@ -251,9 +231,9 @@ fn main() -> anyhow::Result<()> {
 
 fn check_features() {
     tracing::debug!(
-        "FEATURES: json5_config: {}, generate_config_command: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
+        "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
         cfg!(feature = "json5_config"),
-        cfg!(feature = "generate_config_command"),
+        cfg!(feature = "gui_settings_editor"),
         cfg!(feature = "debug_command"),
         cfg!(feature = "launcher_calc"),
         cfg!(feature = "clipboard_compress_lz4"),

@@ -1,9 +1,9 @@
 :root {
-    --border-color: rgba(68, 71, 90, 0.4);
+    --border-color: rgba(75, 75, 90, 0.8);
     --border-color-active: rgba(189, 147, 249, 0.9);
 
     --bg-color: rgba(40, 42, 54, 0.8);
-    --bg-color-hover: rgba(68, 71, 90, 1);
+    --bg-color-hover: rgba(53, 55, 70, 0.9);
 
     --border-radius: 12px;
     --border-size: 3px;
@@ -12,4 +12,5 @@
     --text-color: rgba(248, 248, 242, 1);
 
     --window-padding: 2px;
+    --bg-window-color: rgba(42, 47, 66, 0.95);
 }

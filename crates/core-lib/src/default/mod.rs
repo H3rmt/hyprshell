@@ -178,18 +178,18 @@ fn collect_unique_filenames_recursive(dir: &Path) -> BTreeSet<Box<str>> {
     let mut dirs_to_visit = vec![dir.to_path_buf()];
 
     while let Some(current_dir) = dirs_to_visit.pop() {
-        if current_dir.is_dir() {
-            if let Ok(entries) = read_dir(&current_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        dirs_to_visit.push(path);
-                    } else if let Some(name_osstr) = path.file_stem() {
-                        // Avoid allocation unless needed
-                        let name = name_osstr.to_string_lossy();
-                        if !name.is_empty() && !names.contains(&*name) {
-                            names.insert(name.into_owned().into_boxed_str());
-                        }
+        if current_dir.is_dir()
+            && let Ok(entries) = read_dir(&current_dir)
+        {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs_to_visit.push(path);
+                } else if let Some(name_osstr) = path.file_stem() {
+                    // Avoid allocation unless needed
+                    let name = name_osstr.to_string_lossy();
+                    if !name.is_empty() && !names.contains(&*name) {
+                        names.insert(name.into_owned().into_boxed_str());
                     }
                 }
             }

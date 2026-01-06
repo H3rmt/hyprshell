@@ -13,7 +13,7 @@ use tracing::{debug, debug_span, info, trace};
 static PLUGIN_COULD_BE_BUILD: OnceLock<bool> = OnceLock::new();
 
 pub fn load_plugin(
-    switch: Option<Modifier>,
+    switch: Option<(Modifier, Box<str>)>,
     overview: Option<(Modifier, Box<str>)>,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
@@ -23,7 +23,10 @@ pub fn load_plugin(
     }
 
     let config = PluginConfig {
-        xkb_key_switch_mod: switch.map(|s| Box::from(mod_to_xkb_key(s))),
+        xkb_key_switch_mod: switch
+            .as_ref()
+            .map(|(r#mod, _)| Box::from(mod_to_xkb_key(*r#mod))),
+        xkb_key_switch_key: switch.map(|(_, key)| key),
         xkb_key_overview_mod: overview
             .as_ref()
             .map(|(r#mod, _)| Box::from(r#mod.to_string())),
@@ -32,7 +35,7 @@ pub fn load_plugin(
 
     if check_new_plugin_needed(&config) {
         unload().context("unable to unload old plugin")?;
-        info!("building plugin, this may take a while, please wait");
+        info!("Building plugin, this may take a while, please wait");
         hyprland_plugin::generate(&config).context("unable to generate plugin")?;
         trace!(
             "generated plugin at {:?}",
@@ -91,5 +94,6 @@ pub const fn mod_to_xkb_key(r#mod: Modifier) -> &'static str {
         Modifier::Alt => "XKB_KEY_Alt",
         Modifier::Ctrl => "XKB_KEY_Control",
         Modifier::Super => "XKB_KEY_Super",
+        Modifier::None => "XKB_KEY_NoSymbol",
     }
 }

@@ -5,12 +5,12 @@ use tracing::{debug, warn};
 
 pub fn launch_history(
     run_cache_weeks: Option<u8>,
-    config_path: &Path,
+    config_file: &Path,
     data_dir: &Path,
     verbose: u8,
 ) {
     let run_cache_weeks = run_cache_weeks.unwrap_or_else(|| {
-        config_lib::load_and_migrate_config(config_path, true)
+        config_lib::load_and_migrate_config(config_file, true)
             .ok()
             .and_then(|c| {
                 c.windows.and_then(|w| {

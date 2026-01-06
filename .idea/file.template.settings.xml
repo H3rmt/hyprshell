@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExportableFileTemplateSettings">
+    <j2ee_templates>
+      <template name="qt.CMakeLists.txt" reformat="true" live-template-enabled="false" enabled="false" />
+    </j2ee_templates>
+  </component>
+</project>

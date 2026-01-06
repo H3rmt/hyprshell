@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Hyprshell Settings editor
+Comment=Edit Hyprshell settings
+Exec=/usr/bin/hyprshell config edit
+Icon=hyprshell-settings
+Type=Application
+StartupWMClass="com.github.h3rmt.hyprshell-edit"
+Keywords=hyprshell;settings;

@@ -1,7 +1,7 @@
 use crate::global::WindowsOverviewData;
 use crate::next::{find_next_client, find_next_workspace};
-use adw::gtk::prelude::*;
 use core_lib::transfer::{Direction, SwitchOverviewConfig};
+use relm4::adw::gtk::prelude::*;
 use tracing::{debug_span, error};
 
 pub fn update_overview(data: &mut WindowsOverviewData, config: &SwitchOverviewConfig) {

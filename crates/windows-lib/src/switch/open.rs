@@ -1,12 +1,15 @@
 use crate::data::{SortConfig, collect_data};
 use crate::global::WindowsSwitchData;
 use crate::next::{find_next_client, find_next_workspace};
-use crate::switch::render::render_switch;
-use adw::gtk::prelude::*;
 use anyhow::Context;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Direction, OpenSwitch};
-use exec_lib::set_no_follow_mouse;
+use core_lib::{ClientData, ClientId, WarnWithDetails};
+use exec_lib::{get_current_monitor, set_no_follow_mouse};
+use relm4::adw::gtk::gdk::Cursor;
+use relm4::adw::gtk::prelude::*;
+use relm4::adw::gtk::{Button, Fixed, Frame, Image, Label, Overflow, Overlay, pango};
+use std::borrow::Cow;
 use tracing::{debug_span, trace};
 
 #[must_use]

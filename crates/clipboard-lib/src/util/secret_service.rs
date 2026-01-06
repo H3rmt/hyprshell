@@ -1,4 +1,4 @@
-use crate::util::crypt::generate_new_cha_cha_key;
+use crate::util::crypt::generate_new_key;
 use anyhow::Context;
 use secret_service::EncryptionType;
 use secret_service::blocking::SecretService;
@@ -31,7 +31,7 @@ pub fn get_hyprshell_key() -> anyhow::Result<Vec<u8>> {
         collection.search_items(HashMap::from([("application", "Hyprshell Clipboard Key")]))?;
     let key = if items.is_empty() {
         // instead generate a new key and insert it into the collection
-        let key = generate_new_cha_cha_key().context("Failed to generate new encryption key")?;
+        let key = generate_new_key().context("Failed to generate new encryption key")?;
         collection
             .create_item(
                 "hyprshell",

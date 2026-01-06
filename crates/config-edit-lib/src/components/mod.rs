@@ -1,0 +1,12 @@
+pub mod changes;
+mod footer;
+mod generate;
+mod launcher;
+mod launcher_plugins;
+pub mod nix_preview;
+pub mod root;
+mod shortcut_dialog;
+mod switch;
+mod theme;
+pub mod windows;
+pub mod windows_overview;

@@ -8,25 +8,17 @@ use hyprland::keyword::Keyword;
 use tracing::{trace, warn};
 
 pub fn apply_layerrules() -> anyhow::Result<()> {
+    // TODO add option to enable blur
+
     Keyword::set("layerrule", format!("noanim, {LAUNCHER_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("ignorezero, {LAUNCHER_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blur, {LAUNCHER_NAMESPACE}"))?;
     Keyword::set("layerrule", format!("xray 0, {LAUNCHER_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blurpopups, {LAUNCHER_NAMESPACE}"))?;
 
     Keyword::set("layerrule", format!("noanim, {OVERVIEW_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("dimaround, {OVERVIEW_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("ignorezero, {OVERVIEW_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blur, {OVERVIEW_NAMESPACE}"))?;
     Keyword::set("layerrule", format!("xray 0, {OVERVIEW_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blurpopups, {OVERVIEW_NAMESPACE}"))?;
 
     Keyword::set("layerrule", format!("noanim, {SWITCH_NAMESPACE}"))?;
     Keyword::set("layerrule", format!("dimaround, {SWITCH_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("ignorezero, {SWITCH_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blur, {SWITCH_NAMESPACE}"))?;
     Keyword::set("layerrule", format!("xray 0, {SWITCH_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("blurpopups, {SWITCH_NAMESPACE}"))?;
     trace!("layerrules applied");
     Ok(())
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "last-release-sha": "149e2c2d7ea787b8e0de7c6713c3414464b970d1",
+  "last-release-sha": "e4f9787f3d833a47838387713f047f327ca87a92",
   "always-update": true,
   "include-v-in-tag": true,
   "draft": false,
@@ -10,15 +10,15 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "pkgbuild/PKGBUILD"
+          "path": "packaging/pkgbuild/PKGBUILD"
         },
         {
           "type": "generic",
-          "path": "pkgbuild/PKGBUILD-slim"
+          "path": "packaging/pkgbuild/PKGBUILD-slim"
         },
         {
           "type": "generic",
-          "path": "pkgbuild/PKGBUILD-bin"
+          "path": "packaging/pkgbuild/PKGBUILD-bin"
         }
       ]
     }

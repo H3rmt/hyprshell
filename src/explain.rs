@@ -3,18 +3,18 @@ use core_lib::util::daemon_running;
 use std::path::Path;
 
 #[allow(clippy::print_stderr, clippy::print_stdout)]
-pub fn explain_config(config_path: &Path, add_how_to_explain_again: bool) {
-    let config = match load_and_migrate_config(config_path, true) {
+pub fn explain_config(config_file: &Path, add_how_to_explain_again: bool) {
+    let config = match load_and_migrate_config(config_file, true) {
         Ok(config) => config,
         Err(err) => {
             eprintln!(
                 "\x1b[1m\x1b[31mConfig is invalid ({}):\x1b[0m {err:?}\n",
-                config_path.display()
+                config_file.display()
             );
             return;
         }
     };
-    let info = explain(&config, config_path, true, true);
+    let info = explain(&config, Some(config_file), true);
     println!("{info}");
 
     if daemon_running() {

@@ -1,9 +1,9 @@
 use crate::global::WindowsSwitchData;
-use adw::gtk::glib;
-use adw::gtk::prelude::*;
 use core_lib::{FindByFirst, WarnWithDetails};
 use exec_lib::switch::{switch_client, switch_workspace};
 use exec_lib::{reset_no_follow_mouse, to_client_address};
+use relm4::adw::gtk::glib;
+use relm4::adw::gtk::prelude::*;
 use tracing::{debug, debug_span, trace};
 
 #[must_use]

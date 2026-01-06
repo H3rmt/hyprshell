@@ -1,7 +1,7 @@
 use crate::LauncherData;
-use adw::gtk::glib;
-use adw::gtk::prelude::*;
 use gtk4_layer_shell::{KeyboardMode, LayerShell};
+use relm4::adw::gtk::glib;
+use relm4::adw::gtk::prelude::*;
 use tracing::{debug_span, trace};
 
 pub fn open_launcher(data: &LauncherData) {

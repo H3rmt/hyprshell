@@ -170,13 +170,13 @@ pub fn get_sortable_options(
         };
 
         // push only if not already in matches
-        if let Some(opt) = opt {
-            if !matches.iter().any(|m| {
+        if let Some(opt) = opt
+            && !matches.iter().any(|m| {
                 m.name == opt.name && m.details == opt.details && m.details_long == opt.details_long
-            }) {
-                matches.push(opt);
-                count += 1;
-            }
+            })
+        {
+            matches.push(opt);
+            count += 1;
         }
     }
     drop(entries);

@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use tracing::trace;
 
-pub fn get_default_config_path() -> PathBuf {
+pub fn get_default_config_file() -> PathBuf {
     let mut path = get_config_home();
     #[cfg(debug_assertions)]
     path.push("hyprshell.debug/");
@@ -40,7 +40,7 @@ pub fn get_default_config_path() -> PathBuf {
 }
 
 #[must_use]
-pub fn get_default_css_path() -> PathBuf {
+pub fn get_default_css_file() -> PathBuf {
     let mut path = get_config_home();
 
     #[cfg(debug_assertions)]
@@ -72,6 +72,17 @@ pub fn get_default_cache_dir() -> PathBuf {
     path
 }
 
+#[must_use]
+pub fn get_default_system_data_dir() -> PathBuf {
+    let mut path = get_system_data_home();
+
+    #[cfg(debug_assertions)]
+    path.push("hyprshell.debug");
+    #[cfg(not(debug_assertions))]
+    path.push("hyprshell");
+    path
+}
+
 /// # Panics
 /// if neither `XDG_DATA_HOME` nor HOME is set
 ///
@@ -85,6 +96,12 @@ pub fn get_data_home() -> PathBuf {
                 .map(|home| PathBuf::from(format!("{}/.local/share", home.to_string_lossy())))
         })
         .expect("Failed to get config dir (XDG_DATA_HOME or HOME not set)")
+}
+
+/// returns `/usr/share`
+#[must_use]
+pub fn get_system_data_home() -> PathBuf {
+    PathBuf::from("/usr/share")
 }
 
 /// # Panics

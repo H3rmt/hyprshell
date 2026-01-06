@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell-clipboard-lib"
 documentation = "https://docs.rs/hyprshell-clipboard-lib"
-version = "4.8.1"
+version = "4.9.2"
 description = "A library monitoring and storing clipboard contents"
 edition.workspace = true
 license.workspace = true
@@ -14,23 +14,24 @@ rust-version.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
-wl_clipboard = { package = "hyprshell-wl-clipboard-rs", path = "../../dep-crates/wl-clipboard-rs", version = "=4.8.1" }
+wl_clipboard = { package = "hyprshell-wl-clipboard-rs", path = "../../dep-crates/wl-clipboard-rs", version = "=4.9.2" }
 fast_image_resize = { version = "5.3.0", features = ["image"] }
-bincode = { version = "2.0.1", features = ["serde"] }
+bitcode = { version = "0.6.9" }
 image = { version = "0.25.8", features = ["png", "jpeg", "webp", "gif"], default-features = false }
-lz4_flex = { version = "0.11.5", optional = true }
+lz4_flex = { version = "0.12.0", optional = true }
 zstd = { version = "0.13.3", optional = true }
-secret-service = { version = "5.0.0", features = ["rt-tokio-crypto-rust"], default-features = false, optional = true }
-chacha20poly1305 = { version = "0.11.0-rc.1", optional = true }
-aes-gcm = { version = "0.11.0-rc.1", optional = true }
 brotli = { version = "8.0.2", optional = true }
+secret-service = { version = "5.0.0", features = ["rt-tokio-crypto-rust"], default-features = false, optional = true }
+chacha20poly1305 = { version = "0.11.0-rc.2", optional = true }
+aes-gcm = { version = "0.11.0-rc.2", optional = true }
+crypto-common = { version = "0.2.0-rc.9", optional = true }
 
 [features]
 compress_lz4 = ["dep:lz4_flex"]
 compress_zstd = ["dep:zstd"]
 compress_brotli = ["dep:brotli"]
-encrypt_chacha20poly1305 = ["dep:chacha20poly1305", "dep:secret-service"]
-encrypt_aes_gcm = ["dep:aes-gcm", "dep:secret-service"]
+encrypt_chacha20poly1305 = ["dep:chacha20poly1305", "dep:secret-service", "dep:crypto-common"]
+encrypt_aes_gcm = ["dep:aes-gcm", "dep:secret-service", "dep:crypto-common"]
 
 [lints]
 workspace = true

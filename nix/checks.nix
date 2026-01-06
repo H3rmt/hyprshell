@@ -78,7 +78,7 @@ rec {
       echo "test json created at $TMP"
       cat <<EOF> "$TMP/test.json"
       ${builtins.toJSON (
-        customLib.filterDisabledAndDropEnable empty-config.config.programs.hyprshell.settings
+        (customLib.filterDisabledAndDropEnable empty-config.config.programs.hyprshell.settings) // { version = 3; }
       )}
       EOF
       chmod 444 "$TMP/test.json"
@@ -91,7 +91,7 @@ rec {
       echo "test-2 json created at $TMP"
       cat <<EOF> "$TMP/test-2.json"
       ${builtins.toJSON (
-        customLib.filterDisabledAndDropEnable test-config.config.programs.hyprshell.settings
+        (customLib.filterDisabledAndDropEnable test-config.config.programs.hyprshell.settings) // { version = 3; }
       )}
       EOF
       chmod 444 "$TMP/test-2.json"
@@ -113,7 +113,7 @@ rec {
       ++ buildLib.commonArgs.nativeBuildInputs;
       cargoClippyExtraArgs = "";
       buildPhaseCargoCommand = ''
-        bash ${../scripts/nix/check-all-feature-combinations.sh}
+        bash ${../scripts/check-all-feature-combinations.sh}
       '';
     }
   );

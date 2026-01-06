@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell-config-lib"
 documentation = "https://docs.rs/hyprshell-config-lib"
-version = "4.8.1"
+version = "4.9.2"
 description = "A library for reading, writing and migrating configuration files for hyprshell"
 edition.workspace = true
 license.workspace = true
@@ -13,18 +13,17 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
+core-lib.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
-inquire = { version = "0.7.5", optional = true, default-features = false, features = ["termion"] }
 smart-default = { version = "0.7.1" }
-ron = { version = "0.11.0" }
+ron = { version = "0.12.0" }
 toml = { version = "0.9.5" }
 serde_json5 = { version = "0.2.1", optional = true }
 
 [features]
 json5_config = ["dep:serde_json5"]
-generate_config = ["dep:inquire"]
 ci_no_default_config_values = []
 launcher_calc_plugin = []
 

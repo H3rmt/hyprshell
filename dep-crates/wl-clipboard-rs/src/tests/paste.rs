@@ -1,6 +1,7 @@
-use proptest::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
+
+use proptest::prelude::*;
 use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_manager_v1::ZwlrDataControlManagerV1;
 
 use crate::paste::*;

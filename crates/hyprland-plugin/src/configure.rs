@@ -11,6 +11,7 @@ use tracing::debug_span;
 
 pub struct PluginConfig {
     pub xkb_key_switch_mod: Option<Box<str>>,
+    pub xkb_key_switch_key: Option<Box<str>>,
     pub xkb_key_overview_mod: Option<Box<str>>,
     pub xkb_key_overview_key: Option<Box<str>>,
 }
@@ -18,8 +19,9 @@ impl Display for PluginConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}|{}|{}",
+            "{}|{}|{}|{}",
             self.xkb_key_switch_mod.as_deref().unwrap_or(""),
+            self.xkb_key_switch_key.as_deref().unwrap_or(""),
             self.xkb_key_overview_mod.as_deref().unwrap_or(""),
             self.xkb_key_overview_key.as_deref().unwrap_or(""),
         )
@@ -77,6 +79,10 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
         (
             "$HYPRSHELL_OVERVIEW_KEY$",
             config.xkb_key_overview_key.as_deref().unwrap_or(""),
+        ),
+        (
+            "$HYPRSHELL_SWITCH_KEY$",
+            config.xkb_key_switch_key.as_deref().unwrap_or(""),
         ),
         (
             "$HYPRSHELL_OPEN_OVERVIEW$",
