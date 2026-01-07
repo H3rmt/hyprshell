@@ -24,7 +24,7 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data, SCallback
         const uint32_t keycode = event.keycode + 8; // +8 because xkbcommon expects +8 from libinput
         const bool release = event.state == WL_KEYBOARD_KEY_STATE_RELEASED;
 
-        // const bool shiftActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) == 1;
+        const bool shiftActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) == 1;
         const bool ctrlActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) == 1;
         const bool superActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_LOGO, XKB_STATE_MODS_EFFECTIVE) == 1;
         const bool altActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) == 1;
@@ -100,53 +100,43 @@ void onKeyPress(const std::unordered_map<std::string, std::any> &data, SCallback
 
         // open switch mode
         if (!release && !LAYER_VISIBLE) {
-            if (keysym == SWITCH_KEY) {
-                if ((HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Alt_L && altActive && !superActive && !ctrlActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive && !altActive && !ctrlActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive && !superActive && !altActive)
-                ) {
+            const uint32_t modMask =
+                (altActive ? HYPRSHELL_MOD_ALT : 0) |
+                (ctrlActive ? HYPRSHELL_MOD_CTRL : 0) |
+                (superActive ? HYPRSHELL_MOD_SUPER : 0) |
+                (shiftActive ? HYPRSHELL_MOD_SHIFT : 0);
+            for (const auto &bind : SWITCH_BINDS) {
+                const bool isTabShift =
+                    (keysym == XKB_KEY_ISO_Left_Tab && bind.key == XKB_KEY_Tab && (bind.mod_mask & HYPRSHELL_MOD_SHIFT));
+                if ((keysym == bind.key || isTabShift) && modMask == bind.mod_mask) {
                     if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (tab) pressed", GREEN,
-                                                     2000);
+                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open pressed", GREEN, 2000);
                     }
                     info.cancelled = true;
-                    sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH);
-                }
-            }
-            if (keysym == XKB_KEY_ISO_Left_Tab) {
-                if ((HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Alt_L && altActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
-                ) {
-                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (shift + tab) pressed",
-                                                     GREEN, 2000);
-                    }
-                    info.cancelled = true;
-                    sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH_REVERSE);
-                }
-            }
-            if (keysym == XKB_KEY_grave || keysym == XKB_KEY_dead_grave) {
-                if ((HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Alt_L && altActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Super_L && superActive) ||
-                    (HYPRSHELL_SWTICH_XKB_MOD_L == XKB_KEY_Control_L && ctrlActive)
-                ) {
-                    if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-                        HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] switch open (grave) pressed", GREEN,
-                                                     2000);
-                    }
-                    info.cancelled = true;
-                    sendStringToHyprshellSocket(HYPRSHELL_OPEN_SWITCH_REVERSE);
+                    ACTIVE_HOLD_MASK = bind.hold_mask;
+                    sendStringToHyprshellSocket(bind.command);
+                    break;
                 }
             }
         }
 
         // release switch mode
-        if (release && (keysym == HYPRSHELL_SWTICH_XKB_MOD_R || keysym == HYPRSHELL_SWTICH_XKB_MOD_L)) {
-            if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
-                HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] shift mode release pressed", GREEN, 2000);
+        if (release) {
+            uint8_t releasedMask = 0;
+            if (keysym == XKB_KEY_Alt_L || keysym == XKB_KEY_Alt_R) {
+                releasedMask = HYPRSHELL_HOLD_ALT;
+            } else if (keysym == XKB_KEY_Control_L || keysym == XKB_KEY_Control_R) {
+                releasedMask = HYPRSHELL_HOLD_CTRL;
+            } else if (keysym == XKB_KEY_Super_L || keysym == XKB_KEY_Super_R) {
+                releasedMask = HYPRSHELL_HOLD_SUPER;
             }
-            sendStringToHyprshellSocket(HYPRSHELL_CLOSE);
+            if (releasedMask != 0 && (ACTIVE_HOLD_MASK & releasedMask) != 0) {
+                if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+                    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] shift mode release pressed", GREEN, 2000);
+                }
+                ACTIVE_HOLD_MASK = 0;
+                sendStringToHyprshellSocket(HYPRSHELL_CLOSE);
+            }
         }
     }
 }

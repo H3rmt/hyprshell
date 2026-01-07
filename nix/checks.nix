@@ -62,7 +62,9 @@ rec {
             programs.hyprshell.settings = {
               windows.enable = true;
               windows.overview.enable = true;
-              windows.switch.enable = true;
+              windows.switches = [
+                { enable = true; }
+              ];
             };
           }
         ];

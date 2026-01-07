@@ -12,8 +12,7 @@ pub struct Windows {
     pub scale: f64,
     pub items_per_row: u8,
     pub overview: Overview,
-    pub switch: Switch,
-    pub switch_2: Switch,
+    pub switches: Vec<Switch>,
 }
 
 #[derive(Debug, Clone)]
@@ -74,12 +73,12 @@ pub struct ApplicationsPluginConfig {
     pub show_actions_submenu: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(clippy::struct_field_names)]
 pub struct Switch {
     pub enabled: bool,
-    pub modifier: ConfigModifier,
-    pub key: String,
+    pub forward_binds: Vec<config_lib::KeyCombo>,
+    pub reverse_binds: Vec<config_lib::KeyCombo>,
     pub same_class: bool,
     pub current_workspace: bool,
     pub current_monitor: bool,
@@ -189,8 +188,7 @@ impl From<Option<config_lib::Windows>> for Windows {
             scale: v.scale,
             items_per_row: v.items_per_row,
             overview: v.overview.into(),
-            switch: v.switch.into(),
-            switch_2: v.switch_2.into(),
+            switches: v.switches.into_iter().map(Switch::from).collect(),
         }
     }
 }
@@ -198,12 +196,18 @@ impl From<Option<config_lib::Windows>> for Windows {
 impl From<Windows> for Option<config_lib::Windows> {
     fn from(value: Windows) -> Self {
         if value.enabled {
+            let switches = value
+                .switches
+                .into_iter()
+                .filter(|s| s.enabled)
+                .filter(|s| !s.forward_binds.is_empty() || !s.reverse_binds.is_empty())
+                .map(config_lib::Switch::from)
+                .collect::<Vec<_>>();
             Some(config_lib::Windows {
                 scale: value.scale,
                 items_per_row: value.items_per_row,
                 overview: value.overview.into(),
-                switch: value.switch.into(),
-                switch_2: value.switch_2.into(),
+                switches,
             })
         } else {
             None
@@ -211,50 +215,56 @@ impl From<Windows> for Option<config_lib::Windows> {
     }
 }
 
-impl From<Option<config_lib::Switch>> for Switch {
-    fn from(value: Option<config_lib::Switch>) -> Self {
-        let enabled = value.is_some();
-        let v = value.unwrap_or_default();
+impl From<config_lib::Switch> for Switch {
+    fn from(value: config_lib::Switch) -> Self {
         Self {
-            enabled,
-            modifier: v.modifier.into(),
-            key: v.key.to_string(),
-            same_class: v.filter_by.contains(&config_lib::FilterBy::SameClass),
-            current_workspace: v
+            enabled: true,
+            forward_binds: value.binds.forward,
+            reverse_binds: value.binds.reverse,
+            same_class: value.filter_by.contains(&config_lib::FilterBy::SameClass),
+            current_workspace: value
                 .filter_by
                 .contains(&config_lib::FilterBy::CurrentWorkspace),
-            current_monitor: v.filter_by.contains(&config_lib::FilterBy::CurrentMonitor),
-            switch_workspaces: v.switch_workspaces,
-            exclude_workspaces: v.exclude_workspaces.to_string(),
-            kill_key: v.kill_key,
+            current_monitor: value.filter_by.contains(&config_lib::FilterBy::CurrentMonitor),
+            switch_workspaces: value.switch_workspaces,
+            exclude_workspaces: value.exclude_workspaces.to_string(),
+            kill_key: value.kill_key,
         }
     }
 }
 
-impl From<Switch> for Option<config_lib::Switch> {
+impl From<Switch> for config_lib::Switch {
     fn from(value: Switch) -> Self {
-        if value.enabled {
-            let mut vec = vec![];
-            if value.same_class {
-                vec.push(config_lib::FilterBy::SameClass);
-            }
-            if value.current_workspace {
-                vec.push(config_lib::FilterBy::CurrentWorkspace);
-            }
-            if value.current_monitor {
-                vec.push(config_lib::FilterBy::CurrentMonitor);
-            }
-            Some(config_lib::Switch {
-                modifier: value.modifier.into(),
-                key: Box::from(value.key),
-                filter_by: vec,
-                switch_workspaces: value.switch_workspaces,
-                exclude_workspaces: Box::from(value.exclude_workspaces),
-                kill_key: value.kill_key,
-            })
-        } else {
-            None
+        let mut vec = vec![];
+        if value.same_class {
+            vec.push(config_lib::FilterBy::SameClass);
         }
+        if value.current_workspace {
+            vec.push(config_lib::FilterBy::CurrentWorkspace);
+        }
+        if value.current_monitor {
+            vec.push(config_lib::FilterBy::CurrentMonitor);
+        }
+        config_lib::Switch {
+            binds: config_lib::SwitchBinds {
+                forward: value.forward_binds,
+                reverse: value.reverse_binds,
+            },
+            filter_by: vec,
+            switch_workspaces: value.switch_workspaces,
+            exclude_workspaces: Box::from(value.exclude_workspaces),
+            kill_key: value.kill_key,
+        }
+    }
+}
+
+impl Default for Switch {
+    fn default() -> Self {
+        let mut value: Self = config_lib::Switch::default().into();
+        value.enabled = false;
+        value.forward_binds.clear();
+        value.reverse_binds.clear();
+        value
     }
 }
 

@@ -14,7 +14,7 @@ pub const PLUGIN_OUTPUT_PATH: &str = "/tmp/hyprshell.so";
 
 static ASSET_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/plugin.zip"));
 
-pub use configure::PluginConfig;
+pub use configure::{PluginConfig, SwitchBindConfig};
 
 pub fn generate(config: &PluginConfig) -> anyhow::Result<()> {
     let _span = debug_span!("generate").entered();

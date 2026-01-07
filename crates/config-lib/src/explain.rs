@@ -85,15 +85,13 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
         }
         builder.push('\n');
 
-        if let Some(switch) = &windows.switch {
-            let _ = builder.write_str(&format!(
-                "Press {bold}{blue}{}{reset} + {blue}tab{reset} and hold {bold}{blue}{}{reset} to view recently used applications. Press {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
-                switch.modifier,
-                switch.modifier,
-                switch.modifier,
-            ));
-        } else {
+        if windows.switches.is_empty() {
             let _ = builder.write_str(&format!("{italic}<Switch mode disabled>{reset}\n"));
+        } else {
+            let _ = builder.write_str(&format!(
+                "Switch mode enabled ({} profile(s)). Use the configured keybinds to open it and release the hold modifiers to close the window.\n",
+                windows.switches.len()
+            ));
         }
     } else {
         let _ = builder.write_str(&format!("{italic}<Windows disabled>{reset}\n"));
@@ -112,7 +110,7 @@ mod tests {
         Config {
             windows: Some(Windows {
                 overview: Some(Overview::default()),
-                switch: Some(Switch::default()),
+                switches: vec![Switch::default()],
                 ..Default::default()
             }),
             ..Default::default()
@@ -134,7 +132,7 @@ After opening the Overview the Launcher is available:
 	- Paths (starting with ~ or /) can be open in default file-manager.
 	- Type Reboot/Shutdown/etc. to run corresponding commands. Type `actions` to see all available ones.
 
-Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
+Switch mode enabled (1 profile(s)). Use the configured keybinds to open it and release the hold modifiers to close the window.
 ";
         let config = create_test_config();
         let path = PathBuf::from("/test/config.ron");
@@ -149,7 +147,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
 Explanation (blue are keys, bold blue keys can be configured in config):
 <Overview disabled>
 
-Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
+Switch mode enabled (1 profile(s)). Use the configured keybinds to open it and release the hold modifiers to close the window.
 ";
         let mut config = create_test_config();
         config

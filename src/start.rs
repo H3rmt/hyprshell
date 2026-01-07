@@ -109,9 +109,10 @@ pub struct Globals {
 
 #[derive(Debug, Default)]
 pub struct WindowsGlobal {
-    // bool ise used to indicate that the launcher is active
+    // bool is used to indicate that the launcher is active
     pub overview: Option<(WindowsOverviewData, LauncherData, bool)>,
-    pub switch: Option<WindowsSwitchData>,
+    pub switches: Vec<WindowsSwitchData>,
+    pub active_switch: Option<usize>,
 }
 
 #[allow(clippy::cognitive_complexity)]
@@ -170,7 +171,7 @@ fn activate(
 
     // TODO remove in future if more is available
     if config.windows.is_none()
-        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
+        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switches.is_empty())
     {
         notify_warn("Nothing is enabled in the config");
         if let Err(err) = hyprshell_config_block(config_file) {
@@ -248,15 +249,17 @@ fn create_windows(
         } else {
             debug!("Windows overview disabled");
         }
-        if let Some(switch) = &windows.switch {
-            let switch_data = windows_lib::switch::create_windows_switch_window(
-                app,
-                switch,
-                windows,
-                event_sender,
-            )
-            .context("failed to create switch window")?;
-            windows_data.switch = Some(switch_data);
+        if !windows.switches.is_empty() {
+            for switch in &windows.switches {
+                let switch_data = windows_lib::switch::create_windows_switch_window(
+                    app,
+                    switch,
+                    windows,
+                    event_sender.clone(),
+                )
+                .context("failed to create switch window")?;
+                windows_data.switches.push(switch_data);
+            }
         } else {
             debug!("Windows switch disabled");
         }

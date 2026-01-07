@@ -1,12 +1,13 @@
 use crate::flags_csv;
-use crate::structs::{Config, Plugins};
+use crate::structs::{Config, Plugins, Switch};
+use crate::util::key_combo_label;
 use config_lib::actions::ToAction;
 use relm4::adw::ActionRow;
 use relm4::adw::gtk::SelectionMode;
 use relm4::adw::prelude::*;
 use relm4::gtk;
 use relm4::{ComponentParts, ComponentSender, RelmWidgetExt, SimpleComponent};
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use tracing::trace;
 
 #[derive(Debug)]
@@ -294,201 +295,30 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                     );
                 }
             }
-            match (
-                &prev_config.windows.switch.enabled,
-                &config.windows.switch.enabled,
-            ) {
-                (false, false) => {}
-                (true, false) => {
-                    add_info(changes, "Disabled Switch view");
-                }
-                (_, true) => {
-                    if !prev_config.windows.switch.enabled {
-                        add_info(changes, "Enabled Switch view");
-                    }
-
-                    if prev_config.windows.switch.key != config.windows.switch.key {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch key",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch.key, config.windows.switch.key
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch.modifier != config.windows.switch.modifier {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch modifier",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch.modifier, config.windows.switch.modifier
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch.same_class != config.windows.switch.same_class
-                        || prev_config.windows.switch.current_monitor
-                            != config.windows.switch.current_monitor
-                        || prev_config.windows.switch.current_workspace
-                            != config.windows.switch.current_workspace
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch filter by",
-                            format!(
-                                "{} -> {}",
-                                flags_csv!(
-                                    prev_config.windows.switch,
-                                    same_class,
-                                    current_monitor,
-                                    current_workspace
-                                ),
-                                flags_csv!(
-                                    config.windows.switch,
-                                    same_class,
-                                    current_monitor,
-                                    current_workspace
-                                ),
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch.switch_workspaces
-                        != config.windows.switch.switch_workspaces
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch switch workspaces",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch.switch_workspaces,
-                                config.windows.switch.switch_workspaces
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch.exclude_workspaces
-                        != config.windows.switch.exclude_workspaces
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch exclude workspaces",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch.exclude_workspaces,
-                                config.windows.switch.exclude_workspaces
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch.kill_key != config.windows.switch.kill_key {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch kill key",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch.kill_key, config.windows.switch.kill_key
-                            ),
-                        );
-                    }
-                }
+            let prev_enabled = prev_config
+                .windows
+                .switches
+                .iter()
+                .filter(|s| s.enabled)
+                .count();
+            let curr_enabled = config
+                .windows
+                .switches
+                .iter()
+                .filter(|s| s.enabled)
+                .count();
+            if prev_enabled != curr_enabled {
+                add_info_subtitle(
+                    changes,
+                    "Changed switch profiles count",
+                    format!("{prev_enabled} -> {curr_enabled}"),
+                );
             }
-            match (
-                &prev_config.windows.switch_2.enabled,
-                &config.windows.switch_2.enabled,
-            ) {
-                (false, false) => {}
-                (true, false) => {
-                    add_info(changes, "Disabled Switch 2 view");
-                }
-                (_, true) => {
-                    if !prev_config.windows.switch_2.enabled {
-                        add_info(changes, "Enabled Switch 2 view");
-                    }
-
-                    if prev_config.windows.switch_2.key != config.windows.switch_2.key {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 key",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch_2.key, config.windows.switch_2.key
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch_2.modifier != config.windows.switch_2.modifier {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 modifier",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch_2.modifier,
-                                config.windows.switch_2.modifier
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch_2.same_class != config.windows.switch_2.same_class
-                        || prev_config.windows.switch_2.current_monitor
-                            != config.windows.switch_2.current_monitor
-                        || prev_config.windows.switch_2.current_workspace
-                            != config.windows.switch_2.current_workspace
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 filter by",
-                            format!(
-                                "{} -> {}",
-                                flags_csv!(
-                                    prev_config.windows.switch_2,
-                                    same_class,
-                                    current_monitor,
-                                    current_workspace
-                                ),
-                                flags_csv!(
-                                    config.windows.switch_2,
-                                    same_class,
-                                    current_monitor,
-                                    current_workspace
-                                ),
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch_2.switch_workspaces
-                        != config.windows.switch_2.switch_workspaces
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 switch workspaces",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch_2.switch_workspaces,
-                                config.windows.switch_2.switch_workspaces
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch_2.exclude_workspaces
-                        != config.windows.switch_2.exclude_workspaces
-                    {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 exclude workspaces",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch_2.exclude_workspaces,
-                                config.windows.switch_2.exclude_workspaces
-                            ),
-                        );
-                    }
-                    if prev_config.windows.switch_2.kill_key != config.windows.switch_2.kill_key {
-                        add_info_subtitle(
-                            changes,
-                            "Changed switch 2 kill key",
-                            format!(
-                                "{} -> {}",
-                                prev_config.windows.switch_2.kill_key,
-                                config.windows.switch_2.kill_key
-                            ),
-                        );
-                    }
-                }
+            let prev_switches = &prev_config.windows.switches;
+            let curr_switches = &config.windows.switches;
+            let max_len = prev_switches.len().max(curr_switches.len());
+            for idx in 0..max_len {
+                add_switch_changes(changes, idx, prev_switches.get(idx), curr_switches.get(idx));
             }
         }
     }
@@ -499,6 +329,173 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
     } else {
         true
     }
+}
+
+fn add_switch_changes(
+    changes: &gtk::ListBox,
+    index: usize,
+    prev: Option<&Switch>,
+    current: Option<&Switch>,
+) {
+    match (prev, current) {
+        (None, None) => {}
+        (None, Some(current)) => {
+            add_info_subtitle(changes, "Added switch with", switch_summary(index, current));
+        }
+        (Some(prev), None) => {
+            add_info_subtitle(
+                changes,
+                &format!("Removed switch#{index}"),
+                switch_summary(index, prev),
+            );
+        }
+        (Some(prev), Some(current)) => {
+            if prev.enabled != current.enabled {
+                if prev.enabled {
+                    add_info(changes, &format!("Disabled switch#{index}"));
+                } else {
+                    add_info(changes, &format!("Enabled switch#{index}"));
+                }
+            }
+            if prev.forward_binds != current.forward_binds {
+                let (added, removed) =
+                    diff_keybinds(&prev.forward_binds, &current.forward_binds);
+                if !added.is_empty() {
+                    add_info_subtitle(
+                        changes,
+                        &format!("Added switch#{index} forward keybindings"),
+                        added.join(", "),
+                    );
+                }
+                if !removed.is_empty() {
+                    add_info_subtitle(
+                        changes,
+                        &format!("Removed switch#{index} forward keybindings"),
+                        removed.join(", "),
+                    );
+                }
+            }
+            if prev.reverse_binds != current.reverse_binds {
+                let (added, removed) =
+                    diff_keybinds(&prev.reverse_binds, &current.reverse_binds);
+                if !added.is_empty() {
+                    add_info_subtitle(
+                        changes,
+                        &format!("Added switch#{index} reverse keybindings"),
+                        added.join(", "),
+                    );
+                }
+                if !removed.is_empty() {
+                    add_info_subtitle(
+                        changes,
+                        &format!("Removed switch#{index} reverse keybindings"),
+                        removed.join(", "),
+                    );
+                }
+            }
+            if prev.same_class != current.same_class
+                || prev.current_monitor != current.current_monitor
+                || prev.current_workspace != current.current_workspace
+            {
+                add_info_subtitle(
+                    changes,
+                    &format!("Changed switch#{index} filter by"),
+                    format!(
+                        "{} -> {}",
+                        switch_filters_label(prev),
+                        switch_filters_label(current)
+                    ),
+                );
+            }
+            if prev.switch_workspaces != current.switch_workspaces {
+                add_info_subtitle(
+                    changes,
+                    &format!("Changed switch#{index} switch workspaces"),
+                    format!("{} -> {}", prev.switch_workspaces, current.switch_workspaces),
+                );
+            }
+            if prev.exclude_workspaces != current.exclude_workspaces {
+                add_info_subtitle(
+                    changes,
+                    &format!("Changed switch#{index} exclude workspaces"),
+                    format!(
+                        "{} -> {}",
+                        prev.exclude_workspaces, current.exclude_workspaces
+                    ),
+                );
+            }
+            if prev.kill_key != current.kill_key {
+                add_info_subtitle(
+                    changes,
+                    &format!("Changed switch#{index} kill key"),
+                    format!("{} -> {}", prev.kill_key, current.kill_key),
+                );
+            }
+        }
+    }
+}
+
+fn switch_summary(index: usize, switch: &Switch) -> String {
+    format!(
+        "switch#{index}: enabled={}, forward=[{}], reverse=[{}], filter_by={}, switch_workspaces={}, exclude_workspaces=\"{}\", kill_key={}",
+        switch.enabled,
+        key_combo_list_label(&switch.forward_binds),
+        key_combo_list_label(&switch.reverse_binds),
+        switch_filters_label(switch),
+        switch.switch_workspaces,
+        switch.exclude_workspaces,
+        switch.kill_key
+    )
+}
+
+fn switch_filters_label(switch: &Switch) -> String {
+    let filters = flags_csv!(switch, same_class, current_monitor, current_workspace);
+    if filters.is_empty() {
+        "none".to_string()
+    } else {
+        filters
+    }
+}
+
+fn key_combo_list_label(combos: &[config_lib::KeyCombo]) -> String {
+    if combos.is_empty() {
+        return "none".to_string();
+    }
+    combos
+        .iter()
+        .map(key_combo_details)
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn key_combo_details(combo: &config_lib::KeyCombo) -> String {
+    let base = key_combo_label(combo);
+    match &combo.hold_mods {
+        None => base,
+        Some(mods) => format!("{base} (hold: {})", key_mods_label(mods)),
+    }
+}
+
+fn key_mods_label(mods: &[config_lib::KeyMod]) -> String {
+    if mods.is_empty() {
+        return "none".to_string();
+    }
+    mods.iter().map(|m| m.to_string()).collect::<Vec<_>>().join(" + ")
+}
+
+fn diff_keybinds(
+    prev: &[config_lib::KeyCombo],
+    current: &[config_lib::KeyCombo],
+) -> (Vec<String>, Vec<String>) {
+    let prev_set = key_combo_set(prev);
+    let curr_set = key_combo_set(current);
+    let added = curr_set.difference(&prev_set).cloned().collect::<Vec<_>>();
+    let removed = prev_set.difference(&curr_set).cloned().collect::<Vec<_>>();
+    (added, removed)
+}
+
+fn key_combo_set(combos: &[config_lib::KeyCombo]) -> BTreeSet<String> {
+    combos.iter().map(key_combo_details).collect()
 }
 
 #[allow(clippy::too_many_lines)]

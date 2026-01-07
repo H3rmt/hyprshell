@@ -43,6 +43,7 @@ impl From<old_structs::Switch> for m3t4::Switch {
             key: "tab".into(),
             switch_workspaces: value.show_workspaces,
             exclude_special_workspaces: "".into(),
+            kill_key: 'q',
         }
     }
 }

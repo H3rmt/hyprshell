@@ -32,9 +32,13 @@ This config enables overview and switch, but is not type-save like the flake hom
             max_items = 6;
           };
         };
-        switch = {
-          modifier = "alt";
-        };
+        switches = [
+          {
+            binds.forward = [
+              { mods = [ "alt" ]; key = "Tab"; }
+            ];
+          }
+        ];
       };
     };
   };
@@ -181,7 +185,9 @@ Everything is disabled by default, so you need to enable it (even settings.windo
             max_items = 6;
           };
         };
-        switch.enable = true;
+        switches = [
+          { enable = true; }
+        ];
       };
     };
   };

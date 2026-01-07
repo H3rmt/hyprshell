@@ -76,3 +76,17 @@ pub struct Plugins {
     pub calc: Option<crate::EmptyConfig>,
     pub path: Option<crate::EmptyConfig>,
 }
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+#[allow(dead_code)]
+pub struct Switch {
+    #[default(crate::Modifier::Alt)]
+    pub modifier: crate::Modifier,
+    #[default = "Tab"]
+    pub key: Box<str>,
+    #[default(vec![crate::FilterBy::CurrentMonitor])]
+    pub filter_by: Vec<crate::FilterBy>,
+    #[default = false]
+    pub switch_workspaces: bool,
+}

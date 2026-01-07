@@ -28,7 +28,7 @@ The default values for these configs, which are also the values that get used wh
 - **items_per_row:**_[number]_ The number of workspaces or windows to show. If you have 6 workspaces open and set this to 3, you will see 2 rows of 3 workspaces.
   Pressing arrow up or down switches between the rows.
 - **overview:**_[Overview?]_ Configuration for the overview mode (optional).
-- **switch:**_[Switch?]_ Configuration for the switch mode (optional).
+- **switches:**_[List<Switch>]_ Configuration for switch mode profiles (optional).
 
 ### Overview
 
@@ -92,12 +92,23 @@ This mode displays the windows in a downscaled view of the screen. It also shows
 
 This mode displays the windows sorted by their most recent access. This option itself is optional, if not set, this mode is disabled.
 
-- **modifier:**_[string]_ The modifier that must be helled down together with `tab` key to open the Switch mode (for example `alt`). Letting go of this key will close the Switch mode. This MUST be one of these modifiers: `alt, ctrl, super`.
+- **binds:**_[SwitchBinds]_ Keybinds used to open the Switch mode.
+  - **forward:**_[List<KeyCombo>]_ Keybinds to open Switch forward.
+  - **reverse:**_[List<KeyCombo>]_ Keybinds to open Switch in reverse.
 - **filter_by**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of `FilterBy` objects. (example: `filter_by: [current_workspace]`)
     - **same_class:** Only includes windows of the same class / type. If you currently have alacritty open, only alacritty windows will be shown.
     - **current_workspace:** Only includes windows of the current workspace.
     - **current_monitor:** Only includes windows of the current monitor.
 - **switch_workspaces:**_[boolean]_ Switch between workspaces in the Switch mode instead of windows.
+- **exclude_workspaces:**_[string]_ Exclude workspaces by regex.
+- **kill_key:**_[string]_ Key used to close a window while the switch is open.
+
+**KeyCombo**
+- **mods:**_[List<string>]_ Modifiers required for the keybind. Supports multiple base modifiers and `shift`. Allowed values: `alt, ctrl, super, shift`.
+- **key:**_[string]_ Key name to trigger (e.g. `Tab`, `grave`, `k`).
+- **hold_mods:**_[List<string>]_ Optional modifiers that close the switch when released. Defaults to `mods` without `shift`. Allowed values: `alt, ctrl, super`.
+
+**Note:** Multi-profile and multi-bind switch keybinds require the Hyprland plugin. If the plugin is disabled or fails to load, hyprshell falls back to a single-profile legacy keybind set (`mod+tab`, `mod+shift+tab`, `mod+grave`).
 
 # CSS
 

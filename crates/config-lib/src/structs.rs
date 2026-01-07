@@ -23,10 +23,8 @@ pub struct Windows {
     pub items_per_row: u8,
     #[default(None)]
     pub overview: Option<Overview>,
-    #[default(None)]
-    pub switch: Option<Switch>,
-    #[default(None)]
-    pub switch_2: Option<Switch>,
+    #[default(Vec::new())]
+    pub switches: Vec<Switch>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -173,14 +171,122 @@ pub struct SearchEngine {
     pub key: char,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum KeyMod {
+    Alt,
+    Ctrl,
+    Super,
+    Shift,
+}
+
+#[allow(clippy::must_use_candidate)]
+impl KeyMod {
+    pub const fn to_str(&self) -> &'static str {
+        match self {
+            Self::Alt => "alt",
+            Self::Ctrl => "ctrl",
+            Self::Super => "super",
+            Self::Shift => "shift",
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for KeyMod {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ModVisitor;
+        impl serde::de::Visitor<'_> for ModVisitor {
+            type Value = KeyMod;
+            fn expecting(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+                fmt.write_str("one of: alt, ctrl, super, shift")
+            }
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                value
+                    .try_into()
+                    .map_err(|_e| E::unknown_variant(value, &["alt", "ctrl", "super", "shift"]))
+            }
+        }
+        deserializer.deserialize_str(ModVisitor)
+    }
+}
+
+impl Serialize for KeyMod {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_str())
+    }
+}
+
+impl TryFrom<&str> for KeyMod {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().as_str() {
+            "alt" => Ok(Self::Alt),
+            "ctrl" | "control" => Ok(Self::Ctrl),
+            "super" | "win" | "windows" | "meta" => Ok(Self::Super),
+            "shift" => Ok(Self::Shift),
+            other => anyhow::bail!("Invalid key modifier: {other}"),
+        }
+    }
+}
+
+impl std::fmt::Display for KeyMod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Alt => write!(f, "Alt"),
+            Self::Ctrl => write!(f, "Ctrl"),
+            Self::Super => write!(f, "Super"),
+            Self::Shift => write!(f, "Shift"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct KeyCombo {
+    pub mods: Vec<KeyMod>,
+    pub key: Box<str>,
+    pub hold_mods: Option<Vec<KeyMod>>,
+}
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
+#[serde(deny_unknown_fields)]
+pub struct SwitchBinds {
+    #[default(vec![KeyCombo {
+        mods: vec![KeyMod::Alt],
+        key: Box::from("Tab"),
+        hold_mods: None,
+    }])]
+    pub forward: Vec<KeyCombo>,
+    #[default(vec![
+        KeyCombo {
+            mods: vec![KeyMod::Alt, KeyMod::Shift],
+            key: Box::from("Tab"),
+            hold_mods: None,
+        },
+        KeyCombo {
+            mods: vec![KeyMod::Alt],
+            key: Box::from("grave"),
+            hold_mods: None,
+        },
+    ])]
+    pub reverse: Vec<KeyCombo>,
+}
+
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Switch {
-    #[default(Modifier::Alt)]
-    pub modifier: Modifier,
-    #[default = "Tab"]
-    pub key: Box<str>,
+    pub binds: SwitchBinds,
     #[default(vec![FilterBy::CurrentMonitor])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]

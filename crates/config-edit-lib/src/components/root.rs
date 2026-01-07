@@ -10,7 +10,6 @@ use crate::components::launcher_plugins::applications::ApplicationsOutput;
 use crate::components::launcher_plugins::simple::SimplePluginOutput;
 use crate::components::launcher_plugins::websearch::WebSearchOutput;
 use crate::components::nix_preview::{NixPreview, NixPreviewInit};
-use crate::components::switch::SwitchOutput;
 use crate::components::theme::{Style, StyleInit, StyleInput, StyleOutput};
 use crate::components::windows::{Windows, WindowsInit, WindowsInput, WindowsOutput};
 use crate::components::windows_overview::WindowsOverviewOutput;
@@ -609,80 +608,13 @@ impl SimpleComponent for Root {
                                 r#ref.overview.current_workspace = false;
                             }
                         }
-                        WindowsOverviewOutput::ExcludeWorkspaces(exclude_workspaces) => {
-                            r#ref.overview.exclude_workspaces = exclude_workspaces;
-                        }
-                    },
-                    WindowsOutput::Switch(msg) => match msg {
-                        SwitchOutput::Enabled(enabled) => {
-                            r#ref.switch.enabled = enabled;
-                        }
-                        SwitchOutput::Key(key) => r#ref.switch.key = key,
-                        SwitchOutput::Modifier(modifier) => {
-                            r#ref.switch.modifier = modifier;
-                        }
-                        SwitchOutput::FilterSameClass(enabled) => {
-                            r#ref.switch.same_class = enabled;
-                        }
-                        SwitchOutput::FilterWorkspace(enabled) => {
-                            r#ref.switch.current_workspace = enabled;
-                            // current monitor and current workspace are incompatible
-                            if enabled {
-                                r#ref.switch.current_monitor = false;
-                            }
-                        }
-                        SwitchOutput::FilterMonitor(enabled) => {
-                            r#ref.switch.current_monitor = enabled;
-                            // current monitor and current workspace are incompatible
-                            if enabled {
-                                r#ref.switch.current_workspace = false;
-                            }
-                        }
-                        SwitchOutput::SwitchWorkspaces(enabled) => {
-                            r#ref.switch.switch_workspaces = enabled;
-                        }
-                        SwitchOutput::ExcludeWorkspaces(exclude_special_workspaces) => {
-                            r#ref.switch.exclude_workspaces = exclude_special_workspaces;
-                        }
-                        SwitchOutput::KillKey(key) => {
-                            r#ref.switch.kill_key = key;
-                        }
-                    },
-                    WindowsOutput::Switch2(msg) => match msg {
-                        SwitchOutput::Enabled(enabled) => {
-                            r#ref.switch_2.enabled = enabled;
-                        }
-                        SwitchOutput::Key(key) => r#ref.switch_2.key = key,
-                        SwitchOutput::Modifier(modifier) => {
-                            r#ref.switch_2.modifier = modifier;
-                        }
-                        SwitchOutput::FilterSameClass(enabled) => {
-                            r#ref.switch_2.same_class = enabled;
-                        }
-                        SwitchOutput::FilterWorkspace(enabled) => {
-                            r#ref.switch_2.current_workspace = enabled;
-                            // current monitor and current workspace are incompatible
-                            if enabled {
-                                r#ref.switch_2.current_monitor = false;
-                            }
-                        }
-                        SwitchOutput::FilterMonitor(enabled) => {
-                            r#ref.switch_2.current_monitor = enabled;
-                            // current monitor and current workspace are incompatible
-                            if enabled {
-                                r#ref.switch_2.current_workspace = false;
-                            }
-                        }
-                        SwitchOutput::SwitchWorkspaces(enabled) => {
-                            r#ref.switch_2.switch_workspaces = enabled;
-                        }
-                        SwitchOutput::ExcludeWorkspaces(exclude_workspaces) => {
-                            r#ref.switch_2.exclude_workspaces = exclude_workspaces;
-                        }
-                        SwitchOutput::KillKey(key) => {
-                            r#ref.switch_2.kill_key = key;
-                        }
-                    },
+                    WindowsOverviewOutput::ExcludeWorkspaces(exclude_workspaces) => {
+                        r#ref.overview.exclude_workspaces = exclude_workspaces;
+                    }
+                },
+                WindowsOutput::Switches(switches) => {
+                    r#ref.switches = switches;
+                }
                 }
                 // propagate event back
                 sender.input(RootInput::SetConfig(self.config.clone()));

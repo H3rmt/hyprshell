@@ -28,9 +28,22 @@ pub enum TransferType {
     /// send from the app itself, 500ms after starting
     SetActive,
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HoldMod {
+    Alt,
+    Ctrl,
+    Super,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
     pub reverse: bool,
+    #[serde(default)]
+    pub profile: usize,
+    #[serde(default)]
+    pub hold_mods: Vec<HoldMod>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

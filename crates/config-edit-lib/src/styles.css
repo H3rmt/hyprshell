@@ -33,10 +33,12 @@
     padding: 0.7rem;
 }
 
-/* set background color for the expander to bg color */
+/* set background color for the expander to match card rows */
+.item-expander,
+.item-expander > box > list,
 .item-expander > box > revealer {
     border-radius: 8px;
-    background-color: var(--popover-bg-color);
+    background-color: var(--card-bg-color);
 }
 
 /* make it look like a button */
@@ -44,7 +46,8 @@
     border-radius: 8px;
     /* yoinked from https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_buttons.scss */
     /* adjusts bg color the the same as the buttons */
-    background-color: color-mix(in srgb, currentColor 10%, transparent);
+    background-color: color-mix(in srgb, currentColor 10%, var(--card-bg-color));
+    border: 1px solid var(--border-color);
 }
 
 

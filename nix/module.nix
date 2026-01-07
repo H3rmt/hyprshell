@@ -216,40 +216,38 @@ in
             };
           };
         };
-        switch = {
-          enable = mkOpt "Enable recent window switcher" bool true;
-          key = mkOpt "Key to open switch" str "Tab";
-          modifier = mkOpt "Modifier key" (enum [
-            "alt"
-            "ctrl"
-            "super"
-          ]) "alt";
-          filter_by = mkOpt "Filter by" (listOf (enum [
-            "same_class"
-            "current_monitor"
-            "current_workspace"
-          ])) [ "current_monitor" ];
-          switch_workspaces = mkOpt "Switch workspaces" bool false;
-          kill_key = mkOpt "Key to kill window" str "q";
-          exclude_workspaces = mkOpt "Exclude workspaces regex" str "";
-        };
-        switch_2 = {
-          enable = mkOpt "Enable recent window switcher" bool false;
-          key = mkOpt "Key to open switch" str "Tab";
-          modifier = mkOpt "Modifier key" (enum [
-            "alt"
-            "ctrl"
-            "super"
-          ]) "alt";
-          filter_by = mkOpt "Filter by" (listOf (enum [
-            "same_class"
-            "current_monitor"
-            "current_workspace"
-          ])) [ "current_monitor" ];
-          switch_workspaces = mkOpt "Switch workspaces" bool false;
-          kill_key = mkOpt "Key to kill window" str "q";
-          exclude_workspaces = mkOpt "Exclude workspaces regex" str "";
-        };
+        switches = mkOpt "Switch profiles" (listOf (submodule {
+          options = {
+            enable = mkOpt "Enable recent window switcher" bool true;
+            binds = {
+              forward = mkOpt "Forward keybinds" (listOf (submodule {
+                options = {
+                  mods = mkOpt "Modifiers" (listOf (enum [ "alt" "ctrl" "super" "shift" ])) [ "alt" ];
+                  key = mkOpt "Key" str "Tab";
+                  hold_mods = mkOpt "Hold modifiers" (nullOr (listOf (enum [ "alt" "ctrl" "super" ]))) null;
+                };
+              })) [ { mods = [ "alt" ]; key = "Tab"; } ];
+              reverse = mkOpt "Reverse keybinds" (listOf (submodule {
+                options = {
+                  mods = mkOpt "Modifiers" (listOf (enum [ "alt" "ctrl" "super" "shift" ])) [ "alt" "shift" ];
+                  key = mkOpt "Key" str "Tab";
+                  hold_mods = mkOpt "Hold modifiers" (nullOr (listOf (enum [ "alt" "ctrl" "super" ]))) null;
+                };
+              })) [
+                { mods = [ "alt" "shift" ]; key = "Tab"; }
+                { mods = [ "alt" ]; key = "grave"; }
+              ];
+            };
+            filter_by = mkOpt "Filter by" (listOf (enum [
+              "same_class"
+              "current_monitor"
+              "current_workspace"
+            ])) [ "current_monitor" ];
+            switch_workspaces = mkOpt "Switch workspaces" bool false;
+            exclude_workspaces = mkOpt "Exclude workspaces regex" str "";
+            kill_key = mkOpt "Key to kill window" str "q";
+          };
+        })) [ ];
       };
     };
   };

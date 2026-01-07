@@ -20,14 +20,26 @@ PluginDescriptionInfo init(HANDLE handle) {
 
     // ignore that this can return XKB_KEY_NoSymbol, it is only used to check if keysym equals
     OVERVIEW_KEY = xkb_keysym_from_name(HYPRSHELL_OVERVIEW_KEY, XKB_KEYSYM_CASE_INSENSITIVE);
-    SWITCH_KEY = xkb_keysym_from_name(HYPRSHELL_SWITCH_KEY, XKB_KEYSYM_CASE_INSENSITIVE);
+    SWITCH_BINDS.clear();
+    SWITCH_BINDS.reserve(HYPRSHELL_SWITCH_BIND_COUNT);
+    for (size_t i = 0; i < HYPRSHELL_SWITCH_BIND_COUNT; ++i) {
+        const auto key = xkb_keysym_from_name(HYPRSHELL_SWITCH_BIND_KEYS[i], XKB_KEYSYM_CASE_INSENSITIVE);
+        if (key == XKB_KEY_NoSymbol) {
+            continue;
+        }
+        SwitchBind bind;
+        bind.key = key;
+        bind.mod_mask = HYPRSHELL_SWITCH_BIND_MOD_MASKS[i];
+        bind.hold_mask = HYPRSHELL_SWITCH_BIND_HOLD_MASKS[i];
+        bind.command = HYPRSHELL_SWITCH_BIND_COMMANDS[i];
+        SWITCH_BINDS.push_back(bind);
+    }
     if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
         const auto info = std::string("Config: ") +
                           HYPRSHELL_OVERVIEW_KEY + ", " +
                           std::to_string(OVERVIEW_KEY) + ", " +
                           HYPRSHELL_OVERVIEW_MOD + ", " +
-                          std::to_string(HYPRSHELL_SWTICH_XKB_MOD_L) + ", " +
-                          std::to_string(HYPRSHELL_SWTICH_XKB_MOD_R) + ", ";
+                          std::to_string(SWITCH_BINDS.size()) + " switch binds";
         HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] Plugin started " + info, GREEN, 8000);
     }
 

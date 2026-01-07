@@ -1,8 +1,8 @@
 use crate::global::{WindowsSwitchConfig, WindowsSwitchData};
 use anyhow::Context;
 use async_channel::Sender;
-use config_lib::{FilterBy, Modifier, Switch, Windows};
-use core_lib::transfer::{Direction, SwitchSwitchConfig, TransferType};
+use config_lib::{FilterBy, KeyCombo, KeyMod, Switch, Windows};
+use core_lib::transfer::{Direction, HoldMod, SwitchSwitchConfig, TransferType};
 use core_lib::{HyprlandData, SWITCH_NAMESPACE, WarnWithDetails};
 use exec_lib::get_initial_active;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
@@ -14,7 +14,7 @@ use relm4::adw::gtk::{
     SelectionMode,
 };
 use std::collections::HashMap;
-use tracing::{debug, debug_span};
+use tracing::{debug, debug_span, warn};
 
 pub fn create_windows_switch_window(
     app: &Application,
@@ -44,16 +44,27 @@ pub fn create_windows_switch_window(
         .default_width(10)
         .build();
 
-    let s_key = Key::from_name(switch.key.to_string()).context("invalid switch key")?;
+    let forward_keys = collect_keys(&switch.binds.forward);
+    let reverse_keys = collect_keys(&switch.binds.reverse);
+    if forward_keys.is_empty() {
+        warn!("Switch profile has no valid forward keys, navigation will rely on arrow/vim keys");
+    }
+    if reverse_keys.is_empty() {
+        warn!("Switch profile has no valid reverse keys, navigation will rely on arrow/vim keys");
+    }
     let kill_key = Key::from_name(switch.kill_key.to_string()).context("invalid kill key")?;
+    let active_hold_mods = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let key_controller = EventControllerKey::new();
     let event_sender_2 = event_sender.clone();
-    key_controller
-        .connect_key_pressed(move |_, key, _, _| handle_key(key, s_key, kill_key, &event_sender_2));
+    let forward_keys_2 = forward_keys.clone();
+    let reverse_keys_2 = reverse_keys.clone();
+    key_controller.connect_key_pressed(move |_, key, _, _| {
+        handle_key(key, &forward_keys_2, &reverse_keys_2, kill_key, &event_sender_2)
+    });
     let event_sender_3 = event_sender;
-    let r#mod = switch.modifier;
+    let hold_mods = active_hold_mods.clone();
     key_controller.connect_key_released(move |_, key, _, _| {
-        handle_release(key, r#mod, &event_sender_3);
+        handle_release(key, &hold_mods, &event_sender_3);
     });
     window.add_controller(key_controller);
 
@@ -80,6 +91,7 @@ pub fn create_windows_switch_window(
                 Some(switch.exclude_workspaces.clone())
             },
         },
+        active_hold_mods,
         window,
         main_flow: clients_flow,
         workspaces: HashMap::default(),
@@ -89,20 +101,23 @@ pub fn create_windows_switch_window(
     })
 }
 
-fn handle_release(key: Key, modifier: Modifier, event_sender: &Sender<TransferType>) {
-    if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == Modifier::Alt)
-        || ((key == Key::Control_L || key == Key::Control_R) && modifier == Modifier::Ctrl)
-        || ((key == Key::Super_L || key == Key::Super_R) && modifier == Modifier::Super)
-    {
-        event_sender
-            .send_blocking(TransferType::CloseSwitch)
-            .warn_details("unable to send");
+fn handle_release(
+    key: Key,
+    hold_mods: &std::rc::Rc<std::cell::RefCell<Vec<HoldMod>>>,
+    event_sender: &Sender<TransferType>,
+) {
+    if !matches_hold_mod(key, &hold_mods.borrow()) {
+        return;
     }
+    event_sender
+        .send_blocking(TransferType::CloseSwitch)
+        .warn_details("unable to send");
 }
 
 fn handle_key(
     key: Key,
-    s_key: Key,
+    forward_keys: &[Key],
+    reverse_keys: &[Key],
     kill_key: Key,
     event_sender: &Sender<TransferType>,
 ) -> Propagation {
@@ -113,7 +128,7 @@ fn handle_key(
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        k if k == s_key || k == Key::l || k == Key::Right => {
+        k if forward_keys.contains(&k) || k == Key::l || k == Key::Right => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Right,
@@ -121,7 +136,7 @@ fn handle_key(
                 .warn_details("unable to send");
             Propagation::Stop
         }
-        Key::ISO_Left_Tab | Key::grave | Key::dead_grave | Key::h | Key::Left => {
+        k if reverse_keys.contains(&k) || k == Key::h || k == Key::Left => {
             event_sender
                 .send_blocking(TransferType::SwitchSwitch(SwitchSwitchConfig {
                     direction: Direction::Left,
@@ -153,4 +168,48 @@ fn handle_key(
         }
         _ => Propagation::Proceed,
     }
+}
+
+fn collect_keys(keys: &[KeyCombo]) -> Vec<Key> {
+    let mut collected = Vec::new();
+    for combo in keys {
+        if combo
+            .key
+            .as_ref()
+            .eq_ignore_ascii_case("tab")
+            && combo.mods.iter().any(|m| *m == KeyMod::Shift)
+        {
+            push_unique_key(&mut collected, Key::ISO_Left_Tab);
+            continue;
+        }
+        if combo.key.as_ref().eq_ignore_ascii_case("grave") {
+            push_unique_key(&mut collected, Key::grave);
+            push_unique_key(&mut collected, Key::dead_grave);
+            continue;
+        }
+        if let Some(key) = Key::from_name(combo.key.as_ref()) {
+            push_unique_key(&mut collected, key);
+        } else {
+            warn!("Invalid switch key: {}", combo.key);
+        }
+    }
+    collected
+}
+
+fn push_unique_key(keys: &mut Vec<Key>, key: Key) {
+    if !keys.contains(&key) {
+        keys.push(key);
+    }
+}
+
+fn matches_hold_mod(key: Key, hold_mods: &[HoldMod]) -> bool {
+    for hold in hold_mods {
+        match hold {
+            HoldMod::Alt if key == Key::Alt_L || key == Key::Alt_R => return true,
+            HoldMod::Ctrl if key == Key::Control_L || key == Key::Control_R => return true,
+            HoldMod::Super if key == Key::Super_L || key == Key::Super_R => return true,
+            _ => {}
+        }
+    }
+    false
 }

@@ -5,7 +5,7 @@ use crate::components::generate::step3::{SearchEngines, Step3, Step3Init, Step3I
 use crate::components::generate::step4::{Step4, Step4Init, Step4Input};
 use crate::structs::ConfigModifier;
 use crate::util::{ScrollToPosition, default_config};
-use config_lib::SearchEngine;
+use config_lib::{KeyCombo, KeyMod, SearchEngine};
 use relm4::gtk::prelude::{BoxExt, ButtonExt, OrientableExt, WidgetExt};
 use relm4::gtk::{Align, Justification};
 use relm4::{
@@ -293,8 +293,19 @@ impl SimpleComponent for Generate {
                 self.step1_data = LauncherPlugins::default();
                 self.step2_data = None;
                 self.step3_data = SearchEngines::default();
-                self.step4_data =
-                    Some((default.windows.switch.modifier, default.windows.switch.key));
+                self.step4_data = default.windows.switches.first().and_then(|switch| {
+                    if !switch.enabled {
+                        return None;
+                    }
+                    let combo = switch.forward_binds.first()?;
+                    let modifier = match combo.mods.as_slice() {
+                        [KeyMod::Alt] => ConfigModifier::Alt,
+                        [KeyMod::Ctrl] => ConfigModifier::Ctrl,
+                        [KeyMod::Super] => ConfigModifier::Super,
+                        _ => ConfigModifier::None,
+                    };
+                    Some((modifier, combo.key.to_string()))
+                });
                 self.step0
                     .emit(Step0Input::SetData(self.step0_data.clone()));
                 self.step1.emit(Step1Input::SetData(self.step1_data));
@@ -413,11 +424,38 @@ impl From<Out> for crate::Config {
         }
 
         if let Some(switch) = &val.switch {
-            config.windows.switch.enabled = true;
-            config.windows.switch.modifier = switch.0;
-            config.windows.switch.key.clone_from(&switch.1);
+            let mut sw = crate::Switch::default();
+            sw.enabled = true;
+            let base_mods = match switch.0 {
+                ConfigModifier::Alt => vec![KeyMod::Alt],
+                ConfigModifier::Ctrl => vec![KeyMod::Ctrl],
+                ConfigModifier::Super => vec![KeyMod::Super],
+                ConfigModifier::None => Vec::new(),
+            };
+            sw.forward_binds = vec![KeyCombo {
+                mods: base_mods.clone(),
+                key: switch.1.clone().into_boxed_str(),
+                hold_mods: None,
+            }];
+            if !base_mods.is_empty() {
+                let mut shift_mods = base_mods.clone();
+                shift_mods.push(KeyMod::Shift);
+                sw.reverse_binds = vec![
+                    KeyCombo {
+                        mods: shift_mods,
+                        key: Box::from("Tab"),
+                        hold_mods: None,
+                    },
+                    KeyCombo {
+                        mods: base_mods,
+                        key: Box::from("grave"),
+                        hold_mods: None,
+                    },
+                ];
+            }
+            config.windows.switches = vec![sw];
         } else {
-            config.windows.switch.enabled = false;
+            config.windows.switches.clear();
         }
         config
     }

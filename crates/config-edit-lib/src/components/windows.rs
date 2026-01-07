@@ -1,4 +1,4 @@
-use crate::components::switch::{Switch, SwitchInit, SwitchInput, SwitchOutput};
+use crate::components::switch::{Switch, SwitchOutput};
 use crate::components::windows_overview::{
     WindowsOverview, WindowsOverviewInit, WindowsOverviewInput, WindowsOverviewOutput,
 };
@@ -9,6 +9,7 @@ use relm4::{
     Component, ComponentParts, ComponentSender, Controller, RelmWidgetExt, SimpleComponent,
 };
 use relm4::{adw, gtk};
+use relm4::prelude::FactoryVecDeque;
 use tracing::trace;
 
 #[derive(Debug)]
@@ -16,8 +17,7 @@ pub struct Windows {
     pub overview: Controller<WindowsOverview>,
     pub config: crate::Windows,
     pub prev_config: crate::Windows,
-    pub switch: Controller<Switch>,
-    pub switch_2: Controller<Switch>,
+    pub switches: FactoryVecDeque<Switch>,
 }
 
 #[derive(Debug)]
@@ -25,6 +25,8 @@ pub enum WindowsInput {
     Set(crate::Windows),
     SetPrev(crate::Windows),
     Reset,
+    Switch(SwitchOutput),
+    AddSwitch,
 }
 
 #[derive(Debug)]
@@ -33,8 +35,7 @@ pub enum WindowsOutput {
     Scale(f64),
     ItemsPerRow(u8),
     Overview(WindowsOverviewOutput),
-    Switch(SwitchOutput),
-    Switch2(SwitchOutput),
+    Switches(Vec<crate::Switch>),
 }
 
 #[derive(Debug)]
@@ -42,6 +43,7 @@ pub struct WindowsInit {
     pub config: crate::Windows,
 }
 
+#[allow(unused_assignments)]
 #[relm4::component(pub)]
 impl SimpleComponent for Windows {
     type Init = WindowsInit;
@@ -115,8 +117,20 @@ impl SimpleComponent for Windows {
                     }
                 },
                 add_row = model.overview.widget(),
-                add_row = model.switch.widget(),
-                add_row = model.switch_2.widget(),
+                #[local_ref]
+                add_row = switches -> gtk::ListBox {
+                    set_halign: gtk::Align::Fill,
+                    set_valign: gtk::Align::Start,
+                    set_expand: true,
+                    set_selection_mode: gtk::SelectionMode::None,
+                    set_css_classes: &["items-list", "boxed-list"],
+                },
+                add_row = &adw::ButtonRow {
+                    set_title: "Add switch profile",
+                    connect_activated[sender] => move |_b| {
+                        sender.input(WindowsInput::AddSwitch);
+                    }
+                },
             }
         }
     }
@@ -132,27 +146,24 @@ impl SimpleComponent for Windows {
                 config: init.config.overview.clone(),
             })
             .forward(sender.output_sender(), WindowsOutput::Overview);
-        let switch = Switch::builder()
-            .launch(SwitchInit {
-                config: init.config.switch.clone(),
-                name: "Switch",
-            })
-            .forward(sender.output_sender(), WindowsOutput::Switch);
-        let switch_2 = Switch::builder()
-            .launch(SwitchInit {
-                config: init.config.switch_2.clone(),
-                name: "Switch 2 (TODO)",
-            })
-            .forward(sender.output_sender(), WindowsOutput::Switch2);
+        let mut switches = FactoryVecDeque::builder()
+            .launch(gtk::ListBox::builder().build())
+            .forward(sender.input_sender(), WindowsInput::Switch);
+        {
+            let mut list = switches.guard();
+            for switch in &init.config.switches {
+                list.push_back(switch.clone());
+            }
+        }
 
         let model = Self {
             overview: windows_overview,
-            switch,
-            switch_2,
+            switches,
             config: init.config.clone(),
             prev_config: init.config,
         };
 
+        let switches = model.switches.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
@@ -165,27 +176,63 @@ impl SimpleComponent for Windows {
                 self.overview.emit(WindowsOverviewInput::SetOverview(
                     self.config.overview.clone(),
                 ));
-                self.switch
-                    .emit(SwitchInput::SetSwitch(self.config.switch.clone()));
-                self.switch_2
-                    .emit(SwitchInput::SetSwitch(self.config.switch_2.clone()));
+                self.sync_switches();
             }
             WindowsInput::SetPrev(config) => {
                 self.prev_config = config;
                 self.overview.emit(WindowsOverviewInput::SetPrevOverview(
                     self.prev_config.overview.clone(),
                 ));
-                self.switch
-                    .emit(SwitchInput::SetPrevSwitch(self.prev_config.switch.clone()));
-                self.switch_2.emit(SwitchInput::SetPrevSwitch(
-                    self.prev_config.switch_2.clone(),
-                ));
             }
             WindowsInput::Reset => {
                 self.config = self.prev_config.clone();
                 self.overview.emit(WindowsOverviewInput::ResetOverview);
-                self.switch.emit(SwitchInput::ResetSwitch);
-                self.switch_2.emit(SwitchInput::ResetSwitch);
+                self.sync_switches();
+            }
+            WindowsInput::Switch(msg) => match msg {
+                SwitchOutput::Update(index, switch) => {
+                    let idx = index.current_index();
+                    if let Some(current) = self.config.switches.get_mut(idx) {
+                        *current = switch;
+                        _sender.output_sender().emit(WindowsOutput::Switches(self.config.switches.clone()));
+                    }
+                }
+                SwitchOutput::Delete(index) => {
+                    let idx = index.current_index();
+                    if idx < self.config.switches.len() {
+                        self.config.switches.remove(idx);
+                        self.sync_switches();
+                        _sender.output_sender().emit(WindowsOutput::Switches(self.config.switches.clone()));
+                    }
+                }
+            },
+            WindowsInput::AddSwitch => {
+                self.config.switches.push(crate::Switch::default());
+                self.sync_switches();
+                _sender.output_sender().emit(WindowsOutput::Switches(self.config.switches.clone()));
+            }
+        }
+    }
+}
+
+impl Windows {
+    fn sync_switches(&mut self) {
+        let mut list = self.switches.guard();
+        let current_len = list.len();
+        let new_len = self.config.switches.len();
+        let shared = current_len.min(new_len);
+        for idx in 0..shared {
+            if let Some(item) = list.get_mut(idx) {
+                item.update_config(self.config.switches[idx].clone());
+            }
+        }
+        if new_len > current_len {
+            for switch in self.config.switches.iter().skip(current_len) {
+                list.push_back(switch.clone());
+            }
+        } else if new_len < current_len {
+            for _ in new_len..current_len {
+                list.pop_back();
             }
         }
     }

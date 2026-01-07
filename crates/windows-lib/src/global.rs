@@ -1,7 +1,10 @@
 use core_lib::{Active, ClientId, HyprlandData, MonitorId, WorkspaceId};
+use core_lib::transfer::HoldMod;
 use relm4::adw::gtk::{ApplicationWindow, Button, FlowBox};
 use relm4::gtk;
 use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct WindowsOverviewData {
@@ -26,6 +29,7 @@ pub struct WindowsOverviewConfig {
 #[derive(Debug)]
 pub struct WindowsSwitchData {
     pub config: WindowsSwitchConfig,
+    pub active_hold_mods: Rc<RefCell<Vec<HoldMod>>>,
     pub window: ApplicationWindow,
     pub main_flow: FlowBox,
     pub workspaces: HashMap<WorkspaceId, Button>,

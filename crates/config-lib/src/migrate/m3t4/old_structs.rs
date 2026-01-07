@@ -4,7 +4,7 @@ use smart_default::SmartDefault;
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
-    #[default(crate::CURRENT_CONFIG_VERSION)]
+    #[default(crate::migrate::m3t4::PREV_CONFIG_VERSION)]
     pub version: u16,
     #[default(None)]
     pub windows: Option<Windows>,
@@ -54,4 +54,6 @@ pub struct Switch {
     pub switch_workspaces: bool,
     #[default = ""]
     pub exclude_special_workspaces: Box<str>,
+    #[default = 'q']
+    pub kill_key: char,
 }

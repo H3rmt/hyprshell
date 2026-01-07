@@ -15,9 +15,11 @@ pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
             );
             warn!("Failed to load hyprland plugin: {err:?}");
             info!("Falling back to default keybinds");
+            warn_limited_fallback(config);
             apply_binds(config)?;
         }
     } else {
+        warn_limited_fallback(config);
         apply_binds(config)?;
     }
 
@@ -27,12 +29,12 @@ pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
 
 fn plugin(config: &Config) -> anyhow::Result<()> {
     if let Some(windows) = &config.windows {
-        let switch = windows.switch.as_ref().map(|s| (s.modifier, s.key.clone()));
+        let switches = &windows.switches;
         let overview = windows
             .overview
             .as_ref()
             .map(|o| (o.modifier, o.key.clone()));
-        exec_lib::plugin::load_plugin(switch, overview)
+        exec_lib::plugin::load_plugin(switches, overview)
             .context("Failed to load hyprland plugin")?;
     }
     Ok(())
@@ -45,4 +47,20 @@ fn apply_binds(config: &Config) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn warn_limited_fallback(config: &Config) {
+    let Some(windows) = &config.windows else {
+        return;
+    };
+    let multi_profile = windows.switches.len() > 1;
+    let multi_bind = windows
+        .switches
+        .iter()
+        .any(|s| s.binds.forward.len() > 1 || s.binds.reverse.len() > 2);
+    if multi_profile || multi_bind {
+        notify_warn(
+            "Hyprland plugin disabled: switch keybinds are limited to the first profile and legacy keys (mod+tab, mod+shift+tab, mod+grave).",
+        );
+    }
 }
