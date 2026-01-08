@@ -70,6 +70,7 @@ impl SwitchBind {
 pub(crate) struct Switch {
     config: crate::Switch,
     index: DynamicIndex,
+    expanded: bool,
     forward_binds: FactoryVecDeque<SwitchBind>,
     reverse_binds: FactoryVecDeque<SwitchBind>,
     add_forward: adw::ButtonRow,
@@ -84,6 +85,7 @@ pub(crate) struct Switch {
 #[derive(Debug)]
 pub(crate) enum SwitchInput {
     SetEnabled(bool),
+    SetExpanded(bool),
     ForwardBind(SwitchBindOutput),
     ReverseBind(SwitchBindOutput),
     AddBind(BindKind),
@@ -129,7 +131,11 @@ impl FactoryComponent for Switch {
                 sender.input(SwitchInput::SetEnabled(e.enables_expansion()));
             } @h,
             #[watch]
-            set_expanded: self.config.enabled,
+            #[block_signal(h_exp)]
+            set_expanded: self.expanded && self.config.enabled,
+            connect_expanded_notify[sender] => move |e| {
+                sender.input(SwitchInput::SetExpanded(e.is_expanded()));
+            } @h_exp,
             add_row = &gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 10,
@@ -209,7 +215,7 @@ impl FactoryComponent for Switch {
                         set_title: &flags_csv!(self.config,same_class,current_monitor,current_workspace),
                         set_hexpand: true,
                         set_title_lines: 2,
-                        set_css_classes: &["item-expander"],
+                        set_css_classes: &["item-expander", "switch-item-expander"],
                         add_row = &adw::SwitchRow {
                             #[watch]
                             #[block_signal(h_2)]
@@ -388,9 +394,11 @@ impl FactoryComponent for Switch {
         });
         bind_dialog.widgets().gtk_window_12.add_controller(key_controller);
 
+        let expanded = init.enabled;
         Self {
             config: init,
             index: index.clone(),
+            expanded,
             forward_binds,
             reverse_binds,
             add_forward: adw::ButtonRow::default(),
@@ -422,6 +430,11 @@ impl FactoryComponent for Switch {
         match msg {
             SwitchInput::SetEnabled(enabled) => {
                 self.config.enabled = enabled;
+                self.expanded = enabled;
+            }
+            SwitchInput::SetExpanded(expanded) => {
+                self.expanded = expanded;
+                return;
             }
             SwitchInput::ForwardBind(msg) => match msg {
                 SwitchBindOutput::Delete(index) => {
@@ -533,6 +546,9 @@ impl FactoryComponent for Switch {
 impl Switch {
     pub(crate) fn update_config(&mut self, config: crate::Switch) {
         self.config = config;
+        if !self.config.enabled {
+            self.expanded = false;
+        }
         Self::sync_bind_list(&mut self.forward_binds, &self.config.forward_binds);
         Self::sync_bind_list(&mut self.reverse_binds, &self.config.reverse_binds);
     }
