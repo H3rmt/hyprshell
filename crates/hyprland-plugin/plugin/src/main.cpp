@@ -1,5 +1,6 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include "globals.h"
+#include "init.h"
+#include "socket_listener.h"
 
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {
@@ -12,5 +13,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    return exit();
+    HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] Plugin deactivated", RED, 3000);
+    stopSocketListener();
 }

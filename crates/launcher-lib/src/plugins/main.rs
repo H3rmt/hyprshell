@@ -1,4 +1,4 @@
-use crate::plugins::{actions, applications, calc, path, search, shell, terminal};
+use crate::plugins::{actions, applications, path, search, shell, terminal};
 use config_lib::Plugins;
 use core_lib::transfer::{Identifier, PluginNames};
 use nucleo::pattern::Pattern;
@@ -65,7 +65,7 @@ pub fn get_sorted_launch_options(
     if plugins.calc.is_some() {
         #[cfg(feature = "calc")]
         debug_span!("calc").in_scope(|| {
-            calc::get_calc_options(&mut matches);
+            crate::plugins::calc::get_calc_options(&mut matches);
         });
         #[cfg(not(feature = "calc"))]
         tracing::warn!("calc plugin is not enabled");
@@ -230,7 +230,8 @@ pub fn launch(
         PluginNames::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
         PluginNames::Calc => {
             #[cfg(feature = "calc")]
-            debug_span!("calc").in_scope(|| calc::copy_result(iden.data.as_deref()));
+            debug_span!("calc")
+                .in_scope(|| crate::plugins::calc::copy_result(iden.data.as_deref()));
             #[cfg(not(feature = "calc"))]
             tracing::warn!("calc plugin is not enabled");
             PluginReturn {

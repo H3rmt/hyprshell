@@ -23,12 +23,17 @@ pub async fn event_handler(
         if let Ok(transfer) = event_receiver.recv().await {
             let close_socket = matches!(transfer, TransferType::Restart);
             trace!("handling event: {transfer:?}");
-            if !globals.active
-                && transfer != TransferType::SetActive
-                && transfer != TransferType::Restart
-            {
-                debug!("Application is not active, ignoring event");
-                continue;
+
+            if !globals.active {
+                match transfer {
+                    TransferType::SetActive
+                    | TransferType::Restart
+                    | TransferType::SetPluginConfig(_) => {}
+                    _ => {
+                        debug!("Application is not active, ignoring event");
+                        continue;
+                    }
+                }
             }
             match transfer {
                 TransferType::OpenOverview => open_overview(&mut globals, &event_sender),
@@ -48,6 +53,8 @@ pub async fn event_handler(
                     globals.active = true;
                     info!("Application is now active");
                 }
+                TransferType::SetPluginConfig(_) => {}
+                TransferType::GetConfigWatch => {}
             }
             if close_socket {
                 return;

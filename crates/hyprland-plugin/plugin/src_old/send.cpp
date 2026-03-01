@@ -16,6 +16,7 @@ void sendStringToHyprshellSocket(const std::string &message) {
         close(sockfd);
         return;
     }
+
     send(sockfd, message.c_str(), message.size(), 0);
     close(sockfd);
 }

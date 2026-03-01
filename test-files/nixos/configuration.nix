@@ -43,6 +43,11 @@
     LC_TIME = "de_DE.UTF-8";
   };
 
+  hardware.graphics = {
+    enable = true;
+  };
+  fonts.enableDefaultPackages = true;
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -77,8 +82,8 @@
     btop
     ncdu
     alacritty
-	kitty
-	nautilus
+    kitty
+    nautilus
     tmux
   ];
 
@@ -90,8 +95,8 @@
   nix.settings.auto-optimise-store = true;
 
   nix.gc = {
-  	automatic = true;
-  	options = "--delete-older-than 14d";
+    automatic = true;
+    options = "--delete-older-than 14d";
   };
 
   # This value determines the NixOS release from which the default

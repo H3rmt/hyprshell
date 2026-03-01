@@ -1,0 +1,47 @@
+[package]
+name = "relm4-components"
+readme = "README.md"
+documentation = "https://docs.rs/relm4_components/"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description.workspace = true
+
+homepage.workspace = true
+repository.workspace = true
+
+keywords.workspace = true
+categories.workspace = true
+
+include = ["src/", "examples/", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
+
+[package.metadata.docs.rs]
+all-features = true
+# enable unstable features in the documentation
+rustc-args = ["--cfg", "docsrs"]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+[dependencies]
+once_cell = "1.21"
+relm4 = { version = "0.10.0", path = "../relm4", default-features = false, features = [
+    "css",
+    "macros",
+] }
+reqwest = { version = "0.12.23", optional = true }
+tracker = "0.2.2"
+
+[features]
+default = []
+web = ["reqwest"]
+libadwaita = ["relm4/libadwaita"]
+
+[[example]]
+name = "web_image"
+required-features = ["web"]
+
+[[example]]
+name = "adw_combo_row"
+required-features = ["libadwaita"]

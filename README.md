@@ -45,11 +45,11 @@ Download and extract from the latest release on the [releases](https://github.co
 
 ### NixOS
 
-This repository contains a `flake` and with a type-save `home-manager` module for configuration.
-
 Hyprshell is also available in `nixpkgs` repository and can be configured using a generic `home-manager` module.
 
-More information can be found in the [NixOS](docs/NIX.md) section.
+This repository also contains a `flake` and with a type-save `home-manager` module for configuration.
+
+Please read [NixOS](docs/NIX.md) if you use flakes.
 
 ### From Source
 

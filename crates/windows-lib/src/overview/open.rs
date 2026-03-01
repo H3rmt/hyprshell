@@ -5,7 +5,6 @@ use anyhow::Context;
 use async_channel::Sender;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::TransferType;
-use exec_lib::set_no_follow_mouse;
 use relm4::adw::gtk::prelude::*;
 use tracing::debug_span;
 
@@ -20,7 +19,6 @@ pub fn open_overview(
     event_sender: &Sender<TransferType>,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("open_overview").entered();
-    set_no_follow_mouse().warn_details("Failed to set set_remain_focused");
 
     let (hypr_data, active) = collect_data(&SortConfig {
         filter_current_monitor: data.config.filter_current_monitor,

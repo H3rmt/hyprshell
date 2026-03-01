@@ -1,26 +1,22 @@
-use crate::PLUGIN_OUTPUT_PATH;
 use anyhow::{Context, bail};
 use std::env;
+use std::path::Path;
 use std::process::{Command, Stdio};
-use tempfile::TempDir;
-use tracing::{debug_span, trace};
+use tracing::{debug_span, instrument, trace};
 
-pub fn build(dir: &TempDir) -> anyhow::Result<()> {
-    let _span = debug_span!("build", path =? dir.path()).entered();
+#[instrument(level = "debug", skip_all)]
+pub fn build_plugin(dir: &Path, out: &Path) -> anyhow::Result<()> {
     trace!("PATH: {:?}", env::var_os("PATH"));
     trace!("CPATH: {:?}", env::var_os("CPATH"));
-    let mut cmd = Command::new("gcc");
-    cmd.current_dir(dir.path())
-        .args(["-shared", "-fPIC", "--no-gnu-unique", "-std=c++2b"])
-        .arg("-I/usr/include/pixman-1") // fix for arch?
-        .arg("-O2")
-        .arg("-o")
-        .arg(PLUGIN_OUTPUT_PATH);
+    let mut bashcmd = Command::new("bash");
+    bashcmd.current_dir(dir).arg("-c").arg(format!(
+        // TODO -g -O2
+        "gcc -shared -fPIC --no-gnu-unique -std=c++2b -I/usr/include/pixman-1 -o {} -g *.cpp",
+        out.display()
+    ));
 
-    cmd.arg("all.cpp");
-
-    trace!("Running build command: {cmd:?}");
-    let out = cmd
+    trace!("Running build command: {bashcmd:?}");
+    let out = bashcmd
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -39,7 +35,7 @@ pub fn build(dir: &TempDir) -> anyhow::Result<()> {
             }
         }
         Err(err) => {
-            bail!("Error from [{cmd:?}]: {err:?}");
+            bail!("Error from [{bashcmd:?}]: {err:?}");
         }
     }
 }

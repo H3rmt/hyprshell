@@ -28,6 +28,14 @@
       bind = super, f, exec, firefox
     '';
   };
+
+  programs.kitty = {
+    enable = true;
+    font = {
+      name = "JetBrainsMono Nerd Font";
+      size = 14;
+    };
+  };
   
   programs.hyprshell = {
     enable = true;
@@ -35,10 +43,10 @@
       args = "-vv";
     };
     settings = {
-		windows.enable = true;
-    	windows.overview.enable = true;
-    	windows.switch.enable = true;
-		windows.switch.modifier = "ctrl";
+        windows.enable = true;
+        windows.overview.enable = true;
+        windows.switch.enable = true;
+        windows.switch.modifier = "ctrl";
     };
   };
 }

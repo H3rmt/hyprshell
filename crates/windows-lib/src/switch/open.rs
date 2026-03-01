@@ -5,7 +5,6 @@ use crate::switch::render_switch;
 use anyhow::Context;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Direction, OpenSwitch};
-use exec_lib::set_no_follow_mouse;
 use relm4::adw::gtk::prelude::*;
 use tracing::{debug_span, trace};
 
@@ -16,7 +15,6 @@ pub fn switch_already_open(data: &WindowsSwitchData) -> bool {
 
 pub fn open_switch(data: &mut WindowsSwitchData, config: &OpenSwitch) -> anyhow::Result<()> {
     let _span = debug_span!("open_switch").entered();
-    set_no_follow_mouse().warn_details("Failed to set set_remain_focused");
 
     let (clients_data, active_prev) = collect_data(&SortConfig {
         filter_current_monitor: data.config.filter_current_monitor,
@@ -31,26 +29,27 @@ pub fn open_switch(data: &mut WindowsSwitchData, config: &OpenSwitch) -> anyhow:
     } else {
         Direction::Right
     };
-    let active = if data.config.switch_workspaces {
-        find_next_workspace(
-            &dir,
-            true,
-            &clients_data,
-            active_prev,
-            data.config.items_per_row,
-        )
-    } else {
-        find_next_client(
-            &dir,
-            true,
-            &clients_data,
-            active_prev,
-            data.config.items_per_row,
-        )
-    };
+    // let active = if data.config.switch_workspaces {
+    //     find_next_workspace(
+    //         &dir,
+    //         true,
+    //         &clients_data,
+    //         active_prev,
+    //         data.config.items_per_row,
+    //     )
+    // } else {
+    //     find_next_client(
+    //         &dir,
+    //         true,
+    //         &clients_data,
+    //         active_prev,
+    //         data.config.items_per_row,
+    //     )
+    // };
     trace!("Showing window {:?}", data.window.id());
     data.window.set_visible(true);
 
     let remove_html = regex::Regex::new(r"<[^>]*>").context("Invalid regex")?;
-    render_switch(data, clients_data, active, &remove_html)
+    // render_switch(data, clients_data, active, &remove_html)
+    Ok(())
 }

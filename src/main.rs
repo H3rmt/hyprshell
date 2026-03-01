@@ -11,11 +11,11 @@ use tracing_subscriber::EnvFilter;
 
 mod cli;
 mod data;
-mod keybinds;
 mod receive_handle;
 mod socket;
 mod start;
 mod util;
+mod wm;
 
 mod completions;
 #[cfg(feature = "debug_command")]
@@ -23,6 +23,7 @@ mod debug;
 #[cfg(feature = "debug_command")]
 mod default_apps;
 mod explain;
+mod root;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> anyhow::Result<()> {

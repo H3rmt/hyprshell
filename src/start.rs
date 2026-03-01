@@ -1,9 +1,10 @@
-use crate::keybinds::configure_wm;
 use crate::receive_handle::event_handler;
+use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
 use crate::util::check_new_version;
-use anyhow::Context;
+use crate::wm::{configure_wm, configure_wm_initial};
+use anyhow::{Context, bail};
 use async_channel::{Receiver, Sender};
 use config_lib::Config;
 use core_lib::listener::{
@@ -13,6 +14,7 @@ use core_lib::transfer::TransferType;
 use core_lib::{WarnWithDetails, notify, notify_resident, notify_warn};
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use launcher_lib::{LauncherData, create_windows_overview_launcher_window};
+use relm4::RelmApp;
 use relm4::adw::gio;
 use relm4::adw::gtk::gdk::Display;
 use relm4::adw::gtk::prelude::*;
@@ -42,63 +44,59 @@ pub fn start(
     let data_dir = Rc::new(data_dir);
     let cache_dir = Rc::new(cache_dir);
 
-    util::preactivate().context("Failed to preactivate GTK and reload icons")?;
-    exec_lib::reload_hyprland_config()
-        .context("Failed to reload hyprland config")
-        .warn_details("unable to reload hyprland config");
-
-    let (event_sender, event_receiver) = async_channel::unbounded();
-
-    if env::var_os("HYPRSHELL_NO_LISTENERS").is_none() {
-        register_event_restarter(config_file.clone(), css_path.clone(), event_sender.clone());
+    util::preactivate(&cache_dir).context("Failed to preactivate GTK")?;
+    match check_new_version(&cache_dir) {
+        Err(err) => {
+            debug!("Unable to compare previous to current version.\n{err:?}");
+        }
+        Ok((Ordering::Greater, messages)) => {
+            notify(
+                &format!(
+                    "Hyprshell was updated to a new version ({})",
+                    env!("CARGO_PKG_VERSION")
+                ),
+                Duration::from_secs(5),
+            );
+            thread::sleep(Duration::from_millis(500));
+            for info in messages {
+                notify_resident(&info, Duration::from_secs(10));
+            }
+        }
+        Ok((Ordering::Less, _)) => {
+            notify_warn(
+                "Hyprshell was downgraded, downgrading config must be done manually if needed",
+            );
+        }
+        Ok((Ordering::Equal, _)) => {
+            debug!("Hyprshell version did not change");
+        }
     }
 
-    let event_sender_2 = event_sender.clone();
-    thread::spawn(move || {
-        socket_handler(&event_sender_2);
-    });
+    // TODO
+    // if !configure_wm_initial(&cache_dir) {
+    //     bail!("Failed to configure wm");
+    // }
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
         .and_then(|s| s.split('-').next_back()?.parse::<i32>().ok())
         .unwrap_or(1);
+    let id = format!(
+        "{}-{}-{}",
+        core_lib::APPLICATION_ID,
+        wayland_socket_index,
+        if cfg!(debug_assertions) { "-test" } else { "" }
+    );
+    trace!("Application id: {}", id);
+    let relm = RelmApp::new(&id)
+        .visible_on_activate(false)
+        .with_args(vec![]);
+    debug!("Application created");
 
-    let mut inc = 0;
+    apply_css(&css_path).warn_details("Failed to apply CSS");
 
-    info!("Starting gui loop");
-    loop {
-        inc += 1;
-        let id = format!(
-            "{}-{}-{}{}",
-            core_lib::APPLICATION_ID,
-            wayland_socket_index,
-            inc,
-            if cfg!(debug_assertions) { "-test" } else { "" }
-        );
-        trace!("Application id: {}", id);
-        let application = Application::builder().application_id(id).build();
-        debug!("Application created");
-
-        let config_file = config_file.clone();
-        let css_path = css_path.clone();
-        let data_dir = data_dir.clone();
-        let cache_dir = cache_dir.clone();
-        let event_sender = event_sender.clone();
-        let event_receiver = event_receiver.clone();
-        application.connect_activate(move |app| {
-            activate(
-                app,
-                &config_file,
-                &css_path,
-                &data_dir,
-                &cache_dir,
-                event_sender.clone(),
-                event_receiver.clone(),
-            );
-        });
-        let exit = application.run_with_args::<String>(&[]);
-        debug!("Application exited with code {exit:?}");
-    }
+    relm.run::<Root>(RootInit {});
+    Ok(())
 }
 
 pub struct Globals {
@@ -126,34 +124,7 @@ fn activate(
 ) {
     let _span = debug_span!("activate").entered();
     apply_css(css_path).warn_details("Failed to apply CSS");
-    exec_lib::set_follow_mouse_default().warn_details("Failed to set set_remain_focused default");
-
-    match check_new_version(cache_dir) {
-        Err(err) => {
-            debug!("Unable to compare previous to current version.\n{err:?}");
-        }
-        Ok((Ordering::Greater, messages)) => {
-            notify(
-                &format!(
-                    "Hyprshell was updated to a new version ({})",
-                    env!("CARGO_PKG_VERSION")
-                ),
-                Duration::from_secs(5),
-            );
-            thread::sleep(Duration::from_millis(500));
-            for info in messages {
-                notify_resident(&info, Duration::from_secs(10));
-            }
-        }
-        Ok((Ordering::Less, _)) => {
-            notify_warn(
-                "Hyprshell was downgraded, downgrading config must be done manually if needed",
-            );
-        }
-        Ok((Ordering::Equal, _)) => {
-            debug!("Hyprshell is up to date");
-        }
-    }
+    // exec_lib::set_follow_mouse_default().warn_details("Failed to set set_remain_focused default");
 
     let config = match config_lib::load_and_migrate_config(config_file, true) {
         Ok(config) => config,
@@ -181,7 +152,7 @@ fn activate(
         return; // return needed to exit the application
     }
 
-    if let Err(err) = configure_wm(&config) {
+    if let Err(err) = configure_wm(&config, cache_dir) {
         notify_warn(&format!("Failed to configure wm: {err:?}"));
         if let Err(err) = hyprshell_config_block(config_file) {
             error!("Failed to block config: {err:?}");
@@ -203,6 +174,12 @@ fn activate(
             return; // return needed to exit the application
         }
     };
+
+    event_sender
+        .send_blocking(TransferType::SetPluginConfig(
+            core_lib::transfer::PluginConfig {},
+        ))
+        .warn_details("unable to send plugin config");
 
     let event_sender_2 = event_sender.clone();
     gio::spawn_blocking(move || {

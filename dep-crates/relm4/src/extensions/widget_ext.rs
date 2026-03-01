@@ -1,0 +1,113 @@
+use gtk::prelude::{Cast, IsA, StaticType, WidgetExt};
+
+/// Trait that extends [`gtk::prelude::WidgetExt`].
+///
+/// This trait's main goal is to reduce redundant code and
+/// to provide helpful methods for the widgets macro of relm4-macros.
+pub trait RelmWidgetExt {
+    /// Attach widget to a `gtk::SizeGroup`.
+    fn set_size_group(&self, size_group: &gtk::SizeGroup);
+
+    /// Locate the top level window this widget is attached to.
+    ///
+    /// Equivalent to `widget.ancestor(gtk::Window::static_type())`, then casting.
+    fn toplevel_window(&self) -> Option<gtk::Window>;
+
+    /// Set margin at start, end, top and bottom all at once.
+    fn set_margin_all(&self, margin: i32) {
+        self.set_margin_horizontal(margin);
+        self.set_margin_vertical(margin);
+    }
+
+    /// Set margin at top and bottom at once.
+    fn set_margin_vertical(&self, margin: i32);
+
+    /// Set margin at start and end at once.
+    fn set_margin_horizontal(&self, margin: i32);
+
+    /// Set both horizontal and vertical expand properties at once.
+    fn set_expand(&self, expand: bool);
+
+    /// Set both horizontal and vertical align properties at once.
+    fn set_align(&self, align: gtk::Align);
+
+    /// Add class name if active is [`true`] and
+    /// remove class name if active is [`false`]
+    fn set_class_active(&self, class: &str, active: bool);
+
+    /// Add inline CSS instructions to a widget.
+    /// ```
+    /// # use relm4::RelmWidgetExt;
+    /// # gtk::init().unwrap();
+    /// # let widget = gtk::Button::new();
+    /// widget.inline_css("border: 1px solid red");
+    /// ```
+    fn inline_css(&self, style: &str);
+
+    /// Sets the tooltip text of a widget and enables is.
+    ///
+    /// This is basically, the same as using [`WidgetExt::set_has_tooltip()`]
+    /// and [`WidgetExt::set_tooltip_text()`], but with fewer steps.
+    fn set_tooltip(&self, test: &str);
+}
+
+impl<T: IsA<gtk::Widget>> RelmWidgetExt for T {
+    fn set_size_group(&self, size_group: &gtk::SizeGroup) {
+        size_group.add_widget(self);
+    }
+
+    fn toplevel_window(&self) -> Option<gtk::Window> {
+        self.ancestor(gtk::Window::static_type())
+            .and_then(|widget| widget.dynamic_cast::<gtk::Window>().ok())
+    }
+
+    fn set_margin_vertical(&self, margin: i32) {
+        self.set_margin_top(margin);
+        self.set_margin_bottom(margin);
+    }
+
+    fn set_margin_horizontal(&self, margin: i32) {
+        self.set_margin_start(margin);
+        self.set_margin_end(margin);
+    }
+
+    fn set_class_active(&self, class: &str, active: bool) {
+        if active {
+            self.add_css_class(class);
+        } else {
+            self.remove_css_class(class);
+        }
+    }
+
+    fn set_expand(&self, expand: bool) {
+        self.set_hexpand(expand);
+        self.set_vexpand(expand);
+    }
+
+    fn set_align(&self, align: gtk::Align) {
+        self.set_halign(align);
+        self.set_valign(align);
+    }
+
+    #[allow(deprecated)]
+    fn inline_css(&self, style: &str) {
+        use gtk::prelude::StyleContextExt;
+
+        let context = self.style_context();
+        let provider = gtk::CssProvider::new();
+
+        let data = if style.ends_with(';') {
+            ["*{", style, "}"].concat()
+        } else {
+            ["*{", style, ";}"].concat()
+        };
+
+        provider.load_from_data(&data);
+        context.add_provider(&provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
+    }
+
+    fn set_tooltip(&self, text: &str) {
+        self.set_has_tooltip(true);
+        self.set_tooltip_text(Some(text));
+    }
+}

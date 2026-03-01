@@ -3,7 +3,7 @@ SHELL := /bin/bash
 .PHONY: all clean combine prepare-combined copy-defs build build-combined test test-combined
 
 SRCS_DIR := ./src
-SRCS_FILES := key-press.cpp layer-change.cpp init.cpp exit.cpp main.cpp send.cpp mouse-button.cpp keyboard-focus.cpp
+SRCS_FILES := init.cpp main.cpp handlers.cpp socket_listener.cpp
 SRCS := $(addprefix $(SRCS_DIR)/,$(SRCS_FILES))
 
 PREPAREDIR := out
@@ -51,10 +51,7 @@ build-combined: prepare-combined
 	@cp $(SRCS_DIR)/defs-test.h $(PREPAREDIR)/defs-test.h 2>/dev/null || true
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(TARGET) $(PREPAREDIR)/all.cpp
 
-test: build
-	Hyprland --config ./test-hyprland.conf
-
-test-combined: build-combined
+test:
 	Hyprland --config ./test-hyprland.conf
 
 clean:

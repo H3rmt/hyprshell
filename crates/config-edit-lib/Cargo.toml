@@ -15,7 +15,7 @@ tracing.workspace = true
 config-lib.workspace = true
 core-lib.workspace = true
 relm4.workspace = true
-relm4-components = "0.10.0"
+relm4-components.workspace = true
 
 # needed because relm4 version is too old for v1_8
 _adw = { version = "0.8.1", package = "libadwaita", features = ["v1_8"] }

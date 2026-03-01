@@ -25,8 +25,12 @@ pub enum TransferType {
     CloseAll,
     /// send from the app itself when new monitor / config changes detected
     Restart,
+    /// send from app itself after reloading
+    SetPluginConfig(PluginConfig),
     /// send from the app itself, 500ms after starting
     SetActive,
+    /// send from the plugin to receive config. Never completes, sends config on changes
+    GetConfigWatch,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
@@ -61,6 +65,11 @@ pub enum PluginNames {
     Calc,
     Path,
     Actions,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PluginConfig {
+    // TODO
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]

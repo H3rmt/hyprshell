@@ -15,9 +15,9 @@ anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
 config-lib.workspace = true
-hyprland-plugin.workspace = true
 semver.workspace = true
 regex.workspace = true
+hyprland-plugin = { path = "../hyprland-plugin", package = "hyprshell-hyprland-plugin", version = "=4.9.2" }
 hyprland = { package = "hyprshell-hyprland", path = "../../dep-crates/hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config"], default-features = false, version = "=4.9.2" }
 
 [lints]

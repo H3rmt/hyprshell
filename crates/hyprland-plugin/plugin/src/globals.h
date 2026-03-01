@@ -1,17 +1,18 @@
 #pragma once
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include <hyprland/src/devices/IKeyboard.hpp>
 
-#include "defs.h"
+const CHyprColor RED{1.0, 0.2, 0.2, 1.0};
+const CHyprColor GREEN{0.2, 1.0, 0.2, 1.0};
+
+struct PluginDescriptionInfo {
+    std::string name;
+    std::string description;
+    std::string author;
+    std::string version;
+};
 
 inline void *PHANDLE = nullptr;
 
-inline bool LAYER_VISIBLE = false;
-inline bool CHECK_NO_MOUSE_BUTTON_PRESSED = false;
+void toast(const std::string &msg);
 
-inline xkb_keysym_t OVERVIEW_KEY;
-inline xkb_keysym_t SWITCH_KEY;
-
-PluginDescriptionInfo init(HANDLE handle);
-
-void exit();
+void toastError(const std::string &msg);

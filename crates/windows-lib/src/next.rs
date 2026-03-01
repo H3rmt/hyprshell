@@ -1,4 +1,4 @@
-use core_lib::transfer::Direction;
+use core_lib::Direction;
 use core_lib::{
     Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData, WorkspaceId,
 };

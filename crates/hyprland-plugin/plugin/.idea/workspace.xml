@@ -33,8 +33,233 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="841e5689-e8a3-4a78-b7a4-76d1dbd901c1" name="Changes" comment="fix: cancel key events when opening hyprshell overview and switch">
-      <change beforePath="$PROJECT_DIR$/../../config-lib/src/migrate/m3t4/convert.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../config-lib/src/migrate/m3t4/convert.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../config-lib/src/migrate/m3t4/old_structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../config-lib/src/migrate/m3t4/old_structs.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../core-lib/src/structs.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/handlers.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/init.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/socket_listener.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/socket_listener.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/toast.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src_old/globals.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src_old/handlers.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src_old/init.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src_old/main.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src_old/register.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/clients.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/root.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/workspace_clients.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/workspaces.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/.cargo-ok" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/.cargo_vcs_info.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/Cargo.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/Cargo.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/Cargo.toml.orig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/LICENSE-APACHE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/LICENSE-MIT" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/adw_combo_row.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/alert.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/combo_box.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/file_dialogs.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/open_button.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/examples/web_image.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/alert/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/alert/style.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/lib.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/open_button/factory.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/open_button/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/open_dialog.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/save_dialog.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/simple_adw_combo_row.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/simple_combo_box.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4-components/src/web_image.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/.cargo-ok" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/.cargo_vcs_info.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/Cargo.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/Cargo.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/Cargo.toml.orig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/LICENSE-APACHE" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/LICENSE-MIT" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/benches/stress_test.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/actions.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/components.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/data_binding.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/drag_and_drop.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/drawing.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/drop_sub_components.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/embedded_logo.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/entry.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/factory.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/factory_async.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/factory_hash_map.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/grid_factory.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/leaflet_sidebar.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/log.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/macro_reference.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/menu.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/message_broker.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/message_stream.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/multi_window.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/navigation_splitview_with_stack.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/non_blocking_async.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/non_blocking_sync.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/popover.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/progress.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/relm4.example.gschema.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/settings_list.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/simple.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/simple_async.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/simple_manual.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/split_layout.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/state_management.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/tab_factory.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/tab_game.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/to_do.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/toast.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/tracker.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/transient_dialog.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/typed_column_view.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/typed_grid_view.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/typed_list_view.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/typed_list_view_async.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/widget_template.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/examples/worker.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/abstractions/drawing.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/abstractions/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/abstractions/toaster.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/actions/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/actions/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/app.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/binding/bindings.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/binding/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/binding/widgets.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/component.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/shutdown/attached.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/shutdown/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/shutdown/receiver.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/channel/shutdown/sender.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/builder.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/connector.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/controller.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/stream.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/async/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/message_broker.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/builder.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/connector.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/controller.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/state_watcher.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/stream.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/sync/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/component/worker.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/container.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/iter_children.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/object_ext.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/remove.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/set_child.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/tests.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/extensions/widget_ext.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/builder.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/collections/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/collections/vec_deque.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/component_storage.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/future_data.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/handle.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/async/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/data_guard.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/dynamic_index.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/positions.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/builder.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/collections/hashmap.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/collections/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/collections/vec_deque.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/component_storage.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/handle.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/sync/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/gtk.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/libadwaita.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/libpanel.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/tests.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/factory/widgets/traits.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/late_initialization.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/lib.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/loading_widgets.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/prelude.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/runtime_util.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/shared_state/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/shared_state/reducer.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/shared_state/state.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/column.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/grid.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/iterator.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/list.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/src/typed_view/selection_ext.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/tests/drop_after_quit.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../dep-crates/relm4/tests/shutdown_after_quit.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../src/root.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../src/wm.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../.idea/hyprshell.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../.idea/hyprshell.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/../../../Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../config-edit-lib/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../config-edit-lib/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../core-lib/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../core-lib/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../core-lib/src/transfer/structs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../core-lib/src/transfer/structs.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../exec-lib/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../exec-lib/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../exec-lib/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../exec-lib/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../exec-lib/src/plugin.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../exec-lib/src/plugin.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../exec-lib/src/util.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../exec-lib/src/util.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../build.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/defs-test.h" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/defs-test.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/defs.h" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/defs.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/exit.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/exit.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/globals.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/globals.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/handlers.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/handlers.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/init.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/init.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/key-press.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/key-press.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/keyboard-focus.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/keyboard-focus.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layer-change.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/layer-change.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/mouse-button.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/mouse-button.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/send.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/send.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/send.h" beforeDir="false" afterPath="$PROJECT_DIR$/src_old/send.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-hyprland.conf" beforeDir="false" afterPath="$PROJECT_DIR$/test-hyprland.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../src/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../src/build.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../src/configure.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../src/extract.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../src/extract.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../launcher-lib/src/plugins/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../launcher-lib/src/plugins/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/next.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/next.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/overview/open.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/overview/open.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/overview/update.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/overview/update.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/switch/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/switch/open.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/open.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../windows-lib/src/switch/update.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../windows-lib/src/switch/update.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../docs/NIX.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../../docs/NIX.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/keybinds.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../../src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/receive_handle.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../../src/receive_handle.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/socket.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../../src/socket.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/start.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../../src/start.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../src/util.rs" beforeDir="false" afterPath="$PROJECT_DIR$/../../../src/util.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../test-files/nixos/configuration.nix" beforeDir="false" afterPath="$PROJECT_DIR$/../../../test-files/nixos/configuration.nix" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../test-files/nixos/enrico.nix" beforeDir="false" afterPath="$PROJECT_DIR$/../../../test-files/nixos/enrico.nix" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +273,17 @@
     </option>
   </component>
   <component name="ClangdSettings">
+    <option name="clangdShowErrors" value="false" />
     <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/home/user/RustroverProjects/hyprshell/crates/hyprland-plugin/plugin" value="31hh8wRG1ll2gknzDoNDxs88kBO" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="35" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
@@ -104,6 +339,10 @@
       </map>
     </option>
   </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
     <option name="majorVersion" value="2025" />
@@ -123,6 +362,7 @@
     "Makefile Target.all.executor": "Run",
     "Makefile Target.build.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
@@ -133,17 +373,28 @@
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "hyprshell",
-    "last_opened_file_path": "/home/user/RustroverProjects/hyprshell/crates/hyprland-plugin/plugin",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "relm4-rewrite",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/home/user/RustroverProjects/hyprshell/crates/hyprland-plugin/plugin/src",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "settings.editor.selected.configurable": "CppIncludesOrderOptionsId",
+    "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src_old" />
+    </key>
+  </component>
   <component name="RunManager" selected="Makefile Target.build-combined">
     <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="plugin" TARGET_NAME="all" CONFIG_NAME="all" version="1">
       <method v="2">
@@ -310,6 +561,11 @@
         <option name="CLION.COMPOUND.BUILD" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
       <makefile filename="$PROJECT_DIR$/Makefile" target="all" workingDirectory="" arguments="">
         <envs />
@@ -426,6 +682,13 @@
       <workItem from="1766704524077" duration="509000" />
       <workItem from="1767562310610" duration="8026000" />
       <workItem from="1768089070894" duration="9000" />
+      <workItem from="1768606649912" duration="3912000" />
+      <workItem from="1768610675747" duration="581000" />
+      <workItem from="1768678679627" duration="1781000" />
+      <workItem from="1768680809472" duration="7533000" />
+      <workItem from="1768689645891" duration="618000" />
+      <workItem from="1768831105307" duration="9000" />
+      <workItem from="1772406680986" duration="1000" />
     </task>
     <task id="LOCAL-00001" summary="fix: cancel key events when opening hyprshell overview and switch">
       <option name="closed" value="true" />

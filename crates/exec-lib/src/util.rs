@@ -31,42 +31,6 @@ pub fn reload_hyprland_config() -> anyhow::Result<()> {
     reload::call().context("Failed to reload hyprland config")
 }
 
-fn get_prev_follow_mouse() -> &'static Mutex<Option<String>> {
-    static PREV_FOLLOW_MOUSE: OnceLock<Mutex<Option<String>>> = OnceLock::new();
-    PREV_FOLLOW_MOUSE.get_or_init(|| Mutex::new(None))
-}
-
-pub fn set_no_follow_mouse() -> anyhow::Result<()> {
-    Keyword::set("input:follow_mouse", "3").context("keyword failed")?;
-    trace!("Set follow_mouse to 3");
-    Ok(())
-}
-
-pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
-    let follow = get_prev_follow_mouse()
-        .lock()
-        .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
-    if let Some(follow) = follow.as_ref() {
-        Keyword::set("input:follow_mouse", follow.clone()).context("keyword failed")?;
-        trace!("Restored previous follow_mouse value: {follow}");
-    } else {
-        trace!("No previous follow_mouse value stored, skipping reset");
-    }
-    drop(follow);
-    Ok(())
-}
-
-pub fn set_follow_mouse_default() -> anyhow::Result<()> {
-    let mut lock = get_prev_follow_mouse()
-        .lock()
-        .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
-    let follow = Keyword::get("input:follow_mouse").context("keyword failed")?;
-    trace!("Storing previous follow_mouse value: {}", follow.value);
-    *lock = Some(follow.value.to_string());
-    drop(lock);
-    Ok(())
-}
-
 /// tries to get initial data for 500 ms * 40 = 20 s
 ///
 /// # Errors
@@ -135,7 +99,7 @@ pub fn check_version() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_version() -> anyhow::Result<hyprland::data::Version> {
+pub(crate) fn get_version() -> anyhow::Result<hyprland::data::Version> {
     let mut tries = 0;
     loop {
         match hyprland::data::Version::get() {

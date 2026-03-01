@@ -1,3 +1,4 @@
+use crate::socket;
 use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
 use relm4::adw::gtk::{IconTheme, Settings};
@@ -8,14 +9,16 @@ use signal_hook::iterator::Signals;
 use std::cmp::Ordering;
 use std::fs::{File, read_to_string, write};
 use std::io::Write;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use std::rc::Rc;
 use std::{fs, thread, time};
 use tracing::{debug, info, trace, warn};
 
-pub fn preactivate() -> anyhow::Result<()> {
+pub fn preactivate(cache_dir: &Path) -> anyhow::Result<()> {
     let _span = tracing::span!(tracing::Level::TRACE, "preactivate").entered();
-    handle_sigterm();
+    handle_sigterm(cache_dir);
 
     init_gtk();
     check_themes();
@@ -58,17 +61,19 @@ pub fn check_themes() {
     }
 }
 
-fn handle_sigterm() {
+fn handle_sigterm(cache_dir: &Path) {
     let Ok(mut signals) = Signals::new([SIGTERM, SIGINT]) else {
         warn!("Failed to create signal handler for SIGTERM and SIGINT");
         return;
     };
+    let cache_dir = cache_dir.to_owned();
     thread::spawn(move || {
         if let Some(sig) = signals.forever().next() {
             info!("Received sig: {sig}, exiting gracefully");
             exec_lib::reset_no_follow_mouse()
                 .warn_details("Failed to reset follow mouse on SIGTERM");
-            if let Err(err) = exec_lib::plugin::unload() {
+            socket::remove_socket();
+            if let Err(err) = exec_lib::plugin::unload_if_needed(&cache_dir) {
                 warn!("Failed to unload plugin: {err:?}",);
             }
             exit(0);

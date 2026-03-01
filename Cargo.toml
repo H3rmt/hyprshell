@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/hyprland-plugin", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "crates/config-edit-lib"]
+members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/hyprland-plugin", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "dep-crates/relm4", "dep-crates/relm4-components", "crates/config-edit-lib"]
 
 [workspace.package]
 version = "4.9.2"
@@ -22,14 +22,13 @@ semver = { version = "1.0.27" }
 regex = { version = "1.12.2" }
 test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
 
-relm4 = { version = "0.10.0", default-features = false, features = ["libadwaita", "macros", "gnome_48"] }
-relm4-components = "0.10.0"
+relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "4.9.2" }
+relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "4.9.2" }
 gtk4-layer-shell = { version = "0.7.1" }
 
 config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.9.2" }
 core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.9.2" }
 exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.9.2" }
-hyprland-plugin = { path = "crates/hyprland-plugin", package = "hyprshell-hyprland-plugin", version = "=4.9.2" }
 
 [package]
 name = "hyprshell"
@@ -50,8 +49,11 @@ exclude = [".idea/*", ".github/*"]
 anyhow.workspace = true
 tracing.workspace = true
 relm4.workspace = true
+relm4-components.workspace = true
+gtk4-layer-shell.workspace = true
 async-channel.workspace = true
 semver.workspace = true
+serde_json.workspace = true
 clap = { version = "4.5.47", features = ["derive"] }
 clap_complete = "4.5.57"
 tracing-subscriber = { version = "0.3.20", features = ["fmt", "env-filter", "ansi"], default-features = false }

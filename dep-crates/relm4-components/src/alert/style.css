@@ -1,0 +1,14 @@
+.relm4-alert {
+    border-bottom-left-radius: 13px;
+    border-bottom-right-radius: 13px;
+}
+
+.relm4-alert .message-area {
+    padding: 24px 30px;
+}
+
+.relm4-alert .response-buttons button {
+    padding: 10px 14px;
+    border-radius: 0px;
+    border-width: 0px;
+}
