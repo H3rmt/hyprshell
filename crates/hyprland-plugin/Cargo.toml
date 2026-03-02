@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell-hyprland-plugin"
 documentation = "https://docs.rs/hyprshell-hyprland-plugin"
-version = "4.9.2"
+version = "4.9.3"
 description = "Plugin for hyprland, used to monitor keypresses"
 edition.workspace = true
 license.workspace = true
