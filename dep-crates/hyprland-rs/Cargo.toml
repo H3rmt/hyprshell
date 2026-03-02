@@ -4,7 +4,7 @@ edition = "2021"
 readme = "README.md"
 description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/hyprland-community/hyprland-rs"
-version = "4.9.2"
+version = "4.9.4"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "hyprpaper"]
@@ -17,7 +17,7 @@ rust-version = "1.75.0"
 build = true
 
 [dependencies]
-hyprland-macros = { package = "hyprshell-hyprland-macros", path = "hyprland-macros", version = "=4.9.2" }
+hyprland-macros = { package = "hyprshell-hyprland-macros", path = "hyprland-macros", version = "=4.9.4" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_repr = "0.1"
