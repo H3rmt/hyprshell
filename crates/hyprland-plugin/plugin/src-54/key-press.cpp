@@ -11,15 +11,41 @@
 // modifier must pre pressed and released without any other keys pressed in between
 bool last_press_was_mod_press = false;
 
+// last keyboard (a bit hacky)
+SP<IKeyboard> last_keyboard;
+
 void onKeyPress(const IKeyboard::SKeyEvent &event, Event::SCallbackInfo &info) {
-    // TODO tf is this, but after the update I have no other way to get the keyboard
-    const auto keyboard = g_pInputManager->m_keyboards[0];
+    const uint32_t keycode = event.keycode + 8; // +8 because xkbcommon expects +8 from libinput
+    const bool release = event.state == WL_KEYBOARD_KEY_STATE_RELEASED;
+
+    bool valid = false;
+    SP<IKeyboard> keyboard;
+    if (!release) {
+        // Get the correct keyboard from the input manager (I cant get keyboard from event any more)
+        for (const auto &kb: g_pInputManager->m_keyboards) {
+            if (kb->getPressed(event.keycode)) {
+                keyboard = kb;
+                last_keyboard = kb;
+                valid = true;
+                break;
+            }
+        }
+    } else {
+        keyboard = last_keyboard;
+        valid = true;
+    }
+
+    if (!valid) {
+        if constexpr (HYPRSHELL_PRINT_DEBUG == 1) {
+            HyprlandAPI::addNotification(PHANDLE, "[Hyprshell Plugin] invalid keypress", RED, 4000);
+        }
+        return;
+    }
+
     if (g_pInputManager->shouldIgnoreVirtualKeyboard(keyboard)) {
         return;
     }
     const auto state = keyboard->m_xkbState;
-    const uint32_t keycode = event.keycode + 8; // +8 because xkbcommon expects +8 from libinput
-    const bool release = event.state == WL_KEYBOARD_KEY_STATE_RELEASED;
 
     // const bool shiftActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) == 1;
     const bool ctrlActive = xkb_state_mod_name_is_active(state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) == 1;
@@ -33,7 +59,6 @@ void onKeyPress(const IKeyboard::SKeyEvent &event, Event::SCallbackInfo &info) {
         xkb_keysym_get_name(keysym, buffer, sizeof(buffer));
         const auto bigString = std::string("Name: ") + buffer +
                                " | KeySym: " + std::to_string(keysym) +
-                               // (shiftActive ? " | Shift: Active" : "") +
                                (ctrlActive ? " | Control: Active" : "") +
                                (superActive ? " | Meta: Active" : "") +
                                (altActive ? " | Alt: Active" : "") +

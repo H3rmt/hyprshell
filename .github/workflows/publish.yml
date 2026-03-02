@@ -70,8 +70,7 @@ jobs:
           cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
           
           # push current branch to hyprshell branch (for development)
-          git fetch origin hyprshell
-          git push origin HEAD:hyprshell
+          git push origin HEAD:hyprshell-release
           
           gh release edit ${{ github.ref_name }} --latest --draft=false --title "hyprshell ${{ github.ref_name }}"
         env:
