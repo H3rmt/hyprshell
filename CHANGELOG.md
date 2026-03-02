@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.9.3](https://github.com/H3rmt/hyprshell/compare/v4.9.2...v4.9.3) (2026-03-02)
+
+
+### Bug Fixes
+
+* bundle multiple plugin versions to support wider range of hyprland versions ([95908e0](https://github.com/H3rmt/hyprshell/commit/95908e067293fd4ad4381f6b11bf923a69f96637))
+* update plugin to new hyprland plugin api ([6bfc01d](https://github.com/H3rmt/hyprshell/commit/6bfc01de8e0461119d2e4b5b0bc4b2202c36b4c9))
+
 ## [4.9.2](https://github.com/H3rmt/hyprshell/compare/v4.9.1...v4.9.2) (2026-01-06)
 
 
