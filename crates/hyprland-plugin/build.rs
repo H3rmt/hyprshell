@@ -5,11 +5,10 @@ use std::{env, fs, fs::File, io, path::Path};
 use zip::ZipWriter;
 use zip::write::FileOptions;
 
-fn include_plugin() {
-    let out_dir = env::var("OUT_DIR").expect("out dir missing??");
-    let prepare_dir = combine(&out_dir);
+fn include_plugin(srcs_dir: &Path, out_dir: &Path) {
+    let prepare_dir = combine(srcs_dir, out_dir);
 
-    let zip_path = Path::new(&out_dir).join("plugin.zip");
+    let zip_path = Path::new(out_dir).join("plugin.zip");
     let file = File::create(&zip_path).expect("Failed to create zip file");
     let mut zip = ZipWriter::new(&file);
     let options: FileOptions<()> = FileOptions::default()
@@ -32,10 +31,8 @@ fn include_plugin() {
     zip.finish().expect("Failed to finish zip");
 }
 
-fn combine(out_dir: &str) -> PathBuf {
-    let srcs_dir = Path::new("plugin/src");
+fn combine(srcs_dir: &Path, out_dir: &Path) -> PathBuf {
     let prepare_dir = Path::new(&out_dir).join("prepare");
-
     fs::create_dir_all(&prepare_dir).expect("Failed to create prepare dir");
     // Combine all source files into one for easier compilation
     let all_cpp_path = prepare_dir.join("all.cpp");
@@ -79,6 +76,8 @@ fn combine(out_dir: &str) -> PathBuf {
 }
 
 fn main() {
-    include_plugin();
-    println!("cargo:rerun-if-changed=plugin/src/*");
+    let out_dir = env::var("OUT_DIR").expect("out dir missing??");
+    include_plugin(Path::new("plugin/src-52"), &Path::new(&out_dir).join("52"));
+    include_plugin(Path::new("plugin/src-54"), &Path::new(&out_dir).join("54"));
+    println!("cargo:rerun-if-changed=plugin/*");
 }

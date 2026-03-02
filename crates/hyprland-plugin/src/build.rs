@@ -3,7 +3,7 @@ use anyhow::{Context, bail};
 use std::env;
 use std::process::{Command, Stdio};
 use tempfile::TempDir;
-use tracing::{debug_span, trace};
+use tracing::{debug_span, info, trace, warn};
 
 pub fn build(dir: &TempDir) -> anyhow::Result<()> {
     let _span = debug_span!("build", path =? dir.path()).entered();
@@ -31,9 +31,9 @@ pub fn build(dir: &TempDir) -> anyhow::Result<()> {
             if output.status.success() {
                 Ok(())
             } else {
-                trace!("Build output (code: {:?})", output.status.code());
+                info!("Build output (code: {:?})", output.status.code());
                 for line in String::from_utf8(output.stderr).unwrap_or_default().lines() {
-                    trace!("{line}");
+                    warn!("{line}");
                 }
                 bail!("Build failed with exit code: {:?}", output.status.code());
             }

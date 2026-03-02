@@ -38,6 +38,7 @@ pub fn start(
     css_path: PathBuf,
     data_dir: PathBuf,
     cache_dir: PathBuf,
+    hyprland_version: semver::Version,
 ) -> anyhow::Result<()> {
     let config_file = Rc::new(config_file);
     let css_path = Rc::new(css_path);
@@ -87,6 +88,7 @@ pub fn start(
         let cache_dir = cache_dir.clone();
         let event_sender = event_sender.clone();
         let event_receiver = event_receiver.clone();
+        let hyprland_version = hyprland_version.clone();
         application.connect_activate(move |app| {
             activate(
                 app,
@@ -96,6 +98,7 @@ pub fn start(
                 &cache_dir,
                 event_sender.clone(),
                 event_receiver.clone(),
+                hyprland_version.clone(),
             );
         });
         let exit = application.run_with_args::<String>(&[]);
@@ -123,6 +126,7 @@ fn activate(
     cache_dir: &Path,
     event_sender: Sender<TransferType>,
     event_receiver: Receiver<TransferType>,
+    hyprland_version: semver::Version,
 ) {
     let _span = debug_span!("activate").entered();
     apply_css(css_path).warn_details("Failed to apply CSS");
@@ -181,7 +185,7 @@ fn activate(
         return; // return needed to exit the application
     }
 
-    if let Err(err) = configure_wm(&config) {
+    if let Err(err) = configure_wm(&config, &hyprland_version) {
         notify_warn(&format!("Failed to configure wm: {err:?}"));
         if let Err(err) = hyprshell_config_block(config_file) {
             error!("Failed to block config: {err:?}");

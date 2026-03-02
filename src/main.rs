@@ -84,8 +84,9 @@ fn main() -> anyhow::Result<()> {
 
     match cli.command {
         cli::Command::Run {} => {
-            exec_lib::check_version()
-                .warn_details("Unable to check hyprland version, continuing anyway");
+            let version = exec_lib::check_version()
+                .context("Unable to check hyprland version, continuing anyway")
+                .unwrap_or_else(|_| semver::Version::new(0, 54, 0));
             if daemon_running() {
                 bail!("Daemon already running");
             }
@@ -94,7 +95,7 @@ fn main() -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            start::start(config_file, css_file, data_dir, cache_dir)?;
+            start::start(config_file, css_file, data_dir, cache_dir, version)?;
         }
         cli::Command::Config { command } => match command {
             cli::ConfigCommand::Edit {} => {

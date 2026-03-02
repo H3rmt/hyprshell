@@ -5,13 +5,13 @@ use exec_lib::binds::{apply_exec_bind, apply_layerrules};
 use std::env;
 use tracing::{debug_span, info, warn};
 
-pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
+pub fn configure_wm(config: &Config, hyprland_version: &semver::Version) -> anyhow::Result<()> {
     let _span = debug_span!("create_binds").entered();
 
     if env::var_os("HYPRSHELL_NO_USE_PLUGIN").is_none() {
-        if let Err(err) = plugin(config) {
+        if let Err(err) = plugin(config, hyprland_version) {
             notify_warn(
-                "Unable to load hyprland plugin, please create a issue on github including the error. pass -vv to see the logs",
+                "Unable to load hyprland plugin, restart hyprland if you updated, else please create a issue on github including the error.",
             );
             warn!("Failed to load hyprland plugin: {err:?}");
             info!("Falling back to default keybinds");
@@ -25,14 +25,14 @@ pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn plugin(config: &Config) -> anyhow::Result<()> {
+fn plugin(config: &Config, hyprland_version: &semver::Version) -> anyhow::Result<()> {
     if let Some(windows) = &config.windows {
         let switch = windows.switch.as_ref().map(|s| (s.modifier, s.key.clone()));
         let overview = windows
             .overview
             .as_ref()
             .map(|o| (o.modifier, o.key.clone()));
-        exec_lib::plugin::load_plugin(switch, overview)
+        exec_lib::plugin::load_plugin(switch, overview, hyprland_version)
             .context("Failed to load hyprland plugin")?;
     }
     Ok(())

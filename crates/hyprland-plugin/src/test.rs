@@ -14,9 +14,11 @@ mod tests {
         };
 
         info!("extracting plugin from zip");
-        let dir = extract::extract_plugin().expect("Failed to extract plugin");
+        let dir = extract::extract_plugin(&semver::Version::new(0, 54, 0))
+            .expect("Failed to extract plugin");
         info!("configuring defs file");
-        configure::configure(&dir, &test_config).expect("unable to configure defs file");
+        configure::configure(&dir, &test_config, &semver::Version::new(0, 54, 0))
+            .expect("unable to configure defs file");
         info!("building plugin");
         build::build(&dir).expect("Failed to build plugin");
     }

@@ -28,7 +28,11 @@ impl Display for PluginConfig {
     }
 }
 
-pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
+pub fn configure(
+    dir: &TempDir,
+    config: &PluginConfig,
+    version: &semver::Version,
+) -> anyhow::Result<()> {
     let _span = debug_span!("configure", path =? dir.path()).entered();
     let defs = dir.path().join("defs.h");
 
@@ -52,7 +56,10 @@ pub fn configure(dir: &TempDir, config: &PluginConfig) -> anyhow::Result<()> {
             "$HYPRSHELL_PLUGIN_DESC$",
             &format!("{PLUGIN_DESC} - {config}"),
         ),
-        ("$HYPRSHELL_PLUGIN_VERSION$", PLUGIN_VERSION),
+        (
+            "$HYPRSHELL_PLUGIN_VERSION$",
+            &format!("{PLUGIN_VERSION}-{version}"),
+        ),
         (
             "$HYPRSHELL_PRINT_DEBUG$",
             if cfg!(debug_assertions) { "1" } else { "0" },

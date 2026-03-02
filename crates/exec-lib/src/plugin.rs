@@ -15,6 +15,7 @@ static PLUGIN_COULD_BE_BUILD: OnceLock<bool> = OnceLock::new();
 pub fn load_plugin(
     switch: Option<(Modifier, Box<str>)>,
     overview: Option<(Modifier, Box<str>)>,
+    version: &semver::Version,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("load_plugin").entered();
 
@@ -36,7 +37,7 @@ pub fn load_plugin(
     if check_new_plugin_needed(&config) {
         unload().context("unable to unload old plugin")?;
         info!("Building plugin, this may take a while, please wait");
-        hyprland_plugin::generate(&config).context("unable to generate plugin")?;
+        hyprland_plugin::generate(&config, version).context("unable to generate plugin")?;
         trace!(
             "generated plugin at {:?}",
             hyprland_plugin::PLUGIN_OUTPUT_PATH

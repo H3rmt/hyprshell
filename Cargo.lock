@@ -1661,6 +1661,7 @@ version = "4.9.2"
 dependencies = [
  "anyhow",
  "hyprshell-core-lib",
+ "semver",
  "tempfile",
  "test-log",
  "tracing",
