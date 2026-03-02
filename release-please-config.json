@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "last-release-sha": "e4f9787f3d833a47838387713f047f327ca87a92",
+  "last-release-sha": "82738ece24343ab331e196437bfdaad8542e16cb",
   "always-update": true,
   "include-v-in-tag": true,
   "draft": false,
