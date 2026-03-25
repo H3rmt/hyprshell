@@ -21,7 +21,7 @@ rec {
              pkgs.pixman
            ]
          )
-       }'
+       }:${pkgs.libdrm.dev}/include/libdrm'
      )
   '';
   commonArgs = {
