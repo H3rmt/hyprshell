@@ -38,7 +38,7 @@ pub fn start(
     css_path: PathBuf,
     data_dir: PathBuf,
     cache_dir: PathBuf,
-    hyprland_version: semver::Version,
+    hyprland_version: &semver::Version,
 ) -> anyhow::Result<()> {
     let config_file = Rc::new(config_file);
     let css_path = Rc::new(css_path);
@@ -98,7 +98,7 @@ pub fn start(
                 &cache_dir,
                 event_sender.clone(),
                 event_receiver.clone(),
-                hyprland_version.clone(),
+                &hyprland_version.clone(),
             );
         });
         let exit = application.run_with_args::<String>(&[]);
@@ -118,6 +118,7 @@ pub struct WindowsGlobal {
 }
 
 #[allow(clippy::cognitive_complexity)]
+#[allow(clippy::too_many_arguments)]
 fn activate(
     app: &Application,
     config_file: &Path,
@@ -126,7 +127,7 @@ fn activate(
     cache_dir: &Path,
     event_sender: Sender<TransferType>,
     event_receiver: Receiver<TransferType>,
-    hyprland_version: semver::Version,
+    hyprland_version: &semver::Version,
 ) {
     let _span = debug_span!("activate").entered();
     apply_css(css_path).warn_details("Failed to apply CSS");
@@ -185,7 +186,7 @@ fn activate(
         return; // return needed to exit the application
     }
 
-    if let Err(err) = configure_wm(&config, &hyprland_version) {
+    if let Err(err) = configure_wm(&config, hyprland_version) {
         notify_warn(&format!("Failed to configure wm: {err:?}"));
         if let Err(err) = hyprshell_config_block(config_file) {
             error!("Failed to block config: {err:?}");

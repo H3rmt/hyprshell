@@ -95,7 +95,7 @@ fn main() -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            start::start(config_file, css_file, data_dir, cache_dir, version)?;
+            start::start(config_file, css_file, data_dir, cache_dir, &version)?;
         }
         cli::Command::Config { command } => match command {
             cli::ConfigCommand::Edit {} => {

@@ -13,7 +13,7 @@ TARGET := $(OUTNAME)
 HEADERS := globals.h handlers.h defs.h send.h
 
 CXX := g++
-CXXFLAGS := -fPIC -std=c++2b -O2 -I/usr/include/pixman-1
+CXXFLAGS := -fPIC -std=c++2c -O2 -I/usr/include/pixman-1
 LDFLAGS := -shared --no-gnu-unique
 
 all: build

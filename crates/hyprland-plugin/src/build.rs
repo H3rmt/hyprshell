@@ -11,7 +11,7 @@ pub fn build(dir: &TempDir) -> anyhow::Result<()> {
     trace!("CPATH: {:?}", env::var_os("CPATH"));
     let mut cmd = Command::new("gcc");
     cmd.current_dir(dir.path())
-        .args(["-shared", "-fPIC", "--no-gnu-unique", "-std=c++2b"])
+        .args(["-shared", "-fPIC", "--no-gnu-unique", "-std=c++2c"])
         .arg("-I/usr/include/pixman-1") // fix for arch?
         .arg("-O2")
         .arg("-o")
