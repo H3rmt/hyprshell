@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.5](https://github.com/H3rmt/hyprshell/compare/v4.9.4...v4.9.5) (2026-03-31)
+
+
+### Bug Fixes
+
+* use cpp26 for hyprland plugin ([6fcff3b](https://github.com/H3rmt/hyprshell/commit/6fcff3b3de906497f96648f53fe20522ea5db577))
+
 ## [4.9.4](https://github.com/H3rmt/hyprshell/compare/v4.9.3...v4.9.4) (2026-03-02)
 
 
