@@ -1,16 +1,24 @@
-use config_lib::Config;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
-use relm4::{Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{
+    Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent,
+};
+use std::thread;
+use std::time::Duration;
+use tracing::trace;
+use windows_lib::switch::{SwitchRoot, SwitchRootInput, SwitchRootOutput};
 
 #[derive(Debug)]
 pub struct Root {
     config: config_lib::Config,
+    pub switch_root: Option<Controller<SwitchRoot>>,
 }
 
 #[derive(Debug)]
 pub enum RootInput {
-    CreateLauncherWindow(),
+    SwitchClosed,
+    OpenSwitch(core_lib::Direction),
+    SetWindows(Option<config_lib::Windows>),
 }
 
 #[derive(Debug)]
@@ -35,33 +43,82 @@ impl SimpleComponent for Root {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = Self {
-            config: Config::default(),
-        };
+        trace!("Initializing Root");
+        let mut conf = config_lib::Config::default();
+        let mut windows = config_lib::Windows::default();
+        let mut switch = config_lib::Switch::default();
+        switch.switch_workspaces = true;
+        windows.switch = Some(switch);
+        conf.windows = Some(windows);
 
+        let model = Self {
+            config: conf,
+            switch_root: None,
+        };
         let widgets = view_output!();
 
-        sender.input(RootInput::CreateLauncherWindow());
-        sender.input(RootInput::CreateLauncherWindow());
+        // TODO remove
+        let sender_clone = sender.input_sender().clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(1000));
+            sender_clone
+                .send(RootInput::OpenSwitch(core_lib::Direction::Left))
+                .ok();
+        });
+
+        sender
+            .input_sender()
+            .emit(RootInput::SetWindows(model.config.windows.clone()));
         ComponentParts { model, widgets }
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            RootInput::CreateLauncherWindow() => {
-                let app = relm4::main_application();
-                let builder = windows_lib::switch::SwitchRoot::builder();
-
-                let window = &builder.root;
-                app.add_window(window);
-
-                window.set_visible(true);
-                builder
-                    .launch(windows_lib::switch::SwitchRootInit {
-                        windows: self.config.windows.clone(),
-                    })
-                    .detach_runtime();
+            RootInput::SwitchClosed => {
+                trace!("Switch closed");
             }
+            RootInput::OpenSwitch(dir) => {
+                trace!("Opening switch: {:?}", dir);
+                if let Some(switch) = &self.switch_root {
+                    switch.emit(SwitchRootInput::OpenSwitch(dir))
+                }
+            }
+            RootInput::SetWindows(windows) => {
+                self.config.windows = windows;
+                self.update_switch(sender)
+            }
+        }
+    }
+}
+
+impl Root {
+    fn update_switch(&mut self, sender: ComponentSender<Self>) {
+        if let Some(windows) = &self.config.windows {
+            if let Some(switch) = &windows.switch {
+                if let Some(sw_root) = &self.switch_root {
+                    sw_root.emit(SwitchRootInput::SetGeneral(windows.general.clone()));
+                    sw_root.emit(SwitchRootInput::SetSwitch(switch.clone()));
+                } else {
+                    let app = relm4::main_application();
+
+                    let switch_root = SwitchRoot::builder();
+                    let window = &switch_root.root;
+                    app.add_window(window);
+                    let switch_root = switch_root
+                        .launch(windows_lib::switch::SwitchRootInit {
+                            general: windows.general.clone(),
+                            switch: switch.clone(),
+                        })
+                        .forward(sender.input_sender(), |msg| match msg {
+                            SwitchRootOutput::Closed => RootInput::SwitchClosed,
+                        });
+                    self.switch_root = Some(switch_root);
+                }
+            } else {
+                let _ = self.switch_root.take();
+            }
+        } else {
+            let _ = self.switch_root.take();
         }
     }
 }

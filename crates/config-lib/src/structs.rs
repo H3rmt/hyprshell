@@ -17,16 +17,24 @@ pub struct Config {
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Windows {
-    #[default = 8.5]
-    pub scale: f64,
-    #[default = 5]
-    pub items_per_row: u8,
+    #[default(WindowsGeneral::default())]
+    pub general: WindowsGeneral,
     #[default(None)]
     pub overview: Option<Overview>,
     #[default(None)]
     pub switch: Option<Switch>,
     #[default(None)]
     pub switch_2: Option<Switch>,
+}
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
+#[serde(deny_unknown_fields)]
+pub struct WindowsGeneral {
+    #[default = 8.5]
+    pub scale: f64,
+    #[default = 5]
+    pub items_per_row: u8,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -181,7 +189,7 @@ pub struct Switch {
     pub modifier: Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
-    #[default(vec![FilterBy::CurrentMonitor])]
+    #[default(vec![])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]
     pub switch_workspaces: bool,

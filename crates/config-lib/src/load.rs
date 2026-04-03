@@ -1,5 +1,4 @@
 use crate::Config;
-use crate::migrate::check_migration_needed;
 use anyhow::{Context, bail};
 use ron::Options;
 use ron::extensions::Extensions;
@@ -14,27 +13,33 @@ pub fn load_and_migrate_config(config_file: &Path, allow_migrate: bool) -> anyho
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
 
-    if check_migration_needed(config_file)
-        .inspect_err(|e| warn!("Failed to check if migration is needed: {e:?}"))
-        .unwrap_or(false)
+    #[cfg(feature = "disable_migrations")]
+    debug!("migrations disabled, not checking if updates are needed");
+
+    #[cfg(not(feature = "disable_migrations"))]
     {
-        info!("Config needs migration");
-        if !allow_migrate {
-            bail!("Config file needs migration, but migration is not allowed.");
-        }
-        let migrated = crate::migrate::migrate(config_file);
-        match migrated {
-            Ok(config) => {
-                info!("Config migrated successfully");
-                crate::check(&config)?;
-                return Ok(config);
+        if crate::migrate::check_migration_needed(config_file)
+            .inspect_err(|e| warn!("Failed to check if migration is needed: {e:?}"))
+            .unwrap_or(false)
+        {
+            info!("Config needs migration");
+            if !allow_migrate {
+                bail!("Config file needs migration, but migration is not allowed.");
             }
-            Err(err) => {
-                bail!("Config migration failed: \n{err:?}");
+            let migrated = crate::migrate::migrate(config_file);
+            match migrated {
+                Ok(config) => {
+                    info!("Config migrated successfully");
+                    crate::check(&config)?;
+                    return Ok(config);
+                }
+                Err(err) => {
+                    bail!("Config migration failed: \n{err:?}");
+                }
             }
         }
+        trace!("No migration needed");
     }
-    trace!("No migration needed");
 
     let config: Config = load_config_file(config_file).with_context(|| {
         format!(

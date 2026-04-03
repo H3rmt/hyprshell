@@ -34,8 +34,8 @@ pub fn create_windows_overview_window(
                 let workspaces_flow = FlowBox::builder()
                     .selection_mode(SelectionMode::None)
                     .orientation(Orientation::Horizontal)
-                    .max_children_per_line(u32::from(windows.items_per_row))
-                    .min_children_per_line(u32::from(windows.items_per_row))
+                    .max_children_per_line(u32::from(windows.general.items_per_row))
+                    .min_children_per_line(u32::from(windows.general.items_per_row))
                     .build();
 
                 let workspaces_flow_overlay = Overlay::builder()
@@ -74,8 +74,8 @@ pub fn create_windows_overview_window(
     let active = get_initial_active().context("unable to get initial active data")?;
     Ok(WindowsOverviewData {
         config: WindowsOverviewConfig {
-            items_per_row: windows.items_per_row,
-            scale: windows.scale,
+            items_per_row: windows.general.items_per_row,
+            scale: windows.general.scale,
             filter_current_workspace: overview.filter_by.contains(&FilterBy::CurrentWorkspace),
             filter_current_monitor: overview.filter_by.contains(&FilterBy::CurrentMonitor),
             filter_same_class: overview.filter_by.contains(&FilterBy::SameClass),

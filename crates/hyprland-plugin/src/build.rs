@@ -10,8 +10,7 @@ pub fn build_plugin(dir: &Path, out: &Path) -> anyhow::Result<()> {
     trace!("CPATH: {:?}", env::var_os("CPATH"));
     let mut bashcmd = Command::new("bash");
     bashcmd.current_dir(dir).arg("-c").arg(format!(
-        // TODO -g -O2
-        "gcc -shared -fPIC --no-gnu-unique -std=c++2b -I/usr/include/pixman-1 -o {} -g *.cpp",
+        "gcc -shared -fPIC --no-gnu-unique -std=c++2c -I/usr/include/pixman-1 -o {} -g *.cpp",
         out.display()
     ));
 

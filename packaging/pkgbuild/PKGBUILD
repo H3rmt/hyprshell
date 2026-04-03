@@ -37,7 +37,7 @@ package() {
     install -Dm644 "hyprshell-$pkgver/packaging/hyprshell-settings.desktop" "$pkgdir/usr/share/applications/hyprshell-settings.desktop"
 
     mkdir "$pkgdir/usr/share/hyprshell"
-    tar -xvf "hyprshell-$pkgver/packaging/usr-share.tar" -C "$pkgdir/usr/share/hyprshell"
+    tar -xvf "hyprshell-$pkgver/packaging/usr-share.tar" -C "$pkgdir/usr/share/hyprshell" | tee >(wc -l | xargs -I {} echo "Extracted {} files to $pkgdir/usr/share/hyprshell") > /dev/null
 
     "$pkgdir/usr/bin/hyprshell" completions bash -p  "$pkgdir/usr/share/bash-completion/completions"
     "$pkgdir/usr/bin/hyprshell" completions fish -p  "$pkgdir/usr/share/fish/vendor_completions.d"

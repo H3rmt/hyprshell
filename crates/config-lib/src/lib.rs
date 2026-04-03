@@ -2,6 +2,7 @@ pub mod actions;
 mod check;
 mod explain;
 mod load;
+#[cfg(not(feature = "disable_migrations"))]
 mod migrate;
 mod modifier;
 mod save;

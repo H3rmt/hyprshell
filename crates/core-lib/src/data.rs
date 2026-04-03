@@ -45,7 +45,7 @@ pub struct ClientData {
     pub pid: i32,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct HyprlandData {
     pub clients: Vec<(ClientId, ClientData)>,
     pub workspaces: Vec<(WorkspaceId, WorkspaceData)>,

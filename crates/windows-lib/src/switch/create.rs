@@ -27,8 +27,8 @@ pub fn create_windows_switch_window(
     let clients_flow = FlowBox::builder()
         .selection_mode(SelectionMode::None)
         .orientation(Orientation::Horizontal)
-        .max_children_per_line(u32::from(windows.items_per_row))
-        .min_children_per_line(u32::from(windows.items_per_row))
+        .max_children_per_line(u32::from(windows.general.items_per_row))
+        .min_children_per_line(u32::from(windows.general.items_per_row))
         .build();
 
     let clients_flow_overlay = Overlay::builder()
@@ -68,8 +68,8 @@ pub fn create_windows_switch_window(
 
     Ok(WindowsSwitchData {
         config: WindowsSwitchConfig {
-            items_per_row: windows.items_per_row,
-            scale: windows.scale,
+            items_per_row: windows.general.items_per_row,
+            scale: windows.general.scale,
             filter_current_workspace: switch.filter_by.contains(&FilterBy::CurrentWorkspace),
             filter_current_monitor: switch.filter_by.contains(&FilterBy::CurrentMonitor),
             filter_same_class: switch.filter_by.contains(&FilterBy::SameClass),

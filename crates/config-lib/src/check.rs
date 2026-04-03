@@ -5,7 +5,7 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
     if config
         .windows
         .as_ref()
-        .is_some_and(|w| w.scale >= 15f64 || w.scale <= 0f64)
+        .is_some_and(|w| w.general.scale >= 15f64 || w.general.scale <= 0f64)
     {
         bail!("Scale factor must be less than 15 and greater than 0");
     }
@@ -92,12 +92,14 @@ mod tests {
             .windows
             .as_mut()
             .expect("config option missing")
+            .general
             .scale = 20.0;
         assert!(check(&config).is_err());
         config
             .windows
             .as_mut()
             .expect("config option missing")
+            .general
             .scale = 0.0;
         assert!(check(&config).is_err());
     }

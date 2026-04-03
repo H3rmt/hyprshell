@@ -1,3 +1,4 @@
+use config_lib::WindowsGeneral;
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -186,8 +187,8 @@ impl From<Option<config_lib::Windows>> for Windows {
         let v = value.unwrap_or_default();
         Self {
             enabled,
-            scale: v.scale,
-            items_per_row: v.items_per_row,
+            scale: v.general.scale,
+            items_per_row: v.general.items_per_row,
             overview: v.overview.into(),
             switch: v.switch.into(),
             switch_2: v.switch_2.into(),
@@ -199,8 +200,10 @@ impl From<Windows> for Option<config_lib::Windows> {
     fn from(value: Windows) -> Self {
         if value.enabled {
             Some(config_lib::Windows {
-                scale: value.scale,
-                items_per_row: value.items_per_row,
+                general: WindowsGeneral {
+                    scale: value.scale,
+                    items_per_row: value.items_per_row,
+                },
                 overview: value.overview.into(),
                 switch: value.switch.into(),
                 switch_2: value.switch_2.into(),
