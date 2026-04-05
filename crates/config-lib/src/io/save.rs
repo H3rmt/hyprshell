@@ -1,4 +1,3 @@
-use crate::Config;
 use anyhow::{Context, bail};
 use ron::Options;
 use ron::extensions::Extensions;
@@ -13,7 +12,7 @@ const CONFIG_EXPLANATION: &str = "Edit with `hyprshell config edit`";
 
 pub fn write_config(
     config_file: &Path,
-    config: &Config,
+    config: &crate::io::Config,
     override_file: bool,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("write_config").entered();

@@ -1,7 +1,6 @@
 mod clients;
 mod close;
 mod close_item;
-mod create;
 mod open;
 mod render;
 mod root;
@@ -12,7 +11,6 @@ mod workspaces;
 
 pub use close::*;
 pub use close_item::*;
-pub use create::*;
 pub use open::*;
 pub use render::*;
 pub use root::*;

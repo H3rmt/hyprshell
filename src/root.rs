@@ -18,6 +18,7 @@ pub struct Root {
 pub enum RootInput {
     SwitchClosed,
     OpenSwitch(core_lib::Direction),
+    SwitchSwitch(core_lib::Direction),
     SetWindows(Option<config_lib::Windows>),
 }
 
@@ -62,7 +63,27 @@ impl SimpleComponent for Root {
         thread::spawn(move || {
             thread::sleep(Duration::from_millis(1000));
             sender_clone
-                .send(RootInput::OpenSwitch(core_lib::Direction::Left))
+                .send(RootInput::OpenSwitch(core_lib::Direction::Right))
+                .ok();
+            thread::sleep(Duration::from_millis(300));
+            sender_clone
+                .send(RootInput::SwitchSwitch(core_lib::Direction::Right))
+                .ok();
+            thread::sleep(Duration::from_millis(300));
+            sender_clone
+                .send(RootInput::SwitchSwitch(core_lib::Direction::Left))
+                .ok();
+            thread::sleep(Duration::from_millis(300));
+            sender_clone
+                .send(RootInput::SwitchSwitch(core_lib::Direction::Down))
+                .ok();
+            thread::sleep(Duration::from_millis(300));
+            sender_clone
+                .send(RootInput::SwitchSwitch(core_lib::Direction::Up))
+                .ok();
+            thread::sleep(Duration::from_millis(300));
+            sender_clone
+                .send(RootInput::SwitchSwitch(core_lib::Direction::Left))
                 .ok();
         });
 
@@ -81,6 +102,12 @@ impl SimpleComponent for Root {
                 trace!("Opening switch: {:?}", dir);
                 if let Some(switch) = &self.switch_root {
                     switch.emit(SwitchRootInput::OpenSwitch(dir))
+                }
+            }
+            RootInput::SwitchSwitch(dir) => {
+                trace!("Switching switch: {:?}", dir);
+                if let Some(switch) = &self.switch_root {
+                    switch.emit(SwitchRootInput::Switch(dir))
                 }
             }
             RootInput::SetWindows(windows) => {

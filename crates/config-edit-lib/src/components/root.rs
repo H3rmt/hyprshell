@@ -428,11 +428,9 @@ impl SimpleComponent for Root {
                     .emit(ChangesInput::SetPrevConfig(self.prev_config.clone()));
             }
             RootInput::Save(close) => {
-                match config_lib::write_config(
-                    &self.config_file,
-                    &(self.config.clone().into()),
-                    true,
-                ) {
+                let config: config_lib::Config = self.config.clone().into();
+                let config: config_lib::io::Config = config.into();
+                match config_lib::write_config(&self.config_file, &config, true) {
                     Ok(()) => {
                         info!("Saved config to {}", self.config_file.display());
                         self.toaster.add_toast(

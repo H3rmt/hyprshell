@@ -1,4 +1,4 @@
-use crate::load::load_config_file;
+use crate::io::load_config_file;
 use crate::migrate::check::get_config_version;
 use crate::{CURRENT_CONFIG_VERSION, migrate, write_config};
 use anyhow::{Context, bail};

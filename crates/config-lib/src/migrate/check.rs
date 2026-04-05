@@ -1,5 +1,5 @@
 use crate::CURRENT_CONFIG_VERSION;
-use crate::load::load_config_file;
+use crate::io::load_config_file;
 use anyhow::{Context, bail};
 use serde::Deserialize;
 use std::path::Path;

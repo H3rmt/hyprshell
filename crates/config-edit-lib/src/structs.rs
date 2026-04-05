@@ -175,7 +175,6 @@ impl From<config_lib::Config> for Config {
 impl From<Config> for config_lib::Config {
     fn from(value: Config) -> Self {
         Self {
-            version: config_lib::CURRENT_CONFIG_VERSION,
             windows: value.windows.into(),
         }
     }
@@ -222,11 +221,9 @@ impl From<Option<config_lib::Switch>> for Switch {
             enabled,
             modifier: v.modifier.into(),
             key: v.key.to_string(),
-            same_class: v.filter_by.contains(&config_lib::FilterBy::SameClass),
-            current_workspace: v
-                .filter_by
-                .contains(&config_lib::FilterBy::CurrentWorkspace),
-            current_monitor: v.filter_by.contains(&config_lib::FilterBy::CurrentMonitor),
+            same_class: v.filter_by_same_class,
+            current_workspace: v.filter_by_current_workspace,
+            current_monitor: v.filter_by_current_monitor,
             switch_workspaces: v.switch_workspaces,
             exclude_workspaces: v.exclude_workspaces.to_string(),
             kill_key: v.kill_key,
@@ -237,20 +234,12 @@ impl From<Option<config_lib::Switch>> for Switch {
 impl From<Switch> for Option<config_lib::Switch> {
     fn from(value: Switch) -> Self {
         if value.enabled {
-            let mut vec = vec![];
-            if value.same_class {
-                vec.push(config_lib::FilterBy::SameClass);
-            }
-            if value.current_workspace {
-                vec.push(config_lib::FilterBy::CurrentWorkspace);
-            }
-            if value.current_monitor {
-                vec.push(config_lib::FilterBy::CurrentMonitor);
-            }
             Some(config_lib::Switch {
                 modifier: value.modifier.into(),
                 key: Box::from(value.key),
-                filter_by: vec,
+                filter_by_same_class: value.same_class,
+                filter_by_current_workspace: value.current_workspace,
+                filter_by_current_monitor: value.current_monitor,
                 switch_workspaces: value.switch_workspaces,
                 exclude_workspaces: Box::from(value.exclude_workspaces),
                 kill_key: value.kill_key,
@@ -270,11 +259,9 @@ impl From<Option<config_lib::Overview>> for Overview {
             launcher: v.launcher.into(),
             key: v.key.to_string(),
             modifier: v.modifier.into(),
-            same_class: v.filter_by.contains(&config_lib::FilterBy::SameClass),
-            current_workspace: v
-                .filter_by
-                .contains(&config_lib::FilterBy::CurrentWorkspace),
-            current_monitor: v.filter_by.contains(&config_lib::FilterBy::CurrentMonitor),
+            same_class: v.filter_by_same_class,
+            current_workspace: v.filter_by_current_workspace,
+            current_monitor: v.filter_by_current_monitor,
             exclude_workspaces: v.exclude_workspaces.to_string(),
         }
     }
@@ -283,21 +270,13 @@ impl From<Option<config_lib::Overview>> for Overview {
 impl From<Overview> for Option<config_lib::Overview> {
     fn from(value: Overview) -> Self {
         if value.enabled {
-            let mut vec = vec![];
-            if value.same_class {
-                vec.push(config_lib::FilterBy::SameClass);
-            }
-            if value.current_workspace {
-                vec.push(config_lib::FilterBy::CurrentWorkspace);
-            }
-            if value.current_monitor {
-                vec.push(config_lib::FilterBy::CurrentMonitor);
-            }
             Some(config_lib::Overview {
                 launcher: value.launcher.into(),
                 key: Box::from(value.key),
                 modifier: value.modifier.into(),
-                filter_by: vec,
+                filter_by_same_class: value.same_class,
+                filter_by_current_workspace: value.current_workspace,
+                filter_by_current_monitor: value.current_monitor,
                 exclude_workspaces: Box::from(value.exclude_workspaces),
             })
         } else {
@@ -332,20 +311,16 @@ impl From<Launcher> for config_lib::Launcher {
     }
 }
 
-impl From<Option<config_lib::EmptyConfig>> for EmptyConfig {
-    fn from(value: Option<config_lib::EmptyConfig>) -> Self {
+impl From<Option<()>> for EmptyConfig {
+    fn from(value: Option<()>) -> Self {
         let enabled = value.is_some();
         Self { enabled }
     }
 }
 
-impl From<EmptyConfig> for Option<config_lib::EmptyConfig> {
+impl From<EmptyConfig> for Option<()> {
     fn from(value: EmptyConfig) -> Self {
-        if value.enabled {
-            Some(config_lib::EmptyConfig {})
-        } else {
-            None
-        }
+        if value.enabled { Some(()) } else { None }
     }
 }
 

@@ -41,7 +41,7 @@ pub enum SwitchRootInput {
     OpenSwitch(core_lib::Direction),
     Switch(core_lib::Direction),
     CloseSwitch(bool),
-    CloseItem,
+    // CloseItem,
 }
 
 #[derive(Debug)]
@@ -155,55 +155,40 @@ impl SimpleComponent for SwitchRoot {
             }
             SwitchRootInput::CloseSwitch(do_switch) => {
                 // self.close_switch(do_switch);
-                // sender.output_sender().emit(SwitchRootOutput::Closed);
-            }
-            SwitchRootInput::CloseItem => {
-                // self.close_item();
-            }
+                sender.output_sender().emit(SwitchRootOutput::Closed);
+            } // SwitchRootInput::CloseItem => {
+              // self.close_item();
+              // }
         }
     }
 }
 
 impl SwitchRoot {
-    #[cfg(none)]
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
-        if let Some(windows) = &self.windows {
-            if let Some(switch) = &windows.switch {
-                // TODO add a check in config check so these always succeed
-                let s_key = Key::from_name(switch.key.to_string()).unwrap();
-                let kill_key = Key::from_name(switch.kill_key.to_string()).unwrap();
-                let key_controller = EventControllerKey::new();
-                let sender_2 = sender.clone();
-                key_controller.connect_key_pressed(move |_, key, _, _| {
-                    handle_key(key, s_key, kill_key, sender_2.clone())
-                });
-                let r#mod = switch.modifier;
-                let sender_2 = sender.clone();
-                key_controller.connect_key_released(move |_, key, _, _| {
-                    handle_release(key, r#mod, sender_2.clone());
-                });
-                if let Some(controller) = self.controller.take() {
-                    self.window.remove_controller(&controller);
-                }
-                self.window.add_controller(key_controller);
-            }
+        // TODO add a check in config check so these always succeed
+        let s_key = Key::from_name(self.switch.key.to_string()).unwrap();
+        let kill_key = Key::from_name(self.switch.kill_key.to_string()).unwrap();
+        let key_controller = EventControllerKey::new();
+        let sender_2 = sender.clone();
+        key_controller.connect_key_pressed(move |_, key, _, _| {
+            handle_key(key, s_key, kill_key, sender_2.clone())
+        });
+        let r#mod = self.switch.modifier;
+        let sender_2 = sender.clone();
+        key_controller.connect_key_released(move |_, key, _, _| {
+            handle_release(key, r#mod, sender_2.clone());
+        });
+        if let Some(controller) = self.controller.take() {
+            self.window.remove_controller(&controller);
         }
+        self.window.add_controller(key_controller);
     }
 
     fn open_switch(&mut self, direction: core_lib::Direction) {
         let (clients_data, active_prev) = match collect_data(&SortConfig {
-            filter_current_monitor: self
-                .switch
-                .filter_by
-                .contains(&config_lib::FilterBy::CurrentMonitor),
-            filter_current_workspace: self
-                .switch
-                .filter_by
-                .contains(&config_lib::FilterBy::CurrentWorkspace),
-            filter_same_class: self
-                .switch
-                .filter_by
-                .contains(&config_lib::FilterBy::SameClass),
+            filter_current_monitor: self.switch.filter_by_current_monitor,
+            filter_current_workspace: self.switch.filter_by_current_workspace,
+            filter_same_class: self.switch.filter_by_same_class,
             sort_recent: true,
             exclude_workspaces: if self.switch.exclude_workspaces.is_empty() {
                 None
@@ -358,12 +343,12 @@ impl SwitchRoot {
         self.data.active = new_active;
 
         if self.switch.switch_workspaces {
-            // self.update_workspace_active(old_active, new_active);
+            self.update_workspace_active(old_active, new_active);
         } else {
-            // self.update_clients_only_active(old_active, new_active);
+            self.update_clients_only_active(old_active, new_active);
         }
     }
-    #[cfg(skip)]
+
     fn update_workspace_active(&mut self, old_active: Active, new_active: Active) {
         // Update workspace active state
         if old_active.workspace != new_active.workspace {
@@ -389,7 +374,7 @@ impl SwitchRoot {
             }
         }
     }
-    #[cfg(skip)]
+
     fn update_clients_only_active(&mut self, old_active: Active, new_active: Active) {
         // Clear old active
         if let Some(old_id) = old_active.client {
@@ -519,7 +504,6 @@ impl SwitchRoot {
     }
 }
 
-#[cfg(skip)]
 fn handle_release(
     key: Key,
     modifier: config_lib::Modifier,
@@ -536,49 +520,48 @@ fn handle_release(
     }
 }
 
-#[cfg(skip)]
 fn handle_key(
     key: Key,
     s_key: Key,
     kill_key: Key,
     event_sender: ComponentSender<SwitchRoot>,
-) -> gtk::glib::Propagation {
+) -> glib::Propagation {
     match key {
         Key::Escape => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::CloseSwitch(false));
-            gtk::glib::Propagation::Stop
+            glib::Propagation::Stop
         }
         k if k == s_key || k == Key::l || k == Key::Right => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(core_lib::Direction::Right));
-            gtk::glib::Propagation::Stop
+            glib::Propagation::Stop
         }
         Key::ISO_Left_Tab | Key::grave | Key::dead_grave | Key::h | Key::Left => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(core_lib::Direction::Left));
-            gtk::glib::Propagation::Stop
+            glib::Propagation::Stop
         }
         Key::j | Key::Down => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(core_lib::Direction::Down));
-            gtk::glib::Propagation::Stop
+            glib::Propagation::Stop
         }
         Key::k | Key::Up => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(core_lib::Direction::Up));
-            gtk::glib::Propagation::Stop
+            glib::Propagation::Stop
         }
-        k if k == kill_key || k == Key::Delete => {
-            event_sender.input_sender().emit(SwitchRootInput::CloseItem);
-            gtk::glib::Propagation::Stop
-        }
-        _ => gtk::glib::Propagation::Proceed,
+        // k if k == kill_key || k == Key::Delete => {
+        //     event_sender.input_sender().emit(SwitchRootInput::CloseItem);
+        //     glib::Propagation::Stop
+        // }
+        _ => glib::Propagation::Proceed,
     }
 }
 

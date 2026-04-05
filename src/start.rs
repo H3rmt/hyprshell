@@ -211,9 +211,10 @@ fn create_windows(
     if let Some(windows) = &config.windows {
         let mut windows_data = WindowsGlobal::default();
         if let Some(overview) = &windows.overview {
-            let overview_data =
-                windows_lib::overview::create_windows_overview_window(app, overview, windows)
-                    .context("failed to create overview window")?;
+            // let overview_data =
+            //     windows_lib::overview::create_windows_overview_window(app, overview, windows)
+            //         .context("failed to create overview window")?;
+            let overview_data = todo!();
             let launcher_data = create_windows_overview_launcher_window(
                 app,
                 &overview.launcher,
@@ -226,14 +227,14 @@ fn create_windows(
             debug!("Windows overview disabled");
         }
         if let Some(switch) = &windows.switch {
-            let switch_data = windows_lib::switch::create_windows_switch_window(
-                app,
-                switch,
-                windows,
-                event_sender,
-            )
-            .context("failed to create switch window")?;
-            windows_data.switch = Some(switch_data);
+            // let switch_data = windows_lib::switch::create_windows_switch_window(
+            //     app,
+            //     switch,
+            //     windows,
+            //     event_sender,
+            // )
+            // .context("failed to create switch window")?;
+            // windows_data.switch = Some(switch_data);
         } else {
             debug!("Windows switch disabled");
         }

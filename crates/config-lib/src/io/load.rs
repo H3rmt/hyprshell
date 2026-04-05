@@ -1,4 +1,3 @@
-use crate::Config;
 use anyhow::{Context, bail};
 use ron::Options;
 use ron::extensions::Extensions;
@@ -7,7 +6,10 @@ use std::ffi::OsStr;
 use std::path::Path;
 use tracing::{debug, debug_span, info, trace, warn};
 
-pub fn load_and_migrate_config(config_file: &Path, allow_migrate: bool) -> anyhow::Result<Config> {
+pub fn load_and_migrate_config(
+    config_file: &Path,
+    allow_migrate: bool,
+) -> anyhow::Result<crate::Config> {
     let _span = debug_span!("load_config", path =? config_file).entered();
     if !config_file.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
@@ -41,13 +43,16 @@ pub fn load_and_migrate_config(config_file: &Path, allow_migrate: bool) -> anyho
         trace!("No migration needed");
     }
 
-    let config: Config = load_config_file(config_file).with_context(|| {
+    let config: crate::io::Config = load_config_file(config_file).with_context(|| {
         format!(
             "Failed to load config from file ({})",
             config_file.display()
         )
     })?;
     debug!("Loaded config");
+    let config: crate::Config = config
+        .try_into()
+        .context("Failed to convert config to internal format")?;
 
     crate::check(&config)?;
 
