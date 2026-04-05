@@ -2,7 +2,7 @@ use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
 use crate::switch::clients::{Clients, ClientsInit};
 use crate::switch::workspaces::{Items, ItemsInit, ItemsInput};
-use core_lib::{Active, FindByFirst, HyprlandData, SWITCH_NAMESPACE};
+use core_lib::{Active, Direction, FindByFirst, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::reset_no_follow_mouse;
 use exec_lib::switch::{switch_client, switch_workspace};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
@@ -16,7 +16,7 @@ use relm4::prelude::*;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration = Duration::from_millis(100);
+const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 
 #[derive(Debug)]
 pub struct SwitchRoot {
@@ -41,7 +41,8 @@ pub enum SwitchRootInput {
     OpenSwitch(core_lib::Direction),
     Switch(core_lib::Direction),
     CloseSwitch(bool),
-    // CloseItem,
+    CloseCurrentItem,
+    ReloadSwitch,
 }
 
 #[derive(Debug)]
@@ -132,6 +133,9 @@ impl SimpleComponent for SwitchRoot {
         window.set_namespace(Some(SWITCH_NAMESPACE));
         window.set_layer(Layer::Top);
         window.set_keyboard_mode(KeyboardMode::OnDemand);
+        sender
+            .input_sender()
+            .emit(SwitchRootInput::SetSwitch(model.switch.clone()));
 
         ComponentParts { model, widgets }
     }
@@ -141,11 +145,11 @@ impl SimpleComponent for SwitchRoot {
         match message {
             SwitchRootInput::SetSwitch(switch) => {
                 self.switch = switch;
-                // self.setup_keyboard_controller(&sender);
+                self.setup_keyboard_controller(&sender);
             }
             SwitchRootInput::SetGeneral(general) => {
                 self.general = general;
-                // self.setup_keyboard_controller(&sender);
+                self.setup_keyboard_controller(&sender);
             }
             SwitchRootInput::OpenSwitch(direction) => {
                 self.open_switch(direction);
@@ -154,11 +158,17 @@ impl SimpleComponent for SwitchRoot {
                 self.navigate(direction);
             }
             SwitchRootInput::CloseSwitch(do_switch) => {
-                // self.close_switch(do_switch);
+                self.close_switch(do_switch);
                 sender.output_sender().emit(SwitchRootOutput::Closed);
-            } // SwitchRootInput::CloseItem => {
-              // self.close_item();
-              // }
+            }
+            SwitchRootInput::CloseCurrentItem => {
+                self.close_item();
+                sender.input_sender().emit(SwitchRootInput::ReloadSwitch);
+            }
+            SwitchRootInput::ReloadSwitch => {
+                self.reload_switch();
+                self.setup_keyboard_controller(&sender);
+            }
         }
     }
 }
@@ -230,9 +240,9 @@ impl SwitchRoot {
         };
 
         if self.switch.switch_workspaces {
-            self.populate_workspace_mode(&clients_data, self.general.scale, active);
+            self.populate_workspace_mode(&clients_data, self.general.scale, self.data.active);
         } else {
-            self.populate_clients_only_mode(&clients_data, self.general.scale, active);
+            self.populate_clients_only_mode(&clients_data, self.general.scale, self.data.active);
         }
     }
 
@@ -398,7 +408,7 @@ impl SwitchRoot {
             }
         }
     }
-    #[cfg(skip)]
+
     fn close_switch(&mut self, do_switch: bool) {
         reset_no_follow_mouse().ok();
 
@@ -453,28 +463,24 @@ impl SwitchRoot {
             }
         }
     }
-    #[cfg(skip)]
-    fn close_item(&mut self) {
-        let Some(windows) = &self.windows else { return };
-        let Some(switch) = &windows.switch else {
-            return;
-        };
 
-        if switch.switch_workspaces {
+    fn close_item(&mut self) {
+        if self.switch.switch_workspaces {
             self.kill_workspace_clients();
         } else {
             self.kill_active_client();
         }
     }
-    #[cfg(skip)]
+
     fn kill_active_client(&self) {
         if let Some(id) = self.data.active.client {
             if let Err(e) = exec_lib::kill::kill_client_blocking(id, KILL_TIMEOUT) {
+                // TODO: close on killed to let user close window themself
                 tracing::warn!("Failed to kill client {id}: {e}");
             }
         }
     }
-    #[cfg(skip)]
+
     fn kill_workspace_clients(&self) {
         let workspace_id = self.data.active.workspace;
         debug!(
@@ -492,14 +498,72 @@ impl SwitchRoot {
             .hypr_data
             .clients
             .iter()
-            .filter(|(_, client)| client.workspace == workspace_id && client.enabled)
+            .filter(|(_, client)| client.workspace == workspace_id)
             .map(|(id, _)| *id)
             .collect();
 
         for client_id in clients_to_kill {
             if let Err(e) = exec_lib::kill::kill_client_blocking(client_id, KILL_TIMEOUT) {
+                // TODO: close on killed to let user close window themself
                 tracing::warn!("Failed to kill client {client_id}: {e}");
             }
+        }
+    }
+
+    fn reload_switch(&mut self) {
+        let (clients_data, _) = match collect_data(&SortConfig {
+            filter_current_monitor: self.switch.filter_by_current_monitor,
+            filter_current_workspace: self.switch.filter_by_current_workspace,
+            filter_same_class: self.switch.filter_by_same_class,
+            sort_recent: true,
+            exclude_workspaces: if self.switch.exclude_workspaces.is_empty() {
+                None
+            } else {
+                Some(self.switch.exclude_workspaces.clone())
+            },
+        }) {
+            Ok(data) => data,
+            Err(e) => {
+                error!("Failed to collect data: {}", e);
+                return;
+            }
+        };
+
+        while match self.data.active {
+            Active {
+                client: Some(id), ..
+            } => clients_data.clients.find_by_first(&id).is_none(),
+            Active { workspace: id, .. } => clients_data.workspaces.find_by_first(&id).is_none(),
+        } {
+            self.data.active = if self.switch.switch_workspaces {
+                find_next_workspace(
+                    &Direction::Right,
+                    true,
+                    &clients_data,
+                    self.data.active,
+                    self.general.items_per_row,
+                )
+            } else {
+                find_next_client(
+                    &Direction::Right,
+                    true,
+                    &clients_data,
+                    self.data.active,
+                    self.general.items_per_row,
+                )
+            };
+        }
+
+        self.data = SwitchData {
+            active: self.data.active,
+            hypr_data: clients_data.clone(),
+            is_open: true,
+        };
+
+        if self.switch.switch_workspaces {
+            self.populate_workspace_mode(&clients_data, self.general.scale, self.data.active);
+        } else {
+            self.populate_clients_only_mode(&clients_data, self.general.scale, self.data.active);
         }
     }
 }
@@ -557,10 +621,12 @@ fn handle_key(
                 .emit(SwitchRootInput::Switch(core_lib::Direction::Up));
             glib::Propagation::Stop
         }
-        // k if k == kill_key || k == Key::Delete => {
-        //     event_sender.input_sender().emit(SwitchRootInput::CloseItem);
-        //     glib::Propagation::Stop
-        // }
+        k if k == kill_key || k == Key::Delete => {
+            event_sender
+                .input_sender()
+                .emit(SwitchRootInput::CloseCurrentItem);
+            glib::Propagation::Stop
+        }
         _ => glib::Propagation::Proceed,
     }
 }
