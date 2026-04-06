@@ -1,4 +1,3 @@
-use crate::receive_handle::event_handler;
 use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
@@ -72,6 +71,42 @@ pub fn start(
         }
     }
 
+    loop {
+        let config_file = config_file.clone();
+        let css_path = css_path.clone();
+        let data_dir = data_dir.clone();
+        let cache_dir = cache_dir.clone();
+        run(&config_file, &css_path, &data_dir, &cache_dir)
+    }
+}
+
+pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Path) {
+    let config = match config_lib::load_and_migrate_config(config_file, true) {
+        Ok(config) => config,
+        Err(err) => {
+            notify_warn(&format!("Failed to load config: {err:?}"));
+            if let Err(err) = hyprshell_config_block(config_file) {
+                error!("Failed to block config: {err:?}",);
+                process::exit(1);
+            }
+            info!("Trying to rerun application after config reload");
+            return; // return needed to exit the application
+        }
+    };
+
+    // TODO remove in future if more is available
+    if config.windows.is_none()
+        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
+    {
+        notify_warn("Nothing is enabled in the config");
+        if let Err(err) = hyprshell_config_block(config_file) {
+            error!("Failed to block config: {err:?}",);
+            process::exit(1);
+        }
+        info!("Trying to rerun application after config reload");
+        return; // return needed to exit the application
+    }
+
     // TODO
     // if !configure_wm_initial(&cache_dir) {
     //     bail!("Failed to configure wm");
@@ -87,6 +122,7 @@ pub fn start(
         wayland_socket_index,
         if cfg!(debug_assertions) { "-test" } else { "" }
     );
+
     trace!("Application id: {}", id);
     let relm = RelmApp::new(&id)
         .visible_on_activate(false)
@@ -94,9 +130,7 @@ pub fn start(
     debug!("Application created");
 
     apply_css(&css_path).warn_details("Failed to apply CSS");
-
-    relm.run::<Root>(RootInit {});
-    Ok(())
+    relm.run::<Root>(RootInit { config });
 }
 
 pub struct Globals {
@@ -190,7 +224,7 @@ fn activate(
     });
 
     glib::spawn_future_local(async move {
-        event_handler(globals, event_receiver, event_sender).await;
+        // event_handler(globals, event_receiver, event_sender).await;
         info!("Application exited, restarting");
     });
 

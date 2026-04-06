@@ -293,7 +293,7 @@ fn restart(global: &mut Globals) {
             launcher_lib::stop_launcher(launcher);
         }
         if let Some(switch) = &windows.switch {
-            windows_lib::switch::stop_switch(switch);
+            // windows_lib::switch::stop_switch(switch);
         }
     }
     let app = global.app.clone();

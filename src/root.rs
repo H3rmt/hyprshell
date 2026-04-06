@@ -24,7 +24,9 @@ pub enum RootInput {
 }
 
 #[derive(Debug)]
-pub struct RootInit {}
+pub struct RootInit {
+    pub config: config_lib::Config,
+}
 
 #[derive(Debug)]
 pub enum RootOutput {}
@@ -46,15 +48,8 @@ impl SimpleComponent for Root {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         trace!("Initializing Root");
-        let mut conf = config_lib::Config::default();
-        let mut windows = config_lib::Windows::default();
-        let mut switch = config_lib::Switch::default();
-        switch.switch_workspaces = true;
-        windows.switch = Some(switch);
-        conf.windows = Some(windows);
-
         let model = Self {
-            config: conf,
+            config: init.config,
             switch_root: None,
         };
         let widgets = view_output!();
