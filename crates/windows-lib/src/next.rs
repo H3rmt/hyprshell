@@ -138,50 +138,71 @@ fn find_next_grid(
         Direction::Down => i_per_row,
     };
     trace!("Finding next workspace with offset: {}", offset);
-    let index = if wrap {
-        let mut index = current as isize + offset;
-        if index >= filtered_len as isize {
+    let mut index = current as isize + offset;
+    if index >= filtered_len as isize || index < 0 {
+        if wrap {
             trace!("Index out of bounds, wrapping around {index}");
-            // subtract all rows / move to the beginning
-            index -= (items_per_row * usize::div_ceil(filtered_len - 1, items_per_row)) as isize;
-            if index < 0 {
-                match direction {
-                    Direction::Right => index = 0,
-                    Direction::Down => {
-                        index += i_per_row;
-                    }
-                    _ => unreachable!(),
+            match direction {
+                Direction::Right | Direction::Left => {
+                    index = wrap_sequence(index, filtered_len as isize - 1);
+                }
+                Direction::Up | Direction::Down => {
+                    let row_count = usize::div_ceil(filtered_len, items_per_row);
+                    let grid_size = (items_per_row * row_count) as isize;
+                    index = wrap_grid(index, filtered_len as isize - 1, grid_size, i_per_row);
                 }
             }
-        } else if index < 0 {
-            trace!("Index out of bounds, wrapping around {index}");
-            // add all rows / move to end
-            index += (items_per_row * usize::div_ceil(filtered_len - 1, items_per_row)) as isize;
-            if index >= filtered_len as isize {
-                match direction {
-                    Direction::Left => {
-                        index = filtered_len as isize - 1;
-                    }
-                    Direction::Up => {
-                        index -= i_per_row;
-                    }
-                    _ => unreachable!(),
+        } else {
+            trace!("Index out of bounds, clamping {index} to avoid wrapping");
+            match direction {
+                Direction::Right | Direction::Left => {
+                    index = min(max(index, 0), filtered_len as isize - 1);
+                }
+                Direction::Up | Direction::Down => {
+                    index = current as isize;
                 }
             }
         }
-        #[allow(clippy::cast_sign_loss)] // index always positive, see if else above
-        {
-            index as usize
-        }
-    } else {
-        #[allow(clippy::cast_sign_loss)]
-        // max(current as isize + offset, 0) always positive (max function)
-        {
-            min(max(current as isize + offset, 0) as usize, filtered_len - 1)
-        }
-    };
+    }
     trace!("Next index: {index}");
-    index
+    #[allow(clippy::cast_sign_loss)] // index always positive, see if else above
+    {
+        index as usize
+    }
+}
+
+// When i goes out of bounds, simply wrap around to the other end of
+// the sequence.
+const fn wrap_sequence(i: isize, max: isize) -> isize {
+    if i > max {
+        0
+    } else if i < 0 {
+        max
+    } else {
+        i
+    }
+}
+
+// When i goes out of bounds, wrap around to the other end. This time,
+// however, keep i % row_len the same so that the selection stays in
+// the same column of the grid on the screen.
+#[instrument(level = "trace", ret)]
+fn wrap_grid(i: isize, max: isize, grid_size: isize, row_len: isize) -> isize {
+    let mut i = i;
+    if i >= max {
+        // subtract all rows / move to the beginning
+        i -= grid_size;
+        if i < 0 {
+            i += row_len;
+        }
+    } else if i < 0 {
+        // add all rows / move to end
+        i += grid_size;
+        if i > max {
+            i -= row_len;
+        }
+    }
+    i
 }
 
 fn find_first_client(
@@ -490,12 +511,12 @@ mod tests {
         let next = find_next_workspace(&Direction::Up, false, &hypr_data, active, 3);
         assert_eq!(next.workspace, 0);
         let next = find_next_workspace(&Direction::Down, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 2);
+        assert_eq!(next.workspace, 0);
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_find_next_client() {
+    fn test_find_next_client_empty() {
         // Test with no clients
         let (clients, workspaces) = create_test_data(0, 1, None);
         let hypr_data = HyprlandData {
@@ -503,18 +524,22 @@ mod tests {
             workspaces,
             monitors: vec![],
         };
+        trace!("data: {hypr_data:?}");
+
         let active = Active {
             client: None,
             workspace: 0,
             monitor: 0,
         };
-        trace!("data: {hypr_data:?}");
-
         assert_eq!(
             find_next_client(&Direction::Right, true, &hypr_data, active, 3),
             active
         );
+    }
 
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_find_next_client_single() {
         // Test with one client
         let (clients, workspaces) = create_test_data(1, 1, None);
         let hypr_data = HyprlandData {
@@ -524,16 +549,48 @@ mod tests {
         };
         trace!("data: {hypr_data:?}");
 
-        let next = find_next_client(&Direction::Right, true, &hypr_data, active, 3);
+        let active = Active {
+            client: None,
+            workspace: 0,
+            monitor: 0,
+        };
         assert_eq!(
-            next,
+            find_next_client(&Direction::Left, true, &hypr_data, active, 3),
             Active {
                 client: Some(0),
                 workspace: 0,
                 monitor: 0,
             }
         );
+        assert_eq!(
+            find_next_client(&Direction::Right, true, &hypr_data, active, 3),
+            Active {
+                client: Some(0),
+                workspace: 0,
+                monitor: 0,
+            }
+        );
+        assert_eq!(
+            find_next_client(&Direction::Up, true, &hypr_data, active, 3),
+            Active {
+                client: Some(0),
+                workspace: 0,
+                monitor: 0,
+            }
+        );
+        assert_eq!(
+            find_next_client(&Direction::Down, true, &hypr_data, active, 3),
+            Active {
+                client: Some(0),
+                workspace: 0,
+                monitor: 0,
+            }
+        );
+    }
 
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_find_next_client_sequence() {
         // Test with multiple clients
         let (clients, workspaces) = create_test_data(4, 2, None);
         let hypr_data = HyprlandData {
@@ -543,27 +600,145 @@ mod tests {
         };
         trace!("data: {hypr_data:?}");
 
-        // Test with no active client
-        let next = find_next_client(&Direction::Right, true, &hypr_data, active, 3);
+        fn current(idx: u64) -> Active {
+            Active {
+                client: Some(idx),
+                workspace: 1,
+                monitor: 0,
+            }
+        }
+
+        // Test right direction with wrapping
+        let next = find_next_client(&Direction::Right, true, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Right, true, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Right, true, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Right, true, &hypr_data, current(3), 3);
         assert_eq!(next.client, Some(0));
 
-        // Test with active client
-        let active = Active {
-            client: Some(1),
-            workspace: 1,
-            monitor: 0,
+        // Test left direction with wrapping
+        let next = find_next_client(&Direction::Left, true, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Left, true, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Left, true, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Left, true, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(0));
+
+        // Test right direction without wrapping
+        let next = find_next_client(&Direction::Right, false, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Right, false, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Right, false, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Right, false, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(3));
+
+        // Test left direction without wrapping
+        let next = find_next_client(&Direction::Left, false, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(0));
+        let next = find_next_client(&Direction::Left, false, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Left, false, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Left, false, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(0));
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_find_next_client_grid() {
+        // Test with multiple clients
+        let (clients, workspaces) = create_test_data(8, 2, None);
+        let hypr_data = HyprlandData {
+            clients,
+            workspaces,
+            monitors: vec![],
         };
+        trace!("data: {hypr_data:?}");
 
-        // Test right direction with wrap
-        let next = find_next_client(&Direction::Right, true, &hypr_data, active, 3);
+        fn current(idx: u64) -> Active {
+            Active {
+                client: Some(idx),
+                workspace: 1,
+                monitor: 0,
+            }
+        }
+
+        // Test down direction with wrapping
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(4));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(5));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(6));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(4), 3);
+        assert_eq!(next.client, Some(7));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(5), 3);
         assert_eq!(next.client, Some(2));
-
-        // Test left direction with wrap
-        let next = find_next_client(&Direction::Left, true, &hypr_data, active, 3);
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(6), 3);
         assert_eq!(next.client, Some(0));
+        let next = find_next_client(&Direction::Down, true, &hypr_data, current(7), 3);
+        assert_eq!(next.client, Some(1));
 
-        // Test without wrap
-        let next = find_next_client(&Direction::Right, false, &hypr_data, active, 3);
+        // Test up direction with wrapping
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(6));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(7));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(5));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(0));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(4), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(5), 3);
         assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(6), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Up, true, &hypr_data, current(7), 3);
+        assert_eq!(next.client, Some(4));
+
+        // Test down direction without wrapping
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(4));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(5));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(6));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(4), 3);
+        assert_eq!(next.client, Some(7));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(5), 3);
+        assert_eq!(next.client, Some(5));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(6), 3);
+        assert_eq!(next.client, Some(6));
+        let next = find_next_client(&Direction::Down, false, &hypr_data, current(7), 3);
+        assert_eq!(next.client, Some(7));
+
+        // Test up direction without wrapping
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(0), 3);
+        assert_eq!(next.client, Some(0));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(1), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(2), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(3), 3);
+        assert_eq!(next.client, Some(0));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(4), 3);
+        assert_eq!(next.client, Some(1));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(5), 3);
+        assert_eq!(next.client, Some(2));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(6), 3);
+        assert_eq!(next.client, Some(3));
+        let next = find_next_client(&Direction::Up, false, &hypr_data, current(7), 3);
+        assert_eq!(next.client, Some(4));
     }
 }
