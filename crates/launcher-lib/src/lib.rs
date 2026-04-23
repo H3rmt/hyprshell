@@ -1,3 +1,6 @@
+#![feature(try_blocks)]
+#![feature(iter_intersperse)]
+
 mod css;
 pub mod debug;
 mod plugins;
