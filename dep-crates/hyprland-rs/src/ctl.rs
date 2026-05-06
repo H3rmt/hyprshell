@@ -430,11 +430,7 @@ pub mod set_prop {
     use super::*;
 
     fn l(b: bool) -> &'static str {
-        if b {
-            "lock"
-        } else {
-            ""
-        }
+        if b { "lock" } else { "" }
     }
 
     /// Type that represents a prop

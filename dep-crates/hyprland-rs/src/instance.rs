@@ -1,5 +1,5 @@
 use crate::error::hypr_err;
-use crate::shared::{get_hypr_path, CommandContent};
+use crate::shared::{CommandContent, get_hypr_path};
 use std::path::{Path, PathBuf};
 
 /// This is the sync version of the Hyprland Instance.
@@ -32,14 +32,18 @@ impl Instance {
         Self::from_base_socket_path(path)
     }
 
-    /// instance: 9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212
+    /// Uses the name to determine the sockets to use
+    ///
+    /// Example name: `9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212`
     pub fn from_instance(name: String) -> crate::Result<Self> {
         let mut path = get_hypr_path()?;
         path.push(&name);
         Self::from_base_socket_path(path)
     }
 
-    /// /run/user/$UID/hypr/9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212
+    /// Uses the path to determine the sockets to use
+    ///
+    /// Example path: `/run/user/1000/hypr/9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_21468021`
     pub fn from_base_socket_path(path: PathBuf) -> crate::Result<Self> {
         let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
             hypr_err!("Could not get instance name from path: {}", path.display());
@@ -65,8 +69,7 @@ impl Instance {
         stream.write_all(&content.as_bytes())?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response)?;
-        drop(stream);
-        Ok(String::from_utf8(response)?)
+        Ok(String::from_utf8_lossy(&response).to_string())
     }
 
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
@@ -79,8 +82,7 @@ impl Instance {
         stream.write_all(&content.as_bytes()).await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
-        drop(stream);
-        Ok(String::from_utf8(response)?)
+        Ok(String::from_utf8_lossy(&response).to_string())
     }
 
     #[cfg(feature = "hyprpaper")]
@@ -91,10 +93,18 @@ impl Instance {
         use std::io::{Read, Write};
         let mut stream = std::os::unix::net::UnixStream::connect(&self.hyprpaper_stream)?;
         stream.write_all(content.data.as_bytes())?;
+
         let mut response = Vec::new();
-        stream.read_to_end(&mut response)?;
-        drop(stream);
-        Ok(String::from_utf8(response)?)
+        const BUFFER_SIZE: usize = 4096;
+        let mut buf = [0u8; BUFFER_SIZE];
+        loop {
+            let n = stream.read(&mut buf[..])?;
+            response.extend_from_slice(&buf[..n]);
+            if n < BUFFER_SIZE {
+                break;
+            }
+        }
+        Ok(String::from_utf8_lossy(&response).to_string())
     }
 
     #[cfg(all(feature = "hyprpaper", any(feature = "async-lite", feature = "tokio")))]
@@ -105,10 +115,18 @@ impl Instance {
         use crate::async_import::{AsyncReadExt, AsyncWriteExt};
         let mut stream = crate::async_import::UnixStream::connect(&self.hyprpaper_stream).await?;
         stream.write_all(content.data.as_bytes()).await?;
+
         let mut response = Vec::new();
-        stream.read_to_end(&mut response).await?;
-        drop(stream);
-        Ok(String::from_utf8(response)?)
+        const BUFFER_SIZE: usize = 4096;
+        let mut buf = [0u8; BUFFER_SIZE];
+        loop {
+            let n = stream.read(&mut buf[..]).await?;
+            response.extend_from_slice(&buf[..n]);
+            if n < BUFFER_SIZE {
+                break;
+            }
+        }
+        Ok(String::from_utf8_lossy(&response).to_string())
     }
 
     #[cfg(feature = "listener")]

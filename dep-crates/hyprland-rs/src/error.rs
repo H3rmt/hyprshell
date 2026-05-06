@@ -5,6 +5,10 @@ pub enum HyprError {
     SerdeError(serde_json::Error),
     /// Error coming from std::io
     IoError(io::Error),
+    /// Error from failing to parse HyprColor
+    InvalidHyprColorFormat,
+    /// Error from failing to parse HyprGradient
+    InvalidHyprGradiantFormat,
     /// Error that occurs when parsing UTF-8 string
     FromUtf8Error(std::string::FromUtf8Error),
     /// Dispatcher returned non `ok` value
@@ -13,6 +17,10 @@ pub enum HyprError {
     /// Error when interacting with Hyprpaper.
     #[cfg(feature = "hyprpaper")]
     Hyprpaper(crate::hyprpaper::Error),
+    /// Keyword does not exist
+    InvalidOptionKey(String),
+    /// Unparsable Option
+    InvalidOptionValue,
     /// Internal Hyprland error
     Internal(String),
     /// Error that occurs for other reasons. Avoid using this.
@@ -30,8 +38,12 @@ impl HyprError {
             Self::IoError(_) => Err(self),
             Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
             Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+            Self::InvalidHyprColorFormat => Ok(Self::InvalidHyprColorFormat),
+            Self::InvalidHyprGradiantFormat => Ok(Self::InvalidHyprGradiantFormat),
             #[cfg(feature = "hyprpaper")]
             Self::Hyprpaper(_) => Err(self),
+            Self::InvalidOptionKey(key) => Ok(Self::InvalidOptionKey(key.clone())),
+            Self::InvalidOptionValue => Ok(Self::InvalidOptionValue),
             Self::Internal(s) => Ok(Self::Internal(s.clone())),
             Self::Other(s) => Ok(Self::Other(s.clone())),
         }

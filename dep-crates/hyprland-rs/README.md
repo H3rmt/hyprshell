@@ -28,7 +28,7 @@ Let's get started with Hyprland-rs!
 Add the code below to the dependencies section of your Cargo.toml file!
 
 ```toml
-hyprland = "0.4.0-beta.1"
+hyprland = "0.4.0-beta.3"
 ```
 
 ### Reading the docs

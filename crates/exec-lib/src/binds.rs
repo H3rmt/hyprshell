@@ -5,21 +5,36 @@ use hyprland::config::binds;
 use hyprland::config::binds::{Binder, Binding};
 use hyprland::dispatch::DispatchType;
 use hyprland::keyword::Keyword;
+use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
 use tracing::{trace, warn};
 
 pub fn apply_layerrules() -> anyhow::Result<()> {
     // TODO add option to enable blur
+    let rules = vec![
+        LayerRule {
+            name: None,
+            r#match: vec![LayerMatch::Namespace(LAUNCHER_NAMESPACE.into())],
+            effects: vec![LayerEffect::NoAnim(true), LayerEffect::Xray(false)],
+        },
+        LayerRule {
+            name: None,
+            r#match: vec![LayerMatch::Namespace(OVERVIEW_NAMESPACE.into())],
+            effects: vec![LayerEffect::NoAnim(true), LayerEffect::Xray(false)],
+        },
+        LayerRule {
+            name: None,
+            r#match: vec![LayerMatch::Namespace(SWITCH_NAMESPACE.into())],
+            effects: vec![
+                LayerEffect::NoAnim(true),
+                LayerEffect::Xray(false),
+                LayerEffect::DimAround(true),
+            ],
+        },
+    ];
 
-    Keyword::set("layerrule", format!("noanim, {LAUNCHER_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("xray 0, {LAUNCHER_NAMESPACE}"))?;
-
-    Keyword::set("layerrule", format!("noanim, {OVERVIEW_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("xray 0, {OVERVIEW_NAMESPACE}"))?;
-
-    Keyword::set("layerrule", format!("noanim, {SWITCH_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("dimaround, {SWITCH_NAMESPACE}"))?;
-    Keyword::set("layerrule", format!("xray 0, {SWITCH_NAMESPACE}"))?;
-    trace!("layerrules applied");
+    for rule in rules {
+        rule.apply()?;
+    }
     Ok(())
 }
 
@@ -42,7 +57,7 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
             })
             .collect(),
         key: binds::Key::Key(&bind.key),
-        flags: vec![],
+        flags: &vec![],
         dispatcher: DispatchType::Exec(&bind.exec),
     };
     trace!("binding exec: {binding:?}");

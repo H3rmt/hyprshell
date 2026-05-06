@@ -72,6 +72,19 @@ pub(crate) trait HasExecutor {
     }
 }
 
+const BLACKLISTED_UNKNOWN_EVENTS: &[&str; 10] = &[
+    "workspace",
+    "focusedmon",
+    "monitorremoved",
+    "monitoradded",
+    "createworkspace",
+    "destroyworkspace",
+    "moveworkspace",
+    "activespecial",
+    "movewindow",
+    "windowtitle",
+];
+
 #[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) fn event_primer_noexec(
     event: Event,
@@ -116,6 +129,10 @@ pub(crate) fn event_primer_noexec(
         for index in to_remove.into_iter().rev() {
             abuf.swap_remove(index);
         }
+    } else if let Event::Unknown(ref data) = event {
+        if !BLACKLISTED_UNKNOWN_EVENTS.contains(&&*data.name) {
+            events.push(event);
+        }
     } else {
         events.push(event);
     }
@@ -145,7 +162,7 @@ impl ActiveWindowState {
     pub fn execute<T: HasExecutor>(&mut self, listener: &mut T) -> crate::Result<()> {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+        if let (Queued(title), Queued(class), Queued(addr)) = data {
             listener.event_executor(Event::ActiveWindowChanged(Some(WindowEventData {
                 class: class.to_string(),
                 title: title.to_string(),
@@ -161,7 +178,7 @@ impl ActiveWindowState {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
         let mut event = Option::None;
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+        if let (Queued(title), Queued(class), Queued(addr)) = data {
             event = Some(Event::ActiveWindowChanged(Some(WindowEventData {
                 class: class.to_string(),
                 title: title.to_string(),
@@ -782,7 +799,7 @@ macro_rules! get {
 }
 
 /// This internal function parses event strings
-pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
+pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
     // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
     let event_iter = event.trim().lines().filter_map(|event_line| {
         if event_line.is_empty() {
@@ -848,7 +865,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::ActiveWindowChangedV2 => {
                 let addr = get![ref args;0];
-                let event = if addr != "," {
+                let event = if !addr.is_empty() {
                     Event::ActiveWindowChangedV2(Some(Address::new(addr)))
                 } else {
                     Event::ActiveWindowChangedV2(None)

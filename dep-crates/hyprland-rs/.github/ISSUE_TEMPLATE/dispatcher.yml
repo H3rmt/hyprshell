@@ -1,0 +1,18 @@
+name: Missing Dispatcher
+description: Request a Missing Dispatcher to be added
+title: "[Dispatcher]: <name>"
+labels: ["dispatcher-request"]
+assignees:
+  - yavko
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to write this event request!
+  - type: input
+    id: name
+    attributes:
+      label: What is the name of the dispatcher
+      placeholder: Name
+    validations:
+      required: true

@@ -1,17 +1,16 @@
 [Unit]
 Description=hyprshell daemon
+PartOf=graphical-session.target
 After=graphical-session.target
-Wants=graphical-session.target
 StartLimitIntervalSec=120
-StartLimitBurst=10
+StartLimitBurst=3
 
 [Service]
 Type=simple
 ExecStartPre=/bin/sh -c '[ "$XDG_CURRENT_DESKTOP" = "Hyprland" ] || exit 0'
 ExecStart=/usr/bin/hyprshell run
-Restart=always
-RestartSec=1
-TimeoutStopSec=5
+Restart=on-failure
+RestartSec=20
 
 [Install]
 WantedBy=graphical-session.target

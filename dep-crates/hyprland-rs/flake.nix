@@ -17,37 +17,30 @@
       };
     };
   };
-  outputs =
-    inputs@{
-      flake-parts,
-      nci,
-      ...
-    }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs @ {
+    flake-parts,
+    nci,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
       imports = [
         nci.flakeModule
       ];
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-      ];
-      perSystem =
-        {
-          pkgs,
-          config,
-          ...
-        }:
-        let
-          crateName = "hyprland";
-          crateOutputs = config.nci.outputs.${crateName};
-        in
-        {
-          nci.projects.${crateName}.relPath = "";
-          nci.crates.${crateName} = {
-            export = true;
-          };
-          devShells.default = crateOutputs.devShell;
-          packages.default = crateOutputs.packages.release;
+      systems = ["x86_64-linux" "aarch64-linux"];
+      perSystem = {
+        pkgs,
+        config,
+        ...
+      }: let
+        crateName = "hyprland";
+        crateOutputs = config.nci.outputs.${crateName};
+      in {
+        nci.projects.${crateName}.relPath = "";
+        nci.crates.${crateName} = {
+          export = true;
         };
+        devShells.default = crateOutputs.devShell;
+        packages.default = crateOutputs.packages.release;
+      };
     };
 }

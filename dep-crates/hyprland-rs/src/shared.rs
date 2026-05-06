@@ -255,3 +255,19 @@ macro_rules! command {
 use crate::error::hypr_err;
 use crate::instance::Instance;
 pub use command;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
+#[allow(missing_docs)]
+/// Enum for mod keys used in bind combinations
+pub enum Mod {
+    #[display("SUPER")]
+    SUPER,
+    #[display("SHIFT")]
+    SHIFT,
+    #[display("ALT")]
+    ALT,
+    #[display("CTRL")]
+    CTRL,
+    #[display("")]
+    NONE,
+}

@@ -1,5 +1,3 @@
-use hyprshell_hyprland as hyprland;
-
 /// Demostrates using hyprland-rs to fetch information about clients, workspaces and monitors
 ///
 /// Usage: cargo run --example data <animations|binds|client(s)|workspace(s)|monitor(s)>
@@ -13,7 +11,7 @@ use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        panic!("You have to specify client, workspace or monitor")
+        panic!("You have to specify a client, workspace or monitor")
     }
 
     match args[0].as_str() {

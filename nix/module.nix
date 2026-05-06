@@ -260,6 +260,7 @@ in
     systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
       Unit = {
         Description = "Starts Hyprshell daemon";
+        PartOf = [ cfg.systemd.target ];
         After = [ cfg.systemd.target ];
       };
       Service = {

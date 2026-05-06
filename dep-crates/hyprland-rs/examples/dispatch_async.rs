@@ -1,5 +1,3 @@
-use hyprshell_hyprland as hyprland;
-
 /// Demonstrates usage of various asyncronous dispatch calls
 ///
 /// Usage: cargo run --example dispatch_async
@@ -48,17 +46,17 @@ async fn main() -> hyprland::Result<()> {
     Dispatch::call_async(ToggleFloating(None)).await?;
 
     describe("Toggling split layout");
-    Dispatch::call_async(ToggleSplit).await?;
+    dispatch!(async; ToggleSplit).await?;
     describe("Reverting split layout");
     Dispatch::call_async(ToggleSplit).await?;
 
     describe("Toggling opaque");
-    Dispatch::call_async(ToggleOpaque).await?;
+    dispatch!(async; ToggleOpaque).await?;
     describe("Reverting opaque");
     Dispatch::call_async(ToggleOpaque).await?;
 
     describe("Closing window");
-    Dispatch::call_async(KillActiveWindow).await?;
+    dispatch!(async; KillActiveWindow).await?;
 
     Ok(())
 }

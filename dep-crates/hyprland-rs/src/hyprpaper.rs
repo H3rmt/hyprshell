@@ -44,7 +44,9 @@ pub fn instance_hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Resul
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
+
     let response = instance.write_to_hyprpaper_socket(content)?;
+
     expected_response.is_expected(response)
 }
 

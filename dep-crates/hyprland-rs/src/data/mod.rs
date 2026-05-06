@@ -13,28 +13,28 @@
 //! fn main() -> Result<()> {
 //!     let instance = &hyprland::instance::Instance::from_current_env()?;
 //!
-//!     let monitors = Monitors::get(instance)?.to_vec();
+//!     let monitors = Monitors::instance_get(instance)?.to_vec();
 //!     println!("{monitors:#?}");
 //!
-//!     let workspaces = Workspaces::get(instance)?.to_vec();
+//!     let workspaces = Workspaces::instance_get(instance)?.to_vec();
 //!     println!("{workspaces:#?}");
 //!
-//!     let clients = Clients::get(instance)?.to_vec();
+//!     let clients = Clients::instance_get(instance)?.to_vec();
 //!     println!("{clients:#?}");
 //!
-//!     let active_window = Client::get_active(instance)?;
+//!     let active_window = Client::instance_get_active(instance)?;
 //!     println!("{active_window:#?}");
 //!
-//!     let layers = Layers::get(instance)?;
+//!     let layers = Layers::instance_get(instance)?;
 //!     println!("{layers:#?}");
 //!
-//!     let devices = Devices::get(instance)?;
+//!     let devices = Devices::instance_get(instance)?;
 //!     println!("{devices:#?}");
 //!
-//!     let version = Version::get(instance)?;
+//!     let version = Version::instance_get(instance)?;
 //!     println!("{version:#?}");
 //!
-//!     let cursor_pos = CursorPosition::get(instance)?;
+//!     let cursor_pos = CursorPosition::instance_get(instance)?;
 //!     println!("{cursor_pos:#?}");
 //!     Ok(())
 //! }

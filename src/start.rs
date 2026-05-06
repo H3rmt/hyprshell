@@ -29,7 +29,7 @@ use std::rc::Rc;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use std::{env, process, thread};
-use tracing::{debug, debug_span, error, info, trace};
+use tracing::{debug, debug_span, error, info, trace, warn};
 use windows_lib::{WindowsOverviewData, WindowsSwitchData};
 
 pub fn start(
@@ -76,11 +76,14 @@ pub fn start(
         let css_path = css_path.clone();
         let data_dir = data_dir.clone();
         let cache_dir = cache_dir.clone();
-        run(&config_file, &css_path, &data_dir, &cache_dir)
+        let rerun = run(&config_file, &css_path, &data_dir, &cache_dir);
+        if !rerun {
+            return Ok(());
+        }
     }
 }
 
-pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Path) {
+pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Path) -> bool {
     let config = match config_lib::load_and_migrate_config(config_file, true) {
         Ok(config) => config,
         Err(err) => {
@@ -90,7 +93,7 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
                 process::exit(1);
             }
             info!("Trying to rerun application after config reload");
-            return; // return needed to exit the application
+            return true; // return needed to exit the application
         }
     };
 
@@ -104,13 +107,13 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
             process::exit(1);
         }
         info!("Trying to rerun application after config reload");
-        return; // return needed to exit the application
+        return true; // return needed to exit the application
     }
 
-    // TODO
-    // if !configure_wm_initial(&cache_dir) {
-    //     bail!("Failed to configure wm");
-    // }
+    if !configure_wm_initial(&config, &cache_dir) {
+        warn!("Failed to configure wm, exiting");
+        return false;
+    }
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
@@ -131,6 +134,7 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
 
     apply_css(&css_path).warn_details("Failed to apply CSS");
     relm.run::<Root>(RootInit { config });
+    true
 }
 
 pub struct Globals {

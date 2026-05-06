@@ -12,7 +12,8 @@ use crate::instance::Instance;
 /// ```rust, no_run
 /// # use hyprland::event_listener;
 /// # use hyprland_macros::async_closure;
-/// async fn function() -> std::io::Result<()> {
+/// #[tokio::main(flavor = "current_thread")]
+/// async fn function() -> hyprland::Result<()> {
 ///     let mut listener = event_listener::EventListener::new();
 ///     listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
 ///     listener.start_listener_async().await?;
@@ -48,7 +49,8 @@ impl EventListener {
     /// ```rust, no_run
     /// # use hyprland::event_listener;
     /// # use hyprland_macros::async_closure;
-    /// async fn function() -> std::io::Result<()> {
+    /// #[tokio::main(flavor = "current_thread")]
+    /// async fn function() -> hyprland::Result<()> {
     ///     let mut listener = event_listener::EventListener::new();
     ///     listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
     ///     listener.start_listener_async().await?;
@@ -65,9 +67,10 @@ impl EventListener {
     ///
     /// This should be ran after all of your handlers are defined
     /// ```rust, no_run
-    /// # use hyprland::{default_instance_panic, event_listener};
+    /// # use hyprland::{default_instance, event_listener};
     /// # use hyprland_macros::async_closure;
-    /// async fn function() -> std::io::Result<()> {
+    /// #[tokio::main(flavor = "current_thread")]
+    /// async fn function() -> hyprland::Result<()> {
     ///     let mut listener = event_listener::EventListener::new();
     ///     listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
     ///     let instance = default_instance()?;
@@ -92,8 +95,8 @@ impl EventListener {
                 break;
             }
             let buf = &buffer[..bytes_read];
-            let string = String::from_utf8(buf.to_vec())?;
-            let parsed: Vec<Event> = event_parser(string)?;
+            let string = String::from_utf8_lossy(buf);
+            let parsed: Vec<Event> = event_parser(&string)?;
             for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }
@@ -107,7 +110,7 @@ impl EventListener {
     /// ```rust, no_run
     /// # use hyprland::{default_instance_panic, event_listener};
     /// # use hyprland_macros::async_closure;
-    /// async fn function() -> std::io::Result<()> {
+    /// fn function() -> hyprland::Result<()> {
     ///     let mut listener = event_listener::EventListener::new();
     ///     listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
     ///     listener.start_listener()?;
@@ -122,9 +125,9 @@ impl EventListener {
     ///
     /// This should be ran after all of your handlers are defined
     /// ```rust, no_run
-    /// # use hyprland::{default_instance_panic, event_listener};
+    /// # use hyprland::{default_instance, event_listener};
     /// # use hyprland_macros::async_closure;
-    /// async fn function() -> std::io::Result<()> {
+    /// fn function() -> hyprland::Result<()> {
     ///     let mut listener = event_listener::EventListener::new();
     ///     listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
     ///     let instance = default_instance()?;
@@ -146,8 +149,8 @@ impl EventListener {
                 break;
             }
             let buf = &buffer[..bytes_read];
-            let string = String::from_utf8(buf.to_vec())?;
-            let parsed: Vec<Event> = event_parser(string)?;
+            let string = String::from_utf8_lossy(buf);
+            let parsed: Vec<Event> = event_parser(&string)?;
             for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }

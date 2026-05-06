@@ -107,6 +107,12 @@ pub struct Monitor {
     pub vrr: bool,
     /// Is the monitor disabled or not
     pub disabled: bool,
+    /// The physical width of the monitor in mm
+    #[serde(rename = "physicalWidth", default)]
+    pub physical_width: u16,
+    /// The physical size of the monitor in mm
+    #[serde(rename = "physicalHeight", default)]
+    pub physical_height: u16,
 }
 
 impl HyprDataActive for Monitor {
@@ -455,33 +461,6 @@ pub struct Version {
     /// Aquamarine version
     #[serde(rename = "buildAquamarine")]
     pub build_aquamarine: String,
-    /// Hyprland version
-    #[serde(rename = "buildHyprlang")]
-    pub build_hyprlang: String,
-    /// Hyprutils version
-    #[serde(rename = "buildHyprutils")]
-    pub build_hyprutils: String,
-    /// Hyprcursor version
-    #[serde(rename = "buildHyprcursor")]
-    pub build_hyprcursor: String,
-    /// Hyprgraphics version
-    #[serde(rename = "buildHyprgraphics")]
-    pub build_hyprgraphics: String,
-    /// System aquamarine version
-    #[serde(rename = "systemAquamarine")]
-    pub system_aquamarine: String,
-    /// System hyprlang version
-    #[serde(rename = "systemHyprlang")]
-    pub system_hyprlang: String,
-    /// System hyprutils version
-    #[serde(rename = "systemHyprutils")]
-    pub system_hyprutils: String,
-    /// System hyprcursor version
-    #[serde(rename = "systemHyprcursor")]
-    pub system_hyprcursor: String,
-    /// System hyprgraphics version
-    #[serde(rename = "systemHyprgraphics")]
-    pub system_hyprgraphics: String,
     /// The flags that Hyprland was built with
     pub flags: Vec<String>,
 }
@@ -520,6 +499,8 @@ pub struct Bind {
     pub dispatcher: String,
     /// The dispatcher arg
     pub arg: String,
+    /// description from bind[d]
+    pub description: String,
 }
 
 create_data_struct!(

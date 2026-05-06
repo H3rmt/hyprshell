@@ -1,5 +1,3 @@
-use hyprshell_hyprland as hyprland;
-
 /// Demostrates asynchronously using Hyprland-rs to fetch information about your Hyprland environment
 ///
 /// Usage: cargo run --example data_async <animations|binds|client(s)|workspace(s)|monitor(s)>
@@ -15,7 +13,7 @@ async fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
 
     if args.is_empty() {
-        panic!("You have to specify client, workspace or monitor")
+        panic!("You have to specify a client, workspace or monitor")
     }
 
     match args[0].as_str() {

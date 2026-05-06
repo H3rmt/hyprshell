@@ -1,0 +1,32 @@
+name: Rust Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        name: Add caching
+      - name: Run Clippy
+        run: cargo clippy --all-targets
+      - name: Run Clippy
+        run: cargo doc --no-deps --all-features
+      - name: Test all targets
+        run: ./test.sh

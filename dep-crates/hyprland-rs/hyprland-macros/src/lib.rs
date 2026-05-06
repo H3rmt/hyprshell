@@ -11,6 +11,7 @@ use syn::{
 
 /// Creates a async closure
 #[proc_macro]
+//#[deprecated(since="0.4.0-beta.3", note="Use the async closure syntax instead.")]
 pub fn async_closure(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ExprClosure);
     let body = input.body;

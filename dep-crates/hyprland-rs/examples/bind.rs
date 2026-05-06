@@ -1,5 +1,3 @@
-use hyprshell_hyprland as hyprland;
-
 use hyprland::dispatch::DispatchType;
 use hyprland::instance::Instance;
 use hyprland::keyword::Keyword;
@@ -32,12 +30,12 @@ fn main() -> hyprland::Result<()> {
     Keyword::set("submap", "reset")?;
 
     let instance = Instance::from_current_env()?;
-    dispatch!(&instance, Custom, "submap", "example")?;
+    dispatch!(&instance; Custom, "submap", "example")?;
     println!("Press enter to revert to default keymap");
     let _ = std::io::stdin()
         .read(&mut [0u8])
         .expect("Crashed: Run `hyprctl dispatch submap reset` to return to default submap");
-    dispatch!(&instance, Custom, "submap", "reset")?;
+    dispatch!(&instance; Custom, "submap", "reset")?;
 
     Ok(())
 }

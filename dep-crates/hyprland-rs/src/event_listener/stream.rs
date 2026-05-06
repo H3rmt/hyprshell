@@ -18,7 +18,7 @@ use futures_lite::{Stream, StreamExt};
 /// use hyprland::event_listener::EventStream;
 /// use hyprland::Result as HResult;
 ///
-/// #[tokio::main]
+/// #[tokio::main(flavor = "current_thread")]
 /// async fn main() -> HResult<()> {
 ///     use futures_lite::StreamExt;
 ///     use hyprland::instance::Instance;
@@ -26,6 +26,7 @@ use futures_lite::{Stream, StreamExt};
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
 ///     }
+///     Ok(())
 /// }
 /// ```
 #[must_use = "streams nothing unless polled"]
@@ -53,8 +54,8 @@ impl EventStream {
                     break;
                 }
                 let buf = &buffer[..bytes_read];
-                let string = String::from_utf8(buf.to_vec())?;
-                let parsed: Vec<Event> = event_parser(string)?;
+                let string = String::from_utf8_lossy(buf);
+                let parsed: Vec<Event> = event_parser(&string)?;
                 for event in parsed {
                     for primed_event in event_primer_noexec(event, &mut active_windows)? {
                         yield primed_event;
@@ -81,8 +82,8 @@ impl EventStream {
                     break;
                 }
                 let buf = &buffer[..bytes_read];
-                let string = String::from_utf8(buf.to_vec())?;
-                let parsed: Vec<Event> = event_parser(string)?;
+                let string = String::from_utf8_lossy(buf);
+                let parsed: Vec<Event> = event_parser(&string)?;
                 for event in parsed {
                     for primed_event in event_primer_noexec(event, &mut active_windows)? {
                         yield primed_event;
