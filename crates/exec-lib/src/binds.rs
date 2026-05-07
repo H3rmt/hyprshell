@@ -41,21 +41,23 @@ pub fn apply_layerrules() -> anyhow::Result<()> {
 // ctrl+shift+alt, h
 // hyprland::bind!(d e | SUPER, Key, "a" => Exec, "pkill hyprshell");
 pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
+    let binds: Vec<_> = bind
+        .mods
+        .iter()
+        .filter_map(|m| match m.to_lowercase().as_str() {
+            "alt" => Some(binds::Mod::ALT),
+            "control" | "ctrl" => Some(binds::Mod::CTRL),
+            "super" | "win" => Some(binds::Mod::SUPER),
+            "shift" => Some(binds::Mod::SHIFT),
+            _ => {
+                warn!("unknown mod: {m}");
+                None
+            }
+        })
+        .collect();
+
     let binding = Binding {
-        mods: bind
-            .mods
-            .iter()
-            .filter_map(|m| match m.to_lowercase().as_str() {
-                "alt" => Some(binds::Mod::ALT),
-                "control" | "ctrl" => Some(binds::Mod::CTRL),
-                "super" | "win" => Some(binds::Mod::SUPER),
-                "shift" => Some(binds::Mod::SHIFT),
-                _ => {
-                    warn!("unknown mod: {m}");
-                    None
-                }
-            })
-            .collect(),
+        mods: &binds,
         key: binds::Key::Key(&bind.key),
         flags: &vec![],
         dispatcher: DispatchType::Exec(&bind.exec),

@@ -58,6 +58,7 @@ clap = { version = "4.5.47", features = ["derive"] }
 clap_complete = "4.5.57"
 tracing-subscriber = { version = "0.3.20", features = ["fmt", "env-filter", "ansi"], default-features = false }
 signal-hook = { version = "0.4.1" }
+tracing-log = { version = "0.2.0" }
 
 config-lib.workspace = true
 core-lib.workspace = true

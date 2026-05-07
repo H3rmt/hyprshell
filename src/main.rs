@@ -40,9 +40,10 @@ fn main() -> anyhow::Result<()> {
             2.. => "trace",
         }
     };
+    tracing_log::LogTracer::init().warn_details("failed to configure log tracer");
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
-            "hyprshell={level},config_lib={level},core_lib={level},exec_lib={level},launcher_lib={level},windows_lib={level},hyprland_plugin={level},hyprshell_clipboard_lib={level},hyprshell_config_edit_lib={level}"
+            "hyprshell={level},config_lib={level},core_lib={level},exec_lib={level},launcher_lib={level},windows_lib={level},hyprland_plugin={level},hyprshell_clipboard_lib={level},hyprshell_config_edit_lib={level},hyprshell_hyprland={level}"
         ).into()}
     );
     let subscriber = tracing_subscriber::fmt()

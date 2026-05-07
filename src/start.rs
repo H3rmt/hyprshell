@@ -2,7 +2,7 @@ use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
 use crate::util::check_new_version;
-use crate::wm::{configure_wm, configure_wm_initial};
+use crate::wm::configure_wm;
 use anyhow::{Context, bail};
 use async_channel::{Receiver, Sender};
 use config_lib::Config;
@@ -110,10 +110,11 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
         return true; // return needed to exit the application
     }
 
-    if !configure_wm_initial(&config, &cache_dir) {
+    if !configure_wm(&config, &cache_dir) {
         warn!("Failed to configure wm, exiting");
         return false;
     }
+    return false;
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
@@ -190,15 +191,15 @@ fn activate(
         return; // return needed to exit the application
     }
 
-    if let Err(err) = configure_wm(&config, cache_dir) {
-        notify_warn(&format!("Failed to configure wm: {err:?}"));
-        if let Err(err) = hyprshell_config_block(config_file) {
-            error!("Failed to block config: {err:?}");
-            process::exit(1);
-        }
-        info!("Trying to rerun application after config reload");
-        return; // return needed to exit the application
-    }
+    // if let Err(err) = configure_wm(&config, cache_dir) {
+    //     notify_warn(&format!("Failed to configure wm: {err:?}"));
+    //     if let Err(err) = hyprshell_config_block(config_file) {
+    //         error!("Failed to block config: {err:?}");
+    //         process::exit(1);
+    //     }
+    //     info!("Trying to rerun application after config reload");
+    //     return; // return needed to exit the application
+    // }
 
     let globals = match create_windows(app, &config, data_dir, event_sender.clone()) {
         Ok(data) => data,

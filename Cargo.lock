@@ -1828,6 +1828,7 @@ dependencies = [
  "signal-hook",
  "test-log",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
 ]
 
@@ -1921,6 +1922,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

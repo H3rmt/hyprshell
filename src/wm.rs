@@ -3,14 +3,16 @@ use config_lib::Config;
 use core_lib::WarnWithDetails;
 use exec_lib::binds::{apply_exec_bind, apply_layerrules};
 use std::path::Path;
+use tracing::debug;
 
-pub fn configure_wm_initial(config: &Config, cache_dir: &Path) -> bool {
+pub fn configure_wm(config: &Config, cache_dir: &Path) -> bool {
     exec_lib::reload_hyprland_config()
         .context("Failed to reload hyprland config")
         .warn_details("unable to reload hyprland config");
 
     apply_layerrules().warn_details("Failed to apply layerrules");
-    apply_binds(config).warn_details("Failed to apply keybinds");
+    debug!("applied layerrules");
+    // apply_binds(config).warn_details("Failed to apply keybinds");
     true
 }
 

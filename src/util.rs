@@ -61,25 +61,7 @@ pub fn check_themes() {
     }
 }
 
-fn handle_sigterm(cache_dir: &Path) {
-    let Ok(mut signals) = Signals::new([SIGTERM, SIGINT]) else {
-        warn!("Failed to create signal handler for SIGTERM and SIGINT");
-        return;
-    };
-    let cache_dir = cache_dir.to_owned();
-    thread::spawn(move || {
-        if let Some(sig) = signals.forever().next() {
-            info!("Received sig: {sig}, exiting gracefully");
-            exec_lib::reset_no_follow_mouse()
-                .warn_details("Failed to reset follow mouse on SIGTERM");
-            socket::remove_socket();
-            if let Err(err) = exec_lib::plugin::unload_if_needed(&cache_dir) {
-                warn!("Failed to unload plugin: {err:?}",);
-            }
-            exit(0);
-        }
-    });
-}
+fn handle_sigterm(cache_dir: &Path) {}
 
 fn get_icon_data() -> (Vec<String>, Vec<PathBuf>) {
     let icon_theme = IconTheme::new();

@@ -66,6 +66,8 @@ impl Instance {
     pub(crate) fn write_to_socket(&self, content: CommandContent) -> crate::Result<String> {
         use std::io::{Read, Write};
         let mut stream = std::os::unix::net::UnixStream::connect(&self.stream)?;
+        #[cfg(feature = "trace")]
+        tracing::trace!("Sending command: {}", content.data);
         stream.write_all(&content.as_bytes())?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response)?;
@@ -79,6 +81,8 @@ impl Instance {
     ) -> crate::Result<String> {
         use crate::async_import::{AsyncReadExt, AsyncWriteExt};
         let mut stream = crate::async_import::UnixStream::connect(&self.stream).await?;
+        #[cfg(feature = "trace")]
+        tracing::trace!("Sending command: {}", content.data);
         stream.write_all(&content.as_bytes()).await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
@@ -92,6 +96,8 @@ impl Instance {
     ) -> crate::Result<String> {
         use std::io::{Read, Write};
         let mut stream = std::os::unix::net::UnixStream::connect(&self.hyprpaper_stream)?;
+        #[cfg(feature = "trace")]
+        tracing::trace!("Sending command: {}", content.data);
         stream.write_all(content.data.as_bytes())?;
 
         let mut response = Vec::new();
@@ -114,6 +120,8 @@ impl Instance {
     ) -> crate::Result<String> {
         use crate::async_import::{AsyncReadExt, AsyncWriteExt};
         let mut stream = crate::async_import::UnixStream::connect(&self.hyprpaper_stream).await?;
+        #[cfg(feature = "trace")]
+        tracing::trace!("Sending command: {}", content.data);
         stream.write_all(content.data.as_bytes()).await?;
 
         let mut response = Vec::new();
