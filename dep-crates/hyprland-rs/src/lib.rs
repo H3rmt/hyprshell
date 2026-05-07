@@ -41,6 +41,7 @@ pub mod keyword;
 /// This module provides helpers to easily config Hyprland
 #[cfg(feature = "config")]
 pub mod config;
+pub mod dispatch;
 
 /// Holds the error type used throughout the crate
 pub mod error;

@@ -43,12 +43,12 @@ impl fmt::Display for WindowRule {
 }
 impl WindowRule {
     /// This function sets a keyword's value
-    pub fn apply(self) -> crate::Result<()> {
+    pub fn apply(&self) -> crate::Result<()> {
         self.instance_apply(default_instance()?)
     }
 
     /// This function sets a keyword's value
-    pub fn instance_apply(self, instance: &Instance) -> crate::Result<()> {
+    pub fn instance_apply(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
         instance.write_to_socket(command!(Empty, "eval {}", lua))?;
         Ok(())
@@ -56,13 +56,13 @@ impl WindowRule {
 
     /// This function sets a keyword's value (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn apply_async(self) -> crate::Result<()> {
+    pub async fn apply_async(&self) -> crate::Result<()> {
         self.instance_apply_async(default_instance()?).await
     }
 
     /// This function sets a keyword's value (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn instance_apply_async(self, instance: &Instance) -> crate::Result<()> {
+    pub async fn instance_apply_async(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
         instance
             .write_to_socket_async(command!(Empty, "eval {}", lua))
@@ -237,12 +237,12 @@ impl fmt::Display for LayerRule {
 }
 impl LayerRule {
     /// This function sets a keyword's value
-    pub fn apply(self) -> crate::Result<()> {
+    pub fn apply(&self) -> crate::Result<()> {
         self.instance_apply(default_instance()?)
     }
 
     /// This function sets a keyword's value
-    pub fn instance_apply(self, instance: &Instance) -> crate::Result<()> {
+    pub fn instance_apply(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
         instance.write_to_socket(command!(Empty, "eval {}", lua))?;
         Ok(())
@@ -250,13 +250,13 @@ impl LayerRule {
 
     /// This function sets a keyword's value (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn apply_async(self) -> crate::Result<()> {
+    pub async fn apply_async(&self) -> crate::Result<()> {
         self.instance_apply_async(default_instance()?).await
     }
 
     /// This function sets a keyword's value (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn instance_apply_async(self, instance: &Instance) -> crate::Result<()> {
+    pub async fn instance_apply_async(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
         instance
             .write_to_socket_async(command!(Empty, "eval {}", lua))

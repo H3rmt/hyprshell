@@ -1,3 +1,4 @@
+use crate::dispatch_new::{Direction, Dispatch, ToDispatch, WindowIdentifier};
 use crate::lua::{format_bool_field, format_string_field};
 use derive_more::Display;
 use std::fmt;
@@ -55,16 +56,17 @@ pub enum Flag {
 
 /// A struct providing a key bind
 #[derive(Debug, Clone)]
-pub struct Binding {
+pub struct Binding<D: ToDispatch> {
     /// All the mods
     pub mods: Vec<Mod>,
     /// The key
     pub key: String,
+    /// Dispatcher
+    pub dispatch: D,
     /// Bind flags
     pub flags: Vec<Flag>,
 }
-impl fmt::Display for Binding {
-    // hl.bind(cfg.mainmod .. " + F", hl.dsp.window.fullscreen())
+impl<D: ToDispatch> fmt::Display for Binding<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("hl.bind(")?;
         let mut bind = String::new();
@@ -75,14 +77,12 @@ impl fmt::Display for Binding {
         f.write_str(&format!("\"{}\"", bind))?;
         f.write_str("), ")?;
 
-        // TODO bind
-        f.write_str("nix")?;
+        f.write_str(&self.dispatch.to_string())?;
 
-        f.write_str(", {")?;
+        f.write_str(", { ")?;
 
         for effect in &self.flags {
             effect.fmt(f)?;
-            f.write_str(", ")?;
         }
 
         f.write_str("})")
@@ -91,25 +91,101 @@ impl fmt::Display for Binding {
 
 #[test]
 fn test_key_bindinds() {
-    let rules = vec![
+    let binds = vec![
         (
             Binding {
                 mods: vec![],
                 key: "TAB".to_string(),
+                dispatch: Dispatch::FocusDirection(Direction::Up),
                 flags: vec![],
             },
-            r#"hl.bind("TAB"), nix, {})"#,
+            r#"hl.bind("TAB"), hl.dsp.focus({ direction = "u", }), { })"#,
         ),
         (
             Binding {
                 mods: vec![Mod::Super, Mod::Shift],
                 key: "1".to_string(),
-                flags: vec![Flag::Description(r#"move\a"#.into()), Flag::AutoConsuming],
+                dispatch: Dispatch::ExecCmd("ls -la".into(), None),
+                flags: vec![Flag::Description(r#"move"a""#.into()), Flag::AutoConsuming],
             },
-            r#"hl.bind("SUPER + SHIFT + 1"), nix, {description = "move", auto_consuming = true, })"#,
+            r#"hl.bind("SUPER + SHIFT + 1"), hl.dsp.exec_cmd("ls -la"), { description = "move\"a\"", auto_consuming = true, })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::FocusLast,
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.focus({ last }), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::Exit,
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.exit(), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::SubMap("submap".into()),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.submap("submap"), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::Pass(None),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.pass({ }), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::Pass(Some(WindowIdentifier::InitialTitleRegularExpression(
+                    "Proton P.*\\".to_string(),
+                ))),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.pass({ window = "initialtitle:Proton P.*\\", }), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::Event("test".into()),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.event("test"), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::ForceIdle(232323),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.force_idle(232323), { })"#,
+        ),
+        (
+            Binding {
+                mods: vec![Mod::Alt],
+                key: "tab".to_string(),
+                dispatch: Dispatch::NoOp(),
+                flags: vec![],
+            },
+            r#"hl.bind("ALT + tab"), hl.dsp.no_op(), { })"#,
         ),
     ];
-    for (rule, lua) in rules {
-        assert_eq!(rule.to_string(), lua);
+    for (bind, lua) in binds {
+        assert_eq!(bind.to_string(), lua);
     }
 }

@@ -1,5 +1,4 @@
-use crate::default_instance;
-use crate::error::HyprError;
+use crate::lua::{format_bool_field, format_string, format_string_field, format_string_field_opt};
 use crate::shared::*;
 use derive_more::Display;
 use std::string::ToString;
@@ -55,7 +54,7 @@ pub enum MonitorIdentifier {
     #[display("current")]
     Current,
     /// The workspace relative to the current workspace
-    #[display("{}", format_relative(_0, ""))]
+    #[display("{}", format_relative(*_0))]
     Relative(i32),
     /// The workspace with this description
     #[display("desc:{_0}")]
@@ -110,6 +109,7 @@ pub enum WorkspaceIdentifier {
 
 /// This struct holds options for the first empty workspace
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+#[display("{{ on_monitor = {on_monitor}, next = {next} }}")]
 pub struct FirstEmpty {
     /// If the first empty workspace should be on the monitor
     pub on_monitor: bool,
@@ -137,7 +137,7 @@ fn format_relative(int: i32) -> String {
         _ => format!("-{int}"),
     }
 }
-fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
+fn format_special_workspace_ident(opt: &Option<String>) -> String {
     match opt {
         Some(o) => ":".to_owned() + o,
         None => String::new(),
@@ -157,71 +157,92 @@ fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
 //     MaximizeFullscreen,
 // }
 
-mod dsp {
-    use crate::dispatch_new::{
-        Direction, MonitorIdentifier, WindowIdentifier, WorkspaceIdentifier,
-    };
+pub trait ToDispatch: ToString {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
+pub enum Dispatch {
+    /// This lets you use dispatchers not supported by hyprland-rs yet or for custom lua functions.
+    /// Raw string will be used as the dispatcher
+    #[display("{}", _0)]
+    Unimplemented(String),
+    /// execute a command. Rules can be a table of window rule effects to apply.
+    /// TODO implement rules
+    #[display("hl.dsp.exec_cmd({})", format_string(_0))]
+    ExecCmd(String, Option<String>),
+    /// execute a raw command. While exec_cmd will do bash -c, this won’t.
+    #[display("hl.dsp.exec_raw({})", format_string(_0))]
+    ExecRaw(String),
+    /// move the focus in a direction
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("direction", &_0.to_string()))]
+    FocusDirection(Direction),
+    /// move the focus to a monitor
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("monitor", &_0.to_string()))]
+    FocusMonitor(MonitorIdentifier),
+    /// move the focus to a workspace (2. = on_current_monitor)
+    #[display(
+        "hl.dsp.focus({{ {} {}}})",
+        format_string_field("workspace", &_0.to_string()),
+        format_bool_field("on_current_monitor", *_1)
+    )]
+    FocusWorkspace(WorkspaceIdentifier, bool),
+    /// move the focus to a window
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("window", &_0.to_string()))]
+    FocusWindow(WindowIdentifier),
+    /// move the focus to an urgent, or last window
+    #[display("hl.dsp.focus({{ urgent_or_last }})")]
+    FocusUrgentOrLast,
+    /// move the focus to the last window
+    #[display("hl.dsp.focus({{ last }})")]
+    FocusLast,
+    /// quit Hyprland. It’s recommended to use hyprshutdown instead of this.
+    #[display("hl.dsp.exit()")]
+    Exit,
+    /// move to a submap
+    #[display("hl.dsp.submap({})", format_string(_0))]
+    SubMap(String),
+    /// pass the shortcut to a window
+    #[display("hl.dsp.pass({{ {}}})", format_string_field_opt("window", &_0))]
+    Pass(Option<WindowIdentifier>),
+
+    // send a specific shortcut to a window
+    // send_shortcut({ mods, key, window? })
+    // same as above, but you control down / up
+    // send_key_state({ mods, key, state, window? })
+    /// send a layout message as a string
+    #[display("hl.dsp.layout({})", format_string(_0))]
+    Layout(String),
+
+    // toggle monitors on/off (not physically, as in idle-screensaver.)
+    // dpms({ action?, monitor? })
+    /// send an event to socket2.
+    #[display("hl.dsp.event({})", format_string(_0))]
+    Event(String),
+    /// activate a dbus global shortcut. See https://wiki.hypr.land/Configuring/Basics/Binds/#DBus-Global-Shortcuts
+    #[display("hl.dsp.global({})", format_string(_0))]
+    Global(String),
+    /// sets elapsed time for all idle timers, ignoring idle inhibitors. Timers return to normal behavior upon the next activity. Do not use with a keybind directly.
+    #[display("hl.dsp.force_idle({})", _0)]
+    ForceIdle(u64),
+    /// does nothing. Useful for conditional binds.
+    #[display("hl.dsp.no_op()")]
+    NoOp(),
+}
+
+impl ToDispatch for Dispatch {}
+
+mod windows {
+    use crate::dispatch_new::{ToDispatch, WindowIdentifier};
     use derive_more::Display;
 
     #[derive(Debug, Clone, PartialEq, Eq, Display)]
     pub enum Dispatch {
-        /// This lets you use dispatchers not supported by hyprland-rs yet.
-        /// Raw string will be used as the dispatcher
-        Unimplemented(String),
-        /// execute a command. Rules can be a table of window rule effects to apply.
-        /// TODO implement rules
-        ExecCmd(String, Option<String>),
-        /// execute a raw command. While exec_cmd will do bash -c, this won’t.
-        ExecRaw(String),
-        /// move the focus in a direction
-        FocusDirection(Direction),
-        /// move the focus to a monitor
-        FocusMonitor(MonitorIdentifier),
-        /// move the focus to a workspace (2. = on_current_monitor)
-        FocusWorkspace(WorkspaceIdentifier, bool),
-        /// move the focus to a window
-        FocusWindow(WindowIdentifier),
-        /// move the focus to an urgent, or last window
-        FocusUrgentOrLast,
-        /// move the focus to the last window
-        FocusLast,
-        /// quit Hyprland. It’s recommended to use hyprshutdown instead of this.
-        Exit,
-        /// move to a submap
-        SubMap(String),
-        /// pass the shortcut to a window
-        Pass(Option<WindowIdentifier>),
-
-        // send a specific shortcut to a window
-        // send_shortcut({ mods, key, window? })
-        // same as above, but you control down / up
-        // send_key_state({ mods, key, state, window? })
-        /// send a layout message as a string
-        Layout(String),
-
-        // toggle monitors on/off (not physically, as in idle-screensaver.)
-        // dpms({ action?, monitor? })
-        /// send an event to socket2.
-        Event(String),
-        /// activate a dbus global shortcut. See https://wiki.hypr.land/Configuring/Basics/Binds/#DBus-Global-Shortcuts
-        Global(String),
-        /// sets elapsed time for all idle timers, ignoring idle inhibitors. Timers return to normal behavior upon the next activity. Do not use with a keybind directly.
-        ForceIdle(u64),
-        /// does nothing. Useful for conditional binds.
-        NoOp(),
+        /// Close a window.
+        #[display("todo")]
+        Close(Option<WindowIdentifier>),
+        /// Kill a window
+        #[display("todo")]
+        Kill(Option<WindowIdentifier>),
+        // ...
     }
-
-    mod windows {
-        use crate::dispatch_new::WindowIdentifier;
-        use derive_more::Display;
-
-        #[derive(Debug, Clone, PartialEq, Eq, Display)]
-        pub enum Dispatch {
-            /// Close a window.
-            Close(Option<WindowIdentifier>),
-            /// Kill a window
-            Kill(Option<WindowIdentifier>),
-            // ...
-        }
-    }
+    impl ToDispatch for Dispatch {}
 }
