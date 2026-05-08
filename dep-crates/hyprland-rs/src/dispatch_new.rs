@@ -1,3 +1,5 @@
+use crate::default_instance;
+use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_string, format_string_field, format_string_field_opt};
 use crate::shared::*;
 use derive_more::Display;
@@ -168,7 +170,7 @@ pub enum Dispatch {
     /// execute a command. Rules can be a table of window rule effects to apply.
     /// TODO implement rules
     #[display("hl.dsp.exec_cmd({})", format_string(_0))]
-    ExecCmd(String, Option<String>),
+    ExecCmd(String, Option<()>),
     /// execute a raw command. While exec_cmd will do bash -c, this won’t.
     #[display("hl.dsp.exec_raw({})", format_string(_0))]
     ExecRaw(String),
@@ -227,7 +229,47 @@ pub enum Dispatch {
     #[display("hl.dsp.no_op()")]
     NoOp(),
 }
+impl Dispatch {
+    /// This function sets a keyword's value
+    pub fn apply(&self) -> crate::Result<()> {
+        self.instance_apply(default_instance()?)
+    }
 
+    /// This function sets a keyword's value
+    pub fn instance_apply(&self, instance: &Instance) -> crate::Result<()> {
+        let lua = self.to_string();
+        let ret = instance.write_to_socket(command!(Empty, "eval hl.dispatch({})", lua))?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not dispatch: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+
+    /// This function sets a keyword's value (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn apply_async(&self) -> crate::Result<()> {
+        self.instance_apply_async(default_instance()?).await
+    }
+
+    /// This function sets a keyword's value (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_apply_async(&self, instance: &Instance) -> crate::Result<()> {
+        let lua = self.to_string();
+        let ret = instance
+            .write_to_socket_async(command!(Empty, "eval hl.dispatch({})", lua))
+            .await?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not dispatch: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+}
 impl ToDispatch for Dispatch {}
 
 mod windows {

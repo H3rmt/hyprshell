@@ -1,5 +1,7 @@
 use crate::dispatch_new::{Direction, Dispatch, ToDispatch, WindowIdentifier};
+use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_string_field};
+use crate::{command, default_instance};
 use derive_more::Display;
 use std::fmt;
 use std::fmt::Pointer;
@@ -62,7 +64,7 @@ pub struct Binding<D: ToDispatch> {
     /// The key
     pub key: String,
     /// Dispatcher
-    pub dispatch: D,
+    pub dispatcher: D,
     /// Bind flags
     pub flags: Vec<Flag>,
 }
@@ -75,9 +77,9 @@ impl<D: ToDispatch> fmt::Display for Binding<D> {
         }
         bind.push_str(&self.key);
         f.write_str(&format!("\"{}\"", bind))?;
-        f.write_str("), ")?;
+        f.write_str(", ")?;
 
-        f.write_str(&self.dispatch.to_string())?;
+        f.write_str(&self.dispatcher.to_string())?;
 
         f.write_str(", { ")?;
 
@@ -89,6 +91,47 @@ impl<D: ToDispatch> fmt::Display for Binding<D> {
     }
 }
 
+impl<D: ToDispatch> Binding<D> {
+    /// Binds a keybinding
+    pub fn bind(&self) -> crate::Result<()> {
+        self.instance_bind(default_instance()?)
+    }
+    /// Binds a keybinding
+    pub fn instance_bind(&self, instance: &Instance) -> crate::Result<()> {
+        let lua = self.to_string();
+        let ret = instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+
+    /// Binds a keybinding (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn bind_async(&self) -> crate::Result<()> {
+        self.instance_bind_async(default_instance()?).await
+    }
+
+    /// Binds a keybinding (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_bind_async(&self, instance: &Instance) -> crate::Result<()> {
+        let lua = self.to_string();
+        let ret = instance
+            .write_to_socket_async(command!(Empty, "eval {}", lua))
+            .await?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+}
+
 #[test]
 fn test_key_bindinds() {
     let binds = vec![
@@ -96,7 +139,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![],
                 key: "TAB".to_string(),
-                dispatch: Dispatch::FocusDirection(Direction::Up),
+                dispatcher: Dispatch::FocusDirection(Direction::Up),
                 flags: vec![],
             },
             r#"hl.bind("TAB"), hl.dsp.focus({ direction = "u", }), { })"#,
@@ -105,7 +148,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Super, Mod::Shift],
                 key: "1".to_string(),
-                dispatch: Dispatch::ExecCmd("ls -la".into(), None),
+                dispatcher: Dispatch::ExecCmd("ls -la".into(), None),
                 flags: vec![Flag::Description(r#"move"a""#.into()), Flag::AutoConsuming],
             },
             r#"hl.bind("SUPER + SHIFT + 1"), hl.dsp.exec_cmd("ls -la"), { description = "move\"a\"", auto_consuming = true, })"#,
@@ -114,7 +157,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::FocusLast,
+                dispatcher: Dispatch::FocusLast,
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.focus({ last }), { })"#,
@@ -123,7 +166,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::Exit,
+                dispatcher: Dispatch::Exit,
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.exit(), { })"#,
@@ -132,7 +175,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::SubMap("submap".into()),
+                dispatcher: Dispatch::SubMap("submap".into()),
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.submap("submap"), { })"#,
@@ -141,7 +184,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::Pass(None),
+                dispatcher: Dispatch::Pass(None),
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.pass({ }), { })"#,
@@ -150,7 +193,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::Pass(Some(WindowIdentifier::InitialTitleRegularExpression(
+                dispatcher: Dispatch::Pass(Some(WindowIdentifier::InitialTitleRegularExpression(
                     "Proton P.*\\".to_string(),
                 ))),
                 flags: vec![],
@@ -161,7 +204,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::Event("test".into()),
+                dispatcher: Dispatch::Event("test".into()),
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.event("test"), { })"#,
@@ -170,7 +213,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::ForceIdle(232323),
+                dispatcher: Dispatch::ForceIdle(232323),
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.force_idle(232323), { })"#,
@@ -179,7 +222,7 @@ fn test_key_bindinds() {
             Binding {
                 mods: vec![Mod::Alt],
                 key: "tab".to_string(),
-                dispatch: Dispatch::NoOp(),
+                dispatcher: Dispatch::NoOp(),
                 flags: vec![],
             },
             r#"hl.bind("ALT + tab"), hl.dsp.no_op(), { })"#,
