@@ -3,7 +3,9 @@ use crate::plugins;
 use crate::plugins::get_static_options_chars;
 use async_channel::Sender;
 use config_lib::{Launcher, Modifier};
-use core_lib::transfer::{CloseOverviewConfig, Direction, SwitchOverviewConfig, TransferType};
+use core_lib::transfer::{
+    CloseOverviewConfig, Direction, ExternalTransferType, SwitchOverviewConfig,
+};
 use core_lib::{LAUNCHER_NAMESPACE, WarnWithDetails};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use relm4::adw::gtk::gdk::{Key, ModifierType};
@@ -23,7 +25,7 @@ pub fn create_windows_overview_launcher_window(
     app: &Application,
     launcher: &Launcher,
     data_dir: &Path,
-    event_sender: &Sender<TransferType>,
+    event_sender: &Sender<ExternalTransferType>,
 ) -> anyhow::Result<LauncherData> {
     let _span = debug_span!("create_windows_overview_launcher_window").entered();
 
@@ -125,10 +127,10 @@ pub fn create_windows_overview_launcher_window(
     })
 }
 
-fn launcher_entry_text_change(text: String, event_sender: &Sender<TransferType>) {
-    event_sender
-        .send_blocking(TransferType::Type(text))
-        .warn_details("unable to send");
+fn launcher_entry_text_change(text: String, event_sender: &Sender<ExternalTransferType>) {
+    // event_sender
+    //     .send_blocking(ExternalTransferType::Type(text))
+    //     .warn_details("unable to send");
 }
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
@@ -139,7 +141,7 @@ fn handle_key(
     plugin_keys: &[Key],
     launch_modifier: Modifier,
     results: &gtk::Box,
-    event_sender: &Sender<TransferType>,
+    event_sender: &Sender<ExternalTransferType>,
 ) -> Propagation {
     let launch_mod = match launch_modifier {
         Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
@@ -157,11 +159,11 @@ fn handle_key(
     // );
     if launch_mod && plugin_keys.contains(&key) {
         if let Some(ch) = key.name().unwrap_or_default().to_string().pop() {
-            event_sender
-                .send_blocking(TransferType::CloseOverview(
-                    CloseOverviewConfig::LauncherPress(ch),
-                ))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::CloseOverview(
+            //         CloseOverviewConfig::LauncherPress(ch),
+            //     ))
+            //     .warn_details("unable to send");
         }
         return Propagation::Stop;
     }
@@ -169,44 +171,44 @@ fn handle_key(
     match (launch_mod, key) {
         (_, Key::Escape) => {
             event_sender
-                .send_blocking(TransferType::CloseAll)
+                .send_blocking(ExternalTransferType::CloseAll)
                 .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Tab) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: false,
-                    direction: Direction::Right,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: false,
+            //         direction: Direction::Right,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::ISO_Left_Tab | Key::grave | Key::dead_grave) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: false,
-                    direction: Direction::Left,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: false,
+            //         direction: Direction::Left,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (true, Key::h) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Left,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Left,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (true, Key::l) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Right,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Right,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Left) => {
@@ -214,12 +216,12 @@ fn handle_key(
                 // allow to use in text in launcher
                 return Propagation::Proceed;
             }
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Left,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Left,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Right) => {
@@ -227,127 +229,129 @@ fn handle_key(
                 // allow to use in text in launcher
                 return Propagation::Proceed;
             }
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Right,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Right,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Up) | (true, Key::k) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Up,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Up,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Down) | (true, Key::j) => {
-            event_sender
-                .send_blocking(TransferType::SwitchOverview(SwitchOverviewConfig {
-                    workspace: true,
-                    direction: Direction::Down,
-                }))
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::SwitchOverview(SwitchOverviewConfig {
+            //         workspace: true,
+            //         direction: Direction::Down,
+            //     }))
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Return) => {
             if results.first_child().is_some() {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::None))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::None,
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_1) => {
             if results.observe_children().into_iter().len() > 1 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('1'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('1'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_2) => {
             if results.observe_children().into_iter().len() > 2 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('2'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('2'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_3) => {
             if results.observe_children().into_iter().len() > 3 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('3'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('3'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_4) => {
             if results.observe_children().into_iter().len() > 4 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('4'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('4'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_5) => {
             if results.observe_children().into_iter().len() > 5 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('5'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('5'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_6) => {
             if results.observe_children().into_iter().len() > 6 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('6'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('6'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_7) => {
             if results.observe_children().into_iter().len() > 7 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('7'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('7'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_8) => {
             if results.observe_children().into_iter().len() > 8 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('8'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('8'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }
         (true, Key::_9) => {
             if results.observe_children().into_iter().len() > 9 {
-                event_sender
-                    .send_blocking(TransferType::CloseOverview(
-                        CloseOverviewConfig::LauncherPress('9'),
-                    ))
-                    .warn_details("unable to send");
+                // event_sender
+                //     .send_blocking(ExternalTransferType::CloseOverview(
+                //         CloseOverviewConfig::LauncherPress('9'),
+                //     ))
+                //     .warn_details("unable to send");
             }
             Propagation::Stop
         }

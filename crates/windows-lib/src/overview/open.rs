@@ -4,7 +4,7 @@ use crate::overview::render::render_overview;
 use anyhow::Context;
 use async_channel::Sender;
 use core_lib::WarnWithDetails;
-use core_lib::transfer::TransferType;
+use core_lib::transfer::ExternalTransferType;
 use relm4::adw::gtk::prelude::*;
 use tracing::debug_span;
 
@@ -16,7 +16,7 @@ pub fn overview_already_open(data: &WindowsOverviewData) -> bool {
 #[allow(clippy::too_many_lines)]
 pub fn open_overview(
     data: &mut WindowsOverviewData,
-    event_sender: &Sender<TransferType>,
+    event_sender: &Sender<ExternalTransferType>,
 ) -> anyhow::Result<()> {
     let _span = debug_span!("open_overview").entered();
 

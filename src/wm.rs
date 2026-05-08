@@ -12,7 +12,7 @@ pub fn configure_wm(config: &Config, cache_dir: &Path) -> bool {
 
     apply_layerrules().warn_details("Failed to apply layerrules");
     debug!("applied layerrules");
-    // apply_binds(config).warn_details("Failed to apply keybinds");
+    apply_binds(config).warn_details("Failed to apply keybinds");
     true
 }
 

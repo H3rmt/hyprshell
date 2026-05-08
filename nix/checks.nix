@@ -23,13 +23,6 @@ rec {
     // {
       doCheck = true;
       CARGO_PROFILE = "dev";
-      CPATH = pkgs.lib.makeIncludePath (
-        pkgs.hyprland.buildInputs
-        ++ [
-          pkgs.hyprland
-          pkgs.pixman
-        ]
-      );
       cargoNextestExtraArgs = "--all-targets --all-features -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-hyprland-plugin -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib";
     }
   );

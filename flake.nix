@@ -10,7 +10,6 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-    hyprland.url = "github:hyprwm/Hyprland";
     crane.url = "github:ipetkov/crane";
   };
   outputs =
@@ -19,7 +18,6 @@
       nixpkgs,
       home-manager,
       flake-parts,
-      hyprland,
       crane,
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -40,9 +38,6 @@
               buildLib.commonArgs
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                preFixup =
-                  buildLib.addWrapWithGccArgs
-                    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
                 postInstall = buildLib.postInstall;
               }
             );
@@ -50,7 +45,6 @@
               buildLib.commonArgs
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
                 postInstall = buildLib.postInstall;
               }
             );
@@ -59,9 +53,6 @@
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
                 cargoExtraArgs = "--no-default-features --features slim";
-                preFixup =
-                  buildLib.addWrapWithGccArgs
-                    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default;
                 postInstall = buildLib.postInstall;
               }
             );
@@ -70,7 +61,6 @@
               // {
                 cargoArtifacts = buildLib.cargoReleaseArtifacts;
                 cargoExtraArgs = "--no-default-features --features slim";
-                preFixup = buildLib.addWrapWithGccArgs pkgs.hyprland;
                 postInstall = buildLib.postInstall;
               }
             );

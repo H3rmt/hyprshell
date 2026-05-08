@@ -1,6 +1,6 @@
 use crate::WindowsOverviewData;
 use async_channel::Sender;
-use core_lib::transfer::{CloseOverviewConfig, TransferType, WindowsOverride};
+use core_lib::transfer::{CloseOverviewConfig, ExternalTransferType, WindowsOverride};
 use core_lib::{Active, ClientId, HyprlandData, WarnWithDetails};
 use regex::Regex;
 use relm4::adw::gdk::Cursor;
@@ -22,7 +22,7 @@ pub fn render_overview(
     hypr_data: HyprlandData,
     active: Active,
     remove_html: &Regex,
-    event_sender: &Sender<TransferType>,
+    event_sender: &Sender<ExternalTransferType>,
 ) {
     for (window, monitor_data) in &mut data.window_list {
         trace!("Showing window {:?}", window.id());
@@ -147,13 +147,13 @@ pub fn render_overview(
     data.hypr_data = hypr_data;
 }
 
-fn click_client(button: &Button, client_id: ClientId, event_sender: Sender<TransferType>) {
+fn click_client(button: &Button, client_id: ClientId, event_sender: Sender<ExternalTransferType>) {
     button.connect_clicked(move |_| {
         debug!("Exiting on click of client button");
-        event_sender
-            .send_blocking(TransferType::CloseOverview(CloseOverviewConfig::Windows(
-                WindowsOverride::ClientId(client_id),
-            )))
-            .warn_details("unable to send");
+        // event_sender
+        //     .send_blocking(ExternalTransferType::CloseOverview(
+        //         CloseOverviewConfig::Windows(WindowsOverride::ClientId(client_id)),
+        //     ))
+        //     .warn_details("unable to send");
     });
 }

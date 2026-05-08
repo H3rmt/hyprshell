@@ -2,35 +2,17 @@ use crate::{ClientId, WorkspaceId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum TransferType {
+pub enum ExternalTransferType {
     /// send from the keybind to open the overview
     OpenOverview,
     /// send from the keybind to open the switch
     OpenSwitch(OpenSwitch),
-    /// send from the keybinds like arrow keys or tab on overview
-    SwitchOverview(SwitchOverviewConfig),
-    /// send from the keybinds like arrow keys or tab on switch
-    SwitchSwitch(SwitchSwitchConfig),
-    /// send from the gui itself when closing the overview
-    CloseOverview(CloseOverviewConfig),
-    /// send from the gui itself when closing the switch
+    /// send from releasing the mod key
     CloseSwitch,
-    /// send from the gui itself when closing a client (Blocking)
-    CloseClientSwitch,
-    /// send from the gui itself when closing a client (Blocking)
-    CloseClientOverview,
-    /// send from the gui itself when typing the launcher
-    Type(String),
     /// send from pressing ESC or repressing openOverview
     CloseAll,
     /// send from the app itself when new monitor / config changes detected
     Restart,
-    /// send from app itself after reloading
-    SetPluginConfig(PluginConfig),
-    /// send from the app itself, 500ms after starting
-    SetActive,
-    /// send from the plugin to receive config. Never completes, sends config on changes
-    GetConfigWatch,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
@@ -65,11 +47,6 @@ pub enum PluginNames {
     Calc,
     Path,
     Actions,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct PluginConfig {
-    // TODO
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]

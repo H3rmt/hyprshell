@@ -1,4 +1,4 @@
-use crate::transfer::TransferType;
+use crate::transfer::ExternalTransferType;
 use std::env;
 
 /// # Panics
@@ -15,7 +15,7 @@ pub fn get_hyprshell_path() -> String {
 /// # Panics
 /// if the transfer could not be serialized into a string
 #[must_use]
-pub fn generate_transfer_socat(transfer: &TransferType) -> String {
+pub fn generate_transfer_socat(transfer: &ExternalTransferType) -> String {
     format!(
         r"{} socat '{}'",
         get_hyprshell_path(),
@@ -26,6 +26,6 @@ pub fn generate_transfer_socat(transfer: &TransferType) -> String {
 /// # Panics
 /// if the transfer could not be serialized into a string
 #[must_use]
-pub fn generate_transfer(transfer: &TransferType) -> String {
+pub fn generate_transfer(transfer: &ExternalTransferType) -> String {
     serde_json::to_string(transfer).expect("serialize transfer")
 }

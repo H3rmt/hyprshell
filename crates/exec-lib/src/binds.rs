@@ -1,9 +1,9 @@
 use anyhow::Context;
 use core_lib::binds::ExecBind;
 use core_lib::{LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, SWITCH_NAMESPACE};
+use hyprland::bind_new::{Binding, Mod};
 use hyprland::config::binds;
-use hyprland::config::binds::{Binder, Binding};
-use hyprland::dispatch::DispatchType;
+use hyprland::dispatch_new::Dispatch;
 use hyprland::keyword::Keyword;
 use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
 use tracing::{trace, warn};
@@ -38,17 +38,15 @@ pub fn apply_layerrules() -> anyhow::Result<()> {
     Ok(())
 }
 
-// ctrl+shift+alt, h
-// hyprland::bind!(d e | SUPER, Key, "a" => Exec, "pkill hyprshell");
 pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
     let binds: Vec<_> = bind
         .mods
         .iter()
         .filter_map(|m| match m.to_lowercase().as_str() {
-            "alt" => Some(binds::Mod::ALT),
-            "control" | "ctrl" => Some(binds::Mod::CTRL),
-            "super" | "win" => Some(binds::Mod::SUPER),
-            "shift" => Some(binds::Mod::SHIFT),
+            "alt" => Some(Mod::Alt),
+            "control" | "ctrl" => Some(Mod::Ctrl),
+            "super" | "win" => Some(Mod::Super),
+            "shift" => Some(Mod::Shift),
             _ => {
                 warn!("unknown mod: {m}");
                 None
@@ -57,12 +55,12 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
         .collect();
 
     let binding = Binding {
-        mods: &binds,
-        key: binds::Key::Key(&bind.key),
-        flags: &vec![],
-        dispatcher: DispatchType::Exec(&bind.exec),
+        mods: binds,
+        key: bind.key.to_string(),
+        flags: vec![],
+        dispatcher: Dispatch::ExecCmd(bind.exec.to_string(), None),
     };
     trace!("binding exec: {binding:?}");
-    Binder::bind(binding).with_context(|| format!("binding exec failed: {bind:?}"))?;
+    binding.bind()?;
     Ok(())
 }

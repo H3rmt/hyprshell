@@ -127,7 +127,8 @@ Debug commands are provided to help troubleshoot desktop files, icons, default a
 
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
-- `HYPRSHELL_RELOAD_TIMEOUT`: Set the timeout for reloading the config file in milliseconds (default: `1500`).
+- `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
+- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after message from restart listeners (default: `2000`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
 - `HYPRSHELL_NO_USE_PLUGIN`: Disable the use of the hyprland plugin to capture switch mode events.
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)

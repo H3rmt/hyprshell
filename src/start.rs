@@ -9,7 +9,7 @@ use config_lib::Config;
 use core_lib::listener::{
     hyprshell_config_block, hyprshell_config_listener, hyprshell_css_listener,
 };
-use core_lib::transfer::TransferType;
+use core_lib::transfer::ExternalTransferType;
 use core_lib::{WarnWithDetails, notify, notify_resident, notify_warn};
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use launcher_lib::{LauncherData, create_windows_overview_launcher_window};
@@ -71,19 +71,44 @@ pub fn start(
         }
     }
 
+    let (external_event_sender, external_event_receiver) = async_channel::unbounded();
+
+    if env::var_os("HYPRSHELL_NO_LISTENERS").is_none() {
+        register_event_restarter(
+            config_file.clone(),
+            css_path.clone(),
+            external_event_sender.clone(),
+        );
+    }
+    thread::spawn(move || {
+        socket_handler(external_event_sender);
+    });
+
     loop {
         let config_file = config_file.clone();
         let css_path = css_path.clone();
         let data_dir = data_dir.clone();
         let cache_dir = cache_dir.clone();
-        let rerun = run(&config_file, &css_path, &data_dir, &cache_dir);
+        let rerun = run(
+            &config_file,
+            &css_path,
+            &data_dir,
+            &cache_dir,
+            &external_event_receiver,
+        );
         if !rerun {
             return Ok(());
         }
     }
 }
 
-pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Path) -> bool {
+pub fn run(
+    config_file: &Path,
+    css_path: &Path,
+    data_dir: &Path,
+    cache_dir: &Path,
+    external_event_receiver: &Receiver<ExternalTransferType>,
+) -> bool {
     let config = match config_lib::load_and_migrate_config(config_file, true) {
         Ok(config) => config,
         Err(err) => {
@@ -114,7 +139,6 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
         warn!("Failed to configure wm, exiting");
         return false;
     }
-    return false;
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
@@ -134,7 +158,10 @@ pub fn run(config_file: &Path, css_path: &Path, data_dir: &Path, cache_dir: &Pat
     debug!("Application created");
 
     apply_css(&css_path).warn_details("Failed to apply CSS");
-    relm.run::<Root>(RootInit { config });
+    relm.run::<Root>(RootInit {
+        config,
+        external_event_receiver: external_event_receiver.clone(),
+    });
     true
 }
 
@@ -158,8 +185,8 @@ fn activate(
     css_path: &Path,
     data_dir: &Path,
     cache_dir: &Path,
-    event_sender: Sender<TransferType>,
-    event_receiver: Receiver<TransferType>,
+    event_sender: Sender<ExternalTransferType>,
+    event_receiver: Receiver<ExternalTransferType>,
 ) {
     let _span = debug_span!("activate").entered();
     apply_css(css_path).warn_details("Failed to apply CSS");
@@ -214,19 +241,13 @@ fn activate(
         }
     };
 
-    event_sender
-        .send_blocking(TransferType::SetPluginConfig(
-            core_lib::transfer::PluginConfig {},
-        ))
-        .warn_details("unable to send plugin config");
-
     let event_sender_2 = event_sender.clone();
-    gio::spawn_blocking(move || {
-        thread::sleep(Duration::from_millis(500));
-        event_sender_2
-            .send_blocking(TransferType::SetActive)
-            .warn_details("unable to send");
-    });
+    // gio::spawn_blocking(move || {
+    //     thread::sleep(Duration::from_millis(500));
+    //     event_sender_2
+    //         .send_blocking(ExternalTransferType::SetActive)
+    //         .warn_details("unable to send");
+    // });
 
     glib::spawn_future_local(async move {
         // event_handler(globals, event_receiver, event_sender).await;
@@ -240,7 +261,7 @@ fn create_windows(
     app: &Application,
     config: &Config,
     data_dir: &Path,
-    event_sender: Sender<TransferType>,
+    event_sender: Sender<ExternalTransferType>,
 ) -> anyhow::Result<Globals> {
     let mut global = Globals {
         windows: None,
@@ -315,19 +336,15 @@ fn apply_css(custom_css: &Path) -> anyhow::Result<()> {
 pub fn register_event_restarter(
     config_file: Rc<PathBuf>,
     css_path: Rc<PathBuf>,
-    event_sender: Sender<TransferType>,
+    event_sender: Sender<ExternalTransferType>,
 ) {
-    // delay for 1.5 seconds to allow the config to be reloaded before listening for reload
-    let delay = env::var("HYPRSHELL_RELOAD_TIMEOUT")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(1500);
     let (restart_sender, restart_receiver) = async_channel::unbounded();
-    glib::timeout_add_local_once(Duration::from_millis(delay), move || {
-        setup_restart_listener(&config_file, &css_path, &restart_sender);
-    });
 
     // State to track the current debounce timer
+    let debounce_delay = env::var("HYPRSHELL_RELOAD_DEBOUNCE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(2000);
     let debounce_timer = Rc::new(RefCell::new(None::<glib::SourceId>));
     glib::spawn_future_local(async move {
         loop {
@@ -343,26 +360,37 @@ pub fn register_event_restarter(
             // Create new debounce timer
             let event_sender_clone = event_sender.clone();
             let debounce_timer_clone = debounce_timer.clone();
-            let timer_id = glib::timeout_add_local_once(Duration::from_millis(delay), move || {
-                trace!("Debounce timer expired, triggering restart ({cause})");
+            let timer_id =
+                glib::timeout_add_local_once(Duration::from_millis(debounce_delay), move || {
+                    trace!("Debounce timer expired, triggering restart ({cause})");
 
-                // Clear the timer reference since it's about to complete
-                *debounce_timer_clone.borrow_mut() = None;
+                    // Clear the timer reference since it's about to complete
+                    *debounce_timer_clone.borrow_mut() = None;
 
-                // Send the restart event
-                let event_sender_inner = event_sender_clone.clone();
-                glib::spawn_future_local(async move {
-                    info!("Restarting gui ({cause})");
-                    event_sender_inner
-                        .send(TransferType::Restart)
-                        .await
-                        .warn_details("unable to send restart");
+                    // Send the restart event
+                    let event_sender_inner = event_sender_clone.clone();
+                    glib::spawn_future_local(async move {
+                        info!("Restarting gui ({cause})");
+                        event_sender_inner
+                            .send(ExternalTransferType::Restart)
+                            .await
+                            .warn_details("unable to send restart");
+                    });
                 });
-            });
 
             // Store the timer ID so we can cancel it if needed
             *debounce_timer.borrow_mut() = Some(timer_id);
         }
+    });
+
+    // delay for 1.5 seconds to allow the config to be reloaded before listening for reload
+    let delay = env::var("HYPRSHELL_RELOAD_DELAY")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1000);
+    // rustdoc of this function is wrong, waits for delay then runs func once
+    glib::timeout_add_local_once(Duration::from_millis(delay), move || {
+        setup_restart_listener(&config_file, &css_path, &restart_sender);
     });
 }
 

@@ -81,9 +81,11 @@ fn switch_special_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
 #[instrument(level = "debug", ret(level = "trace"))]
 fn switch_normal_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     debug!("execute switch to workspace {workspace_id}");
-    Dispatch::call(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
-        workspace_id,
-    )))?;
+    let disp = hyprland::dispatch_new::Dispatch::FocusWorkspace(
+        hyprland::dispatch_new::WorkspaceIdentifier::Id(workspace_id),
+        false,
+    );
+    disp.apply().context("failed to execute dispatch")?;
     Ok(())
 }
 

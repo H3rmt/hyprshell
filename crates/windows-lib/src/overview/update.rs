@@ -4,7 +4,7 @@ use crate::next::{find_next_client, find_next_workspace};
 use crate::overview::render::render_overview;
 use anyhow::Context;
 use async_channel::Sender;
-use core_lib::transfer::{Direction, SwitchOverviewConfig, TransferType};
+use core_lib::transfer::{Direction, ExternalTransferType, SwitchOverviewConfig};
 use relm4::adw::gtk::prelude::*;
 use tracing::{debug_span, error, instrument};
 
@@ -64,7 +64,7 @@ pub fn switch_to_next(data: &mut WindowsOverviewData, config: &SwitchOverviewCon
 #[instrument(level = "debug", skip_all)]
 pub fn update_data(
     data: &mut WindowsOverviewData,
-    event_sender: &Sender<TransferType>,
+    event_sender: &Sender<ExternalTransferType>,
 ) -> anyhow::Result<()> {
     let (hypr_data, _) = collect_data(&SortConfig {
         filter_current_monitor: data.config.filter_current_monitor,

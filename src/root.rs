@@ -1,5 +1,8 @@
-use relm4::adw::gtk;
+use async_channel::Receiver;
+use core_lib::transfer::ExternalTransferType;
+use exec_lib::listener::hyprland_config_listener;
 use relm4::adw::prelude::*;
+use relm4::adw::{glib, gtk};
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent,
 };
@@ -21,11 +24,13 @@ pub enum RootInput {
     SwitchSwitch(core_lib::Direction),
     CloseSwitch(bool),
     SetWindows(Option<config_lib::Windows>),
+    Restart,
 }
 
 #[derive(Debug)]
 pub struct RootInit {
     pub config: config_lib::Config,
+    pub external_event_receiver: Receiver<ExternalTransferType>,
 }
 
 #[derive(Debug)]
@@ -53,14 +58,17 @@ impl SimpleComponent for Root {
             switch_root: None,
         };
         let widgets = view_output!();
-
-        // TODO remove
-        let sender_clone = sender.input_sender().clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_millis(1000));
-            sender_clone
-                .send(RootInput::OpenSwitch(core_lib::Direction::Right))
-                .ok();
+        let sender_clone = sender.clone();
+        glib::spawn_future_local(async move {
+            loop {
+                let cause = init.external_event_receiver.recv().await;
+                match cause {
+                    Err(err) => {
+                        tracing::error!("Failed to receive external event: {err:?}");
+                    }
+                    Ok(msg) => handle_external(msg, &sender_clone),
+                }
+            }
         });
 
         sender
@@ -96,6 +104,35 @@ impl SimpleComponent for Root {
                 self.config.windows = windows;
                 self.update_switch(sender)
             }
+            RootInput::Restart => {
+                let app = relm4::main_application();
+                let mut windows = app.windows();
+                for window in windows {
+                    window.close()
+                }
+                thread::sleep(Duration::from_millis(250));
+                app.quit();
+            }
+        }
+    }
+}
+
+fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
+    match msg {
+        ExternalTransferType::OpenOverview => {}
+        ExternalTransferType::OpenSwitch(cfg) => {
+            sender
+                .input_sender()
+                .emit(RootInput::OpenSwitch(if cfg.reverse {
+                    core_lib::Direction::Left
+                } else {
+                    core_lib::Direction::Right
+                }));
+        }
+        ExternalTransferType::CloseSwitch => {}
+        ExternalTransferType::CloseAll => {}
+        ExternalTransferType::Restart => {
+            sender.input_sender().emit(RootInput::Restart);
         }
     }
 }
@@ -131,13 +168,3 @@ impl Root {
         }
     }
 }
-
-// if env::var_os("HYPRSHELL_NO_LISTENERS").is_none() {
-//     register_event_restarter(config_file.clone(), css_path.clone(), event_sender.clone());
-// }
-//
-// let event_sender_2 = event_sender.clone();
-// let event_receiver_2 = event_receiver.clone();
-// thread::spawn(move || {
-//     socket_handler(event_sender_2, event_receiver_2);
-// });

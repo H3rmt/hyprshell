@@ -9,21 +9,6 @@ rec {
   # no more filtering, excluded to many files
   src = ../.;
   stdenv = p: p.stdenv;
-  # use in preFixup
-  addWrapWithGccArgs = hyprland: ''
-    gappsWrapperArgs+=(
-       --prefix PATH : '${pkgs.lib.makeBinPath [ pkgs.gcc ]}'
-       --prefix CPATH : '${
-         pkgs.lib.makeIncludePath (
-           hyprland.buildInputs
-           ++ [
-             hyprland
-             pkgs.pixman
-           ]
-         )
-       }:${pkgs.libdrm.dev}/include/libdrm'
-     )
-  '';
   commonArgs = {
     inherit
       src

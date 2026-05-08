@@ -4,7 +4,7 @@ use crate::plugins::{
 };
 use async_channel::Sender;
 use config_lib::Modifier;
-use core_lib::transfer::{CloseOverviewConfig, Identifier, TransferType};
+use core_lib::transfer::{CloseOverviewConfig, ExternalTransferType, Identifier};
 use core_lib::{WarnWithDetails, default};
 use relm4::adw::gtk::gdk::Cursor;
 use relm4::adw::gtk::pango::EllipsizeMode;
@@ -15,7 +15,11 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, debug_span, warn};
 
-pub fn update_launcher(data: &mut LauncherData, text: &str, event_sender: &Sender<TransferType>) {
+pub fn update_launcher(
+    data: &mut LauncherData,
+    text: &str,
+    event_sender: &Sender<ExternalTransferType>,
+) {
     let _span = debug_span!("update_launcher").entered();
 
     while let Some(child) = data.results_box.first_child() {
@@ -73,7 +77,7 @@ fn create_static_plugin_box(
     opt: &StaticLaunchOption,
     text: &str,
     launch_modifier: Modifier,
-    event_sender: Sender<TransferType>,
+    event_sender: Sender<ExternalTransferType>,
 ) -> Button {
     let hbox = gtk::Box::builder()
         .orientation(Orientation::Horizontal)
@@ -132,7 +136,7 @@ fn create_static_plugin_box(
 fn create_entry(
     opt: &SortedLaunchOption,
     key: impl Into<glib::GString>,
-    event_sender: Sender<TransferType>,
+    event_sender: Sender<ExternalTransferType>,
 ) -> (gtk::Box, HashMap<Identifier, ListBoxRow>) {
     let hbox = gtk::Box::builder()
         .css_classes(["launcher-item-inner"])
@@ -207,37 +211,41 @@ fn create_entry(
     (outer_box, details_list)
 }
 
-fn click_plugin(button: &Button, iden: Identifier, event_sender: Sender<TransferType>) {
+fn click_plugin(button: &Button, iden: Identifier, event_sender: Sender<ExternalTransferType>) {
     button.connect_clicked(move |_| {
         debug!("Exiting on click of launcher entry");
-        event_sender
-            .send_blocking(TransferType::CloseOverview(
-                CloseOverviewConfig::LauncherClick(iden.clone()),
-            ))
-            .warn_details("unable to send");
+        // event_sender
+        //     .send_blocking(ExternalTransferType::CloseOverview(
+        //         CloseOverviewConfig::LauncherClick(iden.clone()),
+        //     ))
+        //     .warn_details("unable to send");
     });
 }
 
-fn click_entry(button: &gtk::Box, iden: Identifier, event_sender: Sender<TransferType>) {
+fn click_entry(button: &gtk::Box, iden: Identifier, event_sender: Sender<ExternalTransferType>) {
     let gesture = gtk::GestureClick::new();
     gesture.connect_released(move |_, _, _, _| {
         debug!("Exiting on click of launcher entry");
-        event_sender
-            .send_blocking(TransferType::CloseOverview(
-                CloseOverviewConfig::LauncherClick(iden.clone()),
-            ))
-            .warn_details("unable to send");
+        // event_sender
+        //     .send_blocking(ExternalTransferType::CloseOverview(
+        //         CloseOverviewConfig::LauncherClick(iden.clone()),
+        //     ))
+        //     .warn_details("unable to send");
     });
     button.add_controller(gesture);
 }
 
-fn click_details_entry(button: &Button, iden: Identifier, event_sender: Sender<TransferType>) {
+fn click_details_entry(
+    button: &Button,
+    iden: Identifier,
+    event_sender: Sender<ExternalTransferType>,
+) {
     button.connect_clicked(move |_| {
         debug!("Exiting on click of launcher details entry");
-        event_sender
-            .send_blocking(TransferType::CloseOverview(
-                CloseOverviewConfig::LauncherClick(iden.clone()),
-            ))
-            .warn_details("unable to send");
+        // event_sender
+        //     .send_blocking(ExternalTransferType::CloseOverview(
+        //         CloseOverviewConfig::LauncherClick(iden.clone()),
+        //     ))
+        //     .warn_details("unable to send");
     });
 }
