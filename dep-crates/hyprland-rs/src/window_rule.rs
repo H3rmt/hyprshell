@@ -21,21 +21,18 @@ impl fmt::Display for WindowRule {
 
         if let Some(name) = &self.name {
             f.write_str(&format_string_field("name", name))?;
-            f.write_str(", ")?;
         }
 
         f.write_str("match = {")?;
 
         for mat in &self.r#match {
             mat.fmt(f)?;
-            f.write_str(", ")?;
         }
 
         f.write_str("}, ")?;
 
         for effect in &self.effects {
             effect.fmt(f)?;
-            f.write_str(", ")?;
         }
 
         f.write_str("})")
@@ -227,21 +224,18 @@ impl fmt::Display for LayerRule {
 
         if let Some(name) = &self.name {
             f.write_str(&format_string_field("name", name))?;
-            f.write_str(", ")?;
         }
 
         f.write_str("match = {")?;
 
         for mat in &self.r#match {
             mat.fmt(f)?;
-            f.write_str(", ")?;
         }
 
         f.write_str("}, ")?;
 
         for effect in &self.effects {
             effect.fmt(f)?;
-            f.write_str(", ")?;
         }
 
         f.write_str("})")
