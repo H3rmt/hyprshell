@@ -73,7 +73,7 @@ impl FactoryComponent for Clients {
     }
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        trace!("self {}x{}", init.data.width, init.data.height);
+        // trace!("self {}x{}", init.data.width, init.data.height);
         Self {
             active: false,
             data: init.data,

@@ -1997,6 +1997,7 @@ dependencies = [
  "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-exec-lib",
+ "hyprshell-launcher-lib",
  "hyprshell-relm4",
  "regex",
  "test-log",

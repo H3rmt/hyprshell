@@ -5,6 +5,7 @@ pub mod debug;
 mod global;
 mod open;
 mod plugins;
+mod root;
 mod stop;
 mod update;
 
@@ -16,3 +17,5 @@ pub use open::open_launcher;
 pub use plugins::{get_applications_stored_runs, reload_applications_desktop_entries_map};
 pub use stop::stop_launcher;
 pub use update::update_launcher;
+
+pub use root::*;

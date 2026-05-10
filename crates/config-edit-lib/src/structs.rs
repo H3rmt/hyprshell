@@ -33,7 +33,7 @@ pub struct Overview {
 pub struct Launcher {
     pub default_terminal: Option<String>,
     pub launch_modifier: ConfigModifier,
-    pub width: u32,
+    pub width: u16,
     pub max_items: u8,
     pub show_when_empty: bool,
     pub plugins: Plugins,

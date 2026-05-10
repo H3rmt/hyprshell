@@ -8,15 +8,18 @@ pub enum ExternalTransferType {
     /// send from the keybind to open the switch
     OpenSwitch(OpenSwitch),
     /// send from releasing the mod key
-    CloseSwitch,
-    /// send from pressing ESC or repressing openOverview
-    CloseAll,
+    CloseSwitch(CloseSwitch),
     /// send from the app itself when new monitor / config changes detected
     Restart,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
     pub reverse: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CloseSwitch {
+    pub switch: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

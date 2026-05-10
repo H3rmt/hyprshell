@@ -1,8 +1,6 @@
 use crate::util::to_client_id;
 use anyhow::Context;
-use core_lib::{
-    ClientData, ClientId, FindByFirst, MonitorData, MonitorId, WorkspaceData, WorkspaceId,
-};
+use core_lib::{ByFirst, ClientData, ClientId, MonitorData, MonitorId, WorkspaceData, WorkspaceId};
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
 use hyprland::prelude::*;
 use regex::Regex;

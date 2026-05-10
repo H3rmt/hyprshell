@@ -3,8 +3,7 @@ use crate::sort::{
     sort_workspaces_by_position, sort_workspaces_by_recent,
 };
 use core_lib::{
-    Active, ClientData, ClientId, FindByFirst, HyprlandData, MonitorData, MonitorId,
-    WarnWithDetails,
+    Active, ByFirst, ClientData, ClientId, HyprlandData, MonitorData, MonitorId, WarnWithDetails,
 };
 use exec_lib::collect::collect_hypr_data;
 use regex::Regex;

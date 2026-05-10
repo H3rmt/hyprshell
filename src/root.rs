@@ -8,21 +8,23 @@ use relm4::{
 };
 use std::thread;
 use std::time::Duration;
-use tracing::trace;
+use tracing::{debug, trace};
+use windows_lib::overview::{OverviewRoot, OverviewRootInput, OverviewRootOutput};
 use windows_lib::switch::{SwitchRoot, SwitchRootInput, SwitchRootOutput};
 
 #[derive(Debug)]
 pub struct Root {
     config: config_lib::Config,
     pub switch_root: Option<Controller<SwitchRoot>>,
+    pub overview_root: Option<Controller<OverviewRoot>>,
 }
 
 #[derive(Debug)]
 pub enum RootInput {
-    SwitchClosed,
     OpenSwitch(core_lib::Direction),
     SwitchSwitch(core_lib::Direction),
     CloseSwitch(bool),
+    OpenOverview,
     SetWindows(Option<config_lib::Windows>),
     Restart,
 }
@@ -56,6 +58,7 @@ impl SimpleComponent for Root {
         let model = Self {
             config: init.config,
             switch_root: None,
+            overview_root: None,
         };
         let widgets = view_output!();
         let sender_clone = sender.clone();
@@ -65,6 +68,7 @@ impl SimpleComponent for Root {
                 match cause {
                     Err(err) => {
                         tracing::error!("Failed to receive external event: {err:?}");
+                        return;
                     }
                     Ok(msg) => handle_external(msg, &sender_clone),
                 }
@@ -77,13 +81,10 @@ impl SimpleComponent for Root {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         match message {
-            RootInput::SwitchClosed => {
-                trace!("Switch closed");
-            }
             RootInput::OpenSwitch(dir) => {
-                trace!("Opening switch: {:?}", dir);
+                trace!("Opening switch, dir: {:?}", dir);
                 if let Some(switch) = &self.switch_root {
                     switch.emit(SwitchRootInput::OpenSwitch(dir))
                 }
@@ -100,9 +101,16 @@ impl SimpleComponent for Root {
                     switch.emit(SwitchRootInput::CloseSwitch(do_switch))
                 }
             }
+            RootInput::OpenOverview => {
+                trace!("Opening overview");
+                if let Some(overview) = &self.overview_root {
+                    overview.emit(OverviewRootInput::OpenOverview)
+                }
+            }
             RootInput::SetWindows(windows) => {
                 self.config.windows = windows;
-                self.update_switch(sender)
+                self.update_switch();
+                self.update_overview();
             }
             RootInput::Restart => {
                 let app = relm4::main_application();
@@ -118,8 +126,11 @@ impl SimpleComponent for Root {
 }
 
 fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
+    debug!("External event: {:?}", msg);
     match msg {
-        ExternalTransferType::OpenOverview => {}
+        ExternalTransferType::OpenOverview => {
+            sender.input_sender().emit(RootInput::OpenOverview);
+        }
         ExternalTransferType::OpenSwitch(cfg) => {
             sender
                 .input_sender()
@@ -129,8 +140,11 @@ fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
                     core_lib::Direction::Right
                 }));
         }
-        ExternalTransferType::CloseSwitch => {}
-        ExternalTransferType::CloseAll => {}
+        ExternalTransferType::CloseSwitch(cfg) => {
+            sender
+                .input_sender()
+                .emit(RootInput::CloseSwitch(cfg.switch));
+        }
         ExternalTransferType::Restart => {
             sender.input_sender().emit(RootInput::Restart);
         }
@@ -138,7 +152,35 @@ fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
 }
 
 impl Root {
-    fn update_switch(&mut self, sender: ComponentSender<Self>) {
+    fn update_overview(&mut self) {
+        if let Some(windows) = &self.config.windows {
+            if let Some(overview) = &windows.overview {
+                if let Some(o_root) = &self.overview_root {
+                    o_root.emit(OverviewRootInput::SetGeneral(windows.general.clone()));
+                    o_root.emit(OverviewRootInput::SetOverview(overview.clone()));
+                } else {
+                    let app = relm4::main_application();
+
+                    let overview_root = OverviewRoot::builder();
+                    let window = &overview_root.root;
+                    app.add_window(window);
+                    let overview_root = overview_root
+                        .launch(windows_lib::overview::OverviewRootInit {
+                            general: windows.general.clone(),
+                            overview: overview.clone(),
+                        })
+                        .detach();
+                    self.overview_root = Some(overview_root);
+                }
+            } else {
+                let _ = self.overview_root.take();
+            }
+        } else {
+            let _ = self.overview_root.take();
+        }
+    }
+
+    fn update_switch(&mut self) {
         if let Some(windows) = &self.config.windows {
             if let Some(switch) = &windows.switch {
                 if let Some(sw_root) = &self.switch_root {
@@ -155,9 +197,7 @@ impl Root {
                             general: windows.general.clone(),
                             switch: switch.clone(),
                         })
-                        .forward(sender.input_sender(), |msg| match msg {
-                            SwitchRootOutput::Closed => RootInput::SwitchClosed,
-                        });
+                        .detach();
                     self.switch_root = Some(switch_root);
                 }
             } else {

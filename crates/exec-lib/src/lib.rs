@@ -8,7 +8,3 @@ pub mod kill;
 pub mod run;
 
 pub use util::{check_version, get_initial_active, reload_hyprland_config};
-
-pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
-    Ok(())
-}

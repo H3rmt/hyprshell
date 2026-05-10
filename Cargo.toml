@@ -29,6 +29,7 @@ gtk4-layer-shell = { version = "0.7.1" }
 config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.9.2" }
 core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.9.2" }
 exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.9.2" }
+launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.9.2" }
 
 [package]
 name = "hyprshell"
@@ -63,9 +64,9 @@ tracing-log = { version = "0.2.0" }
 config-lib.workspace = true
 core-lib.workspace = true
 exec-lib.workspace = true
+launcher-lib.workspace = true
 clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.9.2" }
 windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.9.2" }
-launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.9.2" }
 config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.9.2", optional = true }
 
 [dev-dependencies]

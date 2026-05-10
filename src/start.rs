@@ -12,7 +12,6 @@ use core_lib::listener::{
 use core_lib::transfer::ExternalTransferType;
 use core_lib::{WarnWithDetails, notify, notify_resident, notify_warn};
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
-use launcher_lib::{LauncherData, create_windows_overview_launcher_window};
 use relm4::RelmApp;
 use relm4::adw::gio;
 use relm4::adw::gtk::gdk::Display;
@@ -30,7 +29,6 @@ use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use std::{env, process, thread};
 use tracing::{debug, debug_span, error, info, trace, warn};
-use windows_lib::{WindowsOverviewData, WindowsSwitchData};
 
 pub fn start(
     config_file: PathBuf,
@@ -163,146 +161,6 @@ pub fn run(
         external_event_receiver: external_event_receiver.clone(),
     });
     true
-}
-
-pub struct Globals {
-    pub windows: Option<WindowsGlobal>,
-    pub app: Application,
-    pub active: bool,
-}
-
-#[derive(Debug, Default)]
-pub struct WindowsGlobal {
-    // bool ise used to indicate that the launcher is active
-    pub overview: Option<(WindowsOverviewData, LauncherData, bool)>,
-    pub switch: Option<WindowsSwitchData>,
-}
-
-#[allow(clippy::cognitive_complexity)]
-fn activate(
-    app: &Application,
-    config_file: &Path,
-    css_path: &Path,
-    data_dir: &Path,
-    cache_dir: &Path,
-    event_sender: Sender<ExternalTransferType>,
-    event_receiver: Receiver<ExternalTransferType>,
-) {
-    let _span = debug_span!("activate").entered();
-    apply_css(css_path).warn_details("Failed to apply CSS");
-    // exec_lib::set_follow_mouse_default().warn_details("Failed to set set_remain_focused default");
-
-    let config = match config_lib::load_and_migrate_config(config_file, true) {
-        Ok(config) => config,
-        Err(err) => {
-            notify_warn(&format!("Failed to load config: {err:?}"));
-            if let Err(err) = hyprshell_config_block(config_file) {
-                error!("Failed to block config: {err:?}",);
-                process::exit(1);
-            }
-            info!("Trying to rerun application after config reload");
-            return; // return needed to exit the application
-        }
-    };
-
-    // TODO remove in future if more is available
-    if config.windows.is_none()
-        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
-    {
-        notify_warn("Nothing is enabled in the config");
-        if let Err(err) = hyprshell_config_block(config_file) {
-            error!("Failed to block config: {err:?}",);
-            process::exit(1);
-        }
-        info!("Trying to rerun application after config reload");
-        return; // return needed to exit the application
-    }
-
-    // if let Err(err) = configure_wm(&config, cache_dir) {
-    //     notify_warn(&format!("Failed to configure wm: {err:?}"));
-    //     if let Err(err) = hyprshell_config_block(config_file) {
-    //         error!("Failed to block config: {err:?}");
-    //         process::exit(1);
-    //     }
-    //     info!("Trying to rerun application after config reload");
-    //     return; // return needed to exit the application
-    // }
-
-    let globals = match create_windows(app, &config, data_dir, event_sender.clone()) {
-        Ok(data) => data,
-        Err(err) => {
-            notify_warn(&format!("Failed to create windows: {err:?}"));
-            if let Err(err) = hyprshell_config_block(config_file) {
-                error!("Failed to block config: {err:?}");
-                process::exit(1);
-            }
-            info!("Trying to rerun application after config reload");
-            return; // return needed to exit the application
-        }
-    };
-
-    let event_sender_2 = event_sender.clone();
-    // gio::spawn_blocking(move || {
-    //     thread::sleep(Duration::from_millis(500));
-    //     event_sender_2
-    //         .send_blocking(ExternalTransferType::SetActive)
-    //         .warn_details("unable to send");
-    // });
-
-    glib::spawn_future_local(async move {
-        // event_handler(globals, event_receiver, event_sender).await;
-        info!("Application exited, restarting");
-    });
-
-    info!("Application initialized");
-}
-
-fn create_windows(
-    app: &Application,
-    config: &Config,
-    data_dir: &Path,
-    event_sender: Sender<ExternalTransferType>,
-) -> anyhow::Result<Globals> {
-    let mut global = Globals {
-        windows: None,
-        app: app.clone(),
-        active: false,
-    };
-    if let Some(windows) = &config.windows {
-        let mut windows_data = WindowsGlobal::default();
-        if let Some(overview) = &windows.overview {
-            // let overview_data =
-            //     windows_lib::overview::create_windows_overview_window(app, overview, windows)
-            //         .context("failed to create overview window")?;
-            let overview_data = todo!();
-            let launcher_data = create_windows_overview_launcher_window(
-                app,
-                &overview.launcher,
-                data_dir,
-                &event_sender,
-            )
-            .context("failed to create launcher window")?;
-            windows_data.overview = Some((overview_data, launcher_data, false));
-        } else {
-            debug!("Windows overview disabled");
-        }
-        if let Some(switch) = &windows.switch {
-            // let switch_data = windows_lib::switch::create_windows_switch_window(
-            //     app,
-            //     switch,
-            //     windows,
-            //     event_sender,
-            // )
-            // .context("failed to create switch window")?;
-            // windows_data.switch = Some(switch_data);
-        } else {
-            debug!("Windows switch disabled");
-        }
-        global.windows = Some(windows_data);
-    } else {
-        debug!("Windows disabled");
-    }
-    Ok(global)
 }
 
 fn apply_css(custom_css: &Path) -> anyhow::Result<()> {

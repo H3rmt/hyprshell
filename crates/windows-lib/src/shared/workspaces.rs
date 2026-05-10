@@ -1,4 +1,6 @@
-use crate::switch::workspace_clients::{WorkspaceClients, WorkspaceClientsInit};
+use crate::shared::workspace_clients::{
+    WorkspaceClients, WorkspaceClientsInit, WorkspaceClientsInput,
+};
 use core_lib::{ClientData, ClientId, MonitorData, WorkspaceData, WorkspaceId};
 use regex::Regex;
 use relm4::adw::gtk;
@@ -7,7 +9,7 @@ use relm4::prelude::*;
 
 /// Workspace items component - displays a workspace with its clients positioned inside
 #[derive(Debug)]
-pub struct Items {
+pub struct Workspaces {
     active: bool,
     pub data: WorkspaceData,
     pub workspace_id: WorkspaceId,
@@ -18,12 +20,13 @@ pub struct Items {
 }
 
 #[derive(Debug)]
-pub enum ItemsInput {
+pub enum WorkspacesInput {
     SetActive(bool),
+    SetActiveClient(ClientId),
 }
 
 #[derive(Debug)]
-pub struct ItemsInit {
+pub struct WorkspacesInit {
     pub monitor_data: MonitorData,
     pub data: WorkspaceData,
     pub id: WorkspaceId,
@@ -33,13 +36,13 @@ pub struct ItemsInit {
 }
 
 #[derive(Debug)]
-pub enum ItemsOutput {}
+pub enum WorkspacesOutput {}
 
 #[relm4::factory(pub)]
-impl FactoryComponent for Items {
-    type Init = ItemsInit;
-    type Input = ItemsInput;
-    type Output = ItemsOutput;
+impl FactoryComponent for Workspaces {
+    type Init = WorkspacesInit;
+    type Input = WorkspacesInput;
+    type Output = WorkspacesOutput;
     type CommandOutput = ();
     type ParentWidget = gtk::FlowBox;
 
@@ -47,7 +50,7 @@ impl FactoryComponent for Items {
         gtk::FlowBoxChild {
             gtk::Button {
                 #[watch]
-                set_css_classes: &Self::workspace_css_classes(self.active, self.workspace_id),
+                set_css_classes: &workspace_css_classes(self.active, self.workspace_id),
                 set_cursor_from_name: Some("pointer"),
                 set_width_request: scale(self.monitor_data.width, self.scale),
                 set_height_request: scale(self.monitor_data.height, self.scale),
@@ -105,12 +108,25 @@ impl FactoryComponent for Items {
 
     fn update(&mut self, msg: Self::Input, _sender: FactorySender<Self>) {
         match msg {
-            ItemsInput::SetActive(active) => self.active = active,
+            WorkspacesInput::SetActive(active) => {
+                self.active = active;
+                for (idx, _) in self.clients.iter().enumerate() {
+                    self.clients
+                        .send(idx, WorkspaceClientsInput::SetActive(false));
+                }
+            }
+            WorkspacesInput::SetActiveClient(id) => {
+                self.active = false;
+                for (idx, item) in self.clients.iter().enumerate() {
+                    self.clients
+                        .send(idx, WorkspaceClientsInput::SetActive(id == item.id));
+                }
+            }
         };
     }
 }
 
-impl Items {
+impl Workspaces {
     fn workspace_label(&self) -> String {
         if self.data.name.trim().is_empty() {
             self.workspace_id.to_string()
@@ -118,29 +134,6 @@ impl Items {
             self.remove_html
                 .replace_all(&self.data.name, "")
                 .to_string()
-        }
-    }
-
-    fn workspace_css_classes(active: bool, id: WorkspaceId) -> Vec<&'static str> {
-        let mut classes = vec!["workspace", "no-hover"];
-        if active {
-            classes.push("active");
-        }
-        // Special workspaces have negative IDs
-        if id < 0 {
-            classes.push("special");
-        }
-        classes
-    }
-
-    /// Update active client within this workspace
-    pub fn set_active_client(&mut self, client_id: Option<ClientId>) {
-        for (idx, item) in self.clients.iter().enumerate() {
-            let is_active = client_id == Some(item.id);
-            self.clients.send(
-                idx,
-                crate::switch::workspace_clients::WorkspaceClientsInput::SetActive(is_active),
-            );
         }
     }
 
@@ -157,4 +150,16 @@ impl Items {
 
 fn scale<T: Into<f64>>(value: T, scale: f64) -> i32 {
     (value.into() / (15f64 - scale)) as i32
+}
+
+fn workspace_css_classes(active: bool, id: WorkspaceId) -> Vec<&'static str> {
+    let mut classes = vec!["workspace", "no-hover"];
+    if active {
+        classes.push("active");
+    }
+    // Special workspaces have negative IDs
+    if id < 0 {
+        classes.push("special");
+    }
+    classes
 }

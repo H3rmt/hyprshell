@@ -59,7 +59,7 @@ impl Default for Overview {
 pub struct Launcher {
     pub default_terminal: Option<Box<str>>,
     pub launch_modifier: Modifier,
-    pub width: u32,
+    pub width: u16,
     pub max_items: u8,
     pub show_when_empty: bool,
     pub plugins: Plugins,

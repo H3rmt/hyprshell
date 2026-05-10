@@ -33,7 +33,7 @@ pub struct LauncherInit {
 #[derive(Debug)]
 pub enum LauncherOutput {
     Modifier(ConfigModifier),
-    Width(u32),
+    Width(u16),
     MaxItems(u8),
     DefaultTerminal(Option<String>),
     LauncherPlugins(LauncherPluginsOutput),
@@ -100,7 +100,7 @@ impl SimpleComponent for Launcher {
                             #[watch]
                             #[block_signal(h_2)]
                             set_value: f64::from(model.config.width),
-                            connect_value_changed[sender] => move |e| { sender.output_sender().emit(LauncherOutput::Width(e.value() as u32)); } @h_2,
+                            connect_value_changed[sender] => move |e| { sender.output_sender().emit(LauncherOutput::Width(e.value() as u16)); } @h_2,
                         }
                     },
                     gtk::Box {

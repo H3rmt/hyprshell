@@ -23,7 +23,7 @@ pub struct LauncherConfig {
     pub max_items: u8,
     pub launch_modifier: Modifier,
     pub show_when_empty: bool,
-    pub width: u32,
+    pub width: u16,
     pub data_dir: Box<Path>,
     pub plugins: Plugins,
 }

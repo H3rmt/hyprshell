@@ -12,9 +12,9 @@ use tracing::trace;
 #[derive(Debug)]
 pub struct WorkspaceClients {
     active: bool,
-    pub(crate) data: ClientData,
-    pub(crate) id: ClientId,
-    pub(crate) scale: f64,
+    pub data: ClientData,
+    pub id: ClientId,
+    pub scale: f64,
 }
 
 #[derive(Debug)]
@@ -71,7 +71,7 @@ impl FactoryComponent for WorkspaceClients {
     }
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
-        trace!("self {}x{}", init.data.width, init.data.height);
+        // trace!("self {}x{}", init.data.width, init.data.height);
         Self {
             active: false,
             data: init.data,

@@ -154,7 +154,7 @@ fn handle_key(
     //     key,
     //     key,
     //     modt,
-    //     launch_mod,
+    //gdk::     launch_mod,
     //     launch_modifier
     // );
     if launch_mod && plugin_keys.contains(&key) {
@@ -170,9 +170,9 @@ fn handle_key(
 
     match (launch_mod, key) {
         (_, Key::Escape) => {
-            event_sender
-                .send_blocking(ExternalTransferType::CloseAll)
-                .warn_details("unable to send");
+            // event_sender
+            //     .send_blocking(ExternalTransferType::CloseAll)
+            //     .warn_details("unable to send");
             Propagation::Stop
         }
         (_, Key::Tab) => {

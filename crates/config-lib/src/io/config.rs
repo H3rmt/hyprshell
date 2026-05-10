@@ -53,7 +53,7 @@ pub struct Launcher {
     #[default(Modifier::Ctrl)]
     pub launch_modifier: Modifier,
     #[default = 650]
-    pub width: u32,
+    pub width: u16,
     #[default = 5]
     pub max_items: u8,
     #[default = true]

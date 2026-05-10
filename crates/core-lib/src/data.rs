@@ -52,23 +52,23 @@ pub struct HyprlandData {
     pub monitors: Vec<(MonitorId, MonitorData)>,
 }
 
-pub trait FindByFirst<ID, Data> {
+pub trait ByFirst<ID, Data> {
     fn find_by_first(&self, id: &ID) -> Option<&Data>;
 }
 
-impl FindByFirst<ClientId, ClientData> for [(ClientId, ClientData)] {
+impl ByFirst<ClientId, ClientData> for [(ClientId, ClientData)] {
     fn find_by_first(&self, id: &ClientId) -> Option<&ClientData> {
         self.iter().find(|(addr, _)| *addr == *id).map(|(_, cd)| cd)
     }
 }
 
-impl FindByFirst<WorkspaceId, WorkspaceData> for [(WorkspaceId, WorkspaceData)] {
+impl ByFirst<WorkspaceId, WorkspaceData> for [(WorkspaceId, WorkspaceData)] {
     fn find_by_first(&self, id: &WorkspaceId) -> Option<&WorkspaceData> {
         self.iter().find(|(wid, _)| *wid == *id).map(|(_, wd)| wd)
     }
 }
 
-impl FindByFirst<MonitorId, MonitorData> for [(MonitorId, MonitorData)] {
+impl ByFirst<MonitorId, MonitorData> for [(MonitorId, MonitorData)] {
     fn find_by_first(&self, id: &MonitorId) -> Option<&MonitorData> {
         self.iter().find(|(mid, _)| *mid == *id).map(|(_, md)| md)
     }

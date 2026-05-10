@@ -1,12 +1,12 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
+use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
 use crate::switch::clients::{Clients, ClientsInit};
-use crate::switch::workspaces::{Items, ItemsInit, ItemsInput};
-use core_lib::{Active, Direction, FindByFirst, HyprlandData, SWITCH_NAMESPACE};
-use exec_lib::reset_no_follow_mouse;
+use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
+use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
 use relm4::adw::prelude::*;
@@ -22,14 +22,15 @@ const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 pub struct SwitchRoot {
     general: config_lib::WindowsGeneral,
     switch: config_lib::Switch,
+    open: bool,
+    data: SwitchData,
     // gtk
     window: gtk::ApplicationWindow,
     controller: Option<gtk::EventController>,
     /// Regex for removing HTML tags from strings
     remove_html: Regex,
-    data: SwitchData,
     /// Factory for workspace mode (workspaces)
-    items: FactoryVecDeque<Items>,
+    items: FactoryVecDeque<Workspaces>,
     /// Factory for non-workspace mode (clients)
     clients_only: FactoryVecDeque<Clients>,
 }
@@ -38,8 +39,8 @@ pub struct SwitchRoot {
 pub enum SwitchRootInput {
     SetSwitch(config_lib::Switch),
     SetGeneral(config_lib::WindowsGeneral),
-    OpenSwitch(core_lib::Direction),
-    Switch(core_lib::Direction),
+    OpenSwitch(Direction),
+    Switch(Direction),
     CloseSwitch(bool),
     CloseCurrentItem,
     ReloadSwitch,
@@ -52,9 +53,7 @@ pub struct SwitchRootInit {
 }
 
 #[derive(Debug)]
-pub enum SwitchRootOutput {
-    Closed,
-}
+pub enum SwitchRootOutput {}
 
 #[relm4::component(pub)]
 impl SimpleComponent for SwitchRoot {
@@ -67,8 +66,6 @@ impl SimpleComponent for SwitchRoot {
         gtk::ApplicationWindow {
             set_css_classes: &["window"],
             set_default_size: (100, 100),
-            #[watch]
-            set_visible: model.data.is_open,
             match model.switch.switch_workspaces {
                 true => {
                     #[local_ref]
@@ -105,7 +102,7 @@ impl SimpleComponent for SwitchRoot {
     ) -> ComponentParts<Self> {
         trace!("Initializing SwitchRoot");
 
-        let items: FactoryVecDeque<Items> = FactoryVecDeque::builder()
+        let items: FactoryVecDeque<Workspaces> = FactoryVecDeque::builder()
             .launch(gtk::FlowBox::default())
             .detach();
 
@@ -116,6 +113,7 @@ impl SimpleComponent for SwitchRoot {
         let model = Self {
             general: init.general,
             switch: init.switch,
+            open: false,
             window: root.clone(),
             controller: None,
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
@@ -131,12 +129,11 @@ impl SimpleComponent for SwitchRoot {
         let window = &root;
         window.init_layer_shell();
         window.set_namespace(Some(SWITCH_NAMESPACE));
-        window.set_layer(Layer::Top);
-        window.set_keyboard_mode(KeyboardMode::OnDemand);
+        window.set_layer(Layer::Overlay);
+        window.set_keyboard_mode(KeyboardMode::Exclusive);
         sender
             .input_sender()
             .emit(SwitchRootInput::SetSwitch(model.switch.clone()));
-
         ComponentParts { model, widgets }
     }
 
@@ -152,22 +149,42 @@ impl SimpleComponent for SwitchRoot {
                 self.setup_keyboard_controller(&sender);
             }
             SwitchRootInput::OpenSwitch(direction) => {
-                self.open_switch(direction);
+                if !self.open {
+                    self.open = true;
+                    self.open_switch(direction);
+                } else {
+                    trace!("already open");
+                }
             }
             SwitchRootInput::Switch(direction) => {
-                self.navigate(direction);
+                if self.open {
+                    self.navigate(direction);
+                } else {
+                    trace!("not open");
+                }
             }
             SwitchRootInput::CloseSwitch(do_switch) => {
-                self.close_switch(do_switch);
-                sender.output_sender().emit(SwitchRootOutput::Closed);
+                if self.open {
+                    self.open = false;
+                    self.close_switch(do_switch);
+                } else {
+                    trace!("not open");
+                }
             }
             SwitchRootInput::CloseCurrentItem => {
-                self.close_item();
+                if self.open {
+                    self.close_item();
+                } else {
+                    trace!("not open");
+                }
                 sender.input_sender().emit(SwitchRootInput::ReloadSwitch);
             }
             SwitchRootInput::ReloadSwitch => {
-                self.reload_switch();
-                self.setup_keyboard_controller(&sender);
+                if self.open {
+                    self.reload_switch();
+                } else {
+                    trace!("not open");
+                }
             }
         }
     }
@@ -181,12 +198,8 @@ impl SwitchRoot {
         let key_controller = EventControllerKey::new();
         let sender_2 = sender.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
+            trace!("Key pressed: {:?}", key);
             handle_key(key, s_key, kill_key, sender_2.clone())
-        });
-        let r#mod = self.switch.modifier;
-        let sender_2 = sender.clone();
-        key_controller.connect_key_released(move |_, key, _, _| {
-            handle_release(key, r#mod, sender_2.clone());
         });
         if let Some(controller) = self.controller.take() {
             self.window.remove_controller(&controller);
@@ -194,8 +207,8 @@ impl SwitchRoot {
         self.window.add_controller(key_controller);
     }
 
-    fn open_switch(&mut self, direction: core_lib::Direction) {
-        let (clients_data, active_prev) = match collect_data(&SortConfig {
+    fn open_switch(&mut self, direction: Direction) {
+        let (hypr_data, active_prev) = match collect_data(&SortConfig {
             filter_current_monitor: self.switch.filter_by_current_monitor,
             filter_current_workspace: self.switch.filter_by_current_workspace,
             filter_same_class: self.switch.filter_by_same_class,
@@ -217,7 +230,7 @@ impl SwitchRoot {
             find_next_workspace(
                 &direction,
                 true,
-                &clients_data,
+                &hypr_data,
                 active_prev,
                 self.general.items_per_row,
             )
@@ -225,34 +238,34 @@ impl SwitchRoot {
             find_next_client(
                 &direction,
                 true,
-                &clients_data,
+                &hypr_data,
                 active_prev,
                 self.general.items_per_row,
             )
         };
-
-        trace!("Showing window {:?}", self.window.id());
-
         self.data = SwitchData {
             active,
-            hypr_data: clients_data.clone(),
-            is_open: true,
+            hypr_data: hypr_data.clone(),
         };
 
+        trace!("Showing window {:?}", self.window.id());
+        self.window.set_visible(true);
+        self.window.grab_focus();
+
         if self.switch.switch_workspaces {
-            self.populate_workspace_mode(&clients_data, self.general.scale, self.data.active);
+            self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
         } else {
-            self.populate_clients_only_mode(&clients_data, self.general.scale, self.data.active);
+            self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
         }
     }
 
-    fn populate_workspace_mode(&mut self, clients_data: &HyprlandData, scale: f64, active: Active) {
+    fn populate_workspace_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: Active) {
         let mut lock = self.items.guard();
         lock.clear();
 
-        for (wid, workspace_data) in &clients_data.workspaces {
+        for (wid, workspace_data) in &hypr_data.workspaces {
             // Get clients for this workspace
-            let workspace_clients: Vec<_> = clients_data
+            let workspace_clients: Vec<_> = hypr_data
                 .clients
                 .iter()
                 .filter(|(_, client)| client.workspace == *wid && client.enabled)
@@ -264,14 +277,14 @@ impl SwitchRoot {
                 trace!("skipping workspace {} with no enabled clients", wid);
                 continue;
             }
-            let Some(monitor) = clients_data.monitors.find_by_first(&workspace_data.monitor) else {
+            let Some(monitor) = hypr_data.monitors.find_by_first(&workspace_data.monitor) else {
                 error!(
                     "Workspace {} has invalid monitor {}",
                     wid, workspace_data.monitor
                 );
                 continue;
             };
-            lock.push_back(ItemsInit {
+            lock.push_back(WorkspacesInit {
                 monitor_data: monitor.clone(),
                 remove_html: self.remove_html.clone(),
                 id: *wid,
@@ -285,26 +298,21 @@ impl SwitchRoot {
         // Set active workspace
         for (idx, item) in self.items.iter().enumerate() {
             if item.workspace_id == active.workspace {
-                self.items.send(idx, ItemsInput::SetActive(true));
+                self.items.send(idx, WorkspacesInput::SetActive(true));
                 break;
             }
         }
     }
 
-    fn populate_clients_only_mode(
-        &mut self,
-        clients_data: &HyprlandData,
-        scale: f64,
-        active: Active,
-    ) {
+    fn populate_clients_only_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: Active) {
         let mut lock = self.clients_only.guard();
         lock.clear();
 
-        for (id, client) in &clients_data.clients {
+        for (id, client) in &hypr_data.clients {
             if !client.enabled {
                 continue;
             }
-            let Some(monitor) = clients_data.monitors.find_by_first(&client.monitor) else {
+            let Some(monitor) = hypr_data.monitors.find_by_first(&client.monitor) else {
                 error!("Client {} has invalid monitor {}", id, client.monitor);
                 continue;
             };
@@ -329,7 +337,7 @@ impl SwitchRoot {
         }
     }
 
-    fn navigate(&mut self, direction: core_lib::Direction) {
+    fn navigate(&mut self, direction: Direction) {
         let new_active = if self.switch.switch_workspaces {
             find_next_workspace(
                 &direction,
@@ -364,23 +372,14 @@ impl SwitchRoot {
         if old_active.workspace != new_active.workspace {
             for (idx, item) in self.items.iter().enumerate() {
                 if item.workspace_id == old_active.workspace {
-                    self.items.send(idx, ItemsInput::SetActive(false));
+                    self.items.send(idx, WorkspacesInput::SetActive(false));
                 }
                 if item.workspace_id == new_active.workspace {
-                    self.items.send(idx, ItemsInput::SetActive(true));
+                    self.items.send(idx, WorkspacesInput::SetActive(true));
+                    if let Some(cid) = new_active.client {
+                        self.items.send(idx, WorkspacesInput::SetActiveClient(cid));
+                    }
                 }
-            }
-        }
-
-        // Update client active state within workspaces using guard for mutable access
-        let mut guard = self.items.guard();
-        for item in guard.iter_mut() {
-            if item.workspace_id == new_active.workspace {
-                item.set_active_client(new_active.client);
-            } else if item.workspace_id == old_active.workspace
-                && old_active.workspace != new_active.workspace
-            {
-                item.set_active_client(None);
             }
         }
     }
@@ -410,7 +409,8 @@ impl SwitchRoot {
     }
 
     fn close_switch(&mut self, do_switch: bool) {
-        reset_no_follow_mouse().ok();
+        trace!("Hiding window {:?}", self.window.id());
+        self.window.set_visible(false);
 
         // Clear UI
         {
@@ -421,9 +421,6 @@ impl SwitchRoot {
             let mut lock = self.clients_only.guard();
             lock.clear();
         }
-
-        trace!("Hiding window {:?}", self.window.id());
-        self.data.is_open = false;
 
         if do_switch {
             if let Some(id) = self.data.active.client {
@@ -441,7 +438,7 @@ impl SwitchRoot {
                     if let Err(e) = switch_client(id) {
                         tracing::warn!("Failed to switch to client {id:?}: {e}");
                     }
-                    glib::ControlFlow::Break
+                    ControlFlow::Break
                 });
             } else {
                 let id = self.data.active.workspace;
@@ -458,7 +455,7 @@ impl SwitchRoot {
                     if let Err(e) = switch_workspace(id) {
                         tracing::warn!("Failed to switch to workspace {id:?}: {e}");
                     }
-                    glib::ControlFlow::Break
+                    ControlFlow::Break
                 });
             }
         }
@@ -511,7 +508,7 @@ impl SwitchRoot {
     }
 
     fn reload_switch(&mut self) {
-        let (clients_data, _) = match collect_data(&SortConfig {
+        let (hypr_data, _) = match collect_data(&SortConfig {
             filter_current_monitor: self.switch.filter_by_current_monitor,
             filter_current_workspace: self.switch.filter_by_current_workspace,
             filter_same_class: self.switch.filter_by_same_class,
@@ -532,14 +529,14 @@ impl SwitchRoot {
         while match self.data.active {
             Active {
                 client: Some(id), ..
-            } => clients_data.clients.find_by_first(&id).is_none(),
-            Active { workspace: id, .. } => clients_data.workspaces.find_by_first(&id).is_none(),
+            } => hypr_data.clients.find_by_first(&id).is_none(),
+            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(&id).is_none(),
         } {
             self.data.active = if self.switch.switch_workspaces {
                 find_next_workspace(
                     &Direction::Right,
                     true,
-                    &clients_data,
+                    &hypr_data,
                     self.data.active,
                     self.general.items_per_row,
                 )
@@ -547,7 +544,7 @@ impl SwitchRoot {
                 find_next_client(
                     &Direction::Right,
                     true,
-                    &clients_data,
+                    &hypr_data,
                     self.data.active,
                     self.general.items_per_row,
                 )
@@ -556,31 +553,14 @@ impl SwitchRoot {
 
         self.data = SwitchData {
             active: self.data.active,
-            hypr_data: clients_data.clone(),
-            is_open: true,
+            hypr_data: hypr_data.clone(),
         };
 
         if self.switch.switch_workspaces {
-            self.populate_workspace_mode(&clients_data, self.general.scale, self.data.active);
+            self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
         } else {
-            self.populate_clients_only_mode(&clients_data, self.general.scale, self.data.active);
+            self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
         }
-    }
-}
-
-fn handle_release(
-    key: Key,
-    modifier: config_lib::Modifier,
-    event_sender: ComponentSender<SwitchRoot>,
-) {
-    if ((key == Key::Alt_L || key == Key::Alt_R) && modifier == config_lib::Modifier::Alt)
-        || ((key == Key::Control_L || key == Key::Control_R)
-            && modifier == config_lib::Modifier::Ctrl)
-        || ((key == Key::Super_L || key == Key::Super_R) && modifier == config_lib::Modifier::Super)
-    {
-        event_sender
-            .input_sender()
-            .emit(SwitchRootInput::CloseSwitch(true));
     }
 }
 
@@ -600,25 +580,25 @@ fn handle_key(
         k if k == s_key || k == Key::l || k == Key::Right => {
             event_sender
                 .input_sender()
-                .emit(SwitchRootInput::Switch(core_lib::Direction::Right));
+                .emit(SwitchRootInput::Switch(Direction::Right));
             glib::Propagation::Stop
         }
         Key::ISO_Left_Tab | Key::grave | Key::dead_grave | Key::h | Key::Left => {
             event_sender
                 .input_sender()
-                .emit(SwitchRootInput::Switch(core_lib::Direction::Left));
+                .emit(SwitchRootInput::Switch(Direction::Left));
             glib::Propagation::Stop
         }
         Key::j | Key::Down => {
             event_sender
                 .input_sender()
-                .emit(SwitchRootInput::Switch(core_lib::Direction::Down));
+                .emit(SwitchRootInput::Switch(Direction::Down));
             glib::Propagation::Stop
         }
         Key::k | Key::Up => {
             event_sender
                 .input_sender()
-                .emit(SwitchRootInput::Switch(core_lib::Direction::Up));
+                .emit(SwitchRootInput::Switch(Direction::Up));
             glib::Propagation::Stop
         }
         k if k == kill_key || k == Key::Delete => {
@@ -635,7 +615,6 @@ fn handle_key(
 pub struct SwitchData {
     pub active: Active,
     pub hypr_data: HyprlandData,
-    pub is_open: bool,
 }
 
 impl Default for SwitchData {
@@ -647,7 +626,6 @@ impl Default for SwitchData {
                 monitor: -1,
             },
             hypr_data: HyprlandData::default(),
-            is_open: false,
         }
     }
 }

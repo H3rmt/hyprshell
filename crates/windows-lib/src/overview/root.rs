@@ -1,0 +1,354 @@
+use crate::data::{SortConfig, collect_data};
+use crate::next::{find_next_client, find_next_workspace};
+use crate::overview::window::{
+    OverviewWindow, OverviewWindowData, OverviewWindowInit, OverviewWindowInput,
+    OverviewWindowOutput,
+};
+use crate::switch::{SwitchData, SwitchRoot, SwitchRootInput};
+use core_lib::{
+    Active, ByFirst, ClientData, ClientId, Direction, HyprlandData, MonitorData, MonitorId,
+    WorkspaceData, WorkspaceId,
+};
+use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
+use relm4::adw::gdk::{Display, Monitor};
+use relm4::adw::prelude::*;
+use relm4::adw::{gtk, init};
+use relm4::gtk::{Orientation, SelectionMode};
+use relm4::prelude::*;
+use std::collections::BTreeMap;
+use std::time::Duration;
+use tracing::{error, trace};
+
+const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+
+#[derive(Debug)]
+pub struct OverviewRoot {
+    general: config_lib::WindowsGeneral,
+    overview: config_lib::Overview,
+    open: bool,
+    data: OverviewData,
+
+    launcher_root: Controller<LauncherRoot>,
+    windows: BTreeMap<MonitorId, Controller<OverviewWindow>>,
+}
+
+#[derive(Debug)]
+pub enum OverviewRootInput {
+    SetOverview(config_lib::Overview),
+    SetGeneral(config_lib::WindowsGeneral),
+    OpenOverview,
+    Switch(Direction, bool),
+    CloseOverview(bool),
+    CloseItem(ClientId),
+    ReloadOverview,
+}
+
+#[derive(Debug)]
+pub struct OverviewRootInit {
+    pub general: config_lib::WindowsGeneral,
+    pub overview: config_lib::Overview,
+}
+
+#[derive(Debug)]
+pub enum OverviewRootOutput {}
+
+#[relm4::component(pub)]
+impl SimpleComponent for OverviewRoot {
+    type Init = OverviewRootInit;
+    type Input = OverviewRootInput;
+    type Output = OverviewRootOutput;
+
+    view! {
+        gtk::Window {
+        }
+    }
+    fn init(
+        init: Self::Init,
+        root: Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        trace!("Initializing OverviewRoot");
+        let app = relm4::main_application();
+        let mut windows = BTreeMap::new();
+
+        let monitors = exec_lib::collect::get_monitors();
+        let gmonitors = Display::default()
+            .expect("Could not connect to a display")
+            .monitors()
+            .iter()
+            .filter_map(Result::ok)
+            .collect::<Vec<Monitor>>();
+        for gtk_monitor in gmonitors {
+            let monitor_conn = gtk_monitor.connector().unwrap_or_default();
+            if let Some(monitor) = monitors.iter().find(|m| m.connector == monitor_conn) {
+                let overview_window = OverviewWindow::builder();
+                let window = &overview_window.root;
+                app.add_window(window);
+                let overview_window = overview_window
+                    .launch(OverviewWindowInit {
+                        general: init.general.clone(),
+                        monitor: monitor.clone(),
+                        gtk_monitor,
+                    })
+                    .detach();
+                windows.entry(monitor.id).insert_entry(overview_window);
+            }
+        }
+        let launcher_root = LauncherRoot::builder();
+        let window = &launcher_root.root;
+        app.add_window(window);
+        let launcher_root = launcher_root
+            .launch(LauncherRootInit {
+                launcher: init.overview.launcher.clone(),
+            })
+            .forward(sender.input_sender(), |msg| match msg {
+                LauncherRootOutput::Switch(dir, ws) => OverviewRootInput::Switch(dir, ws),
+                LauncherRootOutput::Close => OverviewRootInput::CloseOverview(false),
+            });
+
+        let model = Self {
+            general: init.general,
+            overview: init.overview,
+            open: false,
+            windows,
+            launcher_root,
+            data: OverviewData::default(),
+        };
+
+        let widgets = view_output!();
+        sender
+            .input_sender()
+            .emit(OverviewRootInput::SetOverview(model.overview.clone()));
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+        trace!("overview::root::update: {message:?}");
+        match message {
+            OverviewRootInput::SetOverview(overview) => {
+                self.overview = overview;
+                self.launcher_root.emit(LauncherRootInput::SetLauncher(
+                    self.overview.launcher.clone(),
+                ));
+            }
+            OverviewRootInput::SetGeneral(general) => {
+                for window in self.windows.values_mut() {
+                    window.emit(OverviewWindowInput::SetGeneral(general.clone()));
+                }
+                self.general = general;
+            }
+            OverviewRootInput::OpenOverview => {
+                if !self.open {
+                    self.open = true;
+                    self.launcher_root.emit(LauncherRootInput::OpenLauncher);
+                    self.open_overview();
+                } else {
+                    trace!("already open");
+                }
+            }
+            OverviewRootInput::Switch(direction, workspace) => {
+                if self.open {
+                    self.navigate(direction, workspace);
+                } else {
+                    trace!("not open");
+                }
+            }
+            OverviewRootInput::CloseOverview(do_switch) => {
+                // TODO do_switch?
+                if self.open {
+                    self.open = false;
+                    self.launcher_root.emit(LauncherRootInput::CloseLauncher);
+                    self.close_overview();
+                } else {
+                    trace!("not open");
+                }
+            }
+            OverviewRootInput::CloseItem(id) => {
+                if self.open {
+                    self.close_item(id);
+                } else {
+                    trace!("not open");
+                }
+                sender
+                    .input_sender()
+                    .emit(OverviewRootInput::ReloadOverview);
+            }
+            OverviewRootInput::ReloadOverview => {
+                if self.open {
+                    self.reload_overview();
+                } else {
+                    trace!("not open");
+                }
+            }
+        }
+    }
+}
+
+impl OverviewRoot {
+    fn open_overview(&mut self) {
+        let (hypr_data, active) = match collect_data(&SortConfig {
+            filter_current_monitor: self.overview.filter_by_current_monitor,
+            filter_current_workspace: self.overview.filter_by_current_workspace,
+            filter_same_class: self.overview.filter_by_same_class,
+            sort_recent: false,
+            exclude_workspaces: if self.overview.exclude_workspaces.is_empty() {
+                None
+            } else {
+                Some(self.overview.exclude_workspaces.clone())
+            },
+        }) {
+            Ok(data) => data,
+            Err(e) => {
+                error!("Failed to collect data: {}", e);
+                return;
+            }
+        };
+        self.data = OverviewData {
+            active,
+            hypr_data: hypr_data.clone(),
+        };
+        self.render(hypr_data, self.data.active, true);
+    }
+
+    fn navigate(&mut self, direction: Direction, workspace: bool) {
+        let new_active = if workspace {
+            find_next_workspace(
+                &direction,
+                false,
+                &self.data.hypr_data,
+                self.data.active,
+                self.general.items_per_row,
+            )
+        } else {
+            if direction == Direction::Up || direction == Direction::Down {
+                error!(
+                    "Clients in overview can only be switched left and right (forwards and backwards)"
+                );
+                return;
+            }
+            find_next_client(
+                &direction,
+                false,
+                &self.data.hypr_data,
+                self.data.active,
+                self.general.items_per_row,
+            )
+        };
+
+        let old_active = self.data.active;
+        self.data.active = new_active;
+
+        if new_active != old_active {
+            for (_, window) in &self.windows {
+                window.emit(OverviewWindowInput::SetActive(old_active, new_active))
+            }
+        }
+    }
+
+    fn close_item(&mut self, id: ClientId) {
+        if let Err(e) = exec_lib::kill::kill_client_blocking(id, KILL_TIMEOUT) {
+            // TODO: close on killed to let user close window themself
+            tracing::warn!("Failed to kill client {id}: {e}");
+        }
+    }
+
+    fn close_overview(&mut self) {
+        for (_, window) in &self.windows {
+            window.emit(OverviewWindowInput::CloseOverview)
+        }
+    }
+
+    fn reload_overview(&mut self) {
+        let (hypr_data, active) = match collect_data(&SortConfig {
+            filter_current_monitor: self.overview.filter_by_current_monitor,
+            filter_current_workspace: self.overview.filter_by_current_workspace,
+            filter_same_class: self.overview.filter_by_same_class,
+            sort_recent: false,
+            exclude_workspaces: if self.overview.exclude_workspaces.is_empty() {
+                None
+            } else {
+                Some(self.overview.exclude_workspaces.clone())
+            },
+        }) {
+            Ok(data) => data,
+            Err(e) => {
+                error!("Failed to collect data: {}", e);
+                return;
+            }
+        };
+
+        while match self.data.active {
+            Active {
+                client: Some(id), ..
+            } => hypr_data.clients.find_by_first(&id).is_none(),
+            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(&id).is_none(),
+        } {
+            self.data.active = find_next_workspace(
+                &Direction::Right,
+                true,
+                &hypr_data,
+                self.data.active,
+                self.general.items_per_row,
+            )
+        }
+
+        self.data = OverviewData {
+            active: self.data.active,
+            hypr_data: hypr_data.clone(),
+        };
+        self.render(hypr_data, self.data.active, false);
+    }
+
+    fn render(&mut self, hypr_data: HyprlandData, active: Active, open: bool) {
+        let mut mapped_ws = BTreeMap::new();
+        for (i, workspace_data) in hypr_data.workspaces.into_iter() {
+            mapped_ws
+                .entry(workspace_data.monitor)
+                .or_insert_with(Vec::new)
+                .push((i, workspace_data));
+        }
+        let mut mapped_cl = BTreeMap::new();
+        for (i, client_data) in hypr_data.clients.into_iter() {
+            mapped_cl
+                .entry(client_data.monitor)
+                .or_insert_with(Vec::new)
+                .push((i, client_data));
+        }
+
+        for (monitor_id, window) in &self.windows {
+            if let Some(data) = hypr_data.monitors.find_by_first(monitor_id) {
+                // always update, maybe last client got removed
+                let data = OverviewWindowData {
+                    active,
+                    clients: mapped_cl.remove(monitor_id).unwrap_or_default(),
+                    workspaces: mapped_ws.remove(monitor_id).unwrap_or_default(),
+                    monitor: data.clone(),
+                };
+                if open {
+                    window.emit(OverviewWindowInput::OpenOverview(data))
+                } else {
+                    window.emit(OverviewWindowInput::ReloadOverview(data))
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct OverviewData {
+    pub active: Active,
+    pub hypr_data: HyprlandData,
+}
+
+impl Default for OverviewData {
+    fn default() -> Self {
+        Self {
+            active: Active {
+                client: None,
+                workspace: -1,
+                monitor: -1,
+            },
+            hypr_data: HyprlandData::default(),
+        }
+    }
+}
