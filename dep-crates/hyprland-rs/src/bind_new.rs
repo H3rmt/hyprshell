@@ -4,7 +4,6 @@ use crate::lua::{format_bool_field, format_string_field};
 use crate::{command, default_instance};
 use derive_more::Display;
 use std::fmt;
-use std::fmt::Pointer;
 
 /// Enum for mod keys
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
@@ -70,7 +69,6 @@ pub struct Binding<D: ToDispatch> {
 }
 impl<D: ToDispatch> fmt::Display for Binding<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("hl.bind(")?;
         let mut bind = String::new();
         for m in &self.mods {
             bind.push_str(&format!("{m} + "));
@@ -87,7 +85,7 @@ impl<D: ToDispatch> fmt::Display for Binding<D> {
             effect.fmt(f)?;
         }
 
-        f.write_str("})")
+        f.write_str("}")
     }
 }
 
@@ -99,7 +97,7 @@ impl<D: ToDispatch> Binding<D> {
     /// Binds a keybinding
     pub fn instance_bind(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
-        let ret = instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        let ret = instance.write_to_socket(command!(Empty, "eval hl.bind({})", lua))?;
         if ret != "ok" {
             return Err(crate::error::HyprError::NotOkDispatch(format!(
                 "Could not bind key: {}",
@@ -120,7 +118,54 @@ impl<D: ToDispatch> Binding<D> {
     pub async fn instance_bind_async(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
         let ret = instance
-            .write_to_socket_async(command!(Empty, "eval {}", lua))
+            .write_to_socket_async(command!(Empty, "eval hl.bind({})", lua))
+            .await?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+
+    /// Binds a keybinding
+    pub fn unbind(&self) -> crate::Result<()> {
+        self.instance_unbind(default_instance()?)
+    }
+    /// Binds a keybinding
+    pub fn instance_unbind(&self, instance: &Instance) -> crate::Result<()> {
+        let mut lua = String::new();
+        for m in &self.mods {
+            lua.push_str(&format!("{m} + "));
+        }
+        lua.push_str(&self.key);
+        let ret = instance.write_to_socket(command!(Empty, "eval hl.unbind(\"{}\")", lua))?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
+        Ok(())
+    }
+
+    /// Binds a keybinding (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn unbind_async(&self) -> crate::Result<()> {
+        self.instance_unbind_async(default_instance()?).await
+    }
+
+    /// Binds a keybinding (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_unbind_async(&self, instance: &Instance) -> crate::Result<()> {
+        let mut lua = String::new();
+        for m in &self.mods {
+            lua.push_str(&format!("{m} + "));
+        }
+        lua.push_str(&self.key);
+        let ret = instance
+            .write_to_socket_async(command!(Empty, "eval hl.unbind(\"{}\")", lua))
             .await?;
         if ret != "ok" {
             return Err(crate::error::HyprError::NotOkDispatch(format!(

@@ -62,6 +62,9 @@ mod lua;
 #[cfg(feature = "lua")]
 pub mod window_rule;
 
+#[cfg(feature = "lua")]
+pub use lua::EvalRaw;
+
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};

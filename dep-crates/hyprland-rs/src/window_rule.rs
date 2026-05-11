@@ -3,7 +3,6 @@ use crate::lua::{format_bool_field, format_raw_field, format_string_field};
 use crate::{command, default_instance};
 use derive_more::Display;
 use std::fmt;
-use std::fmt::Write;
 
 /// This struct holds a keyword
 #[derive(Debug, Clone)]

@@ -1,6 +1,9 @@
 use crate::default_instance;
 use crate::instance::Instance;
-use crate::lua::{format_bool_field, format_string, format_string_field, format_string_field_opt};
+use crate::lua::{
+    format_bool_field, format_string, format_string_field, format_string_field_opt,
+    format_string_opt,
+};
 use crate::shared::*;
 use derive_more::Display;
 use std::string::ToString;
@@ -132,6 +135,15 @@ pub enum Direction {
     Left,
 }
 
+/// This enum holds different ZLayer change names
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+pub enum ZOption {
+    #[display("top")]
+    Top,
+    #[display("bottom")]
+    Bottom,
+}
+
 fn format_relative(int: i32) -> String {
     match int {
         0 => "+0".to_owned(),
@@ -228,6 +240,17 @@ pub enum Dispatch {
     /// does nothing. Useful for conditional binds.
     #[display("hl.dsp.no_op()")]
     NoOp(),
+
+    /// Close a window.
+    #[display("hl.dsp.window.close({})", format_string_opt(_0))]
+    WindowClose(Option<WindowIdentifier>),
+    /// Kill a window
+    #[display("hl.dsp.window.kill({})", format_string_opt(_0))]
+    WindowKill(Option<WindowIdentifier>),
+
+    /// mode can be “top” or “bottom”
+    #[display("hl.dsp.window.alter_zorder({{ {} {} }})", format_string_field("mode", &_0), format_string_field_opt("window", &_1))]
+    WindowAlterZ(ZOption, Option<WindowIdentifier>),
 }
 impl Dispatch {
     /// This function sets a keyword's value
@@ -271,20 +294,3 @@ impl Dispatch {
     }
 }
 impl ToDispatch for Dispatch {}
-
-mod windows {
-    use crate::dispatch_new::{ToDispatch, WindowIdentifier};
-    use derive_more::Display;
-
-    #[derive(Debug, Clone, PartialEq, Eq, Display)]
-    pub enum Dispatch {
-        /// Close a window.
-        #[display("todo")]
-        Close(Option<WindowIdentifier>),
-        /// Kill a window
-        #[display("todo")]
-        Kill(Option<WindowIdentifier>),
-        // ...
-    }
-    impl ToDispatch for Dispatch {}
-}
