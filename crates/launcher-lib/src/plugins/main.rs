@@ -163,8 +163,17 @@ pub fn get_sorted_launch_options(
                 maxscore = nscore;
             }
         }
+        let nscore = pattern
+            .score(
+                nucleo::Utf32Str::new(&r#match.details, &mut buf),
+                &mut matcher,
+            ) // reduce score
+            .unwrap_or_default()
+            / 2;
+        new_score += nscore as u64;
 
         if new_score > 10 {
+            trace!("{}: {}", r#match.details, nscore);
             out.push((
                 new_score + r#match.bonus_score.min(20),
                 SortedLaunchOption {
@@ -181,7 +190,7 @@ pub fn get_sorted_launch_options(
         }
     }
 
-    // TODO must be last because curently cant be matched
+    // TODO must be last because currently they cant be matched
     let mut matches2 = Vec::new();
     if plugins.path.is_some() {
         debug_span!("path").in_scope(|| path::get_path_options(&mut matches2, text));

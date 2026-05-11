@@ -362,7 +362,6 @@ impl SwitchRoot {
             )
         };
 
-        // TODO add in
         let old_active = self.data.active;
         self.data.active = new_active;
 
