@@ -2,7 +2,7 @@
 
 ## No flakes
 
-This is the easy way to use/configure hyprshell as this way the setting cant be out of sync.
+This is the easy way to use/configure hyprshell.
 
 ### nixpkgs
 

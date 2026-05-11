@@ -109,6 +109,12 @@ This mode displays the windows sorted by their most recent access. This option i
 The CSS file is located at `~/.config/hyprshell/styles.css` but can be configured using the `-s` argument.
 The config is loaded at startup and is reloaded when the file changes. (removing styles will not work, adding or overriding styles works)
 
+
+> [!CAUTION]
+> This is out of date, use the config editor instead, it contains premade styles, including a testing theme.
+> Themes are located under /usr/share/hyprshell/themes/
+
+
 **Some examples can be found in the [CSS Examples folder](css-examples).**
 
 To generate a default file with all possible classes and CSS variables, run the following command:
