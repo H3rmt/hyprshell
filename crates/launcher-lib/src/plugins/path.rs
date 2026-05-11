@@ -26,7 +26,7 @@ pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
             details: Box::from(""),
             details_long: None,
             bonus_score: 5,
-            takes_args: true, // TODO workaround to force manual sorting
+            takes_args: false,
             enabled: exists,
             iden: Identifier::plugin(PluginName::Path),
             subactions: vec![],

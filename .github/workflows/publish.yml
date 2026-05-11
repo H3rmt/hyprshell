@@ -67,7 +67,7 @@ jobs:
           git push --delete origin ${{ github.ref_name }}
           
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
-          # cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
+          cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
           
           # push current branch to hyprshell branch (for development)
           git fetch origin hyprshell
@@ -135,7 +135,13 @@ jobs:
       - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
         with:
           name: hyprshell
-          extraPullNames: hyprshell-dev, hyprland
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: true
       - name: Run Nix Flake Build
-        run: nix build '.#packages.x86_64-linux.hyprshell' -L
+        run: |
+          nix build '.#packages.x86_64-linux.hyprshell' -L
+          echo "$(readlink ./result)" | cachix push hyprshell
+          rm result
+          nix build '.#packages.x86_64-linux.hyprshell-slim' -L
+          echo "$(readlink ./result)" | cachix push hyprshell
+          rm result

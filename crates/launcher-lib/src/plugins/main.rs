@@ -63,15 +63,6 @@ pub fn get_sorted_launch_options(
     if let Some(config) = plugins.actions.as_ref() {
         debug_span!("actions").in_scope(|| actions::get_actions_options(&mut matches, config));
     }
-    // TODO move these to dynamic plugins
-    if plugins.calc.is_some() {
-        #[cfg(feature = "calc")]
-        debug_span!("calc").in_scope(|| {
-            crate::plugins::calc::get_calc_options(&mut matches);
-        });
-        #[cfg(not(feature = "calc"))]
-        tracing::warn!("calc plugin is not enabled");
-    }
 
     let mut out = vec![];
 
@@ -194,6 +185,15 @@ pub fn get_sorted_launch_options(
     let mut matches2 = Vec::new();
     if plugins.path.is_some() {
         debug_span!("path").in_scope(|| path::get_path_options(&mut matches2, text));
+    }
+    // TODO move these to dynamic plugins
+    if plugins.calc.is_some() {
+        #[cfg(feature = "calc")]
+        debug_span!("calc").in_scope(|| {
+            crate::plugins::calc::get_calc_options(&mut matches2, text);
+        });
+        #[cfg(not(feature = "calc"))]
+        tracing::warn!("calc plugin is not enabled");
     }
     if let Some(first) = matches2.pop() {
         out.push((

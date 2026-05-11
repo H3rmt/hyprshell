@@ -1,9 +1,11 @@
 use crate::plugins::SortableLaunchOption;
 use core_lib::WarnWithDetails;
+use core_lib::transfer::{Identifier, PluginName};
 use relm4::adw::gtk::gdk::Display;
 use relm4::adw::gtk::prelude::DisplayExt;
+use std::path::Path;
 use std::sync::{OnceLock, RwLock};
-use tracing::debug;
+use tracing::{debug, trace};
 
 fn get_context() -> Option<&'static RwLock<rink_core::Context>> {
     static MAP_LOCK: OnceLock<Option<RwLock<rink_core::Context>>> = OnceLock::new();
@@ -20,36 +22,35 @@ pub fn init_context() {
     get_context();
 }
 
-pub fn get_calc_options(_matches: &mut Vec<SortableLaunchOption>) {
-    return;
-    // TODO
-    // let Some(context_lock) = get_context() else {
-    //     return;
-    // };
-    // let Ok(mut context) = context_lock.write() else {
-    //     return;
-    // };
-    // let eval = rink_core::one_line(&mut context, text);
-    // // let mut context: calc::Context<f64> = calc::Context::default();
-    // // let eval = context.evaluate(text);
-    //
-    // if let Ok(eval) = eval {
-    //     trace!("Eval: {eval:?}");
-    //     let (title, desc) = parse_result(eval);
-    //     trace!("Added calc option: {title}, {desc:?}");
-    //     matches.push(SortableLaunchOption {
-    //         icon: Some(Box::from(Path::new("accessories-calculator"))),
-    //         name: title.clone(),
-    //         details: Box::from("Copy to clipboard"),
-    //         details_long: desc,
-    //         score: 0,
-    //         grayed: false,
-    //         iden: Identifier::data(PluginNames::Calc, title),
-    //         subactions: vec![],
-    //     });
-    // } else {
-    //     trace!("No option added: expression error: {eval:?}");
-    // }
+pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+    let Some(context_lock) = get_context() else {
+        return;
+    };
+    let Ok(mut context) = context_lock.write() else {
+        return;
+    };
+    let eval = rink_core::one_line(&mut context, text);
+    // let mut context: calc::Context<f64> = calc::Context::default();
+    // let eval = context.evaluate(text);
+
+    if let Ok(eval) = eval {
+        trace!("Eval: {eval:?}");
+        let (title, desc) = parse_result(eval);
+        trace!("Added calc option: {title}, {desc:?}");
+        matches.push(SortableLaunchOption {
+            icon: Some(Box::from(Path::new("accessories-calculator"))),
+            names: Box::from(vec![title.clone()]),
+            details: Box::from("Copy to clipboard"),
+            details_long: desc,
+            bonus_score: 5,
+            enabled: true,
+            takes_args: false,
+            iden: Identifier::data(PluginName::Calc, title),
+            subactions: vec![],
+        });
+    } else {
+        trace!("No option added: expression error: {eval:?}");
+    }
 }
 
 pub fn copy_result(data: Option<&str>) -> bool {

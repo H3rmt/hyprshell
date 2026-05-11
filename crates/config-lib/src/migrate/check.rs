@@ -13,6 +13,9 @@ pub(super) struct EmptyConfig {
 pub fn check_migration_needed(config_file: &Path) -> anyhow::Result<bool> {
     let _span = debug_span!("check_migration_needed").entered();
     let version = get_config_version(config_file).context("Failed to get config version")?;
+    if version > CURRENT_CONFIG_VERSION {
+        bail!("Config version is newer than currently supported version");
+    }
     Ok(version != CURRENT_CONFIG_VERSION)
 }
 
