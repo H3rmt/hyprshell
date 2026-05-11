@@ -65,12 +65,6 @@ Build with less features in [slim](#feature-flags) mode
 cargo install hyprshell --no-default-features --features "slim"
 ```
 
-**hyprland-devel is needed for the hyprland headers (needed to build hyprland plugin)**
-
-Fedora: `sudo dnf install gtk4-layer-shell-devel libadwaita-devel hyprland-devel`
-
-Arch: `sudo pacman -Sy gtk4-layer-shell libadwaita hyprland`
-
 Minimum required rustc version: `1.92.0`
 
 ## Usage
@@ -96,7 +90,10 @@ systemctl --user enable --now hyprshell.service
 Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
 
 ```ini
-exec-once = hyprshell run &
+hl.on("hyprland.start", function()
+    -- Run hyprshell daemon
+    hl.exec_cmd("hyprshell run")
+end)
 ```
 
 ![image.png](.github/imgs/switch.png)
@@ -130,6 +127,5 @@ Debug commands are provided to help troubleshoot desktop files, icons, default a
 - `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
 - `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after message from restart listeners (default: `2000`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
-- `HYPRSHELL_NO_USE_PLUGIN`: Disable the use of the hyprland plugin to capture switch mode events.
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode
