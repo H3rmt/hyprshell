@@ -111,7 +111,11 @@ impl SimpleComponent for LauncherRoot {
             .launch(gtk::Box::default())
             .forward(sender.input_sender(), |r| match r {
                 LauncherResultsOutput::Clicked(idx) => LauncherRootInput::Launch(
-                    idx.current_index().to_string().chars().next().unwrap(),
+                    idx.current_index()
+                        .to_string()
+                        .chars()
+                        .next()
+                        .expect("No char"),
                 ),
             });
 

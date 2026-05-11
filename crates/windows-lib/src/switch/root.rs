@@ -193,8 +193,8 @@ impl SimpleComponent for SwitchRoot {
 impl SwitchRoot {
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
         // TODO add a check in config check so these always succeed
-        let s_key = Key::from_name(self.switch.key.to_string()).unwrap();
-        let kill_key = Key::from_name(self.switch.kill_key.to_string()).unwrap();
+        let s_key = Key::from_name(self.switch.key.to_string()).expect("Invalid switch key");
+        let kill_key = Key::from_name(self.switch.kill_key.to_string()).expect("Invalid kill key");
         let key_controller = EventControllerKey::new();
         let sender_2 = sender.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
