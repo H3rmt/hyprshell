@@ -53,7 +53,7 @@ impl From<old_structs::Launcher> for m2t3::Launcher {
         if let Some(a) = &mut plugins.applications {
             a.show_actions_submenu = true;
         }
-        plugins.path = Some(crate::EmptyConfig::default());
+        plugins.path = Some(crate::io::EmptyConfig::default());
         Self {
             default_terminal: value.default_terminal,
             launch_modifier: value.launch_modifier.into(),

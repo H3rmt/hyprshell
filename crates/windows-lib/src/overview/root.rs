@@ -9,15 +9,19 @@ use core_lib::{
     Active, ByFirst, ClientData, ClientId, Direction, HyprlandData, MonitorData, MonitorId,
     WorkspaceData, WorkspaceId,
 };
+use exec_lib::switch::{switch_client, switch_workspace};
 use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
 use relm4::adw::gdk::{Display, Monitor};
+use relm4::adw::glib::ControlFlow;
 use relm4::adw::prelude::*;
-use relm4::adw::{gtk, init};
+use relm4::adw::{glib, gtk, init};
 use relm4::gtk::{Orientation, SelectionMode};
 use relm4::prelude::*;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::rc::Rc;
 use std::time::Duration;
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 
@@ -39,6 +43,8 @@ pub enum OverviewRootInput {
     OpenOverview,
     Switch(Direction, bool),
     CloseOverview(bool),
+    CloseOverviewClick(WorkspaceId),
+    CloseOverviewClickC(ClientId),
     CloseItem(ClientId),
     ReloadOverview,
 }
@@ -47,6 +53,7 @@ pub enum OverviewRootInput {
 pub struct OverviewRootInit {
     pub general: config_lib::WindowsGeneral,
     pub overview: config_lib::Overview,
+    pub data_dir: Rc<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -90,7 +97,14 @@ impl SimpleComponent for OverviewRoot {
                         monitor: monitor.clone(),
                         gtk_monitor,
                     })
-                    .detach();
+                    .forward(sender.input_sender(), |m| match m {
+                        OverviewWindowOutput::Clicked(ws) => {
+                            OverviewRootInput::CloseOverviewClick(ws)
+                        }
+                        OverviewWindowOutput::ClickedC(cl) => {
+                            OverviewRootInput::CloseOverviewClickC(cl)
+                        }
+                    });
                 windows.entry(monitor.id).insert_entry(overview_window);
             }
         }
@@ -100,10 +114,11 @@ impl SimpleComponent for OverviewRoot {
         let launcher_root = launcher_root
             .launch(LauncherRootInit {
                 launcher: init.overview.launcher.clone(),
+                data_dir: init.data_dir,
             })
             .forward(sender.input_sender(), |msg| match msg {
                 LauncherRootOutput::Switch(dir, ws) => OverviewRootInput::Switch(dir, ws),
-                LauncherRootOutput::Close => OverviewRootInput::CloseOverview(false),
+                LauncherRootOutput::Close(do_switch) => OverviewRootInput::CloseOverview(do_switch),
             });
 
         let model = Self {
@@ -143,7 +158,9 @@ impl SimpleComponent for OverviewRoot {
                     self.launcher_root.emit(LauncherRootInput::OpenLauncher);
                     self.open_overview();
                 } else {
-                    trace!("already open");
+                    sender
+                        .input_sender()
+                        .emit(OverviewRootInput::CloseOverview(false));
                 }
             }
             OverviewRootInput::Switch(direction, workspace) => {
@@ -154,11 +171,10 @@ impl SimpleComponent for OverviewRoot {
                 }
             }
             OverviewRootInput::CloseOverview(do_switch) => {
-                // TODO do_switch?
                 if self.open {
                     self.open = false;
                     self.launcher_root.emit(LauncherRootInput::CloseLauncher);
-                    self.close_overview();
+                    self.close_overview(do_switch);
                 } else {
                     trace!("not open");
                 }
@@ -179,6 +195,19 @@ impl SimpleComponent for OverviewRoot {
                 } else {
                     trace!("not open");
                 }
+            }
+            OverviewRootInput::CloseOverviewClick(ws) => {
+                self.data.active.client = None;
+                self.data.active.workspace = ws;
+                sender
+                    .input_sender()
+                    .emit(OverviewRootInput::CloseOverview(true));
+            }
+            OverviewRootInput::CloseOverviewClickC(cl) => {
+                self.data.active.client = Some(cl);
+                sender
+                    .input_sender()
+                    .emit(OverviewRootInput::CloseOverview(true));
             }
         }
     }
@@ -252,14 +281,52 @@ impl OverviewRoot {
         }
     }
 
-    fn close_overview(&mut self) {
+    fn close_overview(&mut self, do_switch: bool) {
         for (_, window) in &self.windows {
             window.emit(OverviewWindowInput::CloseOverview)
+        }
+
+        if do_switch {
+            if let Some(id) = self.data.active.client {
+                debug!(
+                    "Switching to client {}",
+                    self.data
+                        .hypr_data
+                        .clients
+                        .iter()
+                        .find(|(cid, _)| *cid == id)
+                        .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
+                );
+                // Defer execution to ensure window is hidden first
+                glib::idle_add_local(move || {
+                    if let Err(e) = switch_client(id) {
+                        tracing::warn!("Failed to switch to client {id:?}: {e}");
+                    }
+                    ControlFlow::Break
+                });
+            } else {
+                let id = self.data.active.workspace;
+                debug!(
+                    "Switching to workspace {}",
+                    self.data
+                        .hypr_data
+                        .workspaces
+                        .iter()
+                        .find(|(wid, _)| *wid == id)
+                        .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
+                );
+                glib::idle_add_local(move || {
+                    if let Err(e) = switch_workspace(id) {
+                        tracing::warn!("Failed to switch to workspace {id:?}: {e}");
+                    }
+                    ControlFlow::Break
+                });
+            }
         }
     }
 
     fn reload_overview(&mut self) {
-        let (hypr_data, active) = match collect_data(&SortConfig {
+        let (hypr_data, _active) = match collect_data(&SortConfig {
             filter_current_monitor: self.overview.filter_by_current_monitor,
             filter_current_workspace: self.overview.filter_by_current_workspace,
             filter_same_class: self.overview.filter_by_same_class,
@@ -325,7 +392,10 @@ impl OverviewRoot {
                     monitor: data.clone(),
                 };
                 if open {
-                    window.emit(OverviewWindowInput::OpenOverview(data))
+                    window.emit(OverviewWindowInput::OpenOverview((
+                        data,
+                        self.overview.top_offset,
+                    )))
                 } else {
                     window.emit(OverviewWindowInput::ReloadOverview(data))
                 }

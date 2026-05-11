@@ -28,13 +28,13 @@ pub struct Windows {
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Overview {
-    pub launcher: crate::Launcher,
+    pub launcher: crate::io::Launcher,
     #[default = "Super_L"]
     pub key: Box<str>,
     #[default(crate::Modifier::Super)]
     pub modifier: crate::Modifier,
     #[default(Vec::new())]
-    pub filter_by: Vec<crate::FilterBy>,
+    pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
     pub hide_filtered: bool,
     #[default = ""]
@@ -49,8 +49,8 @@ pub struct Switch {
     pub modifier: crate::Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
-    #[default(vec![crate::FilterBy::CurrentMonitor])]
-    pub filter_by: Vec<crate::FilterBy>,
+    #[default(vec![crate::io::FilterBy::CurrentMonitor])]
+    pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
     pub switch_workspaces: bool,
     #[default = ""]

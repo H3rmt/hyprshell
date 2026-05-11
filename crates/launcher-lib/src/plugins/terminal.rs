@@ -1,6 +1,6 @@
 use crate::plugins::{PluginReturn, StaticLaunchOption};
 use core_lib::WarnWithDetails;
-use core_lib::transfer::{Identifier, PluginNames};
+use core_lib::transfer::{Identifier, PluginName};
 use exec_lib::run::run_program;
 use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
@@ -8,7 +8,7 @@ use tracing::{debug, trace};
 
 pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, default_terminal: Option<&str>) {
     matches.push(StaticLaunchOption {
-        iden: Identifier::plugin(PluginNames::Terminal),
+        iden: Identifier::plugin(PluginName::Terminal),
         key: 't',
         text: Box::from("Terminal"),
         details: Box::from("Run a command in a terminal"),

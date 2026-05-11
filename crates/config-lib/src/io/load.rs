@@ -32,6 +32,9 @@ pub fn load_and_migrate_config(
             match migrated {
                 Ok(config) => {
                     info!("Config migrated successfully");
+                    let config: crate::Config = config
+                        .try_into()
+                        .context("Failed to convert config to internal format")?;
                     crate::check(&config)?;
                     return Ok(config);
                 }

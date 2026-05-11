@@ -30,7 +30,9 @@ pub struct WorkspaceClientsInit {
 }
 
 #[derive(Debug)]
-pub enum WorkspaceClientsOutput {}
+pub enum WorkspaceClientsOutput {
+    Clicked(ClientId),
+}
 
 #[relm4::factory(pub)]
 impl FactoryComponent for WorkspaceClients {
@@ -44,10 +46,11 @@ impl FactoryComponent for WorkspaceClients {
         #[root]
         gtk::Button {
             #[watch]
-            set_css_classes: if self.active { &["active", "client", "no-hover"] } else { &["client", "no-hover"] },
+            set_css_classes: if self.active { &["active", "client"] } else { &["client"] },
             set_cursor_from_name: Some("pointer"),
             set_width_request: scale(self.data.width, self.scale),
             set_height_request: scale(self.data.height, self.scale),
+            connect_clicked[sender, id = self.id] => move |_| sender.output_sender().emit(WorkspaceClientsOutput::Clicked(id)),
             gtk::Frame {
                 #[wrap(Some)]
                 set_label_widget = &gtk::Label {
@@ -85,7 +88,7 @@ impl FactoryComponent for WorkspaceClients {
         _index: &DynamicIndex,
         root: Self::Root,
         _returned_widget: &<Self::ParentWidget as relm4::factory::FactoryView>::ReturnedWidget,
-        _sender: FactorySender<Self>,
+        sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
 

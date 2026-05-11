@@ -35,7 +35,7 @@ pub(super) struct Switch {
     #[default(Modifier::Alt)]
     pub modifier: Modifier,
     #[default(Vec::new())]
-    pub filter_by: Vec<crate::FilterBy>,
+    pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
     pub show_workspaces: bool,
 }
@@ -49,7 +49,7 @@ pub(super) struct Overview {
     #[default(Modifier::Super)]
     pub(super) modifier: Modifier,
     #[default(Vec::new())]
-    pub(super) filter_by: Vec<crate::FilterBy>,
+    pub(super) filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
     pub(super) hide_filtered: bool,
     #[allow(dead_code)]
@@ -74,12 +74,12 @@ pub(super) struct Launcher {
     #[default = 400]
     pub(super) animate_launch_ms: u64,
     #[default(m2t3::Plugins{
-        applications: Some(crate::ApplicationsPluginConfig::default()),
-        terminal: Some(crate::EmptyConfig::default()),
+        applications: Some(crate::io::ApplicationsPluginConfig::default()),
+        terminal: Some(crate::io::EmptyConfig::default()),
         shell: None,
-        websearch: Some(crate::WebSearchConfig::default()),
-        calc: Some(crate::EmptyConfig::default()),
-        path: Some(crate::EmptyConfig::default()),
+        websearch: Some(crate::io::WebSearchConfig::default()),
+        calc: Some(crate::io::EmptyConfig::default()),
+        path: Some(crate::io::EmptyConfig::default()),
     })]
     pub(super) plugins: m2t3::Plugins,
 }

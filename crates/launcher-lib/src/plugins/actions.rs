@@ -2,7 +2,7 @@ use crate::plugins::{PluginReturn, SortableLaunchOption};
 use config_lib::actions::ToAction;
 use config_lib::{ActionsPluginActionCustom, ActionsPluginConfig};
 use core_lib::WarnWithDetails;
-use core_lib::transfer::{Identifier, PluginNames};
+use core_lib::transfer::{Identifier, PluginName};
 use tracing::{error, info, trace};
 
 pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &ActionsPluginConfig) {
@@ -26,8 +26,9 @@ pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &Act
                     details_long: Some(action.command.clone()),
                     bonus_score: 0,
                     takes_args: true,
+                    enabled: true,
                     iden: Identifier::data_additional(
-                        PluginNames::Actions,
+                        PluginName::Actions,
                         action.command.clone(),
                         name.clone(),
                     ),
@@ -42,7 +43,8 @@ pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &Act
                 details_long: Some(action.command.clone()),
                 bonus_score: 0,
                 takes_args: false,
-                iden: Identifier::data(PluginNames::Actions, action.command),
+                enabled: true,
+                iden: Identifier::data(PluginName::Actions, action.command),
                 subactions: vec![],
             });
         }

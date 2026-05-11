@@ -38,7 +38,15 @@
     background: rgba(90, 90, 45, 0.9);
 }
 
-.launcher-exec {
+.launcher-item-text {
+    background: rgb(90 65 45 / 0.9);
+}
+
+.launcher-item-image {
+    background: rgb(72 45 90 / 0.9);
+}
+
+.launcher-item-details {
     background: rgba(45, 90, 60, 0.9);
 }
 

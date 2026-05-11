@@ -35,12 +35,12 @@ impl From<old_structs::Overview> for m3t4::Overview {
     }
 }
 
-impl From<old_structs::Launcher> for crate::Launcher {
+impl From<old_structs::Launcher> for crate::io::Launcher {
     fn from(value: old_structs::Launcher) -> Self {
         Self {
             default_terminal: value.default_terminal,
             launch_modifier: value.launch_modifier,
-            width: value.width,
+            width: value.width as u16,
             show_when_empty: value.show_when_empty,
             max_items: value.max_items,
             plugins: value.plugins.into(),
@@ -48,7 +48,7 @@ impl From<old_structs::Launcher> for crate::Launcher {
     }
 }
 
-impl From<old_structs::Plugins> for crate::Plugins {
+impl From<old_structs::Plugins> for crate::io::Plugins {
     fn from(value: old_structs::Plugins) -> Self {
         Self {
             applications: value.applications,
@@ -57,7 +57,7 @@ impl From<old_structs::Plugins> for crate::Plugins {
             websearch: value.websearch,
             calc: value.calc,
             path: value.path,
-            actions: Some(crate::ActionsPluginConfig::default()),
+            actions: Some(crate::io::ActionsPluginConfig::default()),
         }
     }
 }

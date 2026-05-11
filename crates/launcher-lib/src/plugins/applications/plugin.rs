@@ -3,7 +3,7 @@ use crate::plugins::applications::data::{get_stored_runs, save_run};
 use crate::plugins::applications::map::{DesktopEntry, get_all_desktop_entries};
 use crate::plugins::main::SortableLaunchOption;
 use core_lib::WarnWithDetails;
-use core_lib::transfer::{Identifier, PluginNames};
+use core_lib::transfer::{Identifier, PluginName};
 use core_lib::util::{ExecType, analyse_exec};
 use exec_lib::run::run_program;
 use std::collections::HashMap;
@@ -50,9 +50,10 @@ impl SortableLaunchOption {
             details_long,
             bonus_score: *runs,
             iden: Identifier::data(
-                PluginNames::Applications,
+                PluginName::Applications,
                 Box::from(entry.source.to_string_lossy()),
             ),
+            enabled: true,
             takes_args: false,
             subactions: vec![],
         }

@@ -9,7 +9,7 @@ To develop for Hyprshell, you need to have the following installed:
 - **Rust**: Latest stable version (minimum `1.92.0`).
 - **GTK4 & Libadwaita**: Development headers for GTK4 and Libadwaita.
 - **GTK4 Layer Shell**: Development headers for [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell).
-- **Hyprland**: Minimum version `0.52.1`. Development headers (`hyprland-devel`) are needed for the plugin.
+- **Hyprland**: Minimum version `0.55.0`. Development headers (`hyprland-devel`) are needed for the plugin.
 - **just**: A handy command runner used for various development tasks.
 
 ### Installing `just`
@@ -28,17 +28,17 @@ Hyprshell is organized as a Rust workspace with multiple crates and some vendore
 ### Directories
 
 - `crates/`: Contains the internal libraries that make up Hyprshell.
+    - `clipboard-lib`: Clipboard management and history.
     - `core-lib`: Fundamental types and utilities.
     - `config-lib`: Configuration loading, generation, and migration.
     - `config-edit-lib`: The GUI settings editor.
     - `exec-lib`: Hyprland specific logic and plugin management.
     - `launcher-lib`: Logic for the application launcher.
     - `windows-lib`: Logic for the window switcher.
-    - `clipboard-lib`: Clipboard management and history.
-    - `hyprland-plugin`: A C++ Hyprland plugin used to capture keyboard events.
 - `dep-crates/`: Contains forks or local versions of external dependencies.
     - `hyprland-rs`: A fork of the Hyprland IPC library.
     - `wl-clipboard-rs`: A fork of the Wayland clipboard library.
+    - `relm4` / `relm4-components`: A fork of the Relm4 library.
 - `src/`: Contains the main entry point for the `hyprshell` binary.
 - `scripts/`: Various helper scripts for CI and development.
 - `nix/`: Nix-related files for building and development shells.

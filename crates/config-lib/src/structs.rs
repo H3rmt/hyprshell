@@ -40,6 +40,7 @@ pub struct WindowsGeneral {
 pub struct Overview {
     pub launcher: Launcher,
     pub key: Box<str>,
+    pub top_offset: u16,
     pub modifier: Modifier,
     pub filter_by_same_class: bool,
     pub filter_by_current_workspace: bool,
@@ -97,7 +98,7 @@ impl Default for ActionsPluginConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ApplicationsPluginConfig {
     pub run_cache_weeks: u8,
     pub show_execs: bool,
@@ -123,7 +124,7 @@ pub enum ActionsPluginAction {
     Custom(ActionsPluginActionCustom),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ActionsPluginActionCustom {
     pub names: Vec<Box<str>>,
     pub details: Box<str>,
@@ -144,14 +145,14 @@ impl Default for WebSearchConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SearchEngine {
     pub url: Box<str>,
     pub name: Box<str>,
     pub key: char,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Switch {
     pub modifier: Modifier,
     pub key: Box<str>,

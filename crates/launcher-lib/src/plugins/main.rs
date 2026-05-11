@@ -1,10 +1,10 @@
 use crate::plugins::{actions, applications, path, search, shell, terminal};
 use config_lib::Plugins;
-use core_lib::transfer::{Identifier, PluginNames};
+use core_lib::transfer::{Identifier, PluginName};
 use nucleo::pattern::Pattern;
 use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
-use tracing::debug_span;
+use tracing::{debug_span, trace};
 
 #[derive(Debug)]
 pub struct SortableLaunchOption {
@@ -15,6 +15,7 @@ pub struct SortableLaunchOption {
     pub bonus_score: u64,
     // if this is true, only direct match is allowed
     pub takes_args: bool,
+    pub enabled: bool,
     pub iden: Identifier,
     pub subactions: Vec<SortableLaunchOption>,
 }
@@ -70,11 +71,30 @@ pub fn get_sorted_launch_options(
         #[cfg(not(feature = "calc"))]
         tracing::warn!("calc plugin is not enabled");
     }
-    if plugins.path.is_some() {
-        debug_span!("path").in_scope(|| path::get_path_options(&mut matches));
-    }
 
     let mut out = vec![];
+
+    if text.is_empty() {
+        trace!("text empty, matches: {}", matches.len());
+        for r#match in matches {
+            out.push((
+                r#match.bonus_score.min(20),
+                SortedLaunchOption {
+                    name: r#match.names[0].clone(),
+                    icon: r#match.icon,
+                    details: r#match.details,
+                    details_long: r#match.details_long,
+                    takes_args: r#match.takes_args,
+                    enabled: true,
+                    iden: r#match.iden,
+                    subactions: r#match.subactions,
+                },
+            ));
+        }
+        // sort in reverse
+        out.sort_by(|(a, _), (b, _)| b.cmp(&a));
+        return out;
+    }
 
     let mut config = nucleo::Config::DEFAULT;
     config.prefer_prefix = true;
@@ -88,6 +108,7 @@ pub fn get_sorted_launch_options(
 
     // TODO add matching of keywords and execs but reduce their scores
     'outer: for r#match in matches {
+        // we need some custom matching logic for the ones who take args
         if r#match.takes_args {
             for name in r#match.names {
                 if text
@@ -104,12 +125,13 @@ pub fn get_sorted_launch_options(
                             details: r#match.details,
                             details_long: r#match.details_long,
                             takes_args: r#match.takes_args,
-                            enabled: true,
+                            enabled: r#match.enabled,
                             iden: r#match.iden,
                             subactions: r#match.subactions,
                         },
                     ));
                     continue 'outer;
+                    // TODO check if we can just fzf match
                 } else if name
                     .trim()
                     .to_ascii_lowercase()
@@ -159,12 +181,33 @@ pub fn get_sorted_launch_options(
                     details: r#match.details,
                     details_long: r#match.details_long,
                     takes_args: r#match.takes_args,
-                    enabled: true,
+                    enabled: r#match.enabled,
                     iden: r#match.iden,
                     subactions: r#match.subactions,
                 },
             ));
         }
+    }
+
+    // TODO must be last because curently cant be matched
+    let mut matches2 = Vec::new();
+    if plugins.path.is_some() {
+        debug_span!("path").in_scope(|| path::get_path_options(&mut matches2, text));
+    }
+    if let Some(first) = matches2.pop() {
+        out.push((
+            20,
+            SortedLaunchOption {
+                name: first.names[0].clone(),
+                icon: first.icon,
+                details: first.details,
+                details_long: first.details_long,
+                takes_args: first.takes_args,
+                enabled: first.enabled,
+                iden: first.iden,
+                subactions: first.subactions,
+            },
+        ))
     }
 
     // sort in reverse
@@ -210,7 +253,7 @@ pub fn launch(
     let _span = debug_span!("launch_plugin").entered();
 
     match iden.plugin {
-        PluginNames::Applications => debug_span!("applications").in_scope(|| {
+        PluginName::Applications => debug_span!("applications").in_scope(|| {
             applications::launch_option(
                 iden.data.as_deref(),
                 iden.data_additional.as_deref(),
@@ -218,17 +261,17 @@ pub fn launch(
                 data_dir,
             )
         }),
-        PluginNames::Shell => {
+        PluginName::Shell => {
             debug_span!("shell").in_scope(|| shell::launch_option(text, default_terminal))
         }
-        PluginNames::Terminal => {
+        PluginName::Terminal => {
             debug_span!("terminal").in_scope(|| terminal::launch_option(text, default_terminal))
         }
-        PluginNames::WebSearch => {
+        PluginName::WebSearch => {
             debug_span!("search").in_scope(|| search::launch_option(iden.data.as_deref(), text))
         }
-        PluginNames::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
-        PluginNames::Calc => {
+        PluginName::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
+        PluginName::Calc => {
             #[cfg(feature = "calc")]
             debug_span!("calc")
                 .in_scope(|| crate::plugins::calc::copy_result(iden.data.as_deref()));
@@ -238,7 +281,7 @@ pub fn launch(
                 show_animation: false,
             }
         }
-        PluginNames::Actions => debug_span!("actions").in_scope(|| {
+        PluginName::Actions => debug_span!("actions").in_scope(|| {
             actions::run_action(iden.data.as_deref(), text, iden.data_additional.as_deref())
         }),
     }

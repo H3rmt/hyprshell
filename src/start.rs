@@ -2,7 +2,7 @@ use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
 use crate::util::check_new_version;
-use crate::wm::configure_wm;
+use crate::wm::{configure_wm, configure_wm_initial};
 use anyhow::{Context, bail};
 use async_channel::{Receiver, Sender};
 use config_lib::Config;
@@ -81,62 +81,7 @@ pub fn start(
     thread::spawn(move || {
         socket_handler(external_event_sender);
     });
-
-    loop {
-        let config_file = config_file.clone();
-        let css_path = css_path.clone();
-        let data_dir = data_dir.clone();
-        let cache_dir = cache_dir.clone();
-        let rerun = run(
-            &config_file,
-            &css_path,
-            &data_dir,
-            &cache_dir,
-            &external_event_receiver,
-        );
-        if !rerun {
-            return Ok(());
-        }
-    }
-}
-
-pub fn run(
-    config_file: &Path,
-    css_path: &Path,
-    data_dir: &Path,
-    cache_dir: &Path,
-    external_event_receiver: &Receiver<ExternalTransferType>,
-) -> bool {
-    let config = match config_lib::load_and_migrate_config(config_file, true) {
-        Ok(config) => config,
-        Err(err) => {
-            notify_warn(&format!("Failed to load config: {err:?}"));
-            if let Err(err) = hyprshell_config_block(config_file) {
-                error!("Failed to block config: {err:?}",);
-                process::exit(1);
-            }
-            info!("Trying to rerun application after config reload");
-            return true; // return needed to exit the application
-        }
-    };
-
-    // TODO remove in future if more is available
-    if config.windows.is_none()
-        || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
-    {
-        notify_warn("Nothing is enabled in the config");
-        if let Err(err) = hyprshell_config_block(config_file) {
-            error!("Failed to block config: {err:?}",);
-            process::exit(1);
-        }
-        info!("Trying to rerun application after config reload");
-        return true; // return needed to exit the application
-    }
-
-    if !configure_wm(&config, &cache_dir) {
-        warn!("Failed to configure wm, exiting");
-        return false;
-    }
+    configure_wm_initial();
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
@@ -155,39 +100,14 @@ pub fn run(
         .with_args(vec![]);
     debug!("Application created");
 
-    apply_css(&css_path).warn_details("Failed to apply CSS");
     relm.run::<Root>(RootInit {
-        config,
+        config_file,
+        css_path,
+        data_dir,
+        cache_dir,
         external_event_receiver: external_event_receiver.clone(),
     });
-    true
-}
 
-fn apply_css(custom_css: &Path) -> anyhow::Result<()> {
-    let provider_app = CssProvider::new();
-
-    provider_app.load_from_string(include_str!("default_styles.css"));
-    style_context_add_provider_for_display(
-        &Display::default().context("Could not connect to a display.")?,
-        &provider_app,
-        STYLE_PROVIDER_PRIORITY_USER,
-    );
-
-    windows_lib::get_css()?;
-    launcher_lib::get_css()?;
-
-    if custom_css.exists() {
-        debug!("Loading custom css file {custom_css:?}");
-        let provider_user = CssProvider::new();
-        provider_user.load_from_path(custom_css);
-        style_context_add_provider_for_display(
-            &Display::default().context("Could not connect to a display.")?,
-            &provider_user,
-            STYLE_PROVIDER_PRIORITY_USER,
-        );
-    } else {
-        debug!("Custom css file {custom_css:?} does not exist");
-    }
     Ok(())
 }
 
@@ -230,7 +150,7 @@ pub fn register_event_restarter(
                     glib::spawn_future_local(async move {
                         info!("Restarting gui ({cause})");
                         event_sender_inner
-                            .send(ExternalTransferType::Restart)
+                            .send(ExternalTransferType::Reload)
                             .await
                             .warn_details("unable to send restart");
                     });

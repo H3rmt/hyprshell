@@ -38,7 +38,15 @@
     background: var(--bg-color-hover, rgba(40, 40, 50, 1));
 }
 
-.launcher-exec {
+.launcher-item-name {
+
+}
+
+.launcher-item-image {
+
+}
+
+.launcher-item-details {
     font-size: 0.8rem;
     font-family: monospace;
 }

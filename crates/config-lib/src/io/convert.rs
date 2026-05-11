@@ -51,7 +51,8 @@ impl TryFrom<Overview> for crate::Overview {
     fn try_from(value: Overview) -> Result<Self, Self::Error> {
         Ok(Self {
             key: value.key,
-            modifier: value.modifier.try_into()?,
+            modifier: value.modifier,
+            top_offset: value.top_offset,
             filter_by_same_class: value.filter_by.contains(&FilterBy::SameClass),
             filter_by_current_workspace: value.filter_by.contains(&FilterBy::CurrentWorkspace),
             filter_by_current_monitor: value.filter_by.contains(&FilterBy::CurrentMonitor),
@@ -79,6 +80,7 @@ impl From<crate::Overview> for Overview {
             modifier: value.modifier,
             filter_by: filter,
             exclude_workspaces: value.exclude_workspaces,
+            top_offset: value.top_offset,
         }
     }
 }
@@ -128,7 +130,7 @@ impl TryFrom<Launcher> for crate::Launcher {
     fn try_from(value: Launcher) -> Result<Self, Self::Error> {
         Ok(Self {
             default_terminal: value.default_terminal,
-            launch_modifier: value.launch_modifier.into(),
+            launch_modifier: value.launch_modifier,
             width: value.width,
             show_when_empty: value.show_when_empty,
             max_items: value.max_items,

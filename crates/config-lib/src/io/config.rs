@@ -36,6 +36,8 @@ pub struct Overview {
     pub launcher: Launcher,
     #[default = "Super_L"]
     pub key: Box<str>,
+    #[default = 430]
+    pub top_offset: u16,
     #[default(Modifier::Super)]
     pub modifier: Modifier,
     #[default(Vec::new())]
@@ -63,7 +65,7 @@ pub struct Launcher {
         terminal: Some(EmptyConfig::default()),
         shell: None,
         websearch: Some(WebSearchConfig::default()),
-        calc: Some(EmptyConfig::default()),
+        calc: None,
         path: Some(EmptyConfig::default()),
         actions: Some(ActionsPluginConfig::default()),
     })]

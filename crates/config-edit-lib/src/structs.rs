@@ -273,6 +273,7 @@ impl From<Overview> for Option<config_lib::Overview> {
             Some(config_lib::Overview {
                 launcher: value.launcher.into(),
                 key: Box::from(value.key),
+                top_offset: 430,
                 modifier: value.modifier.into(),
                 filter_by_same_class: value.same_class,
                 filter_by_current_workspace: value.current_workspace,

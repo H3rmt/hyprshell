@@ -1,10 +1,10 @@
-use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
+use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, WorkspacesOutput};
 use crate::switch::SwitchRootInput;
 use core_lib::{
     Active, ByFirst, ClientData, ClientId, HyprlandData, MonitorData, OVERVIEW_NAMESPACE,
     SWITCH_NAMESPACE, WorkspaceData, WorkspaceId,
 };
-use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use relm4::adw::prelude::*;
 use relm4::adw::{gdk, gtk};
@@ -29,7 +29,7 @@ pub struct OverviewWindow {
 #[derive(Debug)]
 pub enum OverviewWindowInput {
     SetGeneral(config_lib::WindowsGeneral),
-    OpenOverview(OverviewWindowData),
+    OpenOverview((OverviewWindowData, u16)),
     CloseOverview,
     ReloadOverview(OverviewWindowData),
     SetActive(Active, Active),
@@ -44,7 +44,8 @@ pub struct OverviewWindowInit {
 
 #[derive(Debug)]
 pub enum OverviewWindowOutput {
-    // Closed,
+    Clicked(WorkspaceId),
+    ClickedC(ClientId),
 }
 
 #[relm4::component(pub)]
@@ -80,7 +81,10 @@ impl SimpleComponent for OverviewWindow {
 
         let items: FactoryVecDeque<Workspaces> = FactoryVecDeque::builder()
             .launch(gtk::FlowBox::default())
-            .detach();
+            .forward(sender.output_sender(), |msg| match msg {
+                WorkspacesOutput::Clicked(ws) => OverviewWindowOutput::Clicked(ws),
+                WorkspacesOutput::ClickedC(id) => OverviewWindowOutput::ClickedC(id),
+            });
 
         let model = Self {
             general: init.general,
@@ -99,7 +103,8 @@ impl SimpleComponent for OverviewWindow {
         window.init_layer_shell();
         window.set_namespace(Some(OVERVIEW_NAMESPACE));
         window.set_layer(Layer::Top);
-        window.set_keyboard_mode(KeyboardMode::OnDemand);
+        window.set_anchor(Edge::Top, true);
+        window.set_keyboard_mode(KeyboardMode::Exclusive);
         window.set_monitor(Some(&init.gtk_monitor));
         ComponentParts { model, widgets }
     }
@@ -110,9 +115,10 @@ impl SimpleComponent for OverviewWindow {
             OverviewWindowInput::SetGeneral(general) => {
                 self.general = general;
             }
-            OverviewWindowInput::OpenOverview(data) => {
+            OverviewWindowInput::OpenOverview((data, top_offset)) => {
                 if !self.open {
                     self.open = true;
+                    self.window.set_margin(Edge::Top, top_offset as i32);
                     self.open_overview(data);
                 } else {
                     trace!("already open");

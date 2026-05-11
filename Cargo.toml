@@ -73,7 +73,7 @@ config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config
 test-log.workspace = true
 
 [features]
-default = ["dev", "json5_config", "gui_settings_editor", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_compress_brotli", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
+default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_compress_brotli", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
 slim = ["gui_settings_editor", "debug_command", "clipboard_compress_lz4"]
 json5_config = ["config-lib/json5_config"]
 gui_settings_editor = ["dep:config-edit-lib"]

@@ -65,6 +65,7 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
         dispatcher: Dispatch::ExecCmd(bind.exec.to_string(), None),
     };
     trace!("binding exec: {binding:?}");
+    binding.unbind()?;
     binding.bind()?;
     Ok(())
 }

@@ -1,5 +1,5 @@
 use crate::shared::workspace_clients::{
-    WorkspaceClients, WorkspaceClientsInit, WorkspaceClientsInput,
+    WorkspaceClients, WorkspaceClientsInit, WorkspaceClientsInput, WorkspaceClientsOutput,
 };
 use core_lib::{ClientData, ClientId, MonitorData, WorkspaceData, WorkspaceId};
 use regex::Regex;
@@ -36,7 +36,10 @@ pub struct WorkspacesInit {
 }
 
 #[derive(Debug)]
-pub enum WorkspacesOutput {}
+pub enum WorkspacesOutput {
+    Clicked(WorkspaceId),
+    ClickedC(ClientId),
+}
 
 #[relm4::factory(pub)]
 impl FactoryComponent for Workspaces {
@@ -48,14 +51,21 @@ impl FactoryComponent for Workspaces {
 
     view! {
         gtk::FlowBoxChild {
-            gtk::Button {
+            gtk::Box {
                 #[watch]
                 set_css_classes: &workspace_css_classes(self.active, self.workspace_id),
-                set_cursor_from_name: Some("pointer"),
                 set_width_request: scale(self.monitor_data.width, self.scale),
                 set_height_request: scale(self.monitor_data.height, self.scale),
                 gtk::Frame {
-                    set_label: Some(&self.workspace_label()),
+                    #[wrap(Some)]
+                    set_label_widget = &gtk::Button {
+                        set_cursor_from_name: Some("pointer"),
+                        set_width_request: scale(self.monitor_data.width, self.scale),
+                        connect_clicked[sender, id = self.workspace_id] => move |_| sender.output_sender().emit(WorkspacesOutput::Clicked(id)),
+                        gtk::Label {
+                            set_label: &self.workspace_label(),
+                        }
+                    },
                     set_label_align: 0.5,
                     self.clients.widget() -> &gtk::Fixed {
                         set_width_request: scale(self.data.width, self.scale),
@@ -66,10 +76,12 @@ impl FactoryComponent for Workspaces {
         }
     }
 
-    fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
+    fn init_model(init: Self::Init, _index: &DynamicIndex, sender: FactorySender<Self>) -> Self {
         let mut clients: FactoryVecDeque<WorkspaceClients> = FactoryVecDeque::builder()
             .launch(gtk::Fixed::default())
-            .detach();
+            .forward(sender.output_sender(), |msg| match msg {
+                WorkspaceClientsOutput::Clicked(id) => WorkspacesOutput::ClickedC(id),
+            });
 
         // Populate clients - sort by floating status (floating windows on top)
         {

@@ -11,10 +11,10 @@ use tracing::trace;
 #[derive(Debug)]
 pub struct Clients {
     active: bool,
-    pub data: ClientData,
+    data: ClientData,
     pub id: ClientId,
-    pub scale: f64,
-    pub monitor_data: MonitorData,
+    scale: f64,
+    monitor_data: MonitorData,
 }
 
 #[derive(Debug)]

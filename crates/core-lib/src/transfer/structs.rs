@@ -9,8 +9,8 @@ pub enum ExternalTransferType {
     OpenSwitch(OpenSwitch),
     /// send from releasing the mod key
     CloseSwitch(CloseSwitch),
-    /// send from the app itself when new monitor / config changes detected
-    Restart,
+    /// send from the app itself when new monitor / config / css / hyprconfig changes detected
+    Reload,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
@@ -42,7 +42,7 @@ pub enum CloseOverviewConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum PluginNames {
+pub enum PluginName {
     Applications,
     Shell,
     Terminal,
@@ -54,7 +54,7 @@ pub enum PluginNames {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Identifier {
-    pub plugin: PluginNames,
+    pub plugin: PluginName,
     // identifies the box in the launcher results
     pub data: Option<Box<str>>,
     // additional data used to get suboption in submenu (only available when launched through click)
@@ -63,7 +63,7 @@ pub struct Identifier {
 
 impl Identifier {
     #[must_use]
-    pub const fn plugin(plugin: PluginNames) -> Self {
+    pub const fn plugin(plugin: PluginName) -> Self {
         Self {
             plugin,
             data: None,
@@ -72,7 +72,7 @@ impl Identifier {
     }
 
     #[must_use]
-    pub const fn data(plugin: PluginNames, data: Box<str>) -> Self {
+    pub const fn data(plugin: PluginName, data: Box<str>) -> Self {
         Self {
             plugin,
             data: Some(data),
@@ -82,7 +82,7 @@ impl Identifier {
 
     #[must_use]
     pub const fn data_additional(
-        plugin: PluginNames,
+        plugin: PluginName,
         data: Box<str>,
         data_additional: Box<str>,
     ) -> Self {

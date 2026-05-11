@@ -31,6 +31,48 @@ pub fn reload_hyprland_config() -> anyhow::Result<()> {
     reload::call().context("Failed to reload hyprland config")
 }
 
+fn get_prev_follow_mouse() -> &'static Mutex<Option<String>> {
+    static PREV_FOLLOW_MOUSE: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+    PREV_FOLLOW_MOUSE.get_or_init(|| Mutex::new(None))
+}
+
+pub fn set_no_follow_mouse() -> anyhow::Result<()> {
+    let raw = hyprland::EvalRaw::new("hl.config({ input = { follow_mouse = 3} })");
+    raw.eval().context("Failed to set follow_mouse to 3")?;
+    trace!("Set follow_mouse to 3");
+    Ok(())
+}
+
+pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
+    let follow = get_prev_follow_mouse()
+        .lock()
+        .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
+    if let Some(follow) = follow.as_ref() {
+        let raw = hyprland::EvalRaw::new(format!(
+            "hl.config({{ input = {{ follow_mouse = {} }} }})",
+            follow
+        ));
+        raw.eval()
+            .context("Failed to set follow_mouse to default")?;
+        trace!("Restored previous follow_mouse value: {follow}");
+    } else {
+        trace!("No previous follow_mouse value stored, skipping reset");
+    }
+    drop(follow);
+    Ok(())
+}
+
+pub fn set_follow_mouse_default() -> anyhow::Result<()> {
+    let mut lock = get_prev_follow_mouse()
+        .lock()
+        .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
+    let follow = Keyword::get("input:follow_mouse").context("keyword failed")?;
+    trace!("Storing previous follow_mouse value: {}", follow.value);
+    *lock = Some(follow.value.to_string());
+    drop(lock);
+    Ok(())
+}
+
 /// tries to get initial data for 500 ms * 40 = 20 s
 ///
 /// # Errors
@@ -72,7 +114,7 @@ fn internal_get_initial_active() -> anyhow::Result<Active> {
 }
 
 pub fn check_version() -> anyhow::Result<()> {
-    pub const MIN_VERSION: Version = Version::new(0, 52, 1);
+    pub const MIN_VERSION: Version = Version::new(0, 55, 0);
 
     let version = get_version()
         .context("Failed to get version! (hyprland is probably outdated or too new??)")?;

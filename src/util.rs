@@ -93,6 +93,10 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
         "4.9.0",
         "Version 4.9.0 adds a new Settings Editor, replaces tui config generation",
     ),
+    (
+        "4.10.0",
+        "Version 4.10.0 adds support for hyprland-lua and removes the hyprland plugin. This Version contains missing features and maybe bugs, report them on github if you find any",
+    ),
 ];
 
 /// Checks if the current version is newer than the cached version.

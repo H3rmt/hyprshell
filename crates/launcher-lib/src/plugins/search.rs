@@ -2,7 +2,7 @@ use crate::plugins::{PluginReturn, StaticLaunchOption};
 use config_lib::SearchEngine;
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
-use core_lib::transfer::{Identifier, PluginNames};
+use core_lib::transfer::{Identifier, PluginName};
 use exec_lib::run::run_program;
 use exec_lib::switch::switch_client_by_initial_class;
 use relm4::adw::gtk::gdk::Key;
@@ -23,7 +23,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[Searc
                 details: format!("Search with {}", engine.name).into_boxed_str(),
                 icon: icon.clone(),
                 key: engine.key,
-                iden: Identifier::data(PluginNames::WebSearch, engine.url.clone()),
+                iden: Identifier::data(PluginName::WebSearch, engine.url.clone()),
             });
             count += 1;
         }

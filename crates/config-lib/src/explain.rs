@@ -54,12 +54,12 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
             }
             if let Some(engines) = &overview.launcher.plugins.websearch {
                 any_plugin = true;
-                let _ =    builder.write_str(&format!("\t- Press {blue}Ctrl{reset} + {bold}{blue}<key>{reset} to search the typed text in any of the configured SearchEngines: {}.\n",
-                                                      engines.engines.iter().map(|e| e.name.to_string()).collect::<Vec<_>>().join(", ")));
+                let _ = builder.write_str(&format!("\t- Press {blue}Ctrl{reset} + {bold}{blue}<key>{reset} to search the typed text in any of the configured SearchEngines: {}.\n",
+                                                   engines.engines.iter().map(|e| e.name.to_string()).collect::<Vec<_>>().join(", ")));
             }
             if overview.launcher.plugins.calc.is_some() {
                 any_plugin = true;
-                let _ =   builder.write_str(
+                let _ = builder.write_str(
                     "\t- Typing a mathematical expression will calculate it and display the result in the launcher.\n",
                 );
             }
@@ -136,7 +136,9 @@ After opening the Overview the Launcher is available:
 
 Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
 ";
-        let config = create_test_config();
+        let mut config = create_test_config();
+        let a = config.windows.as_mut().unwrap();
+        a.overview.as_mut().unwrap().launcher.plugins.calc = Some(());
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
         assert_eq!(result, CONFIG);
@@ -173,7 +175,6 @@ After opening the Overview the Launcher is available:
 	- Start typing to search through applications (sorted by how often they were opened). Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
 	- Press Ctrl + t to run the typed command in a terminal.
 	- Press Ctrl + <key> to search the typed text in any of the configured SearchEngines: Google, Wikipedia.
-	- Typing a mathematical expression will calculate it and display the result in the launcher.
 	- Paths (starting with ~ or /) can be open in default file-manager.
 	- Type Reboot/Shutdown/etc. to run corresponding commands. Type `actions` to see all available ones.
 

@@ -13,10 +13,17 @@ use tracing::{debug, instrument, trace};
 pub fn switch_client(address: ClientId) -> anyhow::Result<()> {
     debug!("execute switch to client: {address}");
     deactivate_special_workspace_if_needed().warn();
-    Dispatch::call(DispatchType::FocusWindow(WindowIdentifier::Address(
-        to_client_address(address),
-    )))?;
-    Dispatch::call(DispatchType::BringActiveToTop)?;
+    let disp = hyprland::dispatch_new::Dispatch::FocusWindow(
+        hyprland::dispatch_new::WindowIdentifier::Address(to_client_address(address)),
+    );
+    disp.apply().context("failed to execute dispatch")?;
+    let disp2 = hyprland::dispatch_new::Dispatch::WindowAlterZ(
+        hyprland::dispatch_new::ZOption::Top,
+        Some(hyprland::dispatch_new::WindowIdentifier::Address(
+            to_client_address(address),
+        )),
+    );
+    disp2.apply().context("failed to execute dispatch2")?;
     Ok(())
 }
 
@@ -31,6 +38,22 @@ pub fn switch_client_by_initial_class(class: &str) -> anyhow::Result<()> {
         )),
     ))?;
     Dispatch::call(DispatchType::BringActiveToTop)?;
+
+    let disp = hyprland::dispatch_new::Dispatch::FocusWindow(
+        hyprland::dispatch_new::WindowIdentifier::InitialClassRegularExpression(
+            class.to_ascii_lowercase(),
+        ),
+    );
+    disp.apply().context("failed to execute dispatch")?;
+    let disp2 = hyprland::dispatch_new::Dispatch::WindowAlterZ(
+        hyprland::dispatch_new::ZOption::Top,
+        Some(
+            hyprland::dispatch_new::WindowIdentifier::InitialClassRegularExpression(
+                class.to_ascii_lowercase(),
+            ),
+        ),
+    );
+    disp2.apply().context("failed to execute dispatch2")?;
     Ok(())
 }
 
@@ -72,10 +95,15 @@ fn switch_special_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
         .into_iter()
         .find(|w| w.id == workspace_id)
         .context("workspace not found")?;
-    Dispatch::call(DispatchType::ToggleSpecialWorkspace(Some(
-        ws.name.trim_start_matches("special:").to_string(),
-    )))
-    .context("failed to execute toggle special workspace")
+
+    let disp = hyprland::dispatch_new::Dispatch::FocusWorkspace(
+        hyprland::dispatch_new::WorkspaceIdentifier::Special(Some(
+            ws.name.trim_start_matches("special:").to_string(),
+        )),
+        false,
+    );
+    disp.apply().context("failed to execute dispatch")?;
+    Ok(())
 }
 
 #[instrument(level = "debug", ret(level = "trace"))]

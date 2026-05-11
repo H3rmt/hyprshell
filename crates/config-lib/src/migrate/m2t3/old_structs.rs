@@ -37,7 +37,7 @@ pub struct Overview {
     #[default(crate::Modifier::Super)]
     pub modifier: crate::Modifier,
     #[default(Vec::new())]
-    pub filter_by: Vec<crate::FilterBy>,
+    pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
     pub hide_filtered: bool,
 }
@@ -56,12 +56,12 @@ pub struct Launcher {
     #[default = true]
     pub show_when_empty: bool,
     #[default(Plugins{
-        applications: Some(crate::ApplicationsPluginConfig::default()),
-        terminal: Some(crate::EmptyConfig::default()),
+        applications: Some(crate::io::ApplicationsPluginConfig::default()),
+        terminal: Some(crate::io::EmptyConfig::default()),
         shell: None,
-        websearch: Some(crate::WebSearchConfig::default()),
-        calc: Some(crate::EmptyConfig::default()),
-        path: Some(crate::EmptyConfig::default()),
+        websearch: Some(crate::io::WebSearchConfig::default()),
+        calc: Some(crate::io::EmptyConfig::default()),
+        path: Some(crate::io::EmptyConfig::default()),
     })]
     pub plugins: Plugins,
 }
@@ -69,10 +69,10 @@ pub struct Launcher {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plugins {
-    pub applications: Option<crate::ApplicationsPluginConfig>,
-    pub terminal: Option<crate::EmptyConfig>,
-    pub shell: Option<crate::EmptyConfig>,
-    pub websearch: Option<crate::WebSearchConfig>,
-    pub calc: Option<crate::EmptyConfig>,
-    pub path: Option<crate::EmptyConfig>,
+    pub applications: Option<crate::io::ApplicationsPluginConfig>,
+    pub terminal: Option<crate::io::EmptyConfig>,
+    pub shell: Option<crate::io::EmptyConfig>,
+    pub websearch: Option<crate::io::WebSearchConfig>,
+    pub calc: Option<crate::io::EmptyConfig>,
+    pub path: Option<crate::io::EmptyConfig>,
 }

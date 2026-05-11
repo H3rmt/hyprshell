@@ -2,7 +2,7 @@
 
 ## No flakes
 
-This is the easy way to use/configure hyprshell as this way they cant be out of sync.
+This is the easy way to use/configure hyprshell as this way the setting cant be out of sync.
 
 ### nixpkgs
 
@@ -45,18 +45,11 @@ This config enables overview and switch, but is not type-save like the flake hom
 
 ## Flakes
 
-Warning: hyprshell builds a hyprland plugin at runtime which **requires the exact C headers** from the running hyprland instance.
-
-This is trivial for other platforms, but not for NixOS and can cause problems (please report them on github if you encounter any).
-The default hyprshell program from this flake has access to the hyprland C headers from the latest hyprland flake (updated every ~2 weeks).
-If you use hypland as a flake you MUST use hyprshell as a flake.
-To synchronize the hyprland version with the hyprshell version, you have to override the hyprland input in the flake.
-
 A full example nixos config can be found in `test-files/nixos`
 
 ### With Home-manager [recommend]
 
-**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell` but wont be able to cache the full program**
+**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) should be added with `cachix use hyprshell`**
 
 `flake.nix`:
 
@@ -65,11 +58,7 @@ A full example nixos config can be found in `test-files/nixos`
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     hyprland.url = "github:hyprwm/Hyprland";
-    hyprshell = {
-      url = "github:H3rmt/hyprshell";
-      # overriding is necessary
-      inputs.hyprland.follows = "hyprland";
-    };
+    hyprshell.url = "github:H3rmt/hyprshell";
   };
 
   outputs = { nixpkgs, hyprshell }@inputs: {
@@ -116,8 +105,6 @@ Everything is disabled by default, so you need to enable it (even settings.windo
     package = inputs.hyprshell.packages.${inputs.nixpkgs.stdenv.hostPlatform.system}.hyprshell;
     # use this if you want the more minimal hyprshell (see Readme.md > Features)
     package = inputs.hyprshell.packages.${inputs.nixpkgs.stdenv.hostPlatform.system}.hyprshell-slim;
-    # use this if you dont use hyprland via a flake and override hyprshells hyprland input
-    package = inputs.hyprshell.packages.${inputs.nixpkgs.stdenv.hostPlatform.system}.hyprshell-nixpkgs;
     settings = {
       windows = {
         enable = true; # please dont forget to enable windows if you want to use overview or switch
@@ -142,40 +129,9 @@ Everything is disabled by default, so you need to enable it (even settings.windo
 }
 ```
 
-
-### No Home-manager with hyprland from nixpkgs
-
-**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell`**
-
-`flake.nix`:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprshell = {
-      url = "github:H3rmt/hyprshell";
-      # no overriding of input necessary
-    };
-  };
-
-  outputs = { nixpkgs, hyprshell }: {
-    nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [{ 
-        environment.systemPackages = [ 
-            nixpkgs.hyprland
-            hyprshell.packages.${nixpkgs.stdenv.hostPlatform.system}.hyprshell-nixpkgs 
-        ]; 
-      }];
-    };
-  };
-}
-```
-
 ### No Home-manager with hyprland from flake
 
-**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) can be added with `cachix use hyprshell` but wont be able to cache the full program**
+**[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) should be added with `cachix use hyprshell`**
 
 `flake.nix`:
 
@@ -184,11 +140,7 @@ Everything is disabled by default, so you need to enable it (even settings.windo
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     hyprland.url = "github:hyprwm/Hyprland";
-    hyprshell = {
-      url = "github:H3rmt/hyprshell";
-      # overriding is necessary
-      inputs.hyprland.follows = "hyprland";
-    };
+    hyprshell.url = "github:H3rmt/hyprshell";
   };
 
   outputs = { nixpkgs, hyprland, hyprshell }@inputs: {

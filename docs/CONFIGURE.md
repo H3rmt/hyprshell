@@ -4,6 +4,7 @@
 
 ---
 
+
 The main config file is located at `~/.config/hyprshell/config.ron` but can be configured using the `-c` argument. You can also use `.toml` and `.json(5)` as config file formats.
 The config is loaded at startup and is reloaded when the file changes.
 
@@ -16,6 +17,10 @@ hyprshell config generate
 In case this documentation is outdated, or you understand rust, look at the [struct definition](../crates/config-lib/src/structs.rs) for the most up-to-date information.
 
 The default values for these configs, which are also the values that get used when generating the config, are located in the code directly above the value definition (`#[default ... ]`).
+
+
+> [!CAUTION]
+> This is out of date, use the config editor instead, it contains accurate descriptions of all the options.
 
 ## Config Options
 
