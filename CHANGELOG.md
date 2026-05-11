@@ -1,5 +1,45 @@
 # Changelog
 
+## [4.10.0](https://github.com/H3rmt/hyprshell/compare/v4.9.2...v4.10.0) (2026-05-11)
+
+
+### Features
+
+* added exclude workspaces by regex ([83677d8](https://github.com/H3rmt/hyprshell/commit/83677d89dbc38ee05605f60d0fc292461e6a3ca1))
+* added fuzzy search to launcher ([b43771b](https://github.com/H3rmt/hyprshell/commit/b43771b47738707c7b2ec2ea2487620095d32414))
+
+
+### Bug Fixes
+
+* added close window functionality to overview ([18c9e08](https://github.com/H3rmt/hyprshell/commit/18c9e081b2f97ffe1809099d5ee48762208d2751))
+* added softstart for application ([18c9e08](https://github.com/H3rmt/hyprshell/commit/18c9e081b2f97ffe1809099d5ee48762208d2751))
+* rework closing of windows in switch mode ([9906e0e](https://github.com/H3rmt/hyprshell/commit/9906e0e92ff935b5dfaa00ff6e79e4c0d570fef3))
+
+
+### Code Refactoring
+
+* add plugin static boxes back in ([f90d484](https://github.com/H3rmt/hyprshell/commit/f90d48465fd43a0f11c81c5f9d80fe36dabc1daa))
+* rewrite core app in relm4 (1/?) ([a6aba5d](https://github.com/H3rmt/hyprshell/commit/a6aba5d36e7aadb7776f4f1f6e1c3b6574d6574d))
+* rewrite core app in relm4 (10/10) ([7c6abb3](https://github.com/H3rmt/hyprshell/commit/7c6abb364092931bdb911678b164a8424d33fb43))
+* rewrite core app in relm4 (2/?) ([dc23148](https://github.com/H3rmt/hyprshell/commit/dc231482711ac3af2fcb34c45d38690e744e1318))
+* rewrite core app in relm4 (3/?) ([1279ca3](https://github.com/H3rmt/hyprshell/commit/1279ca3bde5a2dc5e900a988ed11213c1f6b08a2))
+* rewrite core app in relm4 (4/?) (kill windows) ([ce1998a](https://github.com/H3rmt/hyprshell/commit/ce1998ab5fd027a8e77fc1eed6f2cf273dfe7c10))
+* rewrite core app in relm4 (5/?) (load config) ([75e5d56](https://github.com/H3rmt/hyprshell/commit/75e5d5670daeb3cc233fdf7e247451b0341b2e7b))
+* rewrite core app in relm4 (6/?) ([493ef8d](https://github.com/H3rmt/hyprshell/commit/493ef8d45912e8860368b17531d89400e3f407d0))
+* rewrite core app in relm4 (7/?) ([a41c692](https://github.com/H3rmt/hyprshell/commit/a41c6926fd2e66ed44a7fd86f956f79d3b4971f6))
+* rewrite core app in relm4 (7/?) ([65fa105](https://github.com/H3rmt/hyprshell/commit/65fa105cc313f0a716d2951581aa3dcdda66bc9a))
+* rewrite core app in relm4 (8/?) ([15f30ac](https://github.com/H3rmt/hyprshell/commit/15f30acc037f0fb5d33b77dd9e36e64a4ad4a3c2))
+* rewrite core app in relm4 (9/9) ([b49f648](https://github.com/H3rmt/hyprshell/commit/b49f64894691e6a47e0ee144f40df8c29394b949))
+* rewrite hyprland-rs ([3c2dc09](https://github.com/H3rmt/hyprshell/commit/3c2dc093855e2bc29e3ed85defe11109cc259733))
+* rewrite hyprland-rs ([074a744](https://github.com/H3rmt/hyprshell/commit/074a7444798ff882508b332ee52fc453f218e767))
+* rewrite hyprland-rs ([2c6ca7d](https://github.com/H3rmt/hyprshell/commit/2c6ca7defd3d234db789d80db6bb58959d79fa44))
+* rewrite hyprland-rs ([2b32ed8](https://github.com/H3rmt/hyprshell/commit/2b32ed8f203a5e659f642a1ec08cd72a9f1bf413))
+
+
+### Documentation
+
+* update README.md ([9906e0e](https://github.com/H3rmt/hyprshell/commit/9906e0e92ff935b5dfaa00ff6e79e4c0d570fef3))
+
 ## [4.9.2](https://github.com/H3rmt/hyprshell/compare/v4.9.1...v4.9.2) (2026-01-06)
 
 
