@@ -7,7 +7,7 @@ homepage = "https://github.com/hyprland-community/hyprland-rs"
 
 rust-version = "1.85.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-version = "4.9.2"
+version = "4.10.0"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "hyprpaper"]
