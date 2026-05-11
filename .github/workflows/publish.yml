@@ -67,7 +67,7 @@ jobs:
           git push --delete origin ${{ github.ref_name }}
           
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
-          cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
+          # cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
           
           # push current branch to hyprshell branch (for development)
           git fetch origin hyprshell
