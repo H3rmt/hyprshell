@@ -1,6 +1,7 @@
 mod css;
 pub mod debug;
 mod plugins;
+mod plugins_boxes;
 mod result;
 mod root;
 

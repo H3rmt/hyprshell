@@ -9,7 +9,11 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
 use tracing::{debug, trace, warn};
 
-pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[SearchEngine]) {
+pub fn get_static_options(
+    matches: &mut Vec<StaticLaunchOption>,
+    config: &[SearchEngine],
+    text: &str,
+) {
     let browser = get_browser_info();
     let icon = browser.icon.clone();
     drop(browser);
@@ -24,6 +28,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, config: &[Searc
                 icon: icon.clone(),
                 key: engine.key,
                 iden: Identifier::data(PluginName::WebSearch, engine.url.clone()),
+                enabled: !text.is_empty(),
             });
             count += 1;
         }
@@ -84,7 +89,7 @@ pub struct BrowserData {
 }
 
 pub(super) fn get_browser_info() -> BrowserData {
-    let a = get_default_desktop_file("x-scheme-handler/https", |(entry, ini)| {
+    let mut a = get_default_desktop_file("x-scheme-handler/https", |(entry, ini)| {
         if let Some(section) = ini.get_section("Desktop Entry") {
             let exec = section.get_first("Exec");
             let startup_wm_class = section.get_first("StartupWMClass");

@@ -126,7 +126,6 @@ impl FactoryComponent for LauncherResults {
                     .set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));
             }
         }
-
         widgets
     }
 }

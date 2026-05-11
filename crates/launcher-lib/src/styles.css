@@ -116,6 +116,10 @@
     background: var(--bg-color, rgba(20, 20, 20, 0.9));
 }
 
+.launcher-plugin-image {
+
+}
+
 .launcher-plugin-key {
     font-size: 0.9rem;
     font-family: monospace;

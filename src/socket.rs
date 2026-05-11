@@ -40,13 +40,6 @@ pub fn socket_handler(event_sender: Sender<ExternalTransferType>) {
     }
 }
 
-pub fn remove_socket() {
-    let path = &get_daemon_socket_path_buff();
-    if path.exists() {
-        remove_file(path).expect("Unable to remove old socket file");
-    }
-}
-
 #[instrument(level = "debug", skip(stream, event_sender))]
 fn handle_client(
     mut stream: UnixStream,

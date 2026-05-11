@@ -4,7 +4,6 @@ use async_channel::Receiver;
 use core_lib::listener::hyprshell_config_block;
 use core_lib::transfer::ExternalTransferType;
 use core_lib::{WarnWithDetails, notify_warn};
-use exec_lib::listener::hyprland_config_listener;
 use relm4::adw::gdk::Display;
 use relm4::adw::prelude::*;
 use relm4::adw::{glib, gtk};
@@ -17,10 +16,9 @@ use relm4::{
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Duration;
-use std::{process, thread};
 use tracing::{debug, error, info, trace, warn};
-use windows_lib::overview::{OverviewRoot, OverviewRootInput, OverviewRootOutput};
-use windows_lib::switch::{SwitchRoot, SwitchRootInput, SwitchRootOutput};
+use windows_lib::overview::{OverviewRoot, OverviewRootInput};
+use windows_lib::switch::{SwitchRoot, SwitchRootInput};
 
 #[derive(Debug)]
 pub struct Root {
@@ -124,7 +122,7 @@ impl SimpleComponent for Root {
             RootInput::SetConfig(config) => {
                 self.config = config;
                 let app = relm4::main_application();
-                let mut windows = app.windows();
+                let windows = app.windows();
                 for window in windows {
                     if !(window.title() == Some("main-window".into())) {
                         window.close()

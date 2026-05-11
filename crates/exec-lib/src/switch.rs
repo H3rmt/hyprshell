@@ -31,13 +31,6 @@ pub fn switch_client(address: ClientId) -> anyhow::Result<()> {
 pub fn switch_client_by_initial_class(class: &str) -> anyhow::Result<()> {
     debug!("execute switch to client: {class} by initial_class");
     deactivate_special_workspace_if_needed().warn();
-    Dispatch::call(DispatchType::FocusWindow(
-        WindowIdentifier::ClassRegularExpression(&format!(
-            "initialclass:{}",
-            class.to_ascii_lowercase()
-        )),
-    ))?;
-    Dispatch::call(DispatchType::BringActiveToTop)?;
 
     let disp = hyprland::dispatch_new::Dispatch::FocusWindow(
         hyprland::dispatch_new::WindowIdentifier::InitialClassRegularExpression(

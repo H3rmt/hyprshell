@@ -193,18 +193,24 @@ impl SimpleComponent for SwitchRoot {
 impl SwitchRoot {
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
         // TODO add a check in config check so these always succeed
-        let s_key = Key::from_name(self.switch.key.to_string()).expect("Invalid switch key");
-        let kill_key = Key::from_name(self.switch.kill_key.to_string()).expect("Invalid kill key");
-        let key_controller = EventControllerKey::new();
-        let sender_2 = sender.clone();
-        key_controller.connect_key_pressed(move |_, key, _, _| {
-            trace!("Key pressed: {:?}", key);
-            handle_key(key, s_key, kill_key, sender_2.clone())
-        });
-        if let Some(controller) = self.controller.take() {
-            self.window.remove_controller(&controller);
+        if let Some(k) = Key::from_name(self.switch.key.to_string()) {
+            if let Some(kk) = Key::from_name(self.switch.kill_key.to_string()) {
+                let key_controller = EventControllerKey::new();
+                let sender_2 = sender.clone();
+                key_controller.connect_key_pressed(move |_, key, _, _| {
+                    trace!("Key pressed: {:?}", key);
+                    handle_key(key, k, kk, sender_2.clone())
+                });
+                if let Some(controller) = self.controller.take() {
+                    self.window.remove_controller(&controller);
+                }
+                self.window.add_controller(key_controller);
+            } else {
+                error!("Invalid kill key name: {}", self.switch.kill_key);
+            }
+        } else {
+            error!("Invalid key name: {}", self.switch.key);
         }
-        self.window.add_controller(key_controller);
     }
 
     fn open_switch(&mut self, direction: Direction) {

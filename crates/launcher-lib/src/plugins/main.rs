@@ -39,6 +39,7 @@ pub struct StaticLaunchOption {
     pub icon: Option<Box<Path>>,
     pub key: char,
     pub iden: Identifier,
+    pub enabled: bool,
 }
 
 pub fn get_sorted_launch_options(
@@ -218,22 +219,23 @@ pub fn get_sorted_launch_options(
 pub fn get_static_launch_options(
     plugins: &Plugins,
     default_terminal: Option<&str>,
+    text: &str,
 ) -> Vec<StaticLaunchOption> {
     let mut matches = Vec::new();
 
     if plugins.shell.is_some() {
         debug_span!("shell").in_scope(|| {
-            shell::get_static_options(&mut matches);
+            shell::get_static_options(&mut matches, text);
         });
     }
     if plugins.terminal.is_some() {
         debug_span!("terminal").in_scope(|| {
-            terminal::get_static_options(&mut matches, default_terminal);
+            terminal::get_static_options(&mut matches, default_terminal, text);
         });
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
         debug_span!("search").in_scope(|| {
-            search::get_static_options(&mut matches, &websearch.engines);
+            search::get_static_options(&mut matches, &websearch.engines, text);
         });
     }
 

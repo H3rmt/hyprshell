@@ -67,6 +67,10 @@
     background: rgba(90, 65, 45, 0.9);
 }
 
+.launcher-plugin-image {
+    background: rgb(56 90 45 / 0.9);
+}
+
 .launcher-plugin-key {
     background: rgba(90, 45, 60, 0.9);
 }

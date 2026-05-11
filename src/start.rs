@@ -15,7 +15,6 @@ use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use relm4::RelmApp;
 use relm4::adw::gio;
 use relm4::adw::gtk::gdk::Display;
-use relm4::adw::gtk::prelude::*;
 use relm4::adw::gtk::{
     Application, CssProvider, STYLE_PROVIDER_PRIORITY_USER, glib,
     style_context_add_provider_for_display,

@@ -6,13 +6,14 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
 use tracing::{debug, trace};
 
-pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>) {
+pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, text: &str) {
     matches.push(StaticLaunchOption {
         iden: Identifier::plugin(PluginName::Shell),
         key: 'r',
         text: Box::from("Shell"),
         details: Box::from("Run a command in a shell"),
         icon: Some(PathBuf::from("bash").into_boxed_path()),
+        enabled: !text.is_empty(),
     });
     trace!("Added static shell option");
 }

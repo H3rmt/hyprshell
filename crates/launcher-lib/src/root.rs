@@ -3,6 +3,7 @@ use crate::plugins::{
     SortedLaunchOption, StaticLaunchOption, get_sorted_launch_options, get_static_launch_options,
     get_static_options_chars,
 };
+use crate::plugins_boxes::{LauncherPlugins, LauncherPluginsInit, LauncherPluginsOutput};
 use crate::result::{LauncherResults, LauncherResultsInit, LauncherResultsOutput};
 use config_lib::{Launcher, Modifier};
 use core_lib::transfer::Identifier;
@@ -27,13 +28,12 @@ pub struct LauncherRoot {
     window: gtk::ApplicationWindow,
     entry: gtk::Entry,
     results: FactoryVecDeque<LauncherResults>,
+    plugins: FactoryVecDeque<LauncherPlugins>,
     controller: Option<EventController>,
 
     data: LauncherData,
     switching: bool,
     data_dir: Rc<PathBuf>,
-    static_launch_options: Vec<StaticLaunchOption>,
-    sortable_launch_options: Vec<SortedLaunchOption>,
 }
 
 #[derive(Debug)]
@@ -87,15 +87,11 @@ impl SimpleComponent for LauncherRoot {
                     set_css_classes: &["launcher-results"],
                     set_spacing: 3,
                 },
-                // #[local_ref]
-                // pluginse ->
-                gtk::Box {
+                #[local_ref]
+                pluginse -> gtk::Box {
                     set_orientation: Orientation::Horizontal,
                     set_css_classes: &["launcher-plugins"],
                     set_spacing: 4,
-                    gtk::Label {
-                        set_label: "Plugins, todo",
-                    }
                 }
             }
         }
@@ -118,6 +114,11 @@ impl SimpleComponent for LauncherRoot {
                         .expect("No char"),
                 ),
             });
+        let plugins: FactoryVecDeque<LauncherPlugins> = FactoryVecDeque::builder()
+            .launch(gtk::Box::default())
+            .forward(sender.input_sender(), |r| match r {
+                LauncherPluginsOutput::Clicked(ch) => LauncherRootInput::Launch(ch),
+            });
 
         let model = Self {
             launcher: init.launcher,
@@ -125,15 +126,15 @@ impl SimpleComponent for LauncherRoot {
             window: root.clone(),
             entry,
             results,
+            plugins,
             controller: None,
             data: LauncherData::default(),
-            sortable_launch_options: vec![],
-            static_launch_options: vec![],
             switching: false, // enter when nothing was done launches program
         };
 
         let entrye = &model.entry;
         let resultse = &model.results.widget().clone();
+        let pluginse = &model.plugins.widget().clone();
         let widgets = view_output!();
 
         // ensure that the entry is always focused
@@ -253,19 +254,19 @@ impl LauncherRoot {
     }
 
     fn handle_type(&mut self) {
-        let mut results_lock = self.results.guard();
-        results_lock.clear();
-
         self.data.sorted_matches.clear();
         self.data.static_matches.clear();
-
         let text: &str = &self.entry.text();
+
+        let mut results_lock = self.results.guard();
+        results_lock.clear();
+        let mut plugins_lock = self.plugins.guard();
+        plugins_lock.clear();
+
         if !self.launcher.show_when_empty && text.is_empty() {
             return;
         }
         let items = self.launcher.max_items.min(9) as usize;
-        trace!("update");
-
         for (index, (_, opt)) in
             get_sorted_launch_options(&self.launcher.plugins, text, &self.data_dir)
                 .into_iter()
@@ -282,11 +283,20 @@ impl LauncherRoot {
             });
         }
 
-        drop(results_lock)
-        // self.static_launch_options = get_static_launch_options(
-        //     &self.launcher.plugins,
-        //     self.launcher.default_terminal.as_deref(),
-        // );
+        for (opt) in get_static_launch_options(
+            &self.launcher.plugins,
+            self.launcher.default_terminal.as_deref(),
+            text,
+        ) {
+            self.data
+                .static_matches
+                .entry(opt.key)
+                .or_insert(opt.iden.clone());
+            plugins_lock.push_back(LauncherPluginsInit {
+                opt,
+                launch_modifier: self.launcher.launch_modifier,
+            });
+        }
     }
 }
 
@@ -424,9 +434,6 @@ fn handle_key(
 
 #[derive(Debug, Default)]
 pub struct LauncherData {
-    pub results_items: HashMap<Identifier, (gtk::Box, HashMap<Identifier, gtk::ListBoxRow>)>,
-    pub plugins_items: HashMap<Identifier, gtk::Button>,
-
     pub sorted_matches: Vec<Identifier>,
     pub static_matches: HashMap<char, Identifier>,
 }

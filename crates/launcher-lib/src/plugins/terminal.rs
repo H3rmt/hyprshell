@@ -6,7 +6,11 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
 use tracing::{debug, trace};
 
-pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, default_terminal: Option<&str>) {
+pub fn get_static_options(
+    matches: &mut Vec<StaticLaunchOption>,
+    default_terminal: Option<&str>,
+    text: &str,
+) {
     matches.push(StaticLaunchOption {
         iden: Identifier::plugin(PluginName::Terminal),
         key: 't',
@@ -20,6 +24,7 @@ pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, default_termina
             }))
             .into_boxed_path(),
         ),
+        enabled: !text.is_empty(),
     });
     trace!("Added static terminal option");
 }
