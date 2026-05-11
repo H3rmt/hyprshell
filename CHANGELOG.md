@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.10.1](https://github.com/H3rmt/hyprshell/compare/v4.10.0...v4.10.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* add calc plugin back in ([44c6f5d](https://github.com/H3rmt/hyprshell/commit/44c6f5d0e977c6b4c7b8316dd95681facec5ad40))
+* add fzf matching for exec in desktop files ([4678341](https://github.com/H3rmt/hyprshell/commit/4678341050dd7c958593d33abe1cde72cb634d95))
+
+
+### Documentation
+
+* update docs ([a1b1a26](https://github.com/H3rmt/hyprshell/commit/a1b1a265858b254fb605cfb315febf013f5380d7))
+* update README.md ([03a0102](https://github.com/H3rmt/hyprshell/commit/03a0102bc2602bda4579782d8625e95d9849125b))
+
 ## [4.10.0](https://github.com/H3rmt/hyprshell/compare/v4.10.0...v4.10.0) (2026-05-11)
 
 
