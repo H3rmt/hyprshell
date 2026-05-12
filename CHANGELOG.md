@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.2](https://github.com/H3rmt/hyprshell/compare/v4.10.1...v4.10.2) (2026-05-12)
+
+
+### Bug Fixes
+
+* update deps ([ee35410](https://github.com/H3rmt/hyprshell/commit/ee354100ceffbf354183827146bdf05acc7ee6ff))
+
 ## [4.10.1](https://github.com/H3rmt/hyprshell/compare/v4.10.0...v4.10.1) (2026-05-11)
 
 
