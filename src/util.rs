@@ -4,8 +4,6 @@ use core_lib::{Warn, WarnWithDetails, default};
 use relm4::adw::gtk::{IconTheme, Settings};
 use relm4::gtk;
 use semver::Version;
-use signal_hook::consts::{SIGINT, SIGTERM};
-use signal_hook::iterator::Signals;
 use std::cmp::Ordering;
 use std::fs::{File, read_to_string, write};
 use std::io::Write;

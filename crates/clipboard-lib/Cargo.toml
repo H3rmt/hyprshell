@@ -15,10 +15,10 @@ anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
 wl_clipboard = { package = "hyprshell-wl-clipboard-rs", path = "../../dep-crates/wl-clipboard-rs", version = "=4.10.0" }
-fast_image_resize = { version = "5.3.0", features = ["image"] }
+fast_image_resize = { version = "6.0.0", features = ["image"] }
 bitcode = { version = "0.6.9" }
 image = { version = "0.25.8", features = ["png", "jpeg", "webp", "gif"], default-features = false }
-lz4_flex = { version = "0.12.0", optional = true }
+lz4_flex = { version = "0.13.1", optional = true }
 zstd = { version = "0.13.3", optional = true }
 brotli = { version = "8.0.2", optional = true }
 secret-service = { version = "5.0.0", features = ["rt-tokio-crypto-rust"], default-features = false, optional = true }
