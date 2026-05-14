@@ -350,7 +350,7 @@ impl SwitchRoot {
         let new_active = if self.switch.switch_workspaces {
             find_next_workspace(
                 &direction,
-                false,
+                true,
                 &self.data.hypr_data,
                 self.data.active,
                 self.general.items_per_row,
@@ -358,7 +358,7 @@ impl SwitchRoot {
         } else {
             find_next_client(
                 &direction,
-                false,
+                true,
                 &self.data.hypr_data,
                 self.data.active,
                 self.general.items_per_row,
