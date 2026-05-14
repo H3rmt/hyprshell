@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "hyprshell-relm4-components"
-version = "4.10.2"
+version = "4.10.3"
 authors = ["Aaron Erhardt <aaron.erhardt@t-online.de>"]
 build = false
 include = [
@@ -95,7 +95,7 @@ version = "1.21"
 [dependencies.relm4]
 path = "../relm4"
 package = "hyprshell-relm4"
-version = "=4.10.2"
+version = "=4.10.3"
 features = [
     "css",
     "macros",
