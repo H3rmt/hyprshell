@@ -129,6 +129,9 @@ impl SimpleComponent for Root {
                     }
                 }
                 self.apply_css().warn_details("Failed to apply css");
+                // force rebuild of windows
+                let _ = self.overview_root.take();
+                let _ = self.switch_root.take();
                 self.update_switch();
                 self.update_overview();
             }
