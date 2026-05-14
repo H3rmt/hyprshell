@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.10.3](https://github.com/H3rmt/hyprshell/compare/v4.10.2...v4.10.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* fix new monitor listener ([7c04b5f](https://github.com/H3rmt/hyprshell/commit/7c04b5fa4afb7a2f43b7a728d377d5320ba815a4))
+* fix passing keybinds to programs ([fe0bdcb](https://github.com/H3rmt/hyprshell/commit/fe0bdcb4dc95d9c01c86ec099caf5a9d28248c6e))
+* re-enable wrapping in switcher ([6e7d66e](https://github.com/H3rmt/hyprshell/commit/6e7d66eb9107b909ff11284590698aeb987d920c))
+
 ## [4.10.2](https://github.com/H3rmt/hyprshell/compare/v4.10.1...v4.10.2) (2026-05-12)
 
 
