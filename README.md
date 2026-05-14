@@ -79,6 +79,7 @@ To generate or edit a configuration, run `hyprshell config generate` or launch t
   <img src=".github/imgs/generate.png" alt="preview" style="max-width:58%;height:auto"/>
   <img src=".github/imgs/generate-2.png" alt="preview-2" style="max-width:38%;height:auto"/>
 </div>
+
 ### Initialization
 
 Enable the systemd service (generated with `hyprshell config generate`) [recommended]:
