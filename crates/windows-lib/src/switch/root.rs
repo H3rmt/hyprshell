@@ -1,5 +1,6 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
+use crate::overview::OverviewRootInput;
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
 use crate::switch::clients::{Clients, ClientsInit};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
@@ -153,7 +154,9 @@ impl SimpleComponent for SwitchRoot {
                     self.open = true;
                     self.open_switch(direction);
                 } else {
-                    trace!("already open");
+                    sender
+                        .input_sender()
+                        .emit(SwitchRootInput::Switch(direction));
                 }
             }
             SwitchRootInput::Switch(direction) => {

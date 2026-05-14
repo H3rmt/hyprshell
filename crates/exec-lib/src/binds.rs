@@ -58,9 +58,18 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
         mods: binds,
         key: bind.key.to_string(),
         flags: if bind.release {
-            vec![Flag::Release, Flag::Transparent, Flag::NonConsuming]
+            vec![
+                Flag::Release,
+                Flag::Transparent,
+                Flag::AutoConsuming,
+                Flag::Description(bind.desc.clone()),
+            ]
         } else {
-            vec![Flag::NonConsuming]
+            vec![
+                Flag::AutoConsuming,
+                Flag::Repeating,
+                Flag::Description(bind.desc.clone()),
+            ]
         },
         dispatcher: Dispatch::ExecCmd(bind.exec.to_string(), None),
     };

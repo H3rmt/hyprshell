@@ -4,4 +4,5 @@ pub struct ExecBind {
     pub key: Box<str>,
     pub exec: String,
     pub release: bool,
+    pub desc: String,
 }
