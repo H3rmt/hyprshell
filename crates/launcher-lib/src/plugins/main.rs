@@ -204,20 +204,20 @@ pub fn get_sorted_launch_options(
         #[cfg(not(feature = "calc"))]
         tracing::warn!("calc plugin is not enabled");
     }
-    if let Some(first) = matches2.pop() {
+    for r#match in matches2 {
         out.push((
-            20,
+            r#match.bonus_score.min(0),
             SortedLaunchOption {
-                name: first.names[0].clone(),
-                icon: first.icon,
-                details: first.details,
-                details_long: first.details_long,
-                takes_args: first.takes_args,
-                enabled: first.enabled,
-                iden: first.iden,
-                subactions: first.subactions,
+                name: r#match.names[0].clone(),
+                icon: r#match.icon,
+                details: r#match.details,
+                details_long: r#match.details_long,
+                takes_args: r#match.takes_args,
+                enabled: true,
+                iden: r#match.iden,
+                subactions: r#match.subactions,
             },
-        ))
+        ));
     }
 
     // sort in reverse
