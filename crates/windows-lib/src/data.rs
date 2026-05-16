@@ -60,10 +60,11 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
             && (!config.filter_current_monitor || client.monitor == active_monitor);
     }
     for (id, ws) in &mut workspace_data {
-        ws.any_client_enabled = client_data
-            .iter()
-            .filter(|(_, c)| c.workspace.eq(id))
-            .all(|(_, c)| c.enabled);
+        ws.any_client_enabled = {
+            let mut filtered = client_data.iter().filter(|(_, c)| c.workspace.eq(id));
+            (*id == active_ws
+                || filtered.clone().any(|(_, c)| c.enabled) && filtered.all(|(_, c)| c.enabled))
+        };
     }
 
     trace!("client_data: {client_data:?}");

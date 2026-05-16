@@ -164,6 +164,11 @@ impl OverviewWindow {
         lock.clear();
 
         for (wid, workspace_data) in &data.workspaces {
+            if !workspace_data.any_client_enabled {
+                trace!("skipping workspace {} with no enabled clients", wid);
+                continue;
+            }
+
             // Get clients for this workspace
             let workspace_clients: Vec<_> = data
                 .clients
@@ -171,12 +176,6 @@ impl OverviewWindow {
                 .filter(|(_, client)| client.workspace == *wid && client.enabled)
                 .map(|(id, data)| (*id, data.clone()))
                 .collect();
-
-            // Skip workspaces with no enabled clients
-            if workspace_clients.is_empty() {
-                trace!("skipping workspace {} with no enabled clients", wid);
-                continue;
-            }
 
             lock.push_back(WorkspacesInit {
                 monitor_data: data.monitor.clone(),

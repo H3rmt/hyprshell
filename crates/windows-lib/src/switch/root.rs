@@ -273,6 +273,10 @@ impl SwitchRoot {
         lock.clear();
 
         for (wid, workspace_data) in &hypr_data.workspaces {
+            if !workspace_data.any_client_enabled {
+                trace!("skipping workspace {} with no enabled clients", wid);
+                continue;
+            }
             // Get clients for this workspace
             let workspace_clients: Vec<_> = hypr_data
                 .clients
@@ -281,11 +285,6 @@ impl SwitchRoot {
                 .map(|(id, data)| (*id, data.clone()))
                 .collect();
 
-            // Skip workspaces with no enabled clients
-            if workspace_clients.is_empty() {
-                trace!("skipping workspace {} with no enabled clients", wid);
-                continue;
-            }
             let Some(monitor) = hypr_data.monitors.find_by_first(&workspace_data.monitor) else {
                 error!(
                     "Workspace {} has invalid monitor {}",
