@@ -93,7 +93,7 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
     ),
     (
         "4.10.0",
-        "Version 4.10.0 adds support for hyprland-lua and removes the hyprland plugin. This Version contains missing features and maybe bugs, report them on github if you find any",
+        "Version 4.10.0 adds support for hyprland-lua and removes the hyprland plugin.",
     ),
 ];
 
@@ -104,7 +104,8 @@ pub fn check_new_version(cache_dir: &Path) -> anyhow::Result<(Ordering, Vec<Stri
     let current_version = env!("CARGO_PKG_VERSION");
     let current_version =
         Version::parse(current_version).context("Failed to parse current version")?;
-    let cached_version = if version_file.exists() {
+    let version_file_missing = !version_file.exists();
+    let cached_version = if !version_file_missing {
         let contents = read_to_string(&version_file).context("Failed to read old version file")?;
         Version::parse(contents.trim()).context("Failed to parse old version")?
     } else {
@@ -120,7 +121,12 @@ pub fn check_new_version(cache_dir: &Path) -> anyhow::Result<(Ordering, Vec<Stri
     );
     write(&version_file, current_version.to_string().as_bytes())
         .context("Failed to write current version to file")?;
-    let versions = filter_version_messages(NEW_VERSION_INFOS, &current_version, &cached_version);
+    let mut versions =
+        filter_version_messages(NEW_VERSION_INFOS, &current_version, &cached_version);
+    if version_file_missing && versions.len() > 1 {
+        // On first run without a cached version, only show the newest release note.
+        versions = vec![versions.pop().expect("versions checked to be non-empty")];
+    }
     Ok((current_version.cmp(&cached_version), versions))
 }
 
@@ -217,5 +223,20 @@ mod tests {
         ];
         let result = filter_version_messages(&versions, &v("2.0.0"), &v("0.0.0"));
         assert_eq!(result, vec!["1.0.0 test1", "1.5.0 test3", "2.0.0 test2"]);
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_missing_version_file_only_shows_latest_message() {
+        let versions = [
+            ("1.0.0", "1.0.0 test1"),
+            ("2.0.0", "2.0.0 test2"),
+            ("1.5.0", "1.5.0 test3"),
+        ];
+        let mut result = filter_version_messages(&versions, &v("2.0.0"), &v("0.0.0"));
+        if result.len() > 1 {
+            result = vec![result.pop().expect("result checked to be non-empty")];
+        }
+        assert_eq!(result, vec!["2.0.0 test2"]);
     }
 }
