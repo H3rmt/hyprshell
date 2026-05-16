@@ -6,20 +6,21 @@
 
 ## Overview
 
-Hyprshell _(previously hyprswitch)_ is a Rust-based GUI designed to enhance window management in [Hyprland](https://github.com/hyprwm/Hyprland).
-It provides a powerful and customizable interface for switching between windows using keyboard shortcuts and GUI.
-The application also includes a launcher for running applications, doing calculations, etc.
+Hyprshell _(previously hyprswitch)_ is a modern GTK4-based window switcher and application launcher for [Hyprland](https://github.com/hyprwm/Hyprland).
+It provides a customizable GUI for switching between windows or workspaces, launching applications, and running launcher actions from the keyboard.
 
 ## Features
 
-- **Window Switching**: Switch between windows using keyboard shortcuts in a GUI.
+- **Window Switching**: Switch between windows or workspaces using keyboard shortcuts in a GUI.
 - **Customizable Keybindings**: Define your own keybindings for window switching and GUI interactions.
-- **Settings App**: Customize the application using a settings app.
+- **Settings App**: Customize switching, launcher behavior, keybindings and themes using a settings app.
 - **Launcher Integration**: Launch applications directly from the GUI, sorted by usage frequency.
-- **Launcher Plugins**: Different plugins like Web search, actions or calculations can be enabled.
-- **Theming**: Customize the GUI appearance (gtk4) using [CSS](docs/CONFIGURE.md).
+- **Launcher Plugins**: Different plugins like Web search, terminal commands, actions or calculations can be enabled.
+- **Theming**: Customize the GUI appearance (gtk4) using [CSS](docs/CONFIGURE.md), Settings app comes with some default themes.
 - **Dynamic Configuration**: Automatically reloads configuration/style changes without restarting the application.
-- **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons and default applications.
+- **CLI Tooling**: Validate configs, change default applications, inspect launch history and generate shell completions.
+- **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons, launcher matching and default applications.
+- **Nix Support**: Includes a flake and home-manager module for Nix-based setups.
 
 ## Installation
 
@@ -47,7 +48,7 @@ Download and extract from the latest release on the [releases](https://github.co
 
 Hyprshell is also available in `nixpkgs` repository and can be configured using a generic `home-manager` module.
 
-This repository also contains a `flake` and with a type-save `home-manager` module for configuration.
+This repository also contains a `flake` and a type-safe `home-manager` module for configuration.
 
 Please read [NixOS](docs/NIX.md) if you use flakes.
 
@@ -65,7 +66,7 @@ Build with less features in [slim](#feature-flags) mode
 cargo install hyprshell --no-default-features --features "slim"
 ```
 
-Minimum required rustc version: `1.92.0`
+Minimum required rustc version: `1.91.0`
 
 ## Usage
 
@@ -73,7 +74,9 @@ Run `hyprshell --help` to see available commands and options.
 
 ### Config
 
-To generate or edit a configuration, run `hyprshell config generate` or launch the `Hyprshell Settings Editor` App.
+To generate or edit a configuration, run `hyprshell config generate`, `hyprshell config edit` or launch the `Hyprshell Settings Editor` App.
+
+To validate or explain the current configuration, use `hyprshell config check` and `hyprshell config explain`.
 
 <div style="display:flex;gap:8px;align-items:flex-start">
   <img src=".github/imgs/generate.png" alt="preview" style="max-width:58%;height:auto"/>
@@ -102,7 +105,7 @@ end)
 
 ### Debugging
 
-Debug commands are provided to help troubleshoot desktop files, icons, default applications and launcher functionality, see [Debug.md](docs/DEBUG.md) for detailed information about available commands and their usage.
+Debug commands are provided to help troubleshoot desktop files, icons, launcher search results, default applications and general system information, see [Debug.md](docs/DEBUG.md) for detailed information about available commands and their usage.
 
 ### Feature Flags
 
