@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.10.4](https://github.com/H3rmt/hyprshell/compare/v4.10.3...v4.10.4) (2026-05-17)
+
+
+### Bug Fixes
+
+* cursor movement wrapping in window switcher ([1bef2db](https://github.com/H3rmt/hyprshell/commit/1bef2db0a4e63bcb02de27223ea18a928ea36bf6)), closes [#455](https://github.com/H3rmt/hyprshell/issues/455)
+* **nix-flake:** update flake.lock ([c479d58](https://github.com/H3rmt/hyprshell/commit/c479d58e795d09efe644c70aee323e1ee40c5f0b))
+* only show latest info when last version is unknown ([ae728f9](https://github.com/H3rmt/hyprshell/commit/ae728f96edadabad331a96ecf687d160252f1c76))
+* show current workspace on overview and switch of empty ([289a170](https://github.com/H3rmt/hyprshell/commit/289a170a5d707bcfcd0bc48a03e12af1502c2cca))
+* use canonical XKB keysym names for modifier release binds ([45c552c](https://github.com/H3rmt/hyprshell/commit/45c552c6d571cde3bcc925906180df3ce260b4de)), closes [#470](https://github.com/H3rmt/hyprshell/issues/470)
+
+
+### Documentation
+
+* fix "Initialization" header formatting ([63df614](https://github.com/H3rmt/hyprshell/commit/63df61486512d6f64a5dc9edefb77416c29136c3))
+* update readme ([9dd7084](https://github.com/H3rmt/hyprshell/commit/9dd708427f7441dc420cd2377453d3b750b03612))
+
 ## [4.10.3](https://github.com/H3rmt/hyprshell/compare/v4.10.2...v4.10.3) (2026-05-14)
 
 
