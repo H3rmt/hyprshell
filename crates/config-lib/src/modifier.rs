@@ -14,11 +14,25 @@ pub enum Modifier {
 #[allow(clippy::must_use_candidate)]
 impl Modifier {
     pub fn to_l_key(&self) -> String {
+        self.to_keysym_l().to_string()
+    }
+    pub const fn to_keysym_l(&self) -> &'static str {
+        // XKB keysym names (xkbcommon-keysyms.h). xkbcommon's case-insensitive
+        // lookup accepts e.g. "alt_l", but "ctrl_l" is NOT a valid XKB keysym
+        // (the canonical name is "Control_L"). So we return canonical XKB names.
         match self {
-            Self::Alt => "alt_l".to_string(),
-            Self::Ctrl => "ctrl_l".to_string(),
-            Self::Super => "super_l".to_string(),
-            Self::None => String::new(),
+            Self::Alt => "Alt_L",
+            Self::Ctrl => "Control_L",
+            Self::Super => "Super_L",
+            Self::None => "",
+        }
+    }
+    pub const fn to_keysym_r(&self) -> &'static str {
+        match self {
+            Self::Alt => "Alt_R",
+            Self::Ctrl => "Control_R",
+            Self::Super => "Super_R",
+            Self::None => "",
         }
     }
     pub const fn to_str(&self) -> &'static str {
