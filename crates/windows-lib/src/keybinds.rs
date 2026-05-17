@@ -50,7 +50,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
         });
         binds.push(ExecBind {
             mods: vec![switch.modifier.to_str()],
-            key: format!("{}_l", switch.modifier.to_str()).into_boxed_str(),
+            key: switch.modifier.to_keysym_l().into(),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
@@ -62,7 +62,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
         });
         binds.push(ExecBind {
             mods: vec![switch.modifier.to_str()],
-            key: format!("{}_r", switch.modifier.to_str()).into_boxed_str(),
+            key: switch.modifier.to_keysym_r().into(),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
@@ -74,7 +74,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
         });
         binds.push(ExecBind {
             mods: vec!["SHIFT"],
-            key: Box::from("SHIFT_l"),
+            key: Box::from("Shift_L"),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
@@ -83,7 +83,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
         });
         binds.push(ExecBind {
             mods: vec!["SHIFT"],
-            key: Box::from("SHIFT_r"),
+            key: Box::from("Shift_R"),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
