@@ -13,27 +13,25 @@ documentation = "https://docs.rs/wl-clipboard-rs"
 categories = ["os"]
 
 [dependencies]
-libc = "0.2.170"
 log = "0.4.26"
 os_pipe = { version = "1.2.1", features = ["io_safety"] }
 rustix = { version = "0.38.44", features = ["fs", "event"] }
-tempfile = "3.17.1"
 thiserror = "2"
-tree_magic_mini = "3.1.6"
-wayland-backend = "0.3.8"
-wayland-client = "0.31.8"
-wayland-protocols = { version = "0.32.6", features = ["client", "staging"] }
-wayland-protocols-wlr = { version = "0.3.6", features = ["client"] }
+tree_magic_mini = "3"
+wayland-backend = "0.3.11"
+wayland-client = "0.31.11"
+wayland-protocols = { version = "0.32.9", features = ["client", "staging"] }
+wayland-protocols-wlr = { version = "0.3.9", features = ["client"] }
 
 [dev-dependencies]
-wayland-server = "0.31.7"
-wayland-protocols = { version = "0.32.6", features = ["server", "staging"] }
-wayland-protocols-wlr = { version = "0.3.6", features = ["server"] }
-proptest = "1.6.0"
-proptest-derive = "0.5.1"
+wayland-server = "0.31.10"
+wayland-protocols = { version = "0.32.9", features = ["server", "staging"] }
+wayland-protocols-wlr = { version = "0.3.9", features = ["server"] }
+proptest = "1"
+proptest-derive = "0.7"
 
 [features]
 # Link to libwayland-client.so instead of using the Rust implementation.
-native_lib = ["wayland-backend/client_system", "wayland-backend/server_system"]
+native_lib = ["wayland-backend/client_system"]
 
 dlopen = ["native_lib", "wayland-backend/dlopen", "wayland-backend/dlopen"]

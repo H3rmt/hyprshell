@@ -18,7 +18,7 @@ relm4.workspace = true
 relm4-components.workspace = true
 
 # needed because relm4 version is too old for v1_8
-_adw = { version = "0.8.1", package = "libadwaita", features = ["v1_8"] }
+_adw = { version = "0.9", package = "libadwaita", features = ["v1_8"] }
 
 [features]
 launcher_calc_plugin = []

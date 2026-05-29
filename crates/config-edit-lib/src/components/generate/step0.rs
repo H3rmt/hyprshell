@@ -134,7 +134,7 @@ impl SimpleComponent for Step0 {
                 set_valign: Align::Fill,
                 set_halign: Align::Center,
             },
-            gtk::Label::new(Some("similar to gnome's overview\nShows all apps in a miniature view, allows to switch using arrow keys or tab.")) {
+            gtk::Label::new(Some("Similar to gnome's overview\nShows all apps in a miniature view, allows to switch using arrow keys or tab.")) {
                 set_css_classes: &["title-4"],
                 set_justify: Justification::Center,
                 set_vexpand: true,
@@ -176,7 +176,7 @@ impl SimpleComponent for Step0 {
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
-        trace!("launcher::step0:update: {message:?}");
+        trace!("launcher::step0::update: {message:?}");
         match message {
             Step0Input::ISetData(data) => {
                 sender.input(Step0Input::SetData(data.clone()));

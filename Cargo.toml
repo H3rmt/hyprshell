@@ -17,14 +17,14 @@ anyhow = { version = "1.0.100" }
 tracing = { version = "0.1.44" }
 serde_json = { version = "1.0.148" }
 serde = { version = "1.0.228", features = ["derive"] }
-async-channel = { version = "2.5.0", default-features = true }
 semver = { version = "1.0.27" }
 regex = { version = "1.12.2" }
 test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
 
 relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.10.4" }
+#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
 relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.10.4" }
-gtk4-layer-shell = { version = "0.7.1" }
+gtk4-layer-shell = { version = "0.8.0" }
 
 config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.10.4" }
 core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.10.4" }
@@ -50,7 +50,6 @@ exclude = [".idea/*", ".github/*"]
 anyhow.workspace = true
 tracing.workspace = true
 relm4.workspace = true
-async-channel.workspace = true
 semver.workspace = true
 clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6.5"

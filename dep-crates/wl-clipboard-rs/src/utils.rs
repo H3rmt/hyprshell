@@ -28,9 +28,22 @@ use crate::data_control::{
 /// assert!(!is_text("application/octet-stream"));
 /// ```
 pub fn is_text(mime_type: &str) -> bool {
+    // Based on wl-clipboard:
+    // https://github.com/bugaevc/wl-clipboard/blob/e8082035dafe0241739d7f7d16f7ecfd2ce06172/src/util/string.c#L24
+
     match mime_type {
         "TEXT" | "STRING" | "UTF8_STRING" => true,
         x if x.starts_with("text/") => true,
+        // Common script and markup types.
+        x if x.contains("json")
+            | x.ends_with("script")
+            | x.ends_with("xml")
+            | x.ends_with("yaml")
+            | x.ends_with("csv")
+            | x.ends_with("ini") =>
+        {
+            true
+        }
         _ => false,
     }
 }

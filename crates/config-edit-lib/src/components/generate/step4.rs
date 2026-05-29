@@ -48,7 +48,7 @@ impl SimpleComponent for Step4 {
             set_orientation: gtk::Orientation::Vertical,
             set_hexpand: true,
             set_spacing: 20,
-            gtk::Label::new(Some("Key combination to open the overview and launcher")) {
+            gtk::Label::new(Some("Key combination to open the app switcher")) {
                 set_css_classes: &["title-1"],
                 set_align: Align::Center,
                 set_justify: Justification::Center,

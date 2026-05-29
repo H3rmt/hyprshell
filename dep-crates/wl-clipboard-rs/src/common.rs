@@ -22,6 +22,7 @@ pub struct State {
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[allow(clippy::enum_variant_names)]
     #[error("Couldn't open the provided Wayland socket")]
     SocketOpenError(#[source] io::Error),
 
@@ -90,12 +91,12 @@ where
     // Retrieve the global interfaces.
     let (globals, queue) =
         registry_queue_init::<S>(&conn).map_err(|err| match err {
-                                           GlobalError::Backend(err) => Error::WaylandCommunication(err),
-                                           GlobalError::InvalidId(err) => panic!("How's this possible? \
+            GlobalError::Backend(err) => Error::WaylandCommunication(err),
+            GlobalError::InvalidId(err) => panic!("How's this possible? \
                                                                                   Is there no wl_registry? \
                                                                                   {:?}",
-                                                                                 err),
-                                       })?;
+                                                  err),
+        })?;
     let qh = &queue.handle();
 
     // Verify that we got the clipboard manager.

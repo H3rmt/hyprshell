@@ -310,7 +310,7 @@ path = "benches/stress_test.rs"
 harness = false
 
 [dependencies.adw]
-version = "0.8"
+version = "0.9"
 optional = true
 package = "libadwaita"
 
@@ -324,14 +324,14 @@ version = "2.0.1"
 version = "0.3.31"
 
 [dependencies.gtk]
-version = "0.10"
+version = "0.11"
 package = "gtk4"
 
 [dependencies.once_cell]
 version = "1.21"
 
 [dependencies.panel]
-version = "0.6"
+version = "0.7"
 optional = true
 package = "libpanel"
 

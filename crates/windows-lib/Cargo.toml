@@ -17,7 +17,6 @@ relm4.workspace = true
 gtk4-layer-shell.workspace = true
 core-lib.workspace = true
 exec-lib.workspace = true
-async-channel.workspace = true
 config-lib.workspace = true
 regex.workspace = true
 launcher-lib.workspace = true

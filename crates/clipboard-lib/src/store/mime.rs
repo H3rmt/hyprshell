@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use tracing::trace;
 
 static MIME_TYPES_PRIO: &[&str] = &[
@@ -22,7 +21,7 @@ static MIME_TYPES_IMAGES_PRIO: &[&str] = &[
     "image/gif",
 ];
 
-pub fn get_preferred_mime(mime_types: &HashSet<String>) -> Option<String> {
+pub fn get_preferred_mime(mime_types: &[String]) -> Option<String> {
     // Find by priority
     for (index, mime) in MIME_TYPES_PRIO.iter().enumerate() {
         if mime.ends_with("/*") {
@@ -31,7 +30,7 @@ pub fn get_preferred_mime(mime_types: &HashSet<String>) -> Option<String> {
                 trace!("Chosen MIME type: {mt:?} from prio({index}), by prefix {prefix}*");
                 return Some(mt.clone());
             }
-        } else if let Some(mt) = mime_types.iter().find(|x| x == mime) {
+        } else if let Some(mt) = mime_types.iter().find(|x| x.as_str() == *mime) {
             trace!("Chosen MIME type: {mt:?} from prio({index}), by exact match {mime}");
             return Some(mt.clone());
         }
@@ -39,7 +38,7 @@ pub fn get_preferred_mime(mime_types: &HashSet<String>) -> Option<String> {
     None
 }
 
-pub fn filer_mimes(mime_types: &mut HashSet<String>) {
+pub fn filer_mimes(mime_types: &mut Vec<String>) {
     let count = mime_types.len();
 
     // remove audio

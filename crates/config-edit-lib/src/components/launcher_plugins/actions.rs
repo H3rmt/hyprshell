@@ -125,7 +125,7 @@ impl SimpleComponent for Actions {
         let create_dialog = Alert::builder()
             .transient_for(&root)
             .launch(AlertSettings {
-                text: Some("Create New Search Engine".to_string()),
+                text: Some("Create New Action".to_string()),
                 secondary_text: None,
                 confirm_label: Some(String::from("Create")),
                 cancel_label: Some(String::from("Cancel")),

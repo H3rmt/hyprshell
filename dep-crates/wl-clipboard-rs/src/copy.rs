@@ -1,15 +1,14 @@
 //! Copying and clearing clipboard contents.
 
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ffi::OsString;
-use std::fs::{remove_dir, remove_file, File, OpenOptions};
-use std::io::{self, Read, Seek, SeekFrom, Write};
-use std::path::PathBuf;
+use std::fs::File;
+use std::io::{self, Cursor};
 use std::sync::mpsc::sync_channel;
+use std::sync::Arc;
 use std::{iter, thread};
 
-use log::trace;
 use rustix::fs::{fcntl_setfl, OFlags};
 use wayland_client::globals::GlobalListContents;
 use wayland_client::protocol::wl_registry::WlRegistry;
@@ -24,6 +23,8 @@ use crate::data_control::{
 };
 use crate::seat_data::SeatData;
 use crate::utils::is_text;
+
+const TEXT_PLAIN_MIME: &str = "text/plain";
 
 /// The clipboard to operate on.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, PartialOrd, Ord, Default)]
@@ -235,13 +236,24 @@ pub enum DataSourceError {
     Copy(#[source] io::Error),
 }
 
+/// An inner source of data in-memory.
+///
+/// This is always cheap to clone.
+#[derive(Clone)]
+struct DataSourceStorage(Arc<[u8]>);
+
+struct DataSource {
+    mime_type: String,
+    source: DataSourceStorage,
+}
+
 struct State {
     common: common::State,
     got_primary_selection: bool,
     // This bool can be set to true when serving a request: either if an error occurs, or if the
     // number of requests to serve was limited and the last request was served.
     should_quit: bool,
-    data_paths: HashMap<String, PathBuf>,
+    data_sources: HashMap<String, DataSourceStorage>,
     serve_requests: ServeRequests,
     // An error that occurred while serving a request, if any.
     error: Option<DataSourceError>,
@@ -298,24 +310,23 @@ impl_dispatch_source!(State, |state: &mut Self,
 
             // I'm not sure if it's the compositor's responsibility to check that the mime type is
             // valid. Let's check here just in case.
-            if !state.data_paths.contains_key(&mime_type) {
-                return;
-            }
+            let data_source = match state.data_sources.get_mut(&mime_type) {
+                Some(source) => source,
+                None => {
+                    return;
+                }
+            };
 
-            let data_path = &state.data_paths[&mime_type];
-
-            let file = File::open(data_path).map_err(DataSourceError::FileOpen);
-            let result = file.and_then(|mut data_file| {
+            let copy_result = || {
                 // Clear O_NONBLOCK, otherwise io::copy() will stop halfway.
-                fcntl_setfl(&fd, OFlags::empty())
-                    .map_err(io::Error::from)
-                    .map_err(DataSourceError::Copy)?;
-
+                fcntl_setfl(&fd, OFlags::empty()).map_err(io::Error::from)?;
                 let mut target_file = File::from(fd);
-                io::copy(&mut data_file, &mut target_file).map_err(DataSourceError::Copy)
-            });
 
-            if let Err(err) = result {
+                let mut source_content = Cursor::new(&data_source.0);
+                io::copy(&mut source_content, &mut target_file).map(drop)
+            };
+
+            if let Err(err) = copy_result().map_err(DataSourceError::Copy) {
                 state.error = Some(err);
             }
 
@@ -524,32 +535,6 @@ impl PreparedCopy {
             }
         }
 
-        // Clean up the temp file and directory.
-        //
-        // We want to try cleaning up all files and folders, so if any errors occur in process,
-        // collect them into a vector without interruption, and then return the first one.
-        let mut results = Vec::new();
-        let mut dropped = HashSet::new();
-        for data_path in self.state.data_paths.values_mut() {
-            // data_paths can contain duplicate items, we want to free each only once.
-            if dropped.contains(data_path) {
-                continue;
-            };
-            dropped.insert(data_path.clone());
-
-            match remove_file(&data_path).map_err(Error::TempFileRemove) {
-                Ok(()) => {
-                    data_path.pop();
-                    results.push(remove_dir(&data_path).map_err(Error::TempDirRemove));
-                }
-                result @ Err(_) => results.push(result),
-            }
-        }
-
-        // Return the error, if any.
-        let result: Result<(), _> = results.into_iter().collect();
-        result?;
-
         // Check if an error occurred during data transfer.
         if let Some(err) = self.state.error.take() {
             return Err(Error::Paste(err));
@@ -563,66 +548,31 @@ fn make_source(
     source: Source,
     mime_type: MimeType,
     trim_newline: bool,
-) -> Result<(String, PathBuf), SourceCreationError> {
-    let temp_dir = tempfile::tempdir().map_err(SourceCreationError::TempDirCreate)?;
-    let mut temp_filename = temp_dir.keep();
-    temp_filename.push("stdin");
-    trace!("Temp filename: {}", temp_filename.to_string_lossy());
-    let mut temp_file =
-        File::create(&temp_filename).map_err(SourceCreationError::TempFileCreate)?;
-
-    if let Source::Bytes(data) = source {
-        temp_file
-            .write_all(&data)
-            .map_err(SourceCreationError::TempFileWrite)?;
+) -> Result<DataSource, SourceCreationError> {
+    let mut output_place = if let Source::Bytes(data) = source {
+        data.into_vec()
     } else {
-        // Copy the standard input into the target file.
-        io::copy(&mut io::stdin(), &mut temp_file).map_err(SourceCreationError::DataCopy)?;
-    }
-
-    let mime_type = match mime_type {
-        MimeType::Autodetect => match tree_magic_mini::from_filepath(&temp_filename) {
-            Some(magic) => Ok(magic),
-            None => Err(SourceCreationError::TempFileOpen(std::io::Error::other(
-                "problem with temp file",
-            ))),
-        }?
-        .to_string(),
-        MimeType::Text => "text/plain".to_string(),
-        MimeType::Specific(mime_type) => mime_type,
+        let mut contents = Cursor::new(Vec::new());
+        io::copy(&mut io::stdin(), &mut contents).map_err(SourceCreationError::DataCopy)?;
+        contents.into_inner()
     };
 
-    trace!("Base MIME type: {}", mime_type);
+    let mime_type = match mime_type {
+        MimeType::Autodetect => tree_magic_mini::from_u8(&output_place).to_string(),
+        MimeType::Text => TEXT_PLAIN_MIME.to_string(),
+        MimeType::Specific(mime_type) => mime_type,
+    };
+    log::trace!("Base MIME type: {}", mime_type);
 
     // Trim the trailing newline if needed.
-    if trim_newline && is_text(&mime_type) {
-        let mut temp_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(&temp_filename)
-            .map_err(SourceCreationError::TempFileOpen)?;
-        let metadata = temp_file
-            .metadata()
-            .map_err(SourceCreationError::TempFileMetadata)?;
-        let length = metadata.len();
-        if length > 0 {
-            temp_file
-                .seek(SeekFrom::End(-1))
-                .map_err(SourceCreationError::TempFileSeek)?;
-
-            let mut buf = [0];
-            temp_file
-                .read_exact(&mut buf)
-                .map_err(SourceCreationError::TempFileRead)?;
-            if buf[0] == b'\n' {
-                temp_file
-                    .set_len(length - 1)
-                    .map_err(SourceCreationError::TempFileTruncate)?;
-            }
-        }
+    if trim_newline && is_text(&mime_type) && output_place.last().copied() == Some(b'\n') {
+        output_place.pop();
     }
 
-    Ok((mime_type, temp_filename))
+    Ok(DataSource {
+        mime_type,
+        source: DataSourceStorage(Arc::from(output_place)),
+    })
 }
 
 fn get_devices(
@@ -649,7 +599,7 @@ fn get_devices(
         common,
         got_primary_selection: false,
         should_quit: false,
-        data_paths: HashMap::new(),
+        data_sources: HashMap::new(),
         serve_requests: ServeRequests::default(),
         error: None,
     };
@@ -857,53 +807,49 @@ fn prepare_copy_internal(
     state.serve_requests = serve_requests;
 
     // Collect the source data to copy.
-    state.data_paths = {
-        let mut data_paths = HashMap::new();
-        let mut text_data_path = None;
+    state.data_sources = {
+        let mut data_sources = HashMap::new();
+        let mut text_data = None;
+
         for MimeSource { source, mime_type } in sources.into_iter() {
-            let (mime_type, mut data_path) =
+            let DataSource { mime_type, source } =
                 make_source(source, mime_type, trim_newline).map_err(Error::TempCopy)?;
 
-            let mime_type_is_text = is_text(&mime_type);
-
-            match data_paths.entry(mime_type) {
-                Entry::Occupied(_) => {
-                    // This MIME type has already been specified, so ignore it.
-                    remove_file(&*data_path).map_err(Error::TempFileRemove)?;
-                    data_path.pop();
-                    remove_dir(&*data_path).map_err(Error::TempDirRemove)?;
-                }
+            match data_sources.entry(mime_type) {
+                // This MIME type has already been specified, so ignore it.
+                Entry::Occupied(_) => drop(source),
                 Entry::Vacant(entry) => {
                     if !options.omit_additional_text_mime_types
-                        && text_data_path.is_none()
-                        && mime_type_is_text
+                        && text_data.is_none()
+                        && is_text(entry.key())
                     {
-                        text_data_path = Some(data_path.clone());
+                        text_data = Some(source.clone());
                     }
 
-                    entry.insert(data_path);
+                    entry.insert(source);
                 }
             }
         }
 
         // If the MIME type is text, offer it in some other common formats.
-        if let Some(text_data_path) = text_data_path {
+        if let Some(text_data) = text_data {
             let text_mimes = [
                 "text/plain;charset=utf-8",
-                "text/plain",
+                TEXT_PLAIN_MIME,
                 "STRING",
                 "UTF8_STRING",
                 "TEXT",
             ];
-            for &mime_type in &text_mimes {
+
+            for mime_type in text_mimes {
                 // We don't want to overwrite an explicit mime type, because it might be bound to a
                 // different data_path
-                if !data_paths.contains_key(mime_type) {
-                    data_paths.insert(mime_type.to_string(), text_data_path.clone());
+                if !data_sources.contains_key(mime_type) {
+                    data_sources.insert(mime_type.to_string(), text_data.clone());
                 }
             }
         }
-        data_paths
+        data_sources
     };
 
     // Create an iterator over (device, primary) for source creation later.
@@ -935,7 +881,7 @@ fn prepare_copy_internal(
                 .clipboard_manager
                 .create_data_source(&queue.handle());
 
-            for mime_type in state.data_paths.keys() {
+            for mime_type in state.data_sources.keys() {
                 data_source.offer(mime_type.clone());
             }
 

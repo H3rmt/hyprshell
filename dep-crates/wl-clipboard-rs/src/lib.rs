@@ -104,8 +104,10 @@
 //!   [wl-clipboard](https://github.com/bugaevc/wl-clipboard).
 //! - `wl-copy`: implements `wl-copy` from [wl-clipboard](https://github.com/bugaevc/wl-clipboard).
 //! - `wl-clip`: a Wayland version of `xclip`.
-#![allow(clippy::all)]
-#![doc(html_root_url = "https://docs.rs/wl-clipboard-rs/0.9.2")]
+
+#![doc(html_root_url = "https://docs.rs/wl-clipboard-rs/0.9.3")]
+#![deny(unsafe_code)]
+
 mod common;
 mod data_control;
 mod seat_data;
