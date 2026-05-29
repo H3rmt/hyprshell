@@ -2,23 +2,15 @@ use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
 use crate::util::check_new_version;
-use crate::wm::{configure_wm, configure_wm_initial};
-use anyhow::{Context, bail};
-use async_channel::{Receiver, Sender};
-use config_lib::Config;
-use core_lib::listener::{
-    hyprshell_config_block, hyprshell_config_listener, hyprshell_css_listener,
-};
+use crate::wm::configure_wm_initial;
+use anyhow::Context;
+use async_channel::Sender;
+use core_lib::listener::{hyprshell_config_listener, hyprshell_css_listener};
 use core_lib::transfer::ExternalTransferType;
 use core_lib::{WarnWithDetails, notify, notify_resident, notify_warn};
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use relm4::RelmApp;
-use relm4::adw::gio;
-use relm4::adw::gtk::gdk::Display;
-use relm4::adw::gtk::{
-    Application, CssProvider, STYLE_PROVIDER_PRIORITY_USER, glib,
-    style_context_add_provider_for_display,
-};
+use relm4::adw::gtk::glib;
 use std::any::Any;
 use std::cell::RefCell;
 use std::cmp::Ordering;
@@ -26,8 +18,8 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
-use std::{env, process, thread};
-use tracing::{debug, debug_span, error, info, trace, warn};
+use std::{env, thread};
+use tracing::{debug, info, trace};
 
 pub fn start(
     config_file: PathBuf,

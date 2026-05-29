@@ -143,7 +143,7 @@ impl SimpleComponent for Step1 {
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
-        trace!("launcher::step1:update: {message:?}");
+        trace!("launcher::step1::update: {message:?}");
         match message {
             Step1Input::_Update => {
                 let data = self.get_data();

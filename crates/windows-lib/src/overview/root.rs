@@ -4,18 +4,13 @@ use crate::overview::window::{
     OverviewWindow, OverviewWindowData, OverviewWindowInit, OverviewWindowInput,
     OverviewWindowOutput,
 };
-use crate::switch::{SwitchData, SwitchRoot, SwitchRootInput};
-use core_lib::{
-    Active, ByFirst, ClientData, ClientId, Direction, HyprlandData, MonitorData, MonitorId,
-    WorkspaceData, WorkspaceId,
-};
+use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceId};
 use exec_lib::switch::{switch_client, switch_workspace};
 use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
 use relm4::adw::gdk::{Display, Monitor};
 use relm4::adw::glib::ControlFlow;
 use relm4::adw::prelude::*;
-use relm4::adw::{glib, gtk, init};
-use relm4::gtk::{Orientation, SelectionMode};
+use relm4::adw::{glib, gtk};
 use relm4::prelude::*;
 use std::collections::BTreeMap;
 use std::path::PathBuf;

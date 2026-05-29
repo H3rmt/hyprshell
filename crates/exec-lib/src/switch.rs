@@ -2,9 +2,7 @@ use crate::util::to_client_address;
 use anyhow::Context;
 use core_lib::{ClientId, Warn};
 use hyprland::data::{Client, Monitors, Workspace, Workspaces};
-use hyprland::dispatch::{
-    Dispatch, DispatchType, WindowIdentifier, WorkspaceIdentifierWithSpecial,
-};
+use hyprland::dispatch::{Dispatch, DispatchType};
 use hyprland::prelude::*;
 use hyprland::shared::WorkspaceId;
 use tracing::{debug, instrument, trace};

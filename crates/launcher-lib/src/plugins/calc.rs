@@ -76,12 +76,11 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
             d.rfc3339,
             join(&[d.human], ""),
         )],
-        QueryReply::Substance(s) => {
-            s.properties
-                .iter()
-                .map(|p| (str_from_np(&p.value), p.name.clone()))
-                .collect()
-        }
+        QueryReply::Substance(s) => s
+            .properties
+            .iter()
+            .map(|p| (str_from_np(&p.value), p.name.clone()))
+            .collect(),
         QueryReply::Duration(d) => {
             let parts = [
                 d.years, d.months, d.weeks, d.days, d.hours, d.minutes, d.seconds,
@@ -105,8 +104,14 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                 (
                     f.units
                         .iter()
-                        .map(|(u, &p)| pow(&u.clone(), p as i64))
-                        .intersperse(String::from("⋅"))
+                        .enumerate()
+                        .map(|(idx, (u, &p))| {
+                            if idx == 0 {
+                                pow(&u.clone(), p as i64)
+                            } else {
+                                format!("⋅{}", pow(&u.clone(), p as i64))
+                            }
+                        })
                         .collect(),
                     String::from(""),
                 )
@@ -127,7 +132,8 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                 l.list
                     .iter()
                     .map(str_from_np)
-                    .intersperse(String::from(", "))
+                    .enumerate()
+                    .map(|(idx, s)| if idx == 0 { s } else { format!(", {}", s) })
                     .collect(),
                 l.rest.quantity.unwrap_or_else(|| String::from("other")),
             )]
@@ -161,7 +167,8 @@ fn str_from_np(n: &NumberParts) -> String {
         d.iter()
             .filter(|(_, p)| **p > 0)
             .map(mkpow)
-            .intersperse(String::from(" "))
+            .enumerate()
+            .map(|(idx, s)| if idx == 0 { s } else { format!(" {}", s) })
             .collect()
     });
     let mut neg_units = n
@@ -181,7 +188,8 @@ fn str_from_np(n: &NumberParts) -> String {
         Some(
             u.drain(0..)
                 .map(mkpow)
-                .intersperse(String::from(" "))
+                .enumerate()
+                .map(|(idx, s)| if idx == 0 { s } else { format!(" {}", s) })
                 .collect(),
         )
     } else {
@@ -278,184 +286,154 @@ mod tests {
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_simple() -> Result<()> {
-        try {
-            let result = eval("42")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "42");
-            assert_eq!(result[0].1, "dimensionless");
-        }
+    fn test_parse_result_simple() {
+        let result = eval("42")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "42");
+        assert_eq!(result[0].1, "dimensionless");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_fraction() -> Result<()> {
-        try {
-            let result = eval("1/2")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "0.5");
-            assert_eq!(result[0].1, "dimensionless");
-        }
+    fn test_parse_result_fraction() {
+        let result = eval("1/2")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "0.5");
+        assert_eq!(result[0].1, "dimensionless");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_approx_with_dimensions() -> Result<()> {
-        try {
-            let result = eval("12|123 kg")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "97.[56097]... gram");
-            assert_eq!(result[0].1, "mass");
-        }
+    fn test_parse_result_approx_with_dimensions() {
+        let result = eval("12|123 kg")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "97.[56097]... gram");
+        assert_eq!(result[0].1, "mass");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_interesting_dimensions() -> Result<()> {
-        try {
-            let result = eval("1m * 1 m/s / 1s / 1s")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "1 meter² / second³");
-            assert_eq!(result[0].1, "absorbed_dose_rate");
-        }
+    fn test_parse_result_interesting_dimensions() {
+        let result = eval("1m * 1 m/s / 1s / 1s")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "1 meter² / second³");
+        assert_eq!(result[0].1, "absorbed_dose_rate");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_date() -> Result<()> {
-        try {
-            let result = eval("#September 2, 1945#")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "1945-09-02 00:00:00");
-            // TODO(db48x): this depends on the current date and so should not be tested
-            //assert_eq!(result[0].1, "80 years ago");
-        }
+    fn test_parse_result_date() {
+        let result = eval("#September 2, 1945#")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "1945-09-02 00:00:00");
+        // TODO(db48x): this depends on the current date and so should not be tested
+        //assert_eq!(result[0].1, "80 years ago");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_duration() -> Result<()> {
-        try {
-            let result = eval("1year+1day+1s")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "1 year, 1 day, 1 second");
-            assert_eq!(result[0].1, "time");
-        }
+    fn test_parse_result_duration() {
+        let result = eval("1year+1day+1s")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "1 year, 1 day, 1 second");
+        assert_eq!(result[0].1, "time");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_conversion() -> Result<()> {
-        try {
-            let result = eval("1 kg → gram")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "1000 gram");
-            assert_eq!(result[0].1, "mass");
-        }
+    fn test_parse_result_conversion() {
+        let result = eval("1 kg → gram")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "1000 gram");
+        assert_eq!(result[0].1, "mass");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_conversion_with_fractional_dimensions() -> Result<()> {
-        try {
-            let result = eval("1m → 21|32ft")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(result[0].0, "4.999375 × 21⁄32 foot");
-            assert_eq!(result[0].1, "length");
-        }
+    fn test_parse_result_conversion_with_fractional_dimensions() {
+        let result = eval("1m → 21|32ft")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "4.999375 × 21⁄32 foot");
+        assert_eq!(result[0].1, "length");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_unit_list() -> Result<()> {
-        try {
-            let result = eval(
-                "1month → siderealmonth;fortnight;watch;decimalminute;blink;millisecond;microsecond;shake",
-            )?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(
-                result[0].0,
-                "1 siderealmonth, 0 fortnight, 18 watch, 115 decimalminute, 18 blink, 768 millisecond, 823 microsecond, 20 shake"
-            );
-            assert_eq!(result[0].1, "time");
-        }
+    fn test_parse_result_unit_list() {
+        let result = eval(
+            "1month → siderealmonth;fortnight;watch;decimalminute;blink;millisecond;microsecond;shake",
+        )?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(
+            result[0].0,
+            "1 siderealmonth, 0 fortnight, 18 watch, 115 decimalminute, 18 blink, 768 millisecond, 823 microsecond, 20 shake"
+        );
+        assert_eq!(result[0].1, "time");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_definition() -> Result<()> {
-        try {
-            let result = eval("erg")?;
-            assert_eq!(result.len(), 1);
-            assert_eq!(
-                result[0].0,
-                "Definition: erg = cm dyne = 100 nanojoule (energy; kg m^2 / s^2)"
-            );
-            assert_eq!(result[0].1, "energy");
-        }
+    fn test_parse_result_definition() {
+        let result = eval("erg")?;
+        assert_eq!(result.len(), 1);
+        assert_eq!(
+            result[0].0,
+            "Definition: erg = cm dyne = 100 nanojoule (energy; kg m^2 / s^2)"
+        );
+        assert_eq!(result[0].1, "energy");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_substance() -> Result<()> {
-        try {
-            let result = eval("hydrogen")?;
-            assert_eq!(result.len(), 3);
-            let hash = result
-                .iter()
-                .cloned()
-                .map(|p| (p.1, p.0))
-                .collect::<HashMap<_, _>>();
-            assert_eq!(hash["atomic_number"], "1");
-            assert_eq!(hash["molar_mass"], "1.00794 gram / mole");
-            assert_eq!(hash["specific_heat"], "14300 meter^2 / kelvin second^2");
-        }
+    fn test_parse_result_substance() {
+        let result = eval("hydrogen")?;
+        assert_eq!(result.len(), 3);
+        let hash = result
+            .iter()
+            .cloned()
+            .map(|p| (p.1, p.0))
+            .collect::<HashMap<_, _>>();
+        assert_eq!(hash["atomic_number"], "1");
+        assert_eq!(hash["molar_mass"], "1.00794 gram / mole");
+        assert_eq!(hash["specific_heat"], "14300 meter^2 / kelvin second^2");
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_factorize() -> Result<()> {
-        try {
-            let results = eval("factorize velocity")?;
-            assert_eq!(results.len(), 5);
-            assert!(results.iter().any(|(f, _)| f == "acceleration⋅time"));
-            assert!(results.iter().any(|(f, _)| f == "jerk⋅time²"));
-        }
+    fn test_parse_result_factorize() {
+        let results = eval("factorize velocity")?;
+        assert_eq!(results.len(), 5);
+        assert!(results.iter().any(|(f, _)| f == "acceleration⋅time"));
+        assert!(results.iter().any(|(f, _)| f == "jerk⋅time²"));
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_search() -> Result<()> {
-        try {
-            let results = eval("search milk")?;
-            assert_eq!(results.len(), 5);
-            assert!(results.contains(&(String::from("milk"), String::from("substance"))));
-            assert!(results.contains(&(String::from("mil"), String::from("length"))));
-            assert!(results.contains(&(String::from("mile"), String::from("length"))));
-            assert!(results.contains(&(String::from("mill"), String::from("dimensionless"))));
-            assert!(results.contains(&(String::from("mi"), String::from("length"))));
-        }
+    fn test_parse_result_search() {
+        let results = eval("search milk")?;
+        assert_eq!(results.len(), 5);
+        assert!(results.contains(&(String::from("milk"), String::from("substance"))));
+        assert!(results.contains(&(String::from("mil"), String::from("length"))));
+        assert!(results.contains(&(String::from("mile"), String::from("length"))));
+        assert!(results.contains(&(String::from("mill"), String::from("dimensionless"))));
+        assert!(results.contains(&(String::from("mi"), String::from("length"))));
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_units_for() -> Result<()> {
-        try {
-            let results = eval("units for velocity")?;
-            assert_eq!(results.len(), 9);
-            assert!(results.contains(&(
-                String::from("fpm, fps, ipy, kmh, kph, mph"),
-                String::from("Abbreviations")
-            )));
-            assert!(results.contains(&(
-                String::from("brknot"),
-                String::from("British Length Measures")
-            )));
-            assert!(results.contains(&(String::from("kine"), String::from("CGS Units"))));
-            assert!(results.contains(&(String::from("㎧"), String::from("Unicode aliases"))));
-            assert!(
-                results.contains(&(String::from("c, mach"), String::from("Physical Constants")))
-            );
-        }
+    fn test_parse_result_units_for() {
+        let results = eval("units for velocity")?;
+        assert_eq!(results.len(), 9);
+        assert!(results.contains(&(
+            String::from("fpm, fps, ipy, kmh, kph, mph"),
+            String::from("Abbreviations")
+        )));
+        assert!(results.contains(&(
+            String::from("brknot"),
+            String::from("British Length Measures")
+        )));
+        assert!(results.contains(&(String::from("kine"), String::from("CGS Units"))));
+        assert!(results.contains(&(String::from("㎧"), String::from("Unicode aliases"))));
+        assert!(results.contains(&(String::from("c, mach"), String::from("Physical Constants"))));
     }
 }

@@ -1,11 +1,10 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
-use crate::overview::OverviewRootInput;
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
 use crate::switch::clients::{Clients, ClientsInit};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;

@@ -62,8 +62,8 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
     for (id, ws) in &mut workspace_data {
         ws.any_client_enabled = {
             let mut filtered = client_data.iter().filter(|(_, c)| c.workspace.eq(id));
-            (*id == active_ws
-                || filtered.clone().any(|(_, c)| c.enabled) && filtered.all(|(_, c)| c.enabled))
+            *id == active_ws
+                || filtered.clone().any(|(_, c)| c.enabled) && filtered.all(|(_, c)| c.enabled)
         };
     }
 

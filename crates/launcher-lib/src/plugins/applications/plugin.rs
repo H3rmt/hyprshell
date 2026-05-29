@@ -10,16 +10,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{trace, warn};
 
-#[derive(Debug, Clone, Copy)]
-enum MatchType {
-    AppType = 1,
-    Keyword = 4,
-    ExecName = 10,
-    ExecExact = 15,
-    Name = 16,
-    Exact = 21,
-}
-
 impl SortableLaunchOption {
     fn from_desktop_entry(
         entry: &DesktopEntry,

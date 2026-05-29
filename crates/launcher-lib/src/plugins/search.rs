@@ -89,7 +89,7 @@ pub struct BrowserData {
 }
 
 pub(super) fn get_browser_info() -> BrowserData {
-    let mut a = get_default_desktop_file("x-scheme-handler/https", |(entry, ini)| {
+    let a = get_default_desktop_file("x-scheme-handler/https", |(entry, ini)| {
         if let Some(section) = ini.get_section("Desktop Entry") {
             let exec = section.get_first("Exec");
             let startup_wm_class = section.get_first("StartupWMClass");

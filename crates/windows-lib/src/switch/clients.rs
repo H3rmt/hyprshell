@@ -4,7 +4,6 @@ use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::gtk::pango;
 use relm4::prelude::*;
-use tracing::trace;
 
 /// Clients component for FlowBox parent (non-workspace mode)
 /// Shows clients in a flow layout without positioning

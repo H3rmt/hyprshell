@@ -1777,6 +1777,7 @@ name = "hyprshell"
 version = "4.10.4"
 dependencies = [
  "anyhow",
+ "async-channel",
  "clap",
  "clap_complete",
  "hyprshell-clipboard-lib",

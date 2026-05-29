@@ -1,9 +1,9 @@
 use crate::plugins::SortedLaunchOption;
 use core_lib::default;
+use relm4::FactorySender;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::{FactorySender, SimpleComponent};
 use std::path::Path;
 use tracing::warn;
 

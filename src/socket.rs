@@ -1,5 +1,5 @@
 use anyhow::{Context, bail};
-use async_channel::{Receiver, Sender};
+use async_channel::Sender;
 use core_lib::transfer;
 use core_lib::transfer::ExternalTransferType;
 use core_lib::util::get_daemon_socket_path_buff;
@@ -7,8 +7,7 @@ use std::fs::remove_file;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net;
 use std::os::unix::net::UnixStream;
-use std::thread;
-use tracing::{debug, debug_span, info, instrument, trace, warn};
+use tracing::{debug, debug_span, instrument, warn};
 
 pub fn socket_handler(event_sender: Sender<ExternalTransferType>) {
     let _span = debug_span!("socket_handler").entered();

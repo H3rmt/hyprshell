@@ -74,7 +74,7 @@ build profile="dev":
 [group('checks')]
 lint profile="dev":
     cargo +nightly fmt -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
-    cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings
+    cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
 
 [group('checks')]
 test profile="dev":

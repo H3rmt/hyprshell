@@ -1,8 +1,6 @@
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, WorkspacesOutput};
-use crate::switch::SwitchRootInput;
 use core_lib::{
-    Active, ByFirst, ClientData, ClientId, HyprlandData, MonitorData, OVERVIEW_NAMESPACE,
-    SWITCH_NAMESPACE, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, MonitorData, OVERVIEW_NAMESPACE, WorkspaceData, WorkspaceId,
 };
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
@@ -11,7 +9,7 @@ use relm4::adw::{gdk, gtk};
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::{Orientation, SelectionMode};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent};
-use tracing::{error, trace};
+use tracing::trace;
 
 #[derive(Debug)]
 pub struct OverviewWindow {
@@ -109,7 +107,7 @@ impl SimpleComponent for OverviewWindow {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         trace!("overview::root::window::update: {message:?}");
         match message {
             OverviewWindowInput::SetGeneral(general) => {

@@ -180,7 +180,7 @@ impl SimpleComponent for Step2 {
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
-        trace!("launcher::step2:update: {message:?}");
+        trace!("launcher::step2::update: {message:?}");
         match message {
             Step2Input::ISetData(data) => {
                 sender.input(Step2Input::SetData(data.clone()));

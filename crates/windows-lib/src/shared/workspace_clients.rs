@@ -5,7 +5,6 @@ use relm4::adw::prelude::*;
 use relm4::factory::Position;
 use relm4::gtk::pango;
 use relm4::prelude::*;
-use tracing::trace;
 
 /// Workspace clients component for Fixed parent (workspace mode)
 /// Shows clients positioned according to their window coordinates

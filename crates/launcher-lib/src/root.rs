@@ -1,7 +1,6 @@
 use crate::plugins;
 use crate::plugins::{
-    SortedLaunchOption, StaticLaunchOption, get_sorted_launch_options, get_static_launch_options,
-    get_static_options_chars,
+    get_sorted_launch_options, get_static_launch_options, get_static_options_chars,
 };
 use crate::plugins_boxes::{LauncherPlugins, LauncherPluginsInit, LauncherPluginsOutput};
 use crate::result::{LauncherResults, LauncherResultsInit, LauncherResultsOutput};
@@ -13,9 +12,7 @@ use relm4::adw::gdk::ModifierType;
 use relm4::adw::prelude::*;
 use relm4::adw::{gdk, glib, gtk};
 use relm4::factory::FactoryVecDeque;
-use relm4::gtk::{
-    EventController, EventControllerKey, Orientation, PropagationPhase, SelectionMode,
-};
+use relm4::gtk::{EventController, EventControllerKey, Orientation, PropagationPhase};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -283,7 +280,7 @@ impl LauncherRoot {
             });
         }
 
-        for (opt) in get_static_launch_options(
+        for opt in get_static_launch_options(
             &self.launcher.plugins,
             self.launcher.default_terminal.as_deref(),
             text,

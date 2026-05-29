@@ -2,7 +2,6 @@ use anyhow::Context;
 use config_lib::Config;
 use core_lib::WarnWithDetails;
 use exec_lib::binds::{apply_exec_bind, apply_layerrules};
-use std::path::Path;
 use tracing::debug;
 
 pub fn configure_wm_initial() {

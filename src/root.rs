@@ -13,10 +13,9 @@ use relm4::gtk::{
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
-use std::time::Duration;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace};
 use windows_lib::overview::{OverviewRoot, OverviewRootInput};
 use windows_lib::switch::{SwitchRoot, SwitchRootInput};
 
@@ -28,6 +27,7 @@ pub struct Root {
     data_dir: Rc<PathBuf>,
     config_file: Rc<PathBuf>,
     css_path: Rc<PathBuf>,
+    #[allow(unused)]
     cache_dir: Rc<PathBuf>,
 }
 

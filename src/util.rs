@@ -1,4 +1,3 @@
-use crate::socket;
 use anyhow::Context;
 use core_lib::{Warn, WarnWithDetails, default};
 use relm4::adw::gtk::{IconTheme, Settings};
@@ -7,11 +6,8 @@ use semver::Version;
 use std::cmp::Ordering;
 use std::fs::{File, read_to_string, write};
 use std::io::Write;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::process::exit;
-use std::rc::Rc;
-use std::{fs, thread, time};
+use std::{fs, time};
 use tracing::{debug, info, trace, warn};
 
 pub fn preactivate(cache_dir: &Path) -> anyhow::Result<()> {
@@ -59,7 +55,7 @@ pub fn check_themes() {
     }
 }
 
-fn handle_sigterm(cache_dir: &Path) {}
+fn handle_sigterm(_cache_dir: &Path) {}
 
 fn get_icon_data() -> (Vec<String>, Vec<PathBuf>) {
     let icon_theme = IconTheme::new();

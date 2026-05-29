@@ -1,10 +1,7 @@
-use anyhow::Context;
 use core_lib::binds::ExecBind;
 use core_lib::{LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, SWITCH_NAMESPACE};
 use hyprland::bind_new::{Binding, Flag, Mod};
-use hyprland::config::binds;
 use hyprland::dispatch_new::Dispatch;
-use hyprland::keyword::Keyword;
 use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
 use tracing::{trace, warn};
 

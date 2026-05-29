@@ -1,8 +1,8 @@
 use crate::plugins::StaticLaunchOption;
+use relm4::FactorySender;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::{FactorySender, SimpleComponent};
 
 #[derive(Debug)]
 pub struct LauncherPlugins {
