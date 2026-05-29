@@ -91,10 +91,10 @@ fn main() -> anyhow::Result<()> {
             if daemon_running() {
                 bail!("Daemon already running");
             }
-            if env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v.eq("1")) {
-                clipboard_lib::store::test_clipboard(data_dir, cache_dir);
-                return Ok(());
-            }
+            // if env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v.eq("1")) {
+            //     clipboard_lib::store::test_clipboard(data_dir, cache_dir);
+            //     return Ok(());
+            // }
 
             start::start(config_file, css_file, data_dir, cache_dir)?;
         }

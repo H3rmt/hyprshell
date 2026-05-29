@@ -61,7 +61,7 @@ config-lib.workspace = true
 core-lib.workspace = true
 exec-lib.workspace = true
 launcher-lib.workspace = true
-clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.10.4" }
+#clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.10.4" }
 windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.10.4" }
 config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.10.4", optional = true }
 
@@ -69,18 +69,20 @@ config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config
 test-log.workspace = true
 
 [features]
-default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_compress_brotli", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
-slim = ["gui_settings_editor", "debug_command", "clipboard_compress_lz4"]
+default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command"]
+#default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_compress_brotli", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
+slim = ["gui_settings_editor", "debug_command"]
+#slim = ["gui_settings_editor", "debug_command", "clipboard_compress_lz4"]
 json5_config = ["config-lib/json5_config"]
 gui_settings_editor = ["dep:config-edit-lib"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin", "config-edit-lib?/launcher_calc_plugin"]
 debug_command = []
 ci_config_check = ["config-lib/ci_no_default_config_values"]
-clipboard_compress_lz4 = ["clipboard-lib/compress_lz4"]
-clipboard_compress_zstd = ["clipboard-lib/compress_zstd"]
-clipboard_compress_brotli = ["clipboard-lib/compress_brotli"]
-clipboard_encrypt_chacha20poly1305 = ["clipboard-lib/encrypt_chacha20poly1305"]
-clipboard_encrypt_aes_gcm = ["clipboard-lib/encrypt_aes_gcm"]
+#clipboard_compress_lz4 = ["clipboard-lib/compress_lz4"]
+#clipboard_compress_zstd = ["clipboard-lib/compress_zstd"]
+#clipboard_compress_brotli = ["clipboard-lib/compress_brotli"]
+#clipboard_encrypt_chacha20poly1305 = ["clipboard-lib/encrypt_chacha20poly1305"]
+#clipboard_encrypt_aes_gcm = ["clipboard-lib/encrypt_aes_gcm"]
 
 dev = ["config-lib/disable_migrations"]
 

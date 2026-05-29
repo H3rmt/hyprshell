@@ -21,10 +21,10 @@ image = { version = "0.25.8", features = ["png", "jpeg", "webp", "gif"], default
 lz4_flex = { version = "0.13.1", optional = true }
 zstd = { version = "0.13.3", optional = true }
 brotli = { version = "8.0.2", optional = true }
-secret-service = { version = "5.0.0", features = ["rt-async-io-crypto-openssl"], default-features = false, optional = true }
-chacha20poly1305 = { version = "0.11.0-rc.2", optional = true }
-aes-gcm = { version = "0.11.0-rc.2", optional = true }
-crypto-common = { version = "0.2.0-rc.9", optional = true }
+secret-service = { version = "5.0.0", features = ["rt-async-io-crypto-rust"], default-features = false, optional = true }
+chacha20poly1305 = { version = "0.11.0-rc.3", optional = true }
+aes-gcm = { version = "0.11.0-rc.4", optional = true }
+crypto-common = { version = "0.2.2", optional = true }
 
 [features]
 compress_lz4 = ["dep:lz4_flex"]
