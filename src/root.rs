@@ -1,3 +1,4 @@
+use crate::util;
 use crate::wm::configure_wm;
 use anyhow::Context;
 use async_channel::Receiver;
@@ -144,6 +145,7 @@ fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
     match msg {
         ExternalTransferType::OpenOverview => {
             sender.input_sender().emit(RootInput::OpenOverview);
+            gtk::gio::spawn_blocking(util::reload_desktop_data);
         }
         ExternalTransferType::OpenSwitch(cfg) => {
             sender
