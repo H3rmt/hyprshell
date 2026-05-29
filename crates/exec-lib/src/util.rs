@@ -31,16 +31,32 @@ pub fn reload_hyprland_config() -> anyhow::Result<()> {
     reload::call().context("Failed to reload hyprland config")
 }
 
-fn get_prev_follow_mouse() -> &'static Mutex<Option<String>> {
-    static PREV_FOLLOW_MOUSE: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+fn get_prev_follow_mouse() -> &'static Mutex<Option<u8>> {
+    static PREV_FOLLOW_MOUSE: OnceLock<Mutex<Option<u8>>> = OnceLock::new();
     PREV_FOLLOW_MOUSE.get_or_init(|| Mutex::new(None))
 }
 
-pub fn set_no_follow_mouse() -> anyhow::Result<()> {
-    let raw = hyprland::EvalRaw::new("hl.config({ input = { follow_mouse = 3} })");
-    raw.eval().context("Failed to set follow_mouse to 3")?;
-    trace!("Set follow_mouse to 3");
+pub fn set_no_follow_mouse(value: Option<u8>) -> anyhow::Result<()> {
+    let value = value.unwrap_or(3);
+    if let Err(e) = set_no_follow_mouse_lua(value) {
+        warn!("Failed to set follow_mouse to {value}, trying legacy syntax: {e:?}");
+        set_no_follow_mouse_legacy(value)
+            .with_context(|| format!("Failed to set follow_mouse to {value}"))?;
+    }
+    trace!("Set follow_mouse to {}", value);
     Ok(())
+}
+
+pub fn set_no_follow_mouse_lua(value: u8) -> anyhow::Result<()> {
+    let raw = hyprland::EvalRaw::new(format!(
+        "hl.config({{ input = {{ follow_mouse = {value} }} }})"
+    ));
+    raw.eval()
+        .with_context(|| format!("Failed to set follow_mouse to {value} (lua)"))
+}
+pub fn set_no_follow_mouse_legacy(value: u8) -> anyhow::Result<()> {
+    Keyword::set("input:follow_mouse", value.to_string())
+        .with_context(|| format!("Failed to set follow_mouse to {value} (legacy)"))
 }
 
 pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
@@ -48,12 +64,7 @@ pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
         .lock()
         .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
     if let Some(follow) = follow.as_ref() {
-        let raw = hyprland::EvalRaw::new(format!(
-            "hl.config({{ input = {{ follow_mouse = {} }} }})",
-            follow
-        ));
-        raw.eval()
-            .context("Failed to set follow_mouse to default")?;
+        set_no_follow_mouse(Some(*follow)).context("Failed to set follow_mouse to default")?;
         trace!("Restored previous follow_mouse value: {follow}");
     } else {
         trace!("No previous follow_mouse value stored, skipping reset");
@@ -68,7 +79,7 @@ pub fn set_follow_mouse_default() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("unable to lock get_prev_follow_mouse mutex: {e:?}"))?;
     let follow = Keyword::get("input:follow_mouse").context("keyword failed")?;
     trace!("Storing previous follow_mouse value: {}", follow.value);
-    *lock = Some(follow.value.to_string());
+    *lock = Some(follow.value.to_string().parse::<u8>().unwrap_or_default());
     drop(lock);
     Ok(())
 }

@@ -242,7 +242,7 @@ impl LauncherRoot {
         self.window.set_visible(true);
         self.entry.grab_focus();
         self.entry.set_text("");
-        exec_lib::set_no_follow_mouse().warn_details("Failed to set follow mouse");
+        exec_lib::set_no_follow_mouse(None).warn_details("Failed to set follow mouse");
     }
     fn close_launcher(&mut self) {
         trace!("Hiding window {:?}", self.window.id());

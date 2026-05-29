@@ -43,11 +43,11 @@ pub fn start(
                     "Hyprshell was updated to a new version ({})",
                     env!("CARGO_PKG_VERSION")
                 ),
-                Duration::from_secs(5),
+                Duration::from_secs(3),
             );
-            thread::sleep(Duration::from_millis(500));
+            thread::sleep(Duration::from_millis(1000));
             for info in messages {
-                notify_resident(&info, Duration::from_secs(10));
+                notify_resident(&info, Duration::from_secs(12));
             }
         }
         Ok((Ordering::Less, _)) => {

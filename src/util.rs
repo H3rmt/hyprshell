@@ -91,6 +91,10 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
         "4.10.0",
         "Version 4.10.0 adds support for hyprland-lua and removes the hyprland plugin.",
     ),
+    (
+        "4.10.5",
+        "Version 4.10.5 reimplements support for legacy hyprland config",
+    ),
 ];
 
 /// Checks if the current version is newer than the cached version.
