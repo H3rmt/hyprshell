@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "hyprshell-relm4"
-version = "4.10.4"
+version = "4.10.5"
 authors = ["Aaron Erhardt <aaron.erhardt@t-online.de>"]
 build = false
 include = [

@@ -7,7 +7,7 @@ homepage = "https://github.com/hyprland-community/hyprland-rs"
 
 rust-version = "1.85.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-version = "4.10.4"
+version = "4.10.5"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "hyprpaper"]
@@ -24,7 +24,7 @@ lto = true
 
 
 [dependencies]
-hyprland-macros = { package = "hyprshell-hyprland-macros", path = "./hyprland-macros", version = "=4.10.4" }
+hyprland-macros = { package = "hyprshell-hyprland-macros", path = "./hyprland-macros", version = "=4.10.5" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_repr = "0.1"
