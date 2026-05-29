@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.10.5](https://github.com/H3rmt/hyprshell/compare/v4.10.4...v4.10.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* add support for legacy hyprland config ([bf8e0c6](https://github.com/H3rmt/hyprshell/commit/bf8e0c6c8cae50c030a0771b848d43b0789e6b65))
+* allow calc plugin to show multiple results ([394b312](https://github.com/H3rmt/hyprshell/commit/394b312016fb7adfa980dc10766a22bc9a798cd2))
+* reload launcher data after opening ([ecb6370](https://github.com/H3rmt/hyprshell/commit/ecb63707f900afa5543fcfbb2f8149c54c226656))
+
 ## [4.10.4](https://github.com/H3rmt/hyprshell/compare/v4.10.3...v4.10.4) (2026-05-17)
 
 
