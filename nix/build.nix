@@ -8,11 +8,9 @@ rec {
   version = (pkgs.lib.trivial.importTOML ../Cargo.toml).workspace.package.version;
   # no more filtering, excluded to many files
   src = ../.;
-  stdenv = p: p.stdenv;
   commonArgs = {
     inherit
       src
-      stdenv
       pname
       version
       meta
@@ -40,7 +38,6 @@ rec {
     commonArgs
     // {
       mkDummySrc = craneLib.mkDummySrc {
-        inherit stdenv;
         src = ../.;
       };
       pname = "hyprshell";

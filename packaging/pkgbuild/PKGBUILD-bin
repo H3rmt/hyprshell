@@ -9,7 +9,7 @@ conflicts=('hyprshell')
 provides=('hyprshell')
 url="https://github.com/h3rmt/hyprshell/"
 license=("MIT")
-optdepends('org.freedesktop.secrets: Store clipboard encryption in the keyring')
+optdepends=('org.freedesktop.secrets: Store clipboard encryption in the keyring')
 depends=('hyprland' 'gtk4-layer-shell' 'gtk4' 'libadwaita' 'zstd')
 source_x86_64=("https://github.com/H3rmt/hyprshell/releases/download/v$pkgver/hyprshell-$pkgver-x86_64.tar.zst")
 source_aarch64=("https://github.com/H3rmt/hyprshell/releases/download/v$pkgver/hyprshell-$pkgver-aarch64.tar.zst")
