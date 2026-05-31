@@ -1,4 +1,4 @@
-use crate::plugins::SortableLaunchOption;
+use crate::plugins::{HighlightedText, LaunchItem, MatchedLaunchItem};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use rink_core::output::{NumberParts, QueryReply};
@@ -22,7 +22,7 @@ pub fn init_context() {
     get_context();
 }
 
-pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+pub fn get_launch_items(matches: &mut Vec<MatchedLaunchItem>, text: &str) {
     let Some(context_lock) = get_context() else {
         return;
     };
@@ -35,16 +35,25 @@ pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
         trace!("Eval: {eval:?}");
         for (title, desc) in parse_result(eval) {
             trace!("Added calc option: {title}, {desc:?}");
-            matches.push(SortableLaunchOption {
+            let title_box: Box<str> = title.clone().into_boxed_str();
+            let item = LaunchItem {
                 icon: Some(Box::from(Path::new("accessories-calculator"))),
-                names: Box::from(vec![title.clone().into_boxed_str()]),
+                names: Box::from([title_box.clone()]),
+                keywords: Box::from([]),
                 details: desc.clone().into_boxed_str(),
                 details_long: Some(Box::from("Copy to clipboard")),
                 bonus_score: 5,
                 enabled: true,
                 takes_args: false,
-                iden: Identifier::data(PluginName::Calc, title.into_boxed_str()),
-                subactions: vec![],
+                iden: Identifier::data(PluginName::Calc, title_box.clone()),
+                children: Box::from([]),
+            };
+            matches.push(MatchedLaunchItem {
+                item,
+                display_name: HighlightedText { text: title_box, spans: Vec::new() },
+                matched_alias: None,
+                arg_text: None,
+                score: 5,
             });
         }
     } else {

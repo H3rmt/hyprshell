@@ -1,4 +1,4 @@
-use crate::plugins::{PluginReturn, StaticLaunchOption};
+use crate::plugins::{PluginReturn, StaticLaunchItem};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use exec_lib::run::run_program;
@@ -6,8 +6,8 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
 use tracing::{debug, trace};
 
-pub fn get_static_options(matches: &mut Vec<StaticLaunchOption>, text: &str) {
-    matches.push(StaticLaunchOption {
+pub fn get_static_items(matches: &mut Vec<StaticLaunchItem>, text: &str) {
+    matches.push(StaticLaunchItem {
         iden: Identifier::plugin(PluginName::Shell),
         key: 'r',
         text: Box::from("Shell"),

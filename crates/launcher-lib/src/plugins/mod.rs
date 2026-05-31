@@ -17,6 +17,7 @@ pub use calc::init_context as init_calc_context;
 pub const fn init_calc_context() {}
 
 pub use main::{
-    PluginReturn, SortableLaunchOption, SortedLaunchOption, StaticLaunchOption,
-    get_sorted_launch_options, get_static_launch_options, get_static_options_chars, launch,
+    HighlightedText, LaunchChildItem, LaunchItem, MatchedLaunchItem, PluginReturn,
+    StaticLaunchItem, TextSpan, get_child_launch_items, get_input_driven_launch_items,
+    get_launch_items, get_static_launch_items, get_static_options_chars, launch,
 };

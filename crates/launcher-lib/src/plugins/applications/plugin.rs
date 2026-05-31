@@ -1,7 +1,7 @@
 use crate::plugins::PluginReturn;
 use crate::plugins::applications::data::{get_stored_runs, save_run};
 use crate::plugins::applications::map::{DesktopEntry, get_all_desktop_entries};
-use crate::plugins::main::SortableLaunchOption;
+use crate::plugins::LaunchItem;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use core_lib::util::{ExecType, analyse_exec};
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{trace, warn};
 
-impl SortableLaunchOption {
+impl LaunchItem {
     fn from_desktop_entry(
         entry: &DesktopEntry,
         runs: &HashMap<Box<Path>, u64>,
@@ -35,6 +35,7 @@ impl SortableLaunchOption {
         let runs = runs.get(&entry.source).unwrap_or(&0);
         Self {
             names: Box::from([entry.name.clone()]),
+            keywords: entry.keywords.clone().into_boxed_slice(),
             icon: entry.icon.clone(),
             details,
             details_long,
@@ -45,13 +46,13 @@ impl SortableLaunchOption {
             ),
             enabled: true,
             takes_args: false,
-            subactions: vec![],
+            children: Box::from([]),
         }
     }
 }
 
-pub fn get_sortable_options(
-    matches: &mut Vec<SortableLaunchOption>,
+pub fn get_launch_items(
+    matches: &mut Vec<LaunchItem>,
     run_cache_weeks: u8,
     show_execs: bool,
     show_actions_submenu: bool,
@@ -61,7 +62,7 @@ pub fn get_sortable_options(
     let runs = get_stored_runs(run_cache_weeks, data_dir);
 
     for entry in entries.iter() {
-        matches.push(SortableLaunchOption::from_desktop_entry(
+        matches.push(LaunchItem::from_desktop_entry(
             entry,
             &runs,
             show_execs,

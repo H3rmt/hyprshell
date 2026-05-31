@@ -1,4 +1,4 @@
-use crate::plugins::{PluginReturn, StaticLaunchOption};
+use crate::plugins::{PluginReturn, StaticLaunchItem};
 use config_lib::SearchEngine;
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
@@ -10,7 +10,7 @@ use std::path::Path;
 use tracing::{debug, trace, warn};
 
 pub fn get_static_options(
-    matches: &mut Vec<StaticLaunchOption>,
+    matches: &mut Vec<StaticLaunchItem>,
     config: &[SearchEngine],
     text: &str,
 ) {
@@ -22,7 +22,7 @@ pub fn get_static_options(
         if engine.key.is_whitespace() {
             warn!("Plugin {} has no valid key set", engine.name);
         } else {
-            matches.push(StaticLaunchOption {
+            matches.push(StaticLaunchItem {
                 text: engine.name.clone(),
                 details: format!("Search with {}", engine.name).into_boxed_str(),
                 icon: icon.clone(),

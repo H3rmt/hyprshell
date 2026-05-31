@@ -1,4 +1,4 @@
-use crate::plugins::{PluginReturn, StaticLaunchOption};
+use crate::plugins::{PluginReturn, StaticLaunchItem};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use exec_lib::run::run_program;
@@ -7,11 +7,11 @@ use std::path::PathBuf;
 use tracing::{debug, trace};
 
 pub fn get_static_options(
-    matches: &mut Vec<StaticLaunchOption>,
+    matches: &mut Vec<StaticLaunchItem>,
     default_terminal: Option<&str>,
     text: &str,
 ) {
-    matches.push(StaticLaunchOption {
+    matches.push(StaticLaunchItem {
         iden: Identifier::plugin(PluginName::Terminal),
         key: 't',
         text: Box::from("Terminal"),

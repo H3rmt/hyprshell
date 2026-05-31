@@ -1,6 +1,7 @@
 use crate::plugins;
 use crate::plugins::{
-    get_sorted_launch_options, get_static_launch_options, get_static_options_chars,
+    get_child_launch_items, get_input_driven_launch_items, get_launch_items,
+    get_static_launch_items, get_static_options_chars, LaunchItem,
 };
 use crate::plugins_boxes::{LauncherPlugins, LauncherPluginsInit, LauncherPluginsOutput};
 use crate::result::{LauncherResults, LauncherResultsInit, LauncherResultsOutput};
@@ -29,6 +30,10 @@ pub struct LauncherRoot {
     controller: Option<EventController>,
 
     data: LauncherData,
+    active_results: Vec<LauncherResultsInit>,
+    active_parent: Option<LaunchItem>,
+    child_text: Option<Box<str>>,
+    child_cursor: Option<i32>,
     switching: bool,
     data_dir: Rc<PathBuf>,
 }
@@ -39,6 +44,8 @@ pub enum LauncherRootInput {
     OpenLauncher,
     CloseLauncher,
     Launch(char),
+    LaunchIndex(usize),
+    Escape,
     Return,
     Switch(Direction, bool),
     Type,
@@ -54,6 +61,12 @@ pub struct LauncherRootInit {
 pub enum LauncherRootOutput {
     Switch(Direction, bool),
     Close(bool),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ActivationOutcome {
+    OpenChildMode,
+    Launched,
 }
 
 #[relm4::component(pub)]
@@ -103,13 +116,9 @@ impl SimpleComponent for LauncherRoot {
         let results: FactoryVecDeque<LauncherResults> = FactoryVecDeque::builder()
             .launch(gtk::Box::default())
             .forward(sender.input_sender(), |r| match r {
-                LauncherResultsOutput::Clicked(idx) => LauncherRootInput::Launch(
-                    idx.current_index()
-                        .to_string()
-                        .chars()
-                        .next()
-                        .expect("No char"),
-                ),
+            LauncherResultsOutput::Clicked(idx) => {
+                LauncherRootInput::LaunchIndex(idx.current_index())
+            }
             });
         let plugins: FactoryVecDeque<LauncherPlugins> = FactoryVecDeque::builder()
             .launch(gtk::Box::default())
@@ -126,6 +135,10 @@ impl SimpleComponent for LauncherRoot {
             plugins,
             controller: None,
             data: LauncherData::default(),
+            active_results: Vec::new(),
+            active_parent: None,
+            child_text: None,
+            child_cursor: None,
             switching: false, // enter when nothing was done launches program
         };
 
@@ -165,18 +178,30 @@ impl SimpleComponent for LauncherRoot {
                 self.setup_keyboard_controller(&sender);
             }
             LauncherRootInput::OpenLauncher => {
+                self.active_parent = None;
+                self.child_text = None;
+                self.child_cursor = None;
+                self.switching = false;
                 self.open_launcher();
                 self.handle_type();
             }
             LauncherRootInput::CloseLauncher => self.close_launcher(),
             LauncherRootInput::Launch(char) => {
                 trace!("Closing launcher with char: {}", char);
-                if let Some(iden) = match char {
-                    '0'..='9' => char
-                        .to_digit(10)
-                        .and_then(|a| self.data.sorted_matches.get(a as usize)),
-                    _ => self.data.static_matches.get(&char),
-                } {
+                if let Some(index) = char.to_digit(10).map(|a| a as usize) {
+                    if self.active_parent.is_some() {
+                        sender.input_sender().emit(LauncherRootInput::LaunchIndex(index));
+                    } else {
+                        match self.activate_selected(index) {
+                            ActivationOutcome::OpenChildMode => {}
+                            ActivationOutcome::Launched => {
+                                sender
+                                    .output_sender()
+                                    .emit(LauncherRootOutput::Close(false));
+                            }
+                        }
+                    }
+                } else if let Some(iden) = self.data.static_matches.get(&char) {
                     plugins::launch(
                         iden,
                         &self.entry.text(),
@@ -191,6 +216,33 @@ impl SimpleComponent for LauncherRoot {
                     .output_sender()
                     .emit(LauncherRootOutput::Close(false));
             }
+            LauncherRootInput::LaunchIndex(index) => {
+                trace!("Closing launcher with index: {}", index);
+                match self.activate_selected(index) {
+                    ActivationOutcome::OpenChildMode => return,
+                    ActivationOutcome::Launched => {
+                        sender
+                            .output_sender()
+                            .emit(LauncherRootOutput::Close(false));
+                    }
+                }
+            }
+            LauncherRootInput::Escape => {
+                if self.active_parent.is_some() {
+                    self.active_parent = None;
+                    if let Some(child_text) = self.child_text.take() {
+                        self.entry.set_text(&child_text);
+                        if let Some(cursor) = self.child_cursor.take() {
+                            self.entry.set_position(cursor);
+                        } else {
+                            self.entry.set_position(self.entry.text().len() as i32);
+                        }
+                    }
+                    self.handle_type();
+                } else {
+                    sender.output_sender().emit(LauncherRootOutput::Close(false));
+                }
+            }
             LauncherRootInput::Type => {
                 self.switching = false;
                 self.handle_type()
@@ -203,7 +255,7 @@ impl SimpleComponent for LauncherRoot {
             }
             LauncherRootInput::Return => {
                 if !self.switching {
-                    sender.input_sender().emit(LauncherRootInput::Launch('0'));
+                    sender.input_sender().emit(LauncherRootInput::LaunchIndex(0));
                 } else {
                     sender.output_sender().emit(LauncherRootOutput::Close(true));
                 }
@@ -239,6 +291,10 @@ impl LauncherRoot {
     }
     fn open_launcher(&mut self) {
         trace!("Showing window {:?}", self.window.id());
+        self.active_parent = None;
+        self.child_text = None;
+        self.child_cursor = None;
+        self.switching = false;
         self.window.set_visible(true);
         self.entry.grab_focus();
         self.entry.set_text("");
@@ -250,8 +306,56 @@ impl LauncherRoot {
         exec_lib::reset_no_follow_mouse().warn_details("Failed to reset follow mouse");
     }
 
+    fn activate_selected(&mut self, index: usize) -> ActivationOutcome {
+        let Some(opt) = self.active_results.get(index).map(|entry| &entry.opt) else {
+            return ActivationOutcome::Launched;
+        };
+
+        if let Some(parent) = self.active_parent.as_ref() {
+            if index == 0 {
+                plugins::launch(
+                    &parent.iden,
+                    &self.entry.text(),
+                    self.launcher.default_terminal.as_deref(),
+                    &self.data_dir,
+                );
+                return ActivationOutcome::Launched;
+            }
+
+            if let Some(child) = parent.children.get(index - 1) {
+                plugins::launch(
+                    &child.iden,
+                    &self.entry.text(),
+                    self.launcher.default_terminal.as_deref(),
+                    &self.data_dir,
+                );
+                return ActivationOutcome::Launched;
+            }
+
+            return ActivationOutcome::Launched;
+        }
+
+        if !opt.item.children.is_empty() {
+            self.child_text = Some(self.entry.text().into());
+            self.child_cursor = Some(self.entry.position());
+            self.active_parent = Some(opt.item.clone());
+            self.entry.set_text("");
+            self.handle_type();
+            return ActivationOutcome::OpenChildMode;
+        }
+
+        plugins::launch(
+            &opt.item.iden,
+            &self.entry.text(),
+            self.launcher.default_terminal.as_deref(),
+            &self.data_dir,
+        );
+        ActivationOutcome::Launched
+    }
+
     fn handle_type(&mut self) {
         self.data.sorted_matches.clear();
+        self.data.input_driven_matches.clear();
         self.data.static_matches.clear();
         let text: &str = &self.entry.text();
 
@@ -264,35 +368,77 @@ impl LauncherRoot {
             return;
         }
         let items = self.launcher.max_items.min(9) as usize;
-        for (index, (_, opt)) in
-            get_sorted_launch_options(&self.launcher.plugins, text, &self.data_dir)
+        let mut results: Vec<LauncherResultsInit> = Vec::new();
+        if let Some(parent) = self.active_parent.as_ref() {
+            for (index, opt) in get_child_launch_items(parent, text)
                 .into_iter()
                 .take(items)
                 .enumerate()
-        {
-            self.data.sorted_matches.push(opt.iden.clone());
-            results_lock.push_back(LauncherResultsInit {
-                opt,
-                key: match index {
-                    0 => "Return".to_string(),
-                    i => format!("{}+{i}", self.launcher.launch_modifier),
-                },
-            });
+            {
+                results.push(LauncherResultsInit {
+                    opt,
+                    key: match index {
+                        0 => "Return".to_string(),
+                        i => format!("{}+{i}", self.launcher.launch_modifier),
+                    },
+                    has_children: false,
+                });
+            }
+        } else {
+            for (index, opt) in get_launch_items(&self.launcher.plugins, text, &self.data_dir)
+                .into_iter()
+                .take(items)
+                .enumerate()
+            {
+                self.data.sorted_matches.push(opt.item.iden.clone());
+                let has_children = !opt.item.children.is_empty();
+                results.push(LauncherResultsInit {
+                    opt,
+                    key: match index {
+                        0 => "Return".to_string(),
+                        i => format!("{}+{i}", self.launcher.launch_modifier),
+                    },
+                    has_children,
+                });
+            }
+
+            for (index, opt) in get_input_driven_launch_items(&self.launcher.plugins, text)
+                .into_iter()
+                .take(items)
+                .enumerate()
+            {
+                self.data.input_driven_matches.push(opt.item.iden.clone());
+                results.push(LauncherResultsInit {
+                    opt,
+                    key: match index {
+                        0 => "Return".to_string(),
+                        i => format!("{}+{i}", self.launcher.launch_modifier),
+                    },
+                    has_children: false,
+                });
+            }
         }
 
-        for opt in get_static_launch_options(
-            &self.launcher.plugins,
-            self.launcher.default_terminal.as_deref(),
-            text,
-        ) {
-            self.data
-                .static_matches
-                .entry(opt.key)
-                .or_insert(opt.iden.clone());
-            plugins_lock.push_back(LauncherPluginsInit {
-                opt,
-                launch_modifier: self.launcher.launch_modifier,
-            });
+        self.active_results = results.clone();
+        for item in results {
+            results_lock.push_back(item);
+        }
+
+        if self.active_parent.is_none() {
+            for opt in get_static_launch_items(
+                &self.launcher.plugins,
+                self.launcher.default_terminal.as_deref(),
+                text,
+            ) {
+                self.data
+                    .static_matches
+                    .entry(opt.key)
+                    .or_insert(opt.iden.clone());
+                plugins_lock.push_back(LauncherPluginsInit {
+                    opt,
+                    launch_modifier: self.launcher.launch_modifier,
+                });
+            }
         }
     }
 }
@@ -324,9 +470,7 @@ fn handle_key(
 
     match (launch_mod, key) {
         (_, gdk::Key::Escape) => {
-            sender
-                .output_sender()
-                .emit(LauncherRootOutput::Close(false));
+            sender.input_sender().emit(LauncherRootInput::Escape);
             glib::Propagation::Stop
         }
         (_, gdk::Key::Tab) => {
@@ -432,5 +576,6 @@ fn handle_key(
 #[derive(Debug, Default)]
 pub struct LauncherData {
     pub sorted_matches: Vec<Identifier>,
+    pub input_driven_matches: Vec<Identifier>,
     pub static_matches: HashMap<char, Identifier>,
 }

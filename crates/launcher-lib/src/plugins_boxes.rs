@@ -1,4 +1,4 @@
-use crate::plugins::StaticLaunchOption;
+use crate::plugins::StaticLaunchItem;
 use relm4::FactorySender;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
@@ -6,7 +6,7 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 
 #[derive(Debug)]
 pub struct LauncherPlugins {
-    opt: StaticLaunchOption,
+    opt: StaticLaunchItem,
     launch_modifier: config_lib::Modifier,
 }
 
@@ -15,7 +15,7 @@ pub enum LauncherPluginsInput {}
 
 #[derive(Debug)]
 pub struct LauncherPluginsInit {
-    pub opt: StaticLaunchOption,
+    pub opt: StaticLaunchItem,
     pub launch_modifier: config_lib::Modifier,
 }
 

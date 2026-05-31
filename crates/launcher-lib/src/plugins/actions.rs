@@ -1,11 +1,36 @@
-use crate::plugins::{PluginReturn, SortableLaunchOption};
+use crate::plugins::{LaunchChildItem, LaunchItem, PluginReturn};
 use config_lib::actions::ToAction;
 use config_lib::{ActionsPluginActionCustom, ActionsPluginConfig};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
+use std::path::PathBuf;
 use tracing::{error, info, trace};
 
-pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &ActionsPluginConfig) {
+fn hibernate_children() -> Box<[LaunchChildItem]> {
+    Box::from([
+        LaunchChildItem {
+            name: Box::from("Hybrid Sleep"),
+            icon: Some(PathBuf::from("system-hibernate").into_boxed_path()),
+            details: Box::from("Suspend to RAM and disk"),
+            details_long: Some(Box::from("systemctl hybrid-sleep")),
+            enabled: true,
+            iden: Identifier::data(PluginName::Actions, Box::from("systemctl hybrid-sleep")),
+        },
+        LaunchChildItem {
+            name: Box::from("Suspend Then Hibernate"),
+            icon: Some(PathBuf::from("system-hibernate").into_boxed_path()),
+            details: Box::from("Suspend first, then hibernate later"),
+            details_long: Some(Box::from("systemctl suspend-then-hibernate")),
+            enabled: true,
+            iden: Identifier::data(
+                PluginName::Actions,
+                Box::from("systemctl suspend-then-hibernate"),
+            ),
+        },
+    ])
+}
+
+pub fn get_launch_items(matches: &mut Vec<LaunchItem>, config: &ActionsPluginConfig) {
     let actions = config
         .actions
         .iter()
@@ -19,9 +44,10 @@ pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &Act
         if takes_args {
             // we need to create actions with a single name, because the name needs to be removed later
             for name in action.names.iter() {
-                matches.push(SortableLaunchOption {
+                matches.push(LaunchItem {
                     icon: Some(action.icon.clone()),
                     names: Box::from([name.clone()]),
+                    keywords: Box::from([]),
                     details: action.details.clone(),
                     details_long: Some(action.command.clone()),
                     bonus_score: 0,
@@ -32,20 +58,26 @@ pub fn get_actions_options(matches: &mut Vec<SortableLaunchOption>, config: &Act
                         action.command.clone(),
                         name.clone(),
                     ),
-                    subactions: vec![],
+                    children: Box::from([]),
                 })
             }
         } else {
-            matches.push(SortableLaunchOption {
+            let children = if action.command.as_ref() == "systemctl hibernate" {
+                hibernate_children()
+            } else {
+                Box::from([])
+            };
+            matches.push(LaunchItem {
                 icon: Some(action.icon),
                 names: Box::from(action.names),
+                keywords: Box::from([]),
                 details: action.details,
                 details_long: Some(action.command.clone()),
                 bonus_score: 0,
                 takes_args: false,
                 enabled: true,
                 iden: Identifier::data(PluginName::Actions, action.command),
-                subactions: vec![],
+                children,
             });
         }
     }

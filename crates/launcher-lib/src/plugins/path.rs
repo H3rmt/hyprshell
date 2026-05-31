@@ -1,4 +1,4 @@
-use crate::plugins::{PluginReturn, SortableLaunchOption};
+use crate::plugins::{HighlightedText, LaunchItem, MatchedLaunchItem, PluginReturn};
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
 use core_lib::transfer::{Identifier, PluginName};
@@ -7,7 +7,7 @@ use std::env;
 use std::path::Path;
 use tracing::{debug, trace, warn};
 
-pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+pub fn get_launch_items(matches: &mut Vec<MatchedLaunchItem>, text: &str) {
     if text.starts_with('/') || text.starts_with('~') {
         // starting the file manager from bash works with ~,
         // checking if a file exists doesn't work with ~ as it is not expanded without a shell
@@ -18,18 +18,24 @@ pub fn get_path_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
         };
         let exists = Path::new(&text).exists();
         let file_manager = get_file_manager_info();
-        matches.push(SortableLaunchOption {
+        let item = LaunchItem {
             icon: file_manager.icon.clone(),
-            names: Box::from(vec![
-                format!("Open in {}", file_manager.name).into_boxed_str(),
-            ]),
+            names: Box::from([format!("Open in {}", file_manager.name).into_boxed_str()]),
+            keywords: Box::from([]),
             details: Box::from(""),
             details_long: None,
             bonus_score: 5,
             takes_args: false,
             enabled: exists,
             iden: Identifier::plugin(PluginName::Path),
-            subactions: vec![],
+            children: Box::from([]),
+        };
+        matches.push(MatchedLaunchItem {
+            display_name: HighlightedText { text: item.names[0].clone(), spans: Vec::new() },
+            matched_alias: None,
+            arg_text: None,
+            score: 5,
+            item,
         });
     }
 }

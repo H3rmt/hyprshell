@@ -1,6 +1,6 @@
 #![allow(clippy::print_stderr, clippy::print_stdout)]
 
-use crate::plugins::get_sorted_launch_options;
+use crate::plugins::get_launch_items;
 use crate::reload_applications_desktop_entries_map;
 use config_lib::Plugins;
 use core_lib::WarnWithDetails;
@@ -13,7 +13,7 @@ pub fn get_matches(plugins: &Plugins, text: &str, all_items: bool, max_items: u8
     reload_applications_desktop_entries_map()
         .warn_details("Failed to reload applications desktop entries map");
     debug!("text: {text}");
-    let options = get_sorted_launch_options(plugins, text, data_dir);
+    let options = get_launch_items(plugins, text, data_dir);
     println!("{} options returned", options.len());
     let options = if all_items {
         options
@@ -21,12 +21,12 @@ pub fn get_matches(plugins: &Plugins, text: &str, all_items: bool, max_items: u8
         debug!("shorting options to {max_items}");
         options.into_iter().take(max_items as usize).collect()
     };
-    for (score, option) in options {
+    for option in options {
         println!(
-            "{:?}: {:?}; {} desktop actions",
-            option.name,
-            score,
-            option.subactions.len()
+            "{:?}: {:?}; {} children",
+            option.item.names.first(),
+            option.score,
+            option.item.children.len()
         );
         debug!("{option:?}");
     }

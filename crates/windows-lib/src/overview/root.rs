@@ -89,7 +89,6 @@ impl SimpleComponent for OverviewRoot {
                 let overview_window = overview_window
                     .launch(OverviewWindowInit {
                         general: init.general.clone(),
-                        monitor: monitor.clone(),
                         gtk_monitor,
                     })
                     .forward(sender.input_sender(), |m| match m {

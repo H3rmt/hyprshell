@@ -1,4 +1,4 @@
-use crate::plugins::SortedLaunchOption;
+use crate::plugins::{HighlightedText, MatchedLaunchItem, TextSpan};
 use core_lib::default;
 use relm4::FactorySender;
 use relm4::adw::gtk;
@@ -9,22 +9,50 @@ use tracing::warn;
 
 #[derive(Debug)]
 pub struct LauncherResults {
-    opt: SortedLaunchOption,
+    opt: MatchedLaunchItem,
     key: String,
+    has_children: bool,
 }
 
 #[derive(Debug)]
 pub enum LauncherResultsInput {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LauncherResultsInit {
-    pub opt: SortedLaunchOption,
+    pub opt: MatchedLaunchItem,
     pub key: String,
+    pub has_children: bool,
 }
 
 #[derive(Debug)]
 pub enum LauncherResultsOutput {
     Clicked(DynamicIndex),
+}
+
+fn brighten_channel(channel: f32) -> f32 {
+    channel + (1.0 - channel) * 0.4
+}
+
+fn text_attributes(text: &HighlightedText, base: gtk::gdk::RGBA) -> gtk::pango::AttrList {
+    let attrs = gtk::pango::AttrList::new();
+    let red = brighten_channel(base.red());
+    let green = brighten_channel(base.green());
+    let blue = brighten_channel(base.blue());
+    let red = (red * 65535.0) as u16;
+    let green = (green * 65535.0) as u16;
+    let blue = (blue * 65535.0) as u16;
+    for TextSpan { start, end } in &text.spans {
+        let mut weight = gtk::pango::AttrInt::new_weight(gtk::pango::Weight::Bold);
+        weight.set_start_index(*start);
+        weight.set_end_index(*end);
+        attrs.insert(weight);
+
+        let mut color = gtk::pango::AttrColor::new_foreground(red, green, blue);
+        color.set_start_index(*start);
+        color.set_end_index(*end);
+        attrs.insert(color);
+    }
+    attrs
 }
 
 #[relm4::factory(pub)]
@@ -37,9 +65,12 @@ impl FactoryComponent for LauncherResults {
 
     view! {
         gtk::Button {
-            set_css_classes: if self.opt.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
+            set_css_classes: if self.opt.item.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
             set_cursor_from_name: Some("pointer"),
-            connect_clicked[sender, index] => move |_| sender.output_sender().emit(LauncherResultsOutput::Clicked(index.clone())),
+            connect_clicked[sender, index, has_children = self.has_children] => move |_| {
+                let _ = has_children;
+                sender.output_sender().emit(LauncherResultsOutput::Clicked(index.clone()))
+            },
             gtk::Box {
                 set_css_classes: &["launcher-item-inner"],
                 set_orientation: gtk::Orientation::Horizontal,
@@ -52,11 +83,13 @@ impl FactoryComponent for LauncherResults {
                     set_css_classes: &["launcher-item-image"],
                     set_icon_size: gtk::IconSize::Large,
                 },
+                #[name = "name"]
                 gtk::Label {
                     set_css_classes: &["launcher-item-name"],
                     set_halign: gtk::Align::Start,
                     set_valign: gtk::Align::Center,
-                    set_label: &self.opt.name,
+                    set_ellipsize: gtk::pango::EllipsizeMode::End,
+                    set_text: &self.opt.display_name.text,
                 },
                 #[name = "details"]
                 gtk::Label {
@@ -65,7 +98,7 @@ impl FactoryComponent for LauncherResults {
                     set_valign: gtk::Align::Center,
                     set_hexpand: true,
                     set_ellipsize: gtk::pango::EllipsizeMode::End,
-                    set_label: &self.opt.details,
+                    set_label: &self.opt.item.details,
                 },
                 gtk::Label {
                     set_css_classes: &["launcher-key"],
@@ -81,6 +114,7 @@ impl FactoryComponent for LauncherResults {
         Self {
             opt: init.opt,
             key: init.key,
+            has_children: init.has_children,
         }
     }
 
@@ -96,31 +130,26 @@ impl FactoryComponent for LauncherResults {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
-        if let Some(details_long) = &self.opt.details_long {
+        let base_color = widgets.name.style_context().color();
+        widgets
+            .name
+            .set_attributes(Some(&text_attributes(&self.opt.display_name, base_color)));
+        if let Some(details_long) = &self.opt.item.details_long {
             widgets.details.set_tooltip_text(Some(details_long));
             widgets.details.add_css_class("underline");
         }
-        if let Some(icon_path) = &self.opt.icon {
+        if let Some(icon_path) = &self.opt.item.icon {
             if icon_path.is_absolute() {
                 if let Some(icon_name) = icon_path.file_stem() {
                     if default::theme_has_icon_name(&icon_name.to_string_lossy()) {
-                        widgets
-                            .icon
-                            .set_icon_name(Some(&icon_name.to_string_lossy()));
+                        widgets.icon.set_icon_name(Some(&icon_name.to_string_lossy()));
                     } else {
-                        widgets
-                            .icon
-                            .set_from_file(Some(Path::new(&*icon_path.clone())));
+                        widgets.icon.set_from_file(Some(Path::new(&*icon_path.clone())));
                     }
                 } else {
                     warn!("invalid icon name: {icon_path:?}");
                 }
             } else {
-                // use filename as some files are named org.gnome.file
-                // trace!(
-                //     "using name: {:?}",
-                //     icon_path.file_name().and_then(|name| name.to_str())
-                // );
                 widgets
                     .icon
                     .set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));

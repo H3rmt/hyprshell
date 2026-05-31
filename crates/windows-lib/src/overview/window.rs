@@ -17,7 +17,6 @@ pub struct OverviewWindow {
     open: bool,
     // gtk
     window: gtk::ApplicationWindow,
-    controller: Option<gtk::EventController>,
     /// Regex for removing HTML tags from strings
     remove_html: Regex,
     /// Factory for workspaces
@@ -36,7 +35,6 @@ pub enum OverviewWindowInput {
 #[derive(Debug)]
 pub struct OverviewWindowInit {
     pub general: config_lib::WindowsGeneral,
-    pub monitor: MonitorData,
     pub gtk_monitor: gdk::Monitor,
 }
 
@@ -88,7 +86,6 @@ impl SimpleComponent for OverviewWindow {
             general: init.general,
             open: false,
             window: root.clone(),
-            controller: None,
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
             items,
         };
