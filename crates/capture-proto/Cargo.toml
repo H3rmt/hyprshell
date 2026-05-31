@@ -1,0 +1,17 @@
+[package]
+name                   = "capture-proto"
+version.workspace      = true
+description.workspace  = true
+license.workspace      = true
+authors.workspace      = true
+keywords.workspace     = true
+repository.workspace   = true
+rust-version.workspace = true
+edition.workspace      = true
+
+[dependencies]
+wayland-client    = "0.31.8"
+wayland-protocols = { version = "0.32.6", features = ["client", "staging"] }
+
+[lints]
+workspace = true
