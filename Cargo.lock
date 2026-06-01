@@ -627,6 +627,7 @@ dependencies = [
 name = "capture-proto"
 version = "4.10.6"
 dependencies = [
+ "gtk4",
  "image",
  "rustix 1.1.4",
  "wayland-client",
