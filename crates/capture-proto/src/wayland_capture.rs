@@ -1,4 +1,3 @@
-
 use std::os::fd::AsFd;
 
 use rustix::fs::MemfdFlags;
@@ -27,26 +26,35 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1;
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
 
+/// Result of a window capture.
+/// Pixels are in BGRA format (native Wayland ARGB8888 byte order on little-endian).
+pub struct CaptureResult { pub pixels: Vec<u8>
+                         , pub width:  u32
+                         , pub height: u32
+                         , pub stride: u32
+                         }
+
 #[derive(Debug)]
+#[allow(dead_code)]
 struct TopLevelInfo { handle: ExtForeignToplevelHandleV1
                     , title:  Option<String>
                     , app_id: Option<String>
                     }
 
 struct AppState { toplevels:            Vec<TopLevelInfo>
-                , pending_title:        Option<String>
-                , pending_app_id:       Option<String>
-                // Globals
-                , wl_shm:               Option<WlShm>
-                , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
-                , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
-                // capture constraints
-                , buffer_geometry:      Option<(u32, u32)>
-                , shm_format:           Option<wl_shm::Format>
-                , session_done:         bool
-                , ready:                bool
-                , buffer_released:      bool
-                }
+               , pending_title:        Option<String>
+               , pending_app_id:       Option<String>
+               // globals
+               , wl_shm:               Option<WlShm>
+               , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
+               , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
+               // capture constraints
+               , buffer_geometry:      Option<(u32, u32)>
+               , shm_format:           Option<wl_shm::Format>
+               , session_done:         bool
+               , ready:                bool
+               , buffer_released:      bool
+               }
 
 impl Dispatch<WlBuffer, ()> for AppState {
     fn event( _state:    &mut AppState
@@ -270,15 +278,14 @@ impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
             wl_registry::Event::Global { name, interface, version } if interface == "ext_foreign_toplevel_list_v1" => {
                 _proxy.bind::<ExtForeignToplevelListV1, _, _>(name, version.min(1), _qhandle, ());
             }
-            // wl_registry::Event::GlobalRemove { name } => {
-            // }
             _ => { }
-
         }
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// Capture the first available toplevel window.
+/// Returns raw pixels in BGRA format (native Wayland ARGB8888 byte order on little-endian).
+pub fn capture() -> Result<CaptureResult, Box<dyn std::error::Error>> {
     let connection                       = Connection::connect_to_env()?;
     let mut equeue: EventQueue<AppState> = connection.new_event_queue();
     let mut state                        = AppState { toplevels:            Vec::new()
@@ -299,83 +306,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     equeue.roundtrip(&mut state)?;
     equeue.roundtrip(&mut state)?;
 
-    let mut source  = None;
-    let mut session = None;
-    let mut buffer  = None;
+    let toplevel = state.toplevels.first()
+        .ok_or("No toplevels found")?;
+    println!("First toplevel: {:?}", toplevel);
 
-    if let Some(toplevel) = state.toplevels.first() {
-        println!("First toplevel: {:?}", toplevel);
-        if let Some(source_manager) = &state.source_manager {
-            source = Some(source_manager.create_source(&toplevel.handle, &equeue.handle(), ()));
-        } else {
-            println!("No source manager found");
-        }
-    } else {
-        println!("No toplevels found");
-    }
+    let source_manager = state.source_manager.as_ref()
+        .ok_or("No source manager found")?;
+    let source = source_manager.create_source(&toplevel.handle, &equeue.handle(), ());
 
-    if let Some(copy_capture_manager) = &state.copy_capture_manager {
-        if let Some(src) = &source {
-            session = Some(copy_capture_manager.create_session(&src, ext_image_copy_capture_manager_v1::Options::empty(), &equeue.handle(), ()));
-        } else {
-            println!("No source found");
-        }
-    } else {
-        println!("No copy capture manager found");
-    }
+    let copy_capture_manager = state.copy_capture_manager.as_ref()
+        .ok_or("No copy capture manager found")?;
+    let session = copy_capture_manager.create_session(&source, ext_image_copy_capture_manager_v1::Options::empty(), &equeue.handle(), ());
 
     equeue.roundtrip(&mut state)?;
 
-    if let Some(s) = &session {
-        let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
-        let mut size = 0;
-        let mut width = 0;
-        let mut height = 0;
+    let (width, height) = state.buffer_geometry
+        .ok_or("No buffer geometry received")?;
+    let shm_format = state.shm_format
+        .ok_or("No shm format received")?;
+    let stride = width * 4;
+    let size   = stride * height;
 
-        if let Some((w, h)) = state.buffer_geometry {
-            width = w;
-            height = h;
-            let stride = width * 4;
-            size = stride * height;
-            rustix::fs::ftruncate(&fd, size.into())?;
-            if let Some(wlshm) = &state.wl_shm {
-                let pool = wlshm.create_pool(fd.as_fd(), size as i32, &equeue.handle(), ());
-                if state.shm_format.is_some() {
-                    buffer = Some(pool.create_buffer(0, width as i32, height as i32, stride as i32, state.shm_format.unwrap(), &equeue.handle(), ()));
-                } else {
-                    println!("No shm format received");
-                }
-            } else {
-                println!("No wl_shm found");
-            }
-        } else {
-            println!("No buffer geometry received");
-        }
+    let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
+    rustix::fs::ftruncate(&fd, size.into())?;
 
-        let frame = s.create_frame(&equeue.handle(), ());
-        if buffer.is_some() {
-            frame.attach_buffer(&buffer.unwrap());
-            frame.capture();
-        }
+    let wlshm = state.wl_shm.as_ref()
+        .ok_or("No wl_shm found")?;
+    let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &equeue.handle(), ());
+    let buffer = pool.create_buffer(0, width as i32, height as i32, stride as i32, shm_format, &equeue.handle(), ());
 
-        equeue.roundtrip(&mut state)?;
-        equeue.roundtrip(&mut state)?;
+    let frame = session.create_frame(&equeue.handle(), ());
+    frame.attach_buffer(&buffer);
+    frame.capture();
 
-        if state.ready {
-            println!("Capture successful");
-            unsafe {
-                let ptr             = rustix::mm::mmap(std::ptr::null_mut(), size as usize, ProtFlags::READ, MapFlags::SHARED, fd, 0)?;
-                let data            = std::slice::from_raw_parts(ptr as *const u8, size as usize);
-                let pixels: Vec<u8> = data.chunks_exact(4).flat_map(|b| [b[2], b[1], b[0], b[3]]).collect();
-                image::RgbaImage::from_raw(width, height, pixels).unwrap().save("/tmp/capture-proto-test.png")?;
-            }
-        } else {
-            println!("Capture failed...");
-        }
+    equeue.roundtrip(&mut state)?;
+    equeue.roundtrip(&mut state)?;
 
-    } else {
-        println!("No session created");
+    if !state.ready {
+        return Err("Capture failed".into());
     }
 
-    Ok(())
+    println!("Capture successful");
+
+    let pixels = unsafe {
+        let ptr  = rustix::mm::mmap(std::ptr::null_mut(), size as usize, ProtFlags::READ, MapFlags::SHARED, fd, 0)?;
+        let data = std::slice::from_raw_parts(ptr as *const u8, size as usize);
+        data.to_vec()
+    };
+
+    Ok(CaptureResult { pixels, width, height, stride })
 }
