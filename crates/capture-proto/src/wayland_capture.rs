@@ -52,8 +52,9 @@ struct AppState { toplevels:            Vec<TopLevelInfo>
                , buffer_geometry:      Option<(u32, u32)>
                , shm_format:           Option<wl_shm::Format>
                , session_done:         bool
-               , ready:                bool
-               , buffer_released:      bool
+                , ready:                bool
+                , failed:               bool
+                , buffer_released:      bool
                }
 
 impl Dispatch<WlBuffer, ()> for AppState {
@@ -128,6 +129,7 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, ()> for AppState {
                 }
                 ext_image_copy_capture_frame_v1::Event::Failed { reason }  => {
                     println!("ext_image_copy_capture_frame_v1::Event::Failed: reason={:?}", reason);
+                    _state.failed = true;
                 }
                 _ => { }
             }
@@ -298,6 +300,7 @@ pub fn capture() -> Result<CaptureResult, Box<dyn std::error::Error>> {
                                                     , shm_format:           None
                                                     , session_done:         false
                                                     , ready:                false
+                                                    , failed:               false
                                                     , buffer_released:      false
                                                     };
 
@@ -339,11 +342,13 @@ pub fn capture() -> Result<CaptureResult, Box<dyn std::error::Error>> {
     frame.attach_buffer(&buffer);
     frame.capture();
 
-    equeue.roundtrip(&mut state)?;
-    equeue.roundtrip(&mut state)?;
+    // Wait for the capture to complete (Ready or Failed)
+    while !state.ready && !state.failed {
+        equeue.blocking_dispatch(&mut state)?;
+    }
 
-    if !state.ready {
-        return Err("Capture failed".into());
+    if state.failed {
+        return Err("Capture failed: compositor returned an error".into());
     }
 
     println!("Capture successful");
