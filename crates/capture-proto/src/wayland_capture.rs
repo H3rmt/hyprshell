@@ -1,9 +1,12 @@
-use std::os::fd::AsFd;
+
+use std::os::fd::BorrowedFd;
+use std::os::fd::{AsFd, OwnedFd};
 
 use rustix::fs::MemfdFlags;
 use rustix::mm::{MapFlags, ProtFlags};
 
 use wayland_client::WEnum;
+use wayland_client::backend::WaylandError;
 use wayland_client::{Connection, Dispatch, EventQueue};
 use wayland_client::protocol::{wl_registry, wl_shm};
 use wayland_client::protocol::wl_shm::WlShm;
@@ -26,6 +29,20 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1;
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
 
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+pub struct CaptureSession { connection:  Connection
+                          , event_queue: EventQueue<AppState>
+                          , state:       AppState
+                          , fd:          OwnedFd
+                          , session:     ExtImageCopyCaptureSessionV1
+                          , buffer:      WlBuffer
+                          , width:       u32
+                          , height:      u32
+                          , stride:      u32
+                          , size:        u32
+                          }
+
 /// Result of a window capture.
 /// Pixels are in BGRA format (native Wayland ARGB8888 byte order on little-endian).
 pub struct CaptureResult { pub pixels: Vec<u8>
@@ -42,20 +59,20 @@ struct TopLevelInfo { handle: ExtForeignToplevelHandleV1
                     }
 
 struct AppState { toplevels:            Vec<TopLevelInfo>
-               , pending_title:        Option<String>
-               , pending_app_id:       Option<String>
-               // globals
-               , wl_shm:               Option<WlShm>
-               , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
-               , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
-               // capture constraints
-               , buffer_geometry:      Option<(u32, u32)>
-               , shm_format:           Option<wl_shm::Format>
-               , session_done:         bool
+                , pending_title:        Option<String>
+                , pending_app_id:       Option<String>
+                // globals
+                , wl_shm:               Option<WlShm>
+                , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
+                , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
+                // capture constraints
+                , buffer_geometry:      Option<(u32, u32)>
+                , shm_format:           Option<wl_shm::Format>
+                , session_done:         bool
                 , ready:                bool
                 , failed:               bool
                 , buffer_released:      bool
-               }
+                }
 
 impl Dispatch<WlBuffer, ()> for AppState {
     fn event( _state:    &mut AppState
@@ -285,79 +302,116 @@ impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
     }
 }
 
-/// Capture the first available toplevel window.
-/// Returns raw pixels in BGRA format (native Wayland ARGB8888 byte order on little-endian).
-pub fn capture() -> Result<CaptureResult, Box<dyn std::error::Error>> {
-    let connection                       = Connection::connect_to_env()?;
-    let mut equeue: EventQueue<AppState> = connection.new_event_queue();
-    let mut state                        = AppState { toplevels:            Vec::new()
-                                                    , pending_title:        None
-                                                    , pending_app_id:       None
-                                                    , wl_shm:               None
-                                                    , source_manager:       None
-                                                    , copy_capture_manager: None
-                                                    , buffer_geometry:      None
-                                                    , shm_format:           None
-                                                    , session_done:         false
-                                                    , ready:                false
-                                                    , failed:               false
-                                                    , buffer_released:      false
-                                                    };
+impl CaptureSession {
 
-    connection.display().get_registry(&equeue.handle(), ());
+    pub fn new() -> Result<Self> {
+        let connection                            = Connection::connect_to_env()?;
+        let mut event_queue: EventQueue<AppState> = connection.new_event_queue();
+        let mut state                             = AppState { toplevels:            Vec::new()
+                                                             , pending_title:        None
+                                                             , pending_app_id:       None
+                                                             , wl_shm:               None
+                                                             , source_manager:       None
+                                                             , copy_capture_manager: None
+                                                             , buffer_geometry:      None
+                                                             , shm_format:           None
+                                                             , session_done:         false
+                                                             , ready:                false
+                                                             , failed:               false
+                                                             , buffer_released:      false
+                                                             };
 
-    equeue.roundtrip(&mut state)?;
-    equeue.roundtrip(&mut state)?;
+        connection.display().get_registry(&event_queue.handle(), ());
 
-    let toplevel = state.toplevels.first()
-        .ok_or("No toplevels found")?;
-    println!("First toplevel: {:?}", toplevel);
+        event_queue.roundtrip(&mut state)?;
+        event_queue.roundtrip(&mut state)?;
 
-    let source_manager = state.source_manager.as_ref()
-        .ok_or("No source manager found")?;
-    let source = source_manager.create_source(&toplevel.handle, &equeue.handle(), ());
+        let toplevel = state.toplevels.first()
+            .ok_or("No toplevels found")?;
+        println!("First toplevel: {:?}", toplevel);
 
-    let copy_capture_manager = state.copy_capture_manager.as_ref()
-        .ok_or("No copy capture manager found")?;
-    let session = copy_capture_manager.create_session(&source, ext_image_copy_capture_manager_v1::Options::empty(), &equeue.handle(), ());
+        let source_manager = state.source_manager.as_ref()
+            .ok_or("No source manager found")?;
+        let source = source_manager.create_source(&toplevel.handle, &event_queue.handle(), ());
 
-    equeue.roundtrip(&mut state)?;
+        let copy_capture_manager = state.copy_capture_manager.as_ref()
+            .ok_or("No copy capture manager found")?;
+        let session = copy_capture_manager.create_session(&source, ext_image_copy_capture_manager_v1::Options::empty(), &event_queue.handle(), ());
 
-    let (width, height) = state.buffer_geometry
-        .ok_or("No buffer geometry received")?;
-    let shm_format = state.shm_format
-        .ok_or("No shm format received")?;
-    let stride = width * 4;
-    let size   = stride * height;
+        event_queue.roundtrip(&mut state)?;
 
-    let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
-    rustix::fs::ftruncate(&fd, size.into())?;
+        let (width, height) = state.buffer_geometry
+            .ok_or("No buffer geometry received")?;
+        let shm_format = state.shm_format
+            .ok_or("No shm format received")?;
+        let stride = width * 4;
+        let size   = stride * height;
 
-    let wlshm = state.wl_shm.as_ref()
-        .ok_or("No wl_shm found")?;
-    let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &equeue.handle(), ());
-    let buffer = pool.create_buffer(0, width as i32, height as i32, stride as i32, shm_format, &equeue.handle(), ());
+        let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
+        rustix::fs::ftruncate(&fd, size.into())?;
 
-    let frame = session.create_frame(&equeue.handle(), ());
-    frame.attach_buffer(&buffer);
-    frame.capture();
+        let wlshm = state.wl_shm.as_ref()
+            .ok_or("No wl_shm found")?;
+        let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &event_queue.handle(), ());
+        let buffer = pool.create_buffer(0, width as i32, height as i32, stride as i32, shm_format, &event_queue.handle(), ());
 
-    // Wait for the capture to complete (Ready or Failed)
-    while !state.ready && !state.failed {
-        equeue.blocking_dispatch(&mut state)?;
+        let frame = session.create_frame(&event_queue.handle(), ());
+        frame.attach_buffer(&buffer);
+        frame.capture();
+
+        Ok(CaptureSession { connection, event_queue, state, fd, session, buffer, width, height, stride, size })
     }
 
-    if state.failed {
+    pub fn connection_fd(&self) -> BorrowedFd<'_> { self.connection.as_fd() }
+
+    pub fn dispatch_pending(&mut self) -> Result<()> {
+        if let Some(guard) = self.event_queue.prepare_read() {
+            match guard.read() {
+                Ok(_) => { }
+                Err(WaylandError::Io(e)) if e.kind() == std::io::ErrorKind::WouldBlock => { }
+                Err(e) => return Err(e.into()),
+            }
+        }
+        let _ = self.event_queue.dispatch_pending(&mut self.state)?;
+        Ok(())
+    }
+
+    pub fn is_ready(&self) -> bool { self.state.ready }
+
+    pub fn is_failed(&self) -> bool { self.state.failed }
+
+    pub fn take_pixels(&self) -> Result<CaptureResult> {
+        let pixels = unsafe {
+            let ptr  = rustix::mm::mmap(std::ptr::null_mut(), self.size as usize, ProtFlags::READ, MapFlags::SHARED, &self.fd, 0)?;
+            let data = std::slice::from_raw_parts(ptr as *const u8, self.size as usize);
+            data.to_vec()
+        };
+
+        Ok(CaptureResult { pixels, width: self.width, height: self.height, stride: self.stride })
+    }
+
+    pub fn capture_next(&mut self) {
+        self.state.ready = false;
+        self.state.failed = false;
+        let frame = self.session.create_frame(&self.event_queue.handle(), ());
+        frame.capture();
+    }
+}
+
+/// Capture the first available toplevel window.
+/// Returns raw pixels in BGRA format (native Wayland ARGB8888 byte order on little-endian).
+pub fn capture() -> Result<CaptureResult> {
+    let mut session = CaptureSession::new()?;
+
+    // Wait for the capture to complete (Ready or Failed)
+    while !session.is_ready() && !session.is_failed() {
+        session.event_queue.blocking_dispatch(&mut session.state)?;
+    }
+
+    if session.state.failed {
         return Err("Capture failed: compositor returned an error".into());
     }
 
     println!("Capture successful");
-
-    let pixels = unsafe {
-        let ptr  = rustix::mm::mmap(std::ptr::null_mut(), size as usize, ProtFlags::READ, MapFlags::SHARED, fd, 0)?;
-        let data = std::slice::from_raw_parts(ptr as *const u8, size as usize);
-        data.to_vec()
-    };
-
-    Ok(CaptureResult { pixels, width, height, stride })
+    session.take_pixels()
 }
