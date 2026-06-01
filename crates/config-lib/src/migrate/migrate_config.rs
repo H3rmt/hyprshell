@@ -1,4 +1,5 @@
 use crate::io::load_config_file;
+use crate::io::save::write_io_config;
 use crate::migrate::check::get_config_version;
 use crate::{CURRENT_CONFIG_VERSION, migrate, write_config};
 use anyhow::{Context, bail};
@@ -33,7 +34,7 @@ pub fn migrate(config_file: &Path) -> anyhow::Result<crate::io::Config> {
         }
         _ => bail!("Unsupported old config version {old_version}, cannot migrate"),
     };
-    match write_config(config_file, &new_config, true) {
+    match write_io_config(config_file, &new_config, true) {
         Ok(()) => {
             debug!("New config written successfully");
         }

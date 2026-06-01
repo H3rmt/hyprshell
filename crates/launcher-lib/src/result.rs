@@ -1,4 +1,4 @@
-use crate::plugins::{HighlightedText, MatchedLaunchItem, TextSpan};
+use crate::plugin::{HighlightedText, MatchedLaunchItem, TextSpan};
 use core_lib::default;
 use relm4::FactorySender;
 use relm4::adw::gtk;
@@ -9,9 +9,9 @@ use tracing::warn;
 
 #[derive(Debug)]
 pub struct LauncherResults {
-    opt: MatchedLaunchItem,
-    key: String,
-    has_children: bool,
+    pub item: MatchedLaunchItem,
+    pub key: String,
+    pub has_children: bool,
 }
 
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub enum LauncherResultsInput {}
 
 #[derive(Debug, Clone)]
 pub struct LauncherResultsInit {
-    pub opt: MatchedLaunchItem,
+    pub item: MatchedLaunchItem,
     pub key: String,
     pub has_children: bool,
 }
@@ -65,7 +65,7 @@ impl FactoryComponent for LauncherResults {
 
     view! {
         gtk::Button {
-            set_css_classes: if self.opt.item.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
+            set_css_classes: if self.item.item.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
             set_cursor_from_name: Some("pointer"),
             connect_clicked[sender, index, has_children = self.has_children] => move |_| {
                 let _ = has_children;
@@ -89,7 +89,7 @@ impl FactoryComponent for LauncherResults {
                     set_halign: gtk::Align::Start,
                     set_valign: gtk::Align::Center,
                     set_ellipsize: gtk::pango::EllipsizeMode::End,
-                    set_text: &self.opt.display_name.text,
+                    set_text: &self.item.item.name,
                 },
                 #[name = "details"]
                 gtk::Label {
@@ -98,7 +98,7 @@ impl FactoryComponent for LauncherResults {
                     set_valign: gtk::Align::Center,
                     set_hexpand: true,
                     set_ellipsize: gtk::pango::EllipsizeMode::End,
-                    set_label: &self.opt.item.details,
+                    set_label: &self.item.item.details,
                 },
                 gtk::Label {
                     set_css_classes: &["launcher-key"],
@@ -112,7 +112,7 @@ impl FactoryComponent for LauncherResults {
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         Self {
-            opt: init.opt,
+            item: init.item,
             key: init.key,
             has_children: init.has_children,
         }
@@ -130,29 +130,32 @@ impl FactoryComponent for LauncherResults {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
-        let base_color = widgets.name.style_context().color();
-        widgets
-            .name
-            .set_attributes(Some(&text_attributes(&self.opt.display_name, base_color)));
-        if let Some(details_long) = &self.opt.item.details_long {
-            widgets.details.set_tooltip_text(Some(details_long));
-            widgets.details.add_css_class("underline");
+        let name_w: &gtk::Label = &widgets.name;
+        let details_w: &gtk::Label = &widgets.details;
+        let icon_w: &gtk::Image = &widgets.icon;
+
+        // TODO
+        // let base_color = name_w.style_context().color();
+        // name_w.set_attributes(Some(&text_attributes(&self.opt.display_name, base_color)));
+
+        if let Some(details_long) = &self.item.item.details_long {
+            details_w.set_tooltip_text(Some(details_long));
+            details_w.add_css_class("underline");
         }
-        if let Some(icon_path) = &self.opt.item.icon {
+
+        if let Some(icon_path) = &self.item.item.icon {
             if icon_path.is_absolute() {
                 if let Some(icon_name) = icon_path.file_stem() {
                     if default::theme_has_icon_name(&icon_name.to_string_lossy()) {
-                        widgets.icon.set_icon_name(Some(&icon_name.to_string_lossy()));
+                        icon_w.set_icon_name(Some(&icon_name.to_string_lossy()));
                     } else {
-                        widgets.icon.set_from_file(Some(Path::new(&*icon_path.clone())));
+                        icon_w.set_from_file(Some(Path::new(&*icon_path.clone())));
                     }
                 } else {
                     warn!("invalid icon name: {icon_path:?}");
                 }
             } else {
-                widgets
-                    .icon
-                    .set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));
+                icon_w.set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));
             }
         }
         widgets

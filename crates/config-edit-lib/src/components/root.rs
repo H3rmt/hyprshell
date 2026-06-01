@@ -429,7 +429,6 @@ impl SimpleComponent for Root {
             }
             RootInput::Save(close) => {
                 let config: config_lib::Config = self.config.clone().into();
-                let config: config_lib::io::Config = config.into();
                 match config_lib::write_config(&self.config_file, &config, true) {
                     Ok(()) => {
                         info!("Saved config to {}", self.config_file.display());

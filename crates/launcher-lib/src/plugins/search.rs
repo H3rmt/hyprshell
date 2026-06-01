@@ -1,4 +1,4 @@
-use crate::plugins::{PluginReturn, StaticLaunchItem};
+use crate::plugin::{PluginItem, PluginReturn};
 use config_lib::SearchEngine;
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
@@ -9,31 +9,27 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
 use tracing::{debug, trace, warn};
 
-pub fn get_static_options(
-    matches: &mut Vec<StaticLaunchItem>,
-    config: &[SearchEngine],
-    text: &str,
-) {
+pub fn get_static_options(config: &[SearchEngine]) -> Vec<PluginItem> {
     let browser = get_browser_info();
     let icon = browser.icon.clone();
     drop(browser);
-    let mut count = 0;
+
+    let mut matches = Vec::new();
     for engine in config {
         if engine.key.is_whitespace() {
             warn!("Plugin {} has no valid key set", engine.name);
         } else {
-            matches.push(StaticLaunchItem {
+            matches.push(PluginItem {
                 text: engine.name.clone(),
                 details: format!("Search with {}", engine.name).into_boxed_str(),
                 icon: icon.clone(),
                 key: engine.key,
                 iden: Identifier::data(PluginName::WebSearch, engine.url.clone()),
-                enabled: !text.is_empty(),
             });
-            count += 1;
         }
     }
-    trace!("Added {count} static web search options");
+    trace!("Added {} static web search options", matches.len());
+    matches
 }
 
 pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {

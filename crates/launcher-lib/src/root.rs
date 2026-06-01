@@ -1,9 +1,11 @@
-use crate::plugins;
-use crate::plugins::{
-    get_child_launch_items, get_input_driven_launch_items, get_launch_items,
-    get_static_launch_items, get_static_options_chars, LaunchItem,
+use crate::plugin::{
+    LaunchItem, MatchedLaunchItem, PluginItem, get_child_launch_items_from_parent,
+    match_launch_item,
 };
-use crate::plugins_boxes::{LauncherPlugins, LauncherPluginsInit, LauncherPluginsOutput};
+use crate::plugins;
+use crate::plugins_boxes::{
+    LauncherPlugins, LauncherPluginsInit, LauncherPluginsInput, LauncherPluginsOutput,
+};
 use crate::result::{LauncherResults, LauncherResultsInit, LauncherResultsOutput};
 use config_lib::{Launcher, Modifier};
 use core_lib::transfer::Identifier;
@@ -22,18 +24,11 @@ use tracing::{trace, warn};
 
 #[derive(Debug)]
 pub struct LauncherRoot {
-    launcher: Launcher,
-    window: gtk::ApplicationWindow,
-    entry: gtk::Entry,
-    results: FactoryVecDeque<LauncherResults>,
-    plugins: FactoryVecDeque<LauncherPlugins>,
-    controller: Option<EventController>,
+    settings: Launcher,
 
+    ui: LauncherUI,
     data: LauncherData,
-    active_results: Vec<LauncherResultsInit>,
-    active_parent: Option<LaunchItem>,
-    child_text: Option<Box<str>>,
-    child_cursor: Option<i32>,
+
     switching: bool,
     data_dir: Rc<PathBuf>,
 }
@@ -43,7 +38,7 @@ pub enum LauncherRootInput {
     SetLauncher(Launcher),
     OpenLauncher,
     CloseLauncher,
-    Launch(char),
+    LaunchPlugin(char),
     LaunchIndex(usize),
     Escape,
     Return,
@@ -60,6 +55,7 @@ pub struct LauncherRootInit {
 #[derive(Debug)]
 pub enum LauncherRootOutput {
     Switch(Direction, bool),
+    /// do_switch: if true, opens program / does switch and closes, if false only closes
     Close(bool),
 }
 
@@ -67,6 +63,7 @@ pub enum LauncherRootOutput {
 enum ActivationOutcome {
     OpenChildMode,
     Launched,
+    NotLaunched,
 }
 
 #[relm4::component(pub)]
@@ -85,7 +82,7 @@ impl SimpleComponent for LauncherRoot {
                 set_orientation: Orientation::Vertical,
                 set_spacing: 4,
                 #[watch]
-                set_width_request: i32::from(model.launcher.width),
+                set_width_request: i32::from(model.settings.width),
                 #[local_ref]
                 entrye -> gtk::Entry {
                     set_css_classes: &["launcher-input"],
@@ -116,39 +113,37 @@ impl SimpleComponent for LauncherRoot {
         let results: FactoryVecDeque<LauncherResults> = FactoryVecDeque::builder()
             .launch(gtk::Box::default())
             .forward(sender.input_sender(), |r| match r {
-            LauncherResultsOutput::Clicked(idx) => {
-                LauncherRootInput::LaunchIndex(idx.current_index())
-            }
+                LauncherResultsOutput::Clicked(idx) => {
+                    LauncherRootInput::LaunchIndex(idx.current_index())
+                }
             });
         let plugins: FactoryVecDeque<LauncherPlugins> = FactoryVecDeque::builder()
             .launch(gtk::Box::default())
             .forward(sender.input_sender(), |r| match r {
-                LauncherPluginsOutput::Clicked(ch) => LauncherRootInput::Launch(ch),
+                LauncherPluginsOutput::Clicked(ch) => LauncherRootInput::LaunchPlugin(ch),
             });
 
         let model = Self {
-            launcher: init.launcher,
+            settings: init.launcher,
             data_dir: init.data_dir,
-            window: root.clone(),
-            entry,
-            results,
-            plugins,
-            controller: None,
+            ui: LauncherUI {
+                window: root.clone(),
+                entry,
+                results,
+                plugins,
+                controller: None,
+            },
             data: LauncherData::default(),
-            active_results: Vec::new(),
-            active_parent: None,
-            child_text: None,
-            child_cursor: None,
             switching: false, // enter when nothing was done launches program
         };
 
-        let entrye = &model.entry;
-        let resultse = &model.results.widget().clone();
-        let pluginse = &model.plugins.widget().clone();
+        let entrye = &model.ui.entry;
+        let resultse = &model.ui.results.widget().clone();
+        let pluginse = &model.ui.plugins.widget().clone();
         let widgets = view_output!();
 
         // ensure that the entry is always focused
-        let entry_2 = model.entry.clone();
+        let entry_2 = model.ui.entry.clone();
         let window_2 = root.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
             if window_2.is_visible() {
@@ -156,9 +151,7 @@ impl SimpleComponent for LauncherRoot {
             }
             glib::ControlFlow::Continue
         });
-
-        // TODO someday move to generic init fn
-        plugins::init_calc_context();
+        plugins::init();
 
         let window = &root;
         window.init_layer_shell();
@@ -174,44 +167,29 @@ impl SimpleComponent for LauncherRoot {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             LauncherRootInput::SetLauncher(launcher) => {
-                self.launcher = launcher;
+                self.settings = launcher;
                 self.setup_keyboard_controller(&sender);
             }
             LauncherRootInput::OpenLauncher => {
-                self.active_parent = None;
-                self.child_text = None;
-                self.child_cursor = None;
-                self.switching = false;
-                self.open_launcher();
+                self.reset_data();
+                self.load_static_items();
+                self.load_static_plugins();
                 self.handle_type();
+                self.open_launcher();
             }
             LauncherRootInput::CloseLauncher => self.close_launcher(),
-            LauncherRootInput::Launch(char) => {
+            LauncherRootInput::LaunchPlugin(char) => {
                 trace!("Closing launcher with char: {}", char);
-                if let Some(index) = char.to_digit(10).map(|a| a as usize) {
-                    if self.active_parent.is_some() {
-                        sender.input_sender().emit(LauncherRootInput::LaunchIndex(index));
-                    } else {
-                        match self.activate_selected(index) {
-                            ActivationOutcome::OpenChildMode => {}
-                            ActivationOutcome::Launched => {
-                                sender
-                                    .output_sender()
-                                    .emit(LauncherRootOutput::Close(false));
-                            }
-                        }
-                    }
-                } else if let Some(iden) = self.data.static_matches.get(&char) {
+                if let Some(iden) = self.data.static_plugins.get(&char) {
                     plugins::launch(
                         iden,
-                        &self.entry.text(),
-                        self.launcher.default_terminal.as_deref(),
+                        &self.ui.entry.text(),
+                        self.settings.default_terminal.as_deref(),
                         &self.data_dir,
                     );
                 } else {
                     warn!("No match found for char: {}", char);
                 }
-
                 sender
                     .output_sender()
                     .emit(LauncherRootOutput::Close(false));
@@ -225,22 +203,23 @@ impl SimpleComponent for LauncherRoot {
                             .output_sender()
                             .emit(LauncherRootOutput::Close(false));
                     }
+                    ActivationOutcome::NotLaunched => {}
                 }
             }
             LauncherRootInput::Escape => {
-                if self.active_parent.is_some() {
-                    self.active_parent = None;
-                    if let Some(child_text) = self.child_text.take() {
-                        self.entry.set_text(&child_text);
-                        if let Some(cursor) = self.child_cursor.take() {
-                            self.entry.set_position(cursor);
-                        } else {
-                            self.entry.set_position(self.entry.text().len() as i32);
-                        }
+                if self.data.active_parent.is_some() {
+                    self.data.active_parent = None;
+                    if let Some(text) = self.data.parent_text.take()
+                        && let Some(cursor) = self.data.parent_cursor.take()
+                    {
+                        self.ui.entry.set_text(&text);
+                        self.ui.entry.set_position(cursor);
                     }
                     self.handle_type();
                 } else {
-                    sender.output_sender().emit(LauncherRootOutput::Close(false));
+                    sender
+                        .output_sender()
+                        .emit(LauncherRootOutput::Close(false));
                 }
             }
             LauncherRootInput::Type => {
@@ -255,7 +234,9 @@ impl SimpleComponent for LauncherRoot {
             }
             LauncherRootInput::Return => {
                 if !self.switching {
-                    sender.input_sender().emit(LauncherRootInput::LaunchIndex(0));
+                    sender
+                        .input_sender()
+                        .emit(LauncherRootInput::LaunchIndex(0));
                 } else {
                     sender.output_sender().emit(LauncherRootOutput::Close(true));
                 }
@@ -265,12 +246,42 @@ impl SimpleComponent for LauncherRoot {
 }
 
 impl LauncherRoot {
+    fn reset_data(&mut self) {
+        self.data.active_parent = None;
+        self.data.parent_text = None;
+        self.data.parent_cursor = None;
+        self.data.active_results.clear();
+        self.switching = false;
+    }
+
+    fn load_static_items(&mut self) {
+        for opt in plugins::get_static_items(&self.settings.plugins, &self.data_dir) {
+            self.data.static_items.push(opt);
+        }
+    }
+
+    fn load_static_plugins(&mut self) {
+        let plugins = plugins::get_static_plugins(
+            &self.settings.plugins,
+            self.settings.default_terminal.as_deref(),
+        );
+        let mut plugins_lock = self.ui.plugins.guard();
+        plugins_lock.clear();
+        for opt in plugins {
+            self.data.static_plugins.insert(opt.key, opt.iden.clone());
+            plugins_lock.push_back(LauncherPluginsInit {
+                opt,
+                launch_modifier: self.settings.launch_modifier,
+            });
+        }
+    }
+
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
         let event_controller = EventControllerKey::new();
-        let plugin_keys = get_static_options_chars(&self.launcher.plugins);
+        let plugin_keys = plugins::get_static_options_chars(&self.settings.plugins);
         let sender_2 = sender.clone();
-        let launcher = self.launcher.clone();
-        let entry = self.entry.clone();
+        let launcher = self.settings.clone();
+        let entry = self.ui.entry.clone();
         event_controller.set_propagation_phase(PropagationPhase::Capture);
         event_controller.connect_key_pressed(move |_, key, _, modt| {
             trace!("input: {key:?}");
@@ -284,162 +295,100 @@ impl LauncherRoot {
                 sender_2.clone(),
             )
         });
-        if let Some(controller) = self.controller.take() {
-            self.entry.remove_controller(&controller);
+        if let Some(controller) = self.ui.controller.take() {
+            self.ui.entry.remove_controller(&controller);
         }
-        self.entry.add_controller(event_controller);
+        self.ui.entry.add_controller(event_controller);
     }
     fn open_launcher(&mut self) {
-        trace!("Showing window {:?}", self.window.id());
-        self.active_parent = None;
-        self.child_text = None;
-        self.child_cursor = None;
-        self.switching = false;
-        self.window.set_visible(true);
-        self.entry.grab_focus();
-        self.entry.set_text("");
+        trace!("Showing window {:?}", self.ui.window.id());
+        self.ui.window.set_visible(true);
+        self.ui.entry.grab_focus();
+        self.ui.entry.set_text("");
         exec_lib::set_no_follow_mouse(None).warn_details("Failed to set follow mouse");
     }
     fn close_launcher(&mut self) {
-        trace!("Hiding window {:?}", self.window.id());
-        self.window.set_visible(false);
+        trace!("Hiding window {:?}", self.ui.window.id());
+        self.ui.window.set_visible(false);
         exec_lib::reset_no_follow_mouse().warn_details("Failed to reset follow mouse");
     }
 
     fn activate_selected(&mut self, index: usize) -> ActivationOutcome {
-        let Some(opt) = self.active_results.get(index).map(|entry| &entry.opt) else {
-            return ActivationOutcome::Launched;
+        let Some(item) = self.data.active_results.get(index).map(|entry| &entry.item) else {
+            return ActivationOutcome::NotLaunched;
         };
-
-        if let Some(parent) = self.active_parent.as_ref() {
-            if index == 0 {
-                plugins::launch(
-                    &parent.iden,
-                    &self.entry.text(),
-                    self.launcher.default_terminal.as_deref(),
-                    &self.data_dir,
-                );
-                return ActivationOutcome::Launched;
-            }
-
-            if let Some(child) = parent.children.get(index - 1) {
-                plugins::launch(
-                    &child.iden,
-                    &self.entry.text(),
-                    self.launcher.default_terminal.as_deref(),
-                    &self.data_dir,
-                );
-                return ActivationOutcome::Launched;
-            }
-
-            return ActivationOutcome::Launched;
-        }
-
-        if !opt.item.children.is_empty() {
-            self.child_text = Some(self.entry.text().into());
-            self.child_cursor = Some(self.entry.position());
-            self.active_parent = Some(opt.item.clone());
-            self.entry.set_text("");
+        if item.item.children.is_empty() {
+            plugins::launch(
+                &item.item.iden,
+                &self.ui.entry.text(),
+                self.settings.default_terminal.as_deref(),
+                &self.data_dir,
+            );
+            ActivationOutcome::Launched
+        } else {
+            self.data.parent_text = Some(self.ui.entry.text().into());
+            self.data.parent_cursor = Some(self.ui.entry.position());
+            self.data.active_parent = Some(item.item.clone());
+            self.ui.entry.set_text("");
             self.handle_type();
-            return ActivationOutcome::OpenChildMode;
+            ActivationOutcome::OpenChildMode
         }
-
-        plugins::launch(
-            &opt.item.iden,
-            &self.entry.text(),
-            self.launcher.default_terminal.as_deref(),
-            &self.data_dir,
-        );
-        ActivationOutcome::Launched
     }
 
     fn handle_type(&mut self) {
-        self.data.sorted_matches.clear();
-        self.data.input_driven_matches.clear();
-        self.data.static_matches.clear();
-        let text: &str = &self.entry.text();
+        let text: &str = &self.ui.entry.text();
 
-        let mut results_lock = self.results.guard();
+        let mut dynamic_results = Vec::new();
+        let mut results = Vec::new();
+        if !text.is_empty() || self.settings.show_when_empty {
+            if let Some(parent) = self.data.active_parent.as_ref() {
+                for opt in get_child_launch_items_from_parent(parent) {
+                    results.push(opt);
+                }
+            } else {
+                if !text.is_empty() {
+                    for opt in plugins::get_input_driven_launch_items(&self.settings.plugins, text)
+                    {
+                        dynamic_results.push(opt);
+                    }
+                }
+                results.extend(self.data.static_items.clone())
+            }
+        }
+
+        let mut results: Vec<_> = results
+            .into_iter()
+            .filter_map(|item| match_launch_item(item, text))
+            .collect();
+        // reverse sorting, so that the most relevant items are at the top
+        results.sort_by(|a, b| b.score.cmp(&a.score));
+        dynamic_results.extend(results);
+
+        let max_items = self.settings.max_items.min(9) as usize;
+        let dynamic: Vec<_> = dynamic_results
+            .into_iter()
+            .enumerate()
+            .map(|(idx, item)| LauncherResultsInit {
+                has_children: !item.item.children.is_empty(),
+                item,
+                key: match idx {
+                    0 => "Return".to_string(),
+                    i => format!("{}+{i}", self.settings.launch_modifier),
+                },
+            })
+            .take(max_items)
+            .collect();
+
+        self.data.active_results = dynamic.clone();
+        let mut results_lock = self.ui.results.guard();
         results_lock.clear();
-        let mut plugins_lock = self.plugins.guard();
-        plugins_lock.clear();
-
-        if !self.launcher.show_when_empty && text.is_empty() {
-            return;
-        }
-        let items = self.launcher.max_items.min(9) as usize;
-        let mut results: Vec<LauncherResultsInit> = Vec::new();
-        if let Some(parent) = self.active_parent.as_ref() {
-            for (index, opt) in get_child_launch_items(parent, text)
-                .into_iter()
-                .take(items)
-                .enumerate()
-            {
-                results.push(LauncherResultsInit {
-                    opt,
-                    key: match index {
-                        0 => "Return".to_string(),
-                        i => format!("{}+{i}", self.launcher.launch_modifier),
-                    },
-                    has_children: false,
-                });
-            }
-        } else {
-            for (index, opt) in get_launch_items(&self.launcher.plugins, text, &self.data_dir)
-                .into_iter()
-                .take(items)
-                .enumerate()
-            {
-                self.data.sorted_matches.push(opt.item.iden.clone());
-                let has_children = !opt.item.children.is_empty();
-                results.push(LauncherResultsInit {
-                    opt,
-                    key: match index {
-                        0 => "Return".to_string(),
-                        i => format!("{}+{i}", self.launcher.launch_modifier),
-                    },
-                    has_children,
-                });
-            }
-
-            for (index, opt) in get_input_driven_launch_items(&self.launcher.plugins, text)
-                .into_iter()
-                .take(items)
-                .enumerate()
-            {
-                self.data.input_driven_matches.push(opt.item.iden.clone());
-                results.push(LauncherResultsInit {
-                    opt,
-                    key: match index {
-                        0 => "Return".to_string(),
-                        i => format!("{}+{i}", self.launcher.launch_modifier),
-                    },
-                    has_children: false,
-                });
-            }
-        }
-
-        self.active_results = results.clone();
-        for item in results {
+        for item in dynamic {
             results_lock.push_back(item);
         }
 
-        if self.active_parent.is_none() {
-            for opt in get_static_launch_items(
-                &self.launcher.plugins,
-                self.launcher.default_terminal.as_deref(),
-                text,
-            ) {
-                self.data
-                    .static_matches
-                    .entry(opt.key)
-                    .or_insert(opt.iden.clone());
-                plugins_lock.push_back(LauncherPluginsInit {
-                    opt,
-                    launch_modifier: self.launcher.launch_modifier,
-                });
-            }
-        }
+        self.ui
+            .plugins
+            .broadcast(LauncherPluginsInput::SetEnabled(!text.is_empty()))
     }
 }
 
@@ -463,7 +412,9 @@ fn handle_key(
     );
     if launch_mod && plugin_keys.contains(&key) {
         if let Some(ch) = key.name().unwrap_or_default().to_string().pop() {
-            sender.input_sender().emit(LauncherRootInput::Launch(ch));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchPlugin(ch));
         }
         return glib::Propagation::Stop;
     }
@@ -534,39 +485,57 @@ fn handle_key(
             glib::Propagation::Stop
         }
         (true, gdk::Key::_1) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('1'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(1));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_2) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('2'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(2));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_3) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('3'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(3));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_4) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('4'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(4));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_5) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('5'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(5));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_6) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('6'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(6));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_7) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('7'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(7));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_8) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('8'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(8));
             glib::Propagation::Stop
         }
         (true, gdk::Key::_9) => {
-            sender.input_sender().emit(LauncherRootInput::Launch('9'));
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndex(9));
             glib::Propagation::Stop
         }
         _ => glib::Propagation::Proceed,
@@ -574,8 +543,22 @@ fn handle_key(
 }
 
 #[derive(Debug, Default)]
-pub struct LauncherData {
-    pub sorted_matches: Vec<Identifier>,
-    pub input_driven_matches: Vec<Identifier>,
-    pub static_matches: HashMap<char, Identifier>,
+struct LauncherData {
+    static_items: Vec<LaunchItem>,
+    static_plugins: HashMap<char, Identifier>,
+
+    active_results: Vec<LauncherResultsInit>,
+
+    active_parent: Option<LaunchItem>,
+    parent_text: Option<Box<str>>,
+    parent_cursor: Option<i32>,
+}
+
+#[derive(Debug)]
+struct LauncherUI {
+    window: gtk::ApplicationWindow,
+    entry: gtk::Entry,
+    results: FactoryVecDeque<LauncherResults>,
+    plugins: FactoryVecDeque<LauncherPlugins>,
+    controller: Option<EventController>,
 }

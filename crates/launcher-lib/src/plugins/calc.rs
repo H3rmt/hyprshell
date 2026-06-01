@@ -1,4 +1,4 @@
-use crate::plugins::{HighlightedText, LaunchItem, MatchedLaunchItem};
+use crate::plugin::{HighlightElement, HighlightedText, LaunchItem, MatchedLaunchItem};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use rink_core::output::{NumberParts, QueryReply};
@@ -22,15 +22,16 @@ pub fn init_context() {
     get_context();
 }
 
-pub fn get_launch_items(matches: &mut Vec<MatchedLaunchItem>, text: &str) {
+pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
     let Some(context_lock) = get_context() else {
-        return;
+        return vec![];
     };
     let Ok(mut context) = context_lock.write() else {
-        return;
+        return vec![];
     };
     let eval = rink_core::eval(&mut context, text);
 
+    let mut matches = Vec::new();
     if let Ok(eval) = eval {
         trace!("Eval: {eval:?}");
         for (title, desc) in parse_result(eval) {
@@ -38,11 +39,11 @@ pub fn get_launch_items(matches: &mut Vec<MatchedLaunchItem>, text: &str) {
             let title_box: Box<str> = title.clone().into_boxed_str();
             let item = LaunchItem {
                 icon: Some(Box::from(Path::new("accessories-calculator"))),
-                names: Box::from([title_box.clone()]),
+                name: title_box.clone(),
                 keywords: Box::from([]),
                 details: desc.clone().into_boxed_str(),
                 details_long: Some(Box::from("Copy to clipboard")),
-                bonus_score: 5,
+                bonus_score: 0,
                 enabled: true,
                 takes_args: false,
                 iden: Identifier::data(PluginName::Calc, title_box.clone()),
@@ -50,15 +51,15 @@ pub fn get_launch_items(matches: &mut Vec<MatchedLaunchItem>, text: &str) {
             };
             matches.push(MatchedLaunchItem {
                 item,
-                display_name: HighlightedText { text: title_box, spans: Vec::new() },
-                matched_alias: None,
-                arg_text: None,
-                score: 5,
+                highlight: HighlightElement::None,
+                score: title_box.len() as u64,
             });
         }
     } else {
         trace!("No option added: expression error: {eval:?}");
     }
+
+    matches
 }
 
 pub fn copy_result(data: Option<&str>) -> bool {

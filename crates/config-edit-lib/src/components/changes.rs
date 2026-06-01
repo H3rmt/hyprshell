@@ -1,6 +1,6 @@
+use crate::components::launcher_plugins::actions::details;
 use crate::flags_csv;
 use crate::structs::{Config, Plugins};
-use config_lib::actions::ToAction;
 use relm4::adw::ActionRow;
 use relm4::adw::gtk::SelectionMode;
 use relm4::adw::prelude::*;
@@ -636,45 +636,23 @@ fn add_plugin_changes(changes: &gtk::ListBox, prev: &Plugins, current: &Plugins)
             let prev_engines = &prev.actions.actions;
             let cur_engines = &current.actions.actions;
 
-            let prev_keys: HashSet<_> = prev_engines
-                .iter()
-                .map(|e| e.clone().to_action().command)
-                .collect();
-            let cur_keys: HashSet<_> = cur_engines
-                .iter()
-                .map(|e| e.clone().to_action().command)
-                .collect();
+            let prev_keys: HashSet<_> = prev_engines.iter().map(|e| details(e).0).collect();
+            let cur_keys: HashSet<_> = cur_engines.iter().map(|e| details(e).0).collect();
 
             for e in cur_engines
                 .iter()
-                .filter(|e| !prev_keys.contains(&(*e).clone().to_action().command))
+                .filter(|e| !prev_keys.contains(&details(e).0))
             {
-                let a = e.clone().to_action();
-                add_info_subtitle(
-                    changes,
-                    "Added Action",
-                    format!(
-                        "{} ({})",
-                        a.names.first().cloned().unwrap_or_default(),
-                        a.details
-                    ),
-                );
+                let a = details(e);
+                add_info_subtitle(changes, "Added Action", format!("{} ({})", a.0, a.1));
             }
 
             for e in prev_engines
                 .iter()
-                .filter(|e| !cur_keys.contains(&(*e).clone().to_action().command))
+                .filter(|e| !cur_keys.contains(&details(e).0))
             {
-                let a = e.clone().to_action();
-                add_info_subtitle(
-                    changes,
-                    "Removed Action",
-                    format!(
-                        "{} ({})",
-                        a.names.first().cloned().unwrap_or_default(),
-                        a.details
-                    ),
-                );
+                let a = details(e);
+                add_info_subtitle(changes, "Removed Action", format!("{} ({})", a.0, a.1));
             }
         }
     }
