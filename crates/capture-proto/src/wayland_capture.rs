@@ -36,6 +36,7 @@ pub struct CaptureSession { connection:  Connection
                           , state:       AppState
                           , fd:          OwnedFd
                           , session:     ExtImageCopyCaptureSessionV1
+                          , frame:       ExtImageCopyCaptureFrameV1
                           , buffer:      WlBuffer
                           , width:       u32
                           , height:      u32
@@ -359,7 +360,9 @@ impl CaptureSession {
         frame.attach_buffer(&buffer);
         frame.capture();
 
-        Ok(CaptureSession { connection, event_queue, state, fd, session, buffer, width, height, stride, size })
+        event_queue.flush()?;
+
+        Ok(CaptureSession { connection, event_queue, state, fd, session, frame, buffer, width, height, stride, size })
     }
 
     pub fn connection_fd(&self) -> BorrowedFd<'_> { self.connection.as_fd() }
@@ -390,11 +393,21 @@ impl CaptureSession {
         Ok(CaptureResult { pixels, width: self.width, height: self.height, stride: self.stride })
     }
 
-    pub fn capture_next(&mut self) {
+    pub fn capture_next(&mut self) -> Result<()> {
         self.state.ready = false;
         self.state.failed = false;
+
+        self.frame.destroy();
+
         let frame = self.session.create_frame(&self.event_queue.handle(), ());
+        frame.attach_buffer(&self.buffer);
         frame.capture();
+
+        self.frame = frame;
+
+        self.event_queue.flush()?;
+
+        Ok(())
     }
 }
 
