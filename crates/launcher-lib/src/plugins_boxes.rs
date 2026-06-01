@@ -3,6 +3,7 @@ use relm4::FactorySender;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::{DynamicIndex, FactoryComponent};
+use tracing::trace;
 
 #[derive(Debug)]
 pub struct LauncherPlugins {
@@ -37,6 +38,7 @@ impl FactoryComponent for LauncherPlugins {
 
     view! {
         gtk::Button {
+            #[watch]
             set_css_classes: if self.enabled {&["launcher-plugin"]} else {&["launcher-plugin", "monochrome"]},
             set_cursor_from_name: Some("pointer"),
             connect_clicked[sender, ch = self.opt.key] => move |_| sender.output_sender().emit(LauncherPluginsOutput::Clicked(ch)),
@@ -57,6 +59,7 @@ impl FactoryComponent for LauncherPlugins {
                         set_halign: gtk::Align::Center,
                         set_valign: gtk::Align::Start,
                         set_label: &self.opt.text,
+                        set_tooltip_text: Some(&self.opt.details),
                     },
                     gtk::Label {
                         set_css_classes: &["launcher-plugin-key"],
@@ -79,6 +82,7 @@ impl FactoryComponent for LauncherPlugins {
     }
 
     fn update(&mut self, message: Self::Input, _sender: FactorySender<Self>) {
+        trace!("plugin-boxes::update: {message:?}");
         match message {
             LauncherPluginsInput::SetEnabled(enabled) => {
                 self.enabled = enabled;

@@ -1,7 +1,4 @@
-use crate::plugin::{
-    LaunchItem, MatchedLaunchItem, PluginItem, get_child_launch_items_from_parent,
-    match_launch_item,
-};
+use crate::plugin::{LaunchItem, get_child_launch_items_from_parent, match_launch_item};
 use crate::plugins;
 use crate::plugins_boxes::{
     LauncherPlugins, LauncherPluginsInit, LauncherPluginsInput, LauncherPluginsOutput,
@@ -55,7 +52,7 @@ pub struct LauncherRootInit {
 #[derive(Debug)]
 pub enum LauncherRootOutput {
     Switch(Direction, bool),
-    /// do_switch: if true, opens program / does switch and closes, if false only closes
+    /// `do_switch`: if true, opens program / does switch and closes, if false only closes
     Close(bool),
 }
 
@@ -197,7 +194,7 @@ impl SimpleComponent for LauncherRoot {
             LauncherRootInput::LaunchIndex(index) => {
                 trace!("Closing launcher with index: {}", index);
                 match self.activate_selected(index) {
-                    ActivationOutcome::OpenChildMode => return,
+                    ActivationOutcome::OpenChildMode => (),
                     ActivationOutcome::Launched => {
                         sender
                             .output_sender()
@@ -224,7 +221,7 @@ impl SimpleComponent for LauncherRoot {
             }
             LauncherRootInput::Type => {
                 self.switching = false;
-                self.handle_type()
+                self.handle_type();
             }
             LauncherRootInput::Switch(dir, ws) => {
                 self.switching = true;
@@ -233,12 +230,12 @@ impl SimpleComponent for LauncherRoot {
                     .emit(LauncherRootOutput::Switch(dir, ws));
             }
             LauncherRootInput::Return => {
-                if !self.switching {
+                if self.switching {
+                    sender.output_sender().emit(LauncherRootOutput::Close(true));
+                } else {
                     sender
                         .input_sender()
                         .emit(LauncherRootInput::LaunchIndex(0));
-                } else {
-                    sender.output_sender().emit(LauncherRootOutput::Close(true));
                 }
             }
         }
@@ -255,6 +252,7 @@ impl LauncherRoot {
     }
 
     fn load_static_items(&mut self) {
+        self.data.static_items.clear();
         for opt in plugins::get_static_items(&self.settings.plugins, &self.data_dir) {
             self.data.static_items.push(opt);
         }
@@ -300,14 +298,14 @@ impl LauncherRoot {
         }
         self.ui.entry.add_controller(event_controller);
     }
-    fn open_launcher(&mut self) {
+    fn open_launcher(&self) {
         trace!("Showing window {:?}", self.ui.window.id());
         self.ui.window.set_visible(true);
         self.ui.entry.grab_focus();
         self.ui.entry.set_text("");
         exec_lib::set_no_follow_mouse(None).warn_details("Failed to set follow mouse");
     }
-    fn close_launcher(&mut self) {
+    fn close_launcher(&self) {
         trace!("Hiding window {:?}", self.ui.window.id());
         self.ui.window.set_visible(false);
         exec_lib::reset_no_follow_mouse().warn_details("Failed to reset follow mouse");
@@ -352,7 +350,7 @@ impl LauncherRoot {
                         dynamic_results.push(opt);
                     }
                 }
-                results.extend(self.data.static_items.clone())
+                results.extend(self.data.static_items.clone());
             }
         }
 
@@ -369,7 +367,6 @@ impl LauncherRoot {
             .into_iter()
             .enumerate()
             .map(|(idx, item)| LauncherResultsInit {
-                has_children: !item.item.children.is_empty(),
                 item,
                 key: match idx {
                     0 => "Return".to_string(),
@@ -379,7 +376,7 @@ impl LauncherRoot {
             .take(max_items)
             .collect();
 
-        self.data.active_results = dynamic.clone();
+        self.data.active_results.clone_from(&dynamic);
         let mut results_lock = self.ui.results.guard();
         results_lock.clear();
         for item in dynamic {
@@ -388,7 +385,7 @@ impl LauncherRoot {
 
         self.ui
             .plugins
-            .broadcast(LauncherPluginsInput::SetEnabled(!text.is_empty()))
+            .broadcast(LauncherPluginsInput::SetEnabled(!text.is_empty()));
     }
 }
 

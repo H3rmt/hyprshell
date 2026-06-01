@@ -118,6 +118,15 @@ fn spans_from_char_indices(text: &str, indices: &[u32]) -> Vec<TextSpan> {
     spans
 }
 
+#[allow(unused)]
+fn extract_action_args(text: &str, alias: &str) -> Option<Box<str>> {
+    let text = text.trim_start();
+    let consumed = consume_alias_prefix(text, alias)?;
+    let args = text[consumed..].trim_start();
+    (!args.is_empty()).then(|| args.into())
+}
+
+#[allow(unused)]
 fn consume_alias_prefix(text: &str, alias: &str) -> Option<usize> {
     let alias = alias
         .chars()
@@ -150,13 +159,6 @@ pub fn get_child_launch_items_from_parent(parent: &LaunchItem) -> Vec<LaunchItem
     items.push(launch_parent_to_item(parent));
     items.extend(parent.children.clone());
     items
-}
-
-fn extract_action_args(text: &str, alias: &str) -> Option<Box<str>> {
-    let text = text.trim_start();
-    let consumed = consume_alias_prefix(text, alias)?;
-    let args = text[consumed..].trim_start();
-    (!args.is_empty()).then(|| args.into())
 }
 
 pub fn launch_parent_to_item(parent: &LaunchItem) -> LaunchItem {
@@ -201,7 +203,7 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
         best_score = kw_score;
     }
     if let Some((details_score, dt_indices)) = score_text(&item.details, text) {
-        let details_score = details_score / 2;
+        let details_score = ((details_score as f64) * 0.8) as u64;
         if details_score > best_score {
             details_indices = Some(dt_indices);
             best_score = details_score;
@@ -210,7 +212,7 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
     if let Some(dl) = item.details_long.as_ref()
         && let Some((details_score, dt_indices)) = score_text(dl, text)
     {
-        let details_score = details_score / 2;
+        let details_score = ((details_score as f64) * 0.7) as u64;
         if details_score > best_score {
             details_long_indices = Some(dt_indices);
             best_score = details_score;
@@ -271,7 +273,7 @@ fn score_keywords(keywords: &[Box<str>], query: &str) -> Option<(u64, Box<str>, 
     let mut best: Option<(u64, Box<str>, Vec<u32>)> = None;
     for keyword in keywords {
         if let Some((score, indices)) = score_text(keyword.as_ref(), query) {
-            let score = score / 2;
+            let score = ((score as f64) * 0.75) as u64;
             if best
                 .as_ref()
                 .is_none_or(|(best_score, _, _)| score > *best_score)
