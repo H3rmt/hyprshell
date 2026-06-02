@@ -14,7 +14,11 @@ jobs:
   check-nix:
     name: Run Nix Flake Check
     runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/h3rmt/actions-image:latest
+      options: --privileged
     steps:
+      - run: rustup default stable
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
         with:
