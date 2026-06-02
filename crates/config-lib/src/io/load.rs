@@ -44,6 +44,10 @@ pub fn load_and_migrate_config(
         }
         tracing::trace!("No migration needed");
     }
+    #[cfg(feature = "disable_migrations")]
+    {
+        _ = allow_migrate;
+    }
 
     let config: crate::io::Config = load_config_file(config_file).with_context(|| {
         format!(
