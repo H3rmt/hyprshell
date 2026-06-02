@@ -97,8 +97,8 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                 d.years, d.months, d.weeks, d.days, d.hours, d.minutes, d.seconds,
             ]
             .iter()
-            .cloned()
             .filter(|n| n.exact_value.as_deref() != Some("0"))
+            .cloned()
             .map(|n| n.raw_value.map(|n| str_from_np(&n.to_parts_simple())))
             .collect::<Vec<_>>();
             vec![(join(parts.as_slice(), ", "), join(&[d.raw.quantity], ""))]
@@ -117,10 +117,11 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                         .iter()
                         .enumerate()
                         .map(|(idx, (u, &p))| {
+                            let p = i64::try_from(p).expect("factorization power fits in i64");
                             if idx == 0 {
-                                pow(&u.clone(), p as i64)
+                                pow(u, p)
                             } else {
-                                format!("⋅{}", pow(&u.clone(), p as i64))
+                                format!("⋅{}", pow(u, p))
                             }
                         })
                         .collect(),
@@ -171,9 +172,6 @@ fn str_from_np(n: &NumberParts) -> String {
         (None, Some(d)) => Some(format!("× 1⁄{d}")),
         (Some(n), Some(d)) => Some(format!("× {n}⁄{d}")),
     };
-    fn mkpow(x: (&BaseUnit, &i64)) -> String {
-        pow(x.0.id.as_ref(), *x.1)
-    }
     let pos_units = n.raw_unit.as_ref().map(|d| {
         d.iter()
             .filter(|(_, p)| **p > 0)
@@ -187,14 +185,14 @@ fn str_from_np(n: &NumberParts) -> String {
         .as_ref()
         .map(|d| d.iter().filter(|(_, p)| **p < 0).collect::<Vec<_>>());
     let div = if let Some(ref u) = neg_units
-        && u.len() >= 1
+        && !u.is_empty()
     {
         Some(String::from("/"))
     } else {
         None
     };
     let neg_units = if let Some(ref mut u) = neg_units
-        && u.len() >= 1
+        && !u.is_empty()
     {
         Some(
             u.drain(0..)
@@ -223,7 +221,11 @@ fn str_from_np(n: &NumberParts) -> String {
 }
 
 fn tuple_from_np(n: &NumberParts) -> (String, String) {
-    (str_from_np(n), join(&[n.quantity.clone()], " "))
+    (str_from_np(n), join(std::slice::from_ref(&n.quantity), " "))
+}
+
+fn mkpow(x: (&BaseUnit, &i64)) -> String {
+    pow(x.0.id.as_ref(), *x.1)
 }
 
 fn pow(n: &str, p: i64) -> String {

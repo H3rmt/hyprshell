@@ -70,7 +70,7 @@ pub fn get_input_driven_launch_items(plugins: &Plugins, text: &str) -> Vec<Match
         tracing::warn!("calc plugin is not enabled");
     }
 
-    out.sort_by(|a, b| b.score.cmp(&a.score));
+    out.sort_by_key(|b| std::cmp::Reverse(b.score));
     out
 }
 

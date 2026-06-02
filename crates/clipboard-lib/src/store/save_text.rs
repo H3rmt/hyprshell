@@ -26,7 +26,7 @@ pub fn store_text(text: &str, config: &Config, cache_dir: &Path) -> anyhow::Resu
     trace!(
         "Wrote text to {} ({} bytes)",
         storage_path.display(),
-        file.metadata().map(|m| m.len()).unwrap_or(0)
+        file.metadata().map_or(0, |m| m.len())
     );
     Ok(())
 }

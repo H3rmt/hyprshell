@@ -20,7 +20,7 @@ pub fn get_matches(plugins: &Plugins, text: &str, all_items: bool, max_items: u8
         .filter_map(|item| match_launch_item(item, text))
         .collect();
     // reverse sorting, so that the most relevant items are at the top
-    results.sort_by(|a, b| b.score.cmp(&a.score));
+    results.sort_by_key(|b| std::cmp::Reverse(b.score));
     println!("{} options returned", results.len());
     let options = if all_items {
         results

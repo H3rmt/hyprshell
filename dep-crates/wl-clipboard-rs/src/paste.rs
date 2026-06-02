@@ -454,6 +454,7 @@ pub(crate) fn get_contents_internal(
 /// # Ok(())
 /// # }
 /// ```
+#[allow(clippy::type_complexity)]
 #[inline]
 pub fn get_contents_channel(
     seat: Seat<'static>,
@@ -462,6 +463,7 @@ pub fn get_contents_channel(
     get_contents_channel_internal(seat, mime_type, None)
 }
 
+#[allow(clippy::type_complexity)]
 pub(crate) fn get_contents_channel_internal(
     seat: Seat<'static>,
     mime_type: MimeType<'static>,

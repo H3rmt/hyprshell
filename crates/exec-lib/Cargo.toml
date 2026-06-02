@@ -2,6 +2,8 @@
 name = "hyprshell-exec-lib"
 documentation = "https://docs.rs/hyprshell-exec-lib"
 version = "4.10.6"
+readme.workspace = true
+categories.workspace = true
 edition.workspace = true
 description.workspace = true
 license.workspace = true
@@ -14,7 +16,6 @@ rust-version.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
-config-lib.workspace = true
 semver.workspace = true
 regex.workspace = true
 hyprland = { package = "hyprshell-hyprland", path = "../../dep-crates/hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config", "lua", "trace"], default-features = false, version = "=4.10.6" }

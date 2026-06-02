@@ -3,6 +3,8 @@ members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/l
 
 [workspace.package]
 version = "4.10.6"
+readme = "README.md"
+categories = ["gui", "command-line-utilities"]
 description = "A modern GTK4-based window switcher and application launcher for Hyprland"
 license = "MIT"
 authors = ["h3rmt"]
@@ -32,8 +34,8 @@ launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib
 
 [package]
 name = "hyprshell"
-readme = "README.md"
-categories = []
+readme.workspace = true
+categories.workspace = true
 documentation = "https://docs.rs/hyprshell"
 version = "4.10.6"
 edition.workspace = true

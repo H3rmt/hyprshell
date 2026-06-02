@@ -354,7 +354,7 @@ impl LauncherRoot {
             .filter_map(|item| match_launch_item(item, text))
             .collect();
         // reverse sorting, so that the most relevant items are at the top
-        results.sort_by(|a, b| b.score.cmp(&a.score));
+        results.sort_by_key(|b| std::cmp::Reverse(b.score));
         dynamic_results.extend(results);
 
         let max_items = self.settings.max_items.min(9) as usize;

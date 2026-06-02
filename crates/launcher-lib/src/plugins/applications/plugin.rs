@@ -80,7 +80,7 @@ pub fn get_launch_items(
         ));
     }
     drop(entries);
-    matches.sort_by(|a, b| b.bonus_score.cmp(&a.bonus_score));
+    matches.sort_by_key(|b| std::cmp::Reverse(b.bonus_score));
     matches
 }
 pub fn launch_option(
