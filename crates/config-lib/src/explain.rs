@@ -115,7 +115,6 @@ mod tests {
                 switch: Some(Switch::default()),
                 ..Default::default()
             }),
-            ..Default::default()
         }
     }
 
@@ -137,8 +136,13 @@ After opening the Overview the Launcher is available:
 Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
 ";
         let mut config = create_test_config();
-        let a = config.windows.as_mut().unwrap();
-        a.overview.as_mut().unwrap().launcher.plugins.calc = Some(());
+        let a = config.windows.as_mut().expect("must exist");
+        a.overview
+            .as_mut()
+            .expect("must exist")
+            .launcher
+            .plugins
+            .calc = Some(());
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
         assert_eq!(result, CONFIG);

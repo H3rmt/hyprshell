@@ -4,7 +4,7 @@ use core_lib::transfer::{Identifier, PluginName};
 use exec_lib::run::run_program;
 use relm4::adw::gtk::gdk::Key;
 use std::path::PathBuf;
-use tracing::{debug, trace};
+use tracing::debug;
 
 pub fn get_static_items() -> Vec<PluginItem> {
     vec![PluginItem {

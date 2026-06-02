@@ -149,13 +149,13 @@ impl SimpleComponent for SwitchRoot {
                 self.setup_keyboard_controller(&sender);
             }
             SwitchRootInput::OpenSwitch(direction) => {
-                if !self.open {
-                    self.open = true;
-                    self.open_switch(direction);
-                } else {
+                if self.open {
                     sender
                         .input_sender()
                         .emit(SwitchRootInput::Switch(direction));
+                } else {
+                    self.open = true;
+                    self.open_switch(direction);
                 }
             }
             SwitchRootInput::Switch(direction) => {
@@ -201,7 +201,7 @@ impl SwitchRoot {
                 let sender_2 = sender.clone();
                 key_controller.connect_key_pressed(move |_, key, _, _| {
                     trace!("Key pressed: {:?}", key);
-                    handle_key(key, k, kk, sender_2.clone())
+                    handle_key(key, k, kk, &sender_2.clone())
                 });
                 if let Some(controller) = self.controller.take() {
                     self.window.remove_controller(&controller);
@@ -236,7 +236,7 @@ impl SwitchRoot {
 
         let active = if self.switch.switch_workspaces {
             find_next_workspace(
-                &direction,
+                direction,
                 true,
                 &hypr_data,
                 active_prev,
@@ -244,7 +244,7 @@ impl SwitchRoot {
             )
         } else {
             find_next_client(
-                &direction,
+                direction,
                 true,
                 &hypr_data,
                 active_prev,
@@ -347,7 +347,7 @@ impl SwitchRoot {
     fn navigate(&mut self, direction: Direction) {
         let new_active = if self.switch.switch_workspaces {
             find_next_workspace(
-                &direction,
+                direction,
                 true,
                 &self.data.hypr_data,
                 self.data.active,
@@ -355,7 +355,7 @@ impl SwitchRoot {
             )
         } else {
             find_next_client(
-                &direction,
+                direction,
                 true,
                 &self.data.hypr_data,
                 self.data.active,
@@ -373,7 +373,7 @@ impl SwitchRoot {
         }
     }
 
-    fn update_workspace_active(&mut self, old_active: Active, new_active: Active) {
+    fn update_workspace_active(&self, old_active: Active, new_active: Active) {
         // Update workspace active state
         if old_active.workspace != new_active.workspace {
             for (idx, item) in self.items.iter().enumerate() {
@@ -390,7 +390,7 @@ impl SwitchRoot {
         }
     }
 
-    fn update_clients_only_active(&mut self, old_active: Active, new_active: Active) {
+    fn update_clients_only_active(&self, old_active: Active, new_active: Active) {
         // Clear old active
         if let Some(old_id) = old_active.client {
             for (idx, item) in self.clients_only.iter().enumerate() {
@@ -467,7 +467,7 @@ impl SwitchRoot {
         }
     }
 
-    fn close_item(&mut self) {
+    fn close_item(&self) {
         if self.switch.switch_workspaces {
             self.kill_workspace_clients();
         } else {
@@ -476,11 +476,11 @@ impl SwitchRoot {
     }
 
     fn kill_active_client(&self) {
-        if let Some(id) = self.data.active.client {
-            if let Err(e) = exec_lib::kill::kill_client_blocking(id, KILL_TIMEOUT) {
-                // TODO: close on killed to let user close window themself
-                tracing::warn!("Failed to kill client {id}: {e}");
-            }
+        if let Some(id) = self.data.active.client
+            && let Err(e) = exec_lib::kill::kill_client_blocking(id, KILL_TIMEOUT)
+        {
+            // TODO: close on killed to let user close window themself
+            tracing::warn!("Failed to kill client {id}: {e}");
         }
     }
 
@@ -540,7 +540,7 @@ impl SwitchRoot {
         } {
             self.data.active = if self.switch.switch_workspaces {
                 find_next_workspace(
-                    &Direction::Right,
+                    Direction::Right,
                     true,
                     &hypr_data,
                     self.data.active,
@@ -548,7 +548,7 @@ impl SwitchRoot {
                 )
             } else {
                 find_next_client(
-                    &Direction::Right,
+                    Direction::Right,
                     true,
                     &hypr_data,
                     self.data.active,
@@ -574,7 +574,7 @@ fn handle_key(
     key: Key,
     s_key: Key,
     kill_key: Key,
-    event_sender: ComponentSender<SwitchRoot>,
+    event_sender: &ComponentSender<SwitchRoot>,
 ) -> glib::Propagation {
     match key {
         Key::Escape => {

@@ -147,14 +147,14 @@ impl SimpleComponent for OverviewRoot {
                 self.general = general;
             }
             OverviewRootInput::OpenOverview => {
-                if !self.open {
-                    self.open = true;
-                    self.launcher_root.emit(LauncherRootInput::OpenLauncher);
-                    self.open_overview();
-                } else {
+                if self.open {
                     sender
                         .input_sender()
                         .emit(OverviewRootInput::CloseOverview(false));
+                } else {
+                    self.open = true;
+                    self.launcher_root.emit(LauncherRootInput::OpenLauncher);
+                    self.open_overview();
                 }
             }
             OverviewRootInput::Switch(direction, workspace) => {
@@ -236,7 +236,7 @@ impl OverviewRoot {
     fn navigate(&mut self, direction: Direction, workspace: bool) {
         let new_active = if workspace {
             find_next_workspace(
-                &direction,
+                direction,
                 false,
                 &self.data.hypr_data,
                 self.data.active,
@@ -250,7 +250,7 @@ impl OverviewRoot {
                 return;
             }
             find_next_client(
-                &direction,
+                direction,
                 false,
                 &self.data.hypr_data,
                 self.data.active,
@@ -262,22 +262,23 @@ impl OverviewRoot {
         self.data.active = new_active;
 
         if new_active != old_active {
-            for (_, window) in &self.windows {
-                window.emit(OverviewWindowInput::SetActive(old_active, new_active))
+            for window in self.windows.values() {
+                window.emit(OverviewWindowInput::SetActive(old_active, new_active));
             }
         }
     }
 
-    fn close_item(&mut self, id: ClientId) {
+    #[allow(clippy::unused_self)]
+    fn close_item(&self, id: ClientId) {
         if let Err(e) = exec_lib::kill::kill_client_blocking(id, KILL_TIMEOUT) {
             // TODO: close on killed to let user close window themself
             tracing::warn!("Failed to kill client {id}: {e}");
         }
     }
 
-    fn close_overview(&mut self, do_switch: bool) {
-        for (_, window) in &self.windows {
-            window.emit(OverviewWindowInput::CloseOverview)
+    fn close_overview(&self, do_switch: bool) {
+        for window in self.windows.values() {
+            window.emit(OverviewWindowInput::CloseOverview);
         }
 
         if do_switch {
@@ -345,12 +346,12 @@ impl OverviewRoot {
             Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(&id).is_none(),
         } {
             self.data.active = find_next_workspace(
-                &Direction::Right,
+                Direction::Right,
                 true,
                 &hypr_data,
                 self.data.active,
                 self.general.items_per_row,
-            )
+            );
         }
 
         self.data = OverviewData {
@@ -360,16 +361,16 @@ impl OverviewRoot {
         self.render(hypr_data, self.data.active, false);
     }
 
-    fn render(&mut self, hypr_data: HyprlandData, active: Active, open: bool) {
+    fn render(&self, hypr_data: HyprlandData, active: Active, open: bool) {
         let mut mapped_ws = BTreeMap::new();
-        for (i, workspace_data) in hypr_data.workspaces.into_iter() {
+        for (i, workspace_data) in hypr_data.workspaces {
             mapped_ws
                 .entry(workspace_data.monitor)
                 .or_insert_with(Vec::new)
                 .push((i, workspace_data));
         }
         let mut mapped_cl = BTreeMap::new();
-        for (i, client_data) in hypr_data.clients.into_iter() {
+        for (i, client_data) in hypr_data.clients {
             mapped_cl
                 .entry(client_data.monitor)
                 .or_insert_with(Vec::new)
@@ -389,9 +390,9 @@ impl OverviewRoot {
                     window.emit(OverviewWindowInput::OpenOverview((
                         data,
                         self.overview.top_offset,
-                    )))
+                    )));
                 } else {
-                    window.emit(OverviewWindowInput::ReloadOverview(data))
+                    window.emit(OverviewWindowInput::ReloadOverview(data));
                 }
             }
         }

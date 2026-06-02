@@ -4,6 +4,7 @@ use relm4::FactorySender;
 use relm4::adw::prelude::*;
 use relm4::adw::{glib, gtk};
 use relm4::factory::{DynamicIndex, FactoryComponent};
+use std::fmt::Write;
 use std::path::Path;
 use tracing::warn;
 
@@ -68,15 +69,13 @@ fn markup_text(text: &HighlightedText, base: gtk::gdk::RGBA) -> String {
         }
 
         // Add formatted span
-        let span_text =
-            std::str::from_utf8(&text_bytes[*start as usize..*end as usize]).unwrap_or("");
-
-        result.push_str(&format!(
+        let span_text = str::from_utf8(&text_bytes[*start as usize..*end as usize]).unwrap_or("");
+        let _ = write!(
+            result,
             "<span underline='single' foreground='{}'>{}</span>",
             color_hex,
             glib::markup_escape_text(span_text)
-        ));
-
+        );
         last_end = *end;
     }
 

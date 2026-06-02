@@ -13,7 +13,7 @@ pub fn apply_layerrules() -> anyhow::Result<()> {
     if let Err(e) = apply_layerrules_lua() {
         warn!("Failed to apply layerrules: {}, trying legacy syntax", e);
         return apply_layerrules_legacy();
-    };
+    }
     Ok(())
 }
 
@@ -65,7 +65,7 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
     if let Err(e) = apply_exec_bind_lua(bind) {
         warn!("Failed to apply keybinds: {}, trying legacy syntax", e);
         return apply_exec_bind_legacy(bind);
-    };
+    }
     Ok(())
 }
 
@@ -102,7 +102,7 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
                 Flag::Description(bind.desc.clone()),
             ]
         },
-        dispatcher: Dispatch::ExecCmd(bind.exec.to_string(), None),
+        dispatcher: Dispatch::ExecCmd(bind.exec.clone(), None),
     };
     trace!("binding exec: {binding:?}");
     binding.unbind()?;
@@ -128,7 +128,7 @@ pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
     let binding = binds::Binding {
         mods: mods.as_slice(),
         key: binds::Key::Key(&bind.key),
-        flags: &vec![],
+        flags: &[],
         dispatcher: DispatchType::Exec(&bind.exec),
     };
     trace!("binding exec: {binding:?}");

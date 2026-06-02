@@ -1,7 +1,7 @@
 use crate::io::load_config_file;
 use crate::io::save::write_io_config;
 use crate::migrate::check::get_config_version;
-use crate::{CURRENT_CONFIG_VERSION, migrate, write_config};
+use crate::{CURRENT_CONFIG_VERSION, migrate};
 use anyhow::{Context, bail};
 use std::path::Path;
 use tracing::{debug, debug_span, info, warn};

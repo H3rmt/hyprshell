@@ -8,8 +8,7 @@ license = "MIT"
 authors = ["h3rmt"]
 keywords = ["hyprland"]
 repository = "https://github.com/h3rmt/hyprshell/"
-# update when nixpkgs has a newer rustc
-rust-version = "1.91.0"
+rust-version = "1.92.0"
 edition = "2024"
 
 [workspace.dependencies]
@@ -105,6 +104,7 @@ match_wildcard_for_single_variants = "allow"
 struct_excessive_bools = "allow"
 missing_errors_doc = "allow"
 cast_possible_truncation = "allow"
+struct_field_names = "allow"
 # This is broken
 uninlined_format_args = "warn"
 unnecessary_debug_formatting = "warn"

@@ -6,12 +6,12 @@ use std::ffi::OsStr;
 use std::fs::{File, create_dir_all};
 use std::io::Write;
 use std::path::Path;
-use tracing::{debug, debug_span, info, instrument};
+use tracing::{debug, info, instrument};
 
 const CONFIG_EXPLANATION: &str = "Edit with `hyprshell config edit`";
 
 #[instrument(skip(config, config_file), level = "debug", name = "write_config", fields(config_file = %config_file.display()))]
-pub(crate) fn write_io_config(
+pub fn write_io_config(
     config_file: &Path,
     config: &crate::io::Config,
     override_file: bool,

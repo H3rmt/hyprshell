@@ -1,3 +1,4 @@
+#[allow(clippy::wildcard_imports)]
 use crate::io::*;
 
 impl TryFrom<Config> for crate::Config {

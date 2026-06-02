@@ -73,7 +73,6 @@ mod tests {
                 switch: Some(Switch::default()),
                 ..Default::default()
             }),
-            ..Default::default()
         }
     }
 
@@ -81,7 +80,6 @@ mod tests {
     #[test_log(default_log_filter = "trace")]
     fn test_valid_config() {
         let config = full();
-        println!("{:?}", check(&config));
         assert!(check(&config).is_ok());
     }
 

@@ -6,10 +6,13 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
 use tracing::debug_span;
 
+#[cfg(feature = "calc")]
 pub fn init() {
-    #[cfg(feature = "calc")]
     crate::plugins::calc::init_context();
 }
+
+#[cfg(not(feature = "calc"))]
+pub const fn init() {}
 
 /// Get launcher items that don't change depending on user input.
 pub fn get_static_items(plugins: &Plugins, data_dir: &Path) -> Vec<LaunchItem> {

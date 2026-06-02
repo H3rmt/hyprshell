@@ -1,6 +1,4 @@
-use crate::plugin::{
-    HighlightElement, HighlightedText, LaunchItem, MatchedLaunchItem, PluginReturn,
-};
+use crate::plugin::{HighlightElement, LaunchItem, MatchedLaunchItem, PluginReturn};
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
 use core_lib::transfer::{Identifier, PluginName};

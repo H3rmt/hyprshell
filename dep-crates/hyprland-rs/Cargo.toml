@@ -17,11 +17,10 @@ authors = ["yavko <yavornkolev@gmail.com>"]
 [package.metadata.nix]
 build = true
 
-[profile.release]
-opt-level = 3
-strip = true
-lto = true
-
+#[profile.release]
+#opt-level = 3
+#strip = true
+#lto = true
 
 [dependencies]
 hyprland-macros = { package = "hyprshell-hyprland-macros", path = "./hyprland-macros", version = "=4.10.6" }

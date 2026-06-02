@@ -55,6 +55,7 @@ pub struct PluginItem {
 }
 
 pub struct PluginReturn {
+    #[allow(unused)]
     pub show_animation: bool,
 }
 
@@ -204,12 +205,10 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
         args = extracted_args;
         enabled = args.is_some();
         let query = text[..consumed].trim_end();
-
         return score_launch_item(item, query, enabled, args);
     }
 
     let query = text;
-
     score_launch_item(item, query, enabled, args)
 }
 
