@@ -112,24 +112,52 @@ fn spans_from_char_indices(text: &str, indices: &[u32]) -> Vec<TextSpan> {
     spans
 }
 
-fn extract_action_args(text: &str, alias: &str) -> Option<Box<str>> {
+fn extract_action_args(text: &str, alias: &str) -> Option<(usize, Option<Box<str>>)> {
     let alias = alias.trim();
     if alias.is_empty() {
         return None;
     }
 
-    let (_, indices) = score_text(text, alias)?;
-    let last = *indices.iter().max()? as usize;
-    let mut last_byte = text.len();
-    for (char_idx, (byte_idx, ch)) in text.char_indices().enumerate() {
-        if char_idx == last {
-            last_byte = byte_idx + ch.len_utf8();
-            break;
+    let mut alias_chars = alias.chars().filter(|c| !c.is_whitespace()).peekable();
+    let mut last_byte = 0usize;
+    let mut seen_match = false;
+
+    for (byte_idx, ch) in text.char_indices() {
+        if ch.is_whitespace() {
+            if seen_match {
+                last_byte = byte_idx + ch.len_utf8();
+            }
+            continue;
+        }
+
+        let mut matched = false;
+        while let Some(expected) = alias_chars.peek().copied() {
+            if expected.eq_ignore_ascii_case(&ch) {
+                alias_chars.next();
+                matched = true;
+                seen_match = true;
+                last_byte = byte_idx + ch.len_utf8();
+                break;
+            }
+            alias_chars.next();
+        }
+
+        if !matched {
+            return None;
+        }
+
+        if alias_chars.peek().is_none() {
+            let args = text[last_byte..].trim_start();
+            return Some((last_byte, (!args.is_empty()).then(|| args.into())));
         }
     }
 
-    let args = text[last_byte..].trim_start();
-    (!args.is_empty()).then(|| args.into())
+    if alias_chars.peek().is_none() && seen_match {
+        let args = text[last_byte..].trim_start();
+        return Some((last_byte, (!args.is_empty()).then(|| args.into())));
+    }
+
+    None
 }
 
 /// Get launcher items from a parent item.
@@ -158,15 +186,35 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
     }
 
     let mut args = None;
+    let mut enabled = true;
     if item.takes_args {
-        args = extract_action_args(text, &item.name);
-        #[allow(clippy::question_mark)]
-        if args.is_none() {
-            return None;
-        }
+        let Some((consumed, extracted_args)) = extract_action_args(text, &item.name) else {
+            return Some(MatchedLaunchItem {
+                item,
+                highlight: HighlightElement::None,
+                score: 0,
+                enabled: false,
+                args: None,
+            });
+        };
+        args = extracted_args;
+        enabled = args.is_some();
+        let query = text[..consumed].trim_end();
+
+        return score_launch_item(item, query, enabled, args);
     }
 
     let query = text;
+
+    score_launch_item(item, query, enabled, args)
+}
+
+fn score_launch_item(
+    item: LaunchItem,
+    query: &str,
+    enabled: bool,
+    args: Option<Box<str>>,
+) -> Option<MatchedLaunchItem> {
 
     let mut best_score = 0u64;
     let mut keyword_name = None;
@@ -235,7 +283,7 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
             _ => HighlightElement::None,
         },
         score: best_score + item.bonus_score,
-        enabled: true,
+        enabled,
         item,
         args,
     })
@@ -283,32 +331,69 @@ mod tests {
     use core_lib::transfer::{Identifier, PluginName};
 
     #[test]
-    fn extract_action_args_handles_fuzzy_prefix() {
-        assert_eq!(
-            extract_action_args("kill rustrover", "kill").as_deref(),
-            Some("rustrover")
-        );
-        assert_eq!(
-            extract_action_args("K ll rustrover", "kill").as_deref(),
-            Some("rustrover")
-        );
+    fn extract_action_args_handles_fuzzy_prefixes() {
+        let cases = [
+            ("kill rustrover", "kill", Some("rustrover")),
+            ("K ll rustrover", "kill", Some("rustrover")),
+            ("kill    rustrover", "kill", Some("rustrover")),
+            ("k i l l rustrover", "kill", Some("rustrover")),
+            ("kill program rustrover", "kill program", Some("rustrover")),
+            ("kill program   rustrover", "kill program", Some("rustrover")),
+            ("launch firefox nightly", "launch firefox", Some("nightly")),
+            ("open app my-editor", "open app", Some("my-editor")),
+        ];
+
+        for (text, alias, expected) in cases {
+            assert_eq!(
+                extract_action_args(text, alias).map(|(_, a)| a).flatten().as_deref(),
+                expected,
+                "text={text:?} alias={alias:?}"
+            );
+        }
     }
 
     #[test]
     fn match_launch_item_extracts_args() {
-        let item = LaunchItem {
-            name: "kill".into(),
-            keywords: Box::from([]),
-            icon: None,
-            details: "kill {}".into(),
-            details_long: None,
-            bonus_score: 0,
-            takes_args: true,
-            iden: Identifier::data(PluginName::Actions, "kill {}".into()),
-            children: Box::from([]),
-        };
+        let cases = [
+            ("kill", "K ll rustrover", Some("rustrover"), true),
+            (
+                "kill program",
+                "kill program rustrover",
+                Some("rustrover"),
+                true,
+            ),
+            (
+                "kill program",
+                "K ll   program rustrover",
+                Some("rustrover"),
+                true,
+            ),
+            (
+                "launch firefox",
+                "launch firefox nightly",
+                Some("nightly"),
+                true,
+            ),
+            ("open app", "open app my-editor", Some("my-editor"), true),
+            ("run", "run", None, false),
+        ];
 
-        let matched = match_launch_item(item, "K ll rustrover").expect("must match");
-        assert_eq!(matched.args.as_deref(), Some("rustrover"));
+        for (name, text, expected_args, expected_enabled) in cases {
+            let item = LaunchItem {
+                name: name.into(),
+                keywords: Box::from([]),
+                icon: None,
+                details: format!("{name} {{}}").into_boxed_str(),
+                details_long: None,
+                bonus_score: 0,
+                takes_args: true,
+                iden: Identifier::data(PluginName::Actions, format!("{name} {{}}").into_boxed_str()),
+                children: Box::from([]),
+            };
+
+            let matched = match_launch_item(item, text).expect("must match");
+            assert_eq!(matched.args.as_deref(), expected_args, "text={text:?}");
+            assert_eq!(matched.enabled, expected_enabled, "text={text:?}");
+        }
     }
 }

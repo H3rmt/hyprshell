@@ -99,7 +99,7 @@ impl FactoryComponent for LauncherResults {
 
     view! {
         gtk::Button {
-            set_css_classes: if self.item.item.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
+            set_css_classes: if self.item.enabled {&["launcher-item"]} else {&["launcher-item", "monochrome"]},
             set_cursor_from_name: Some("pointer"),
             connect_clicked[sender, index] => move |_| {
                 sender.output_sender().emit(LauncherResultsOutput::Clicked(index.clone()));
