@@ -9,7 +9,7 @@ use std::os::unix::net;
 use std::os::unix::net::UnixStream;
 use tracing::{debug, debug_span, instrument, warn};
 
-pub fn socket_handler(event_sender: Sender<ExternalTransferType>) {
+pub fn socket_handler(event_sender: &Sender<ExternalTransferType>) {
     let _span = debug_span!("socket_handler").entered();
     let path = &get_daemon_socket_path_buff();
     let listener = {
@@ -26,7 +26,7 @@ pub fn socket_handler(event_sender: Sender<ExternalTransferType>) {
         let path = listener.accept();
         match path {
             Ok((conn, _)) => {
-                handle_client(conn, &event_sender)
+                handle_client(conn, event_sender)
                     .context("Failed to handle client")
                     .unwrap_or_else(|e| {
                         warn!("Failed to handle connection: {e:?}");

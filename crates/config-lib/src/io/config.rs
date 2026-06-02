@@ -65,7 +65,7 @@ pub struct Launcher {
         terminal: Some(EmptyConfig::default()),
         shell: None,
         websearch: Some(WebSearchConfig::default()),
-        calc: None,
+        calc: Some(EmptyConfig::default()),
         path: Some(EmptyConfig::default()),
         actions: Some(ActionsPluginConfig::default()),
     })]
@@ -183,7 +183,7 @@ pub struct Switch {
     pub modifier: Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
-    #[default(vec![])]
+    #[default(vec![FilterBy::CurrentMonitor])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]
     pub switch_workspaces: bool,

@@ -55,7 +55,7 @@ pub fn check_themes() {
     }
 }
 
-fn handle_sigterm(_cache_dir: &Path) {}
+const fn handle_sigterm(_cache_dir: &Path) {}
 
 fn get_icon_data() -> (Vec<String>, Vec<PathBuf>) {
     let icon_theme = IconTheme::new();
@@ -105,15 +105,15 @@ pub fn check_new_version(cache_dir: &Path) -> anyhow::Result<(Ordering, Vec<Stri
     let current_version =
         Version::parse(current_version).context("Failed to parse current version")?;
     let version_file_missing = !version_file.exists();
-    let cached_version = if !version_file_missing {
-        let contents = read_to_string(&version_file).context("Failed to read old version file")?;
-        Version::parse(contents.trim()).context("Failed to parse old version")?
-    } else {
+    let cached_version = if version_file_missing {
         fs::create_dir_all(cache_dir).context("Failed to create cache directory")?;
         let mut file = File::create(&version_file).context("Failed to create version file")?;
         file.write_all(current_version.to_string().as_bytes())
             .context("Failed to write current version to file")?;
         Version::new(0, 0, 0)
+    } else {
+        let contents = read_to_string(&version_file).context("Failed to read old version file")?;
+        Version::parse(contents.trim()).context("Failed to parse old version")?
     };
     trace!(
         "Cached version: {cached_version:?}, current version: {current_version:?}: {:?}",

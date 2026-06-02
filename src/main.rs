@@ -146,7 +146,6 @@ fn main() -> anyhow::Result<()> {
                         switch: Some(config_lib::Switch::default()),
                         ..Default::default()
                     }),
-                    ..Default::default()
                 };
                 if config == config_all {
                     tracing::info!("Current config matches the default configuration");
@@ -227,9 +226,9 @@ fn main() -> anyhow::Result<()> {
         }
         cli::Command::Socat { json } => {
             #[cfg(debug_assertions)]
-            core_lib::notify(&json, std::time::Duration::from_millis(2000));
+            core_lib::notify(&json, std::time::Duration::from_secs(2));
             core_lib::transfer::send_raw_to_socket(&json)
-                .context("Failed to send JSON to socket: is hyprshell running?")?
+                .context("Failed to send JSON to socket: is hyprshell running?")?;
         }
     }
     Ok(())

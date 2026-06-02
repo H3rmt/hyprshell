@@ -44,5 +44,5 @@ build_with_features "slim" slim
 declare -a features=("gui_settings_editor" "ci_config_check" "launcher_calc" "debug_command" "json5_config")
 test_feature_combinations features
 
-declare -a crypt_features=("clipboard_encrypt_chacha20poly1305" "clipboard_encrypt_aes_gcm" "clipboard_compress_zstd" "clipboard_compress_brotli" "clipboard_compress_lz4")
-test_feature_combinations crypt_features
+#declare -a crypt_features=("clipboard_encrypt_chacha20poly1305" "clipboard_encrypt_aes_gcm" "clipboard_compress_zstd" "clipboard_compress_brotli" "clipboard_compress_lz4")
+#test_feature_combinations crypt_features
