@@ -28,7 +28,6 @@ pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
             details_long: None,
             bonus_score: 0,
             takes_args: false,
-            enabled: exists,
             iden: Identifier::plugin(PluginName::Path),
             children: Box::from([]),
         };
@@ -36,6 +35,8 @@ pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
             highlight: HighlightElement::None,
             score: item.name.len() as u64,
             item,
+            args: None,
+            enabled: exists,
         }]
     } else {
         vec![]

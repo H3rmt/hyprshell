@@ -1,14 +1,10 @@
-use crate::plugin::{
-    LaunchItem, MatchedLaunchItem, PluginItem, PluginReturn, highlighted_text,
-    launch_parent_to_item,
-};
+use crate::plugin::{LaunchItem, MatchedLaunchItem, PluginItem, PluginReturn};
 use crate::plugins::{actions, applications, path, search, shell, terminal};
 use config_lib::Plugins;
 use core_lib::transfer::{Identifier, PluginName};
-use nucleo::pattern::Pattern;
 use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
-use tracing::{debug_span, trace};
+use tracing::debug_span;
 
 pub fn init() {
     #[cfg(feature = "calc")]
@@ -80,6 +76,7 @@ pub fn launch(
     text: &str,
     default_terminal: Option<&str>,
     data_dir: &Path,
+    args: Option<&str>,
 ) -> PluginReturn {
     let _span = debug_span!("launch_plugin").entered();
     match iden.plugin {
@@ -112,7 +109,12 @@ pub fn launch(
             }
         }
         PluginName::Actions => debug_span!("actions").in_scope(|| {
-            actions::run_action(iden.data.as_deref(), text, iden.data_additional.as_deref())
+            actions::run_action(
+                iden.data.as_deref(),
+                text,
+                iden.data_additional.as_deref(),
+                args,
+            )
         }),
     }
 }

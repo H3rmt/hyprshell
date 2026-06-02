@@ -183,6 +183,7 @@ impl SimpleComponent for LauncherRoot {
                         &self.ui.entry.text(),
                         self.settings.default_terminal.as_deref(),
                         &self.data_dir,
+                        None,
                     );
                 } else {
                     warn!("No match found for char: {}", char);
@@ -284,14 +285,7 @@ impl LauncherRoot {
         event_controller.connect_key_pressed(move |_, key, _, modt| {
             trace!("input: {key:?}");
             let text_empty = entry.text().is_empty();
-            handle_key(
-                &launcher,
-                text_empty,
-                key,
-                modt,
-                &plugin_keys,
-                sender_2.clone(),
-            )
+            handle_key(&launcher, text_empty, key, modt, &plugin_keys, &sender_2)
         });
         if let Some(controller) = self.ui.controller.take() {
             self.ui.entry.remove_controller(&controller);
@@ -321,6 +315,7 @@ impl LauncherRoot {
                 &self.ui.entry.text(),
                 self.settings.default_terminal.as_deref(),
                 &self.data_dir,
+                item.args.as_deref(),
             );
             ActivationOutcome::Launched
         } else {
@@ -389,13 +384,14 @@ impl LauncherRoot {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn handle_key(
     launcher: &Launcher,
     text_empty: bool,
     key: gdk::Key,
     modt: ModifierType,
     plugin_keys: &[gdk::Key],
-    sender: ComponentSender<LauncherRoot>,
+    sender: &ComponentSender<LauncherRoot>,
 ) -> glib::Propagation {
     let launch_mod = match launcher.launch_modifier {
         Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,

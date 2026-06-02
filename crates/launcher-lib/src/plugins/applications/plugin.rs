@@ -3,7 +3,6 @@ use crate::plugins::applications::data::{get_stored_runs, save_run};
 use crate::plugins::applications::map::{DesktopAction, DesktopEntry, get_all_desktop_entries};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
-use core_lib::util::analyse_exec;
 use exec_lib::run::run_program;
 use std::collections::HashMap;
 use std::path::Path;
@@ -32,7 +31,6 @@ impl LaunchItem {
                 PluginName::Applications,
                 Box::from(entry.source.to_string_lossy()),
             ),
-            enabled: true,
             takes_args: false,
             children: Box::from(
                 entry
@@ -57,7 +55,6 @@ impl LaunchItem {
                 Box::from(entry.source.to_string_lossy()),
                 action.id.clone(),
             ),
-            enabled: true,
             takes_args: false,
             children: Box::new([]),
         }

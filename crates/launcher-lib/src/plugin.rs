@@ -23,7 +23,6 @@ pub struct LaunchItem {
     pub details_long: Option<Box<str>>,
     pub bonus_score: u64,
     pub takes_args: bool,
-    pub enabled: bool,
     pub iden: Identifier,
     pub children: Box<[Self]>,
 }
@@ -42,6 +41,8 @@ pub struct MatchedLaunchItem {
     pub item: LaunchItem,
     pub highlight: HighlightElement,
     pub score: u64,
+    pub enabled: bool,
+    pub args: Option<Box<str>>,
 }
 
 #[derive(Debug, Clone)]
@@ -63,13 +64,6 @@ pub fn highlighted_text(text: Box<str>, indices: &[u32]) -> HighlightedText {
     HighlightedText {
         spans: spans_from_char_indices(&text, indices),
         text,
-    }
-}
-
-pub fn no_highlight_text(text: Box<str>) -> HighlightedText {
-    HighlightedText {
-        text,
-        spans: vec![],
     }
 }
 
@@ -118,39 +112,24 @@ fn spans_from_char_indices(text: &str, indices: &[u32]) -> Vec<TextSpan> {
     spans
 }
 
-#[allow(unused)]
 fn extract_action_args(text: &str, alias: &str) -> Option<Box<str>> {
-    let text = text.trim_start();
-    let consumed = consume_alias_prefix(text, alias)?;
-    let args = text[consumed..].trim_start();
-    (!args.is_empty()).then(|| args.into())
-}
-
-#[allow(unused)]
-fn consume_alias_prefix(text: &str, alias: &str) -> Option<usize> {
-    let alias = alias
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .map(|c| c.to_ascii_lowercase())
-        .collect::<Vec<_>>();
+    let alias = alias.trim();
     if alias.is_empty() {
         return None;
     }
 
-    let mut alias_idx = 0usize;
-    for (byte_idx, ch) in text.char_indices() {
-        if ch.is_whitespace() {
-            continue;
-        }
-        if alias_idx >= alias.len() || ch.to_ascii_lowercase() != alias[alias_idx] {
-            return None;
-        }
-        alias_idx += 1;
-        if alias_idx == alias.len() {
-            return Some(byte_idx + ch.len_utf8());
+    let (_, indices) = score_text(text, alias)?;
+    let last = *indices.iter().max()? as usize;
+    let mut last_byte = text.len();
+    for (char_idx, (byte_idx, ch)) in text.char_indices().enumerate() {
+        if char_idx == last {
+            last_byte = byte_idx + ch.len_utf8();
+            break;
         }
     }
-    None
+
+    let args = text[last_byte..].trim_start();
+    (!args.is_empty()).then(|| args.into())
 }
 
 /// Get launcher items from a parent item.
@@ -173,13 +152,21 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
             item,
             highlight: HighlightElement::None,
             score: 0,
+            enabled: true,
+            args: None,
         });
     }
 
+    let mut args = None;
     if item.takes_args {
-        // TODO implement takes args
-        return None;
+        args = extract_action_args(text, &item.name);
+        #[allow(clippy::question_mark)]
+        if args.is_none() {
+            return None;
+        }
     }
+
+    let query = text;
 
     let mut best_score = 0u64;
     let mut keyword_name = None;
@@ -188,21 +175,22 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
     let mut details_indices = None;
     let mut details_long_indices = None;
 
-    if let Some((score, indices)) = score_text(&item.name, text)
+    if let Some((score, indices)) = score_text(&item.name, query)
         && score >= best_score
     {
         name_indices = Some(indices);
         best_score = score;
     }
 
-    if let Some((kw_score, kw_name, kw_indices)) = score_keywords(&item.keywords, text)
+    if let Some((kw_score, kw_name, kw_indices)) = score_keywords(&item.keywords, query)
         && kw_score >= best_score
     {
         keyword_name = Some(kw_name);
         keyword_indices = Some(kw_indices);
         best_score = kw_score;
     }
-    if let Some((details_score, dt_indices)) = score_text(&item.details, text) {
+    if let Some((details_score, dt_indices)) = score_text(&item.details, query) {
+        #[allow(clippy::cast_sign_loss, clippy::cast_precision_loss)]
         let details_score = ((details_score as f64) * 0.8) as u64;
         if details_score > best_score {
             details_indices = Some(dt_indices);
@@ -210,8 +198,9 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
         }
     }
     if let Some(dl) = item.details_long.as_ref()
-        && let Some((details_score, dt_indices)) = score_text(dl, text)
+        && let Some((details_score, dt_indices)) = score_text(dl, query)
     {
+        #[allow(clippy::cast_sign_loss, clippy::cast_precision_loss)]
         let details_score = ((details_score as f64) * 0.7) as u64;
         if details_score > best_score {
             details_long_indices = Some(dt_indices);
@@ -219,7 +208,7 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
         }
     }
 
-    (best_score > (MIN_SCORE_PER_CHAR * text.len()) as u64).then(|| MatchedLaunchItem {
+    (best_score > (MIN_SCORE_PER_CHAR * query.len()) as u64).then(|| MatchedLaunchItem {
         highlight: match (
             details_long_indices,
             details_indices,
@@ -246,7 +235,9 @@ pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchIt
             _ => HighlightElement::None,
         },
         score: best_score + item.bonus_score,
+        enabled: true,
         item,
+        args,
     })
 }
 
@@ -273,6 +264,7 @@ fn score_keywords(keywords: &[Box<str>], query: &str) -> Option<(u64, Box<str>, 
     let mut best: Option<(u64, Box<str>, Vec<u32>)> = None;
     for keyword in keywords {
         if let Some((score, indices)) = score_text(keyword.as_ref(), query) {
+            #[allow(clippy::cast_sign_loss, clippy::cast_precision_loss)]
             let score = ((score as f64) * 0.75) as u64;
             if best
                 .as_ref()
@@ -283,4 +275,40 @@ fn score_keywords(keywords: &[Box<str>], query: &str) -> Option<(u64, Box<str>, 
         }
     }
     best
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LaunchItem, extract_action_args, match_launch_item};
+    use core_lib::transfer::{Identifier, PluginName};
+
+    #[test]
+    fn extract_action_args_handles_fuzzy_prefix() {
+        assert_eq!(
+            extract_action_args("kill rustrover", "kill").as_deref(),
+            Some("rustrover")
+        );
+        assert_eq!(
+            extract_action_args("K ll rustrover", "kill").as_deref(),
+            Some("rustrover")
+        );
+    }
+
+    #[test]
+    fn match_launch_item_extracts_args() {
+        let item = LaunchItem {
+            name: "kill".into(),
+            keywords: Box::from([]),
+            icon: None,
+            details: "kill {}".into(),
+            details_long: None,
+            bonus_score: 0,
+            takes_args: true,
+            iden: Identifier::data(PluginName::Actions, "kill {}".into()),
+            children: Box::from([]),
+        };
+
+        let matched = match_launch_item(item, "K ll rustrover").expect("must match");
+        assert_eq!(matched.args.as_deref(), Some("rustrover"));
+    }
 }

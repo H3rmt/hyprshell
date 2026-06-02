@@ -4,6 +4,7 @@ use core_lib::transfer::{Identifier, PluginName};
 use std::path::PathBuf;
 
 impl From<ActionsPluginAction> for LaunchItem {
+    #[allow(clippy::too_many_lines)]
     fn from(action: ActionsPluginAction) -> Self {
         match action {
             ActionsPluginAction::LockScreen => {
@@ -15,7 +16,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     details_long: Some(Box::from("Lock the screen")),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-lock-screen").into_boxed_path()),
                     children: Box::new([]),
@@ -30,7 +30,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     details_long: Some(Box::from("Log out of the session")),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-log-out").into_boxed_path()),
                     children: Box::new([]),
@@ -47,7 +46,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     )),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-hibernate").into_boxed_path()),
                     children: Box::new([Self {
@@ -60,7 +58,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                         )),
                         bonus_score: 0,
                         takes_args: false,
-                        enabled: true,
                         iden: Identifier::data(
                             PluginName::Actions,
                             Box::from("systemctl hybrid-sleep"),
@@ -78,7 +75,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     details_long: Some(Box::from("Reboot the computer")),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-reboot").into_boxed_path()),
                     children: Box::new([]),
@@ -93,7 +89,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     details_long: Some(Box::from("Shut down the computer")),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-shutdown").into_boxed_path()),
                     children: Box::new([]),
@@ -108,7 +103,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                     details_long: Some(Box::from("Enters low-power sleep")),
                     bonus_score: 0,
                     takes_args: false,
-                    enabled: true,
                     iden: Identifier::data(PluginName::Actions, command),
                     icon: Some(PathBuf::from("system-suspend").into_boxed_path()),
                     children: Box::new([Self {
@@ -121,7 +115,6 @@ impl From<ActionsPluginAction> for LaunchItem {
                         )),
                         bonus_score: 0,
                         takes_args: false,
-                        enabled: true,
                         iden: Identifier::data(
                             PluginName::Actions,
                             Box::from("systemctl suspend-then-hibernate"),
@@ -137,8 +130,7 @@ impl From<ActionsPluginAction> for LaunchItem {
                 details: c.details,
                 details_long: Some(c.command.clone()),
                 bonus_score: 0,
-                takes_args: false, // TODO add support back in
-                enabled: !c.command.contains("{}"),
+                takes_args: c.command.contains("{}"),
                 iden: Identifier::data(PluginName::Actions, c.command),
                 children: Box::new([]),
             },
