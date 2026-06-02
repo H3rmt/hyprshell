@@ -1,15 +1,16 @@
+use std::collections::HashMap;
+use std::io::Read;
+use std::sync::mpsc::{channel, Receiver};
+use std::time::Duration;
+
+use os_pipe::PipeReader;
+use proptest::prelude::*;
+use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_manager_v1::ZwlrDataControlManagerV1;
+
 use crate::copy::{MimeSource, Options};
 use crate::paste::*;
 use crate::tests::state::*;
 use crate::tests::TestServer;
-use os_pipe::PipeReader;
-use proptest::prelude::*;
-use std::collections::HashMap;
-use std::io::Read;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Receiver;
-use std::time::Duration;
-use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_manager_v1::ZwlrDataControlManagerV1;
 
 #[test]
 fn get_mime_types_test() {

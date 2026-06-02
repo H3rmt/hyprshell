@@ -123,11 +123,7 @@ impl FactoryView for gtk::Fixed {
         position: &Self::Position,
     ) -> Self::ReturnedWidget {
         use gtk::prelude::FixedExt;
-        self.put(
-            widget.as_ref(),
-            position.0,
-            position.1
-        );
+        self.put(widget.as_ref(), position.0, position.1);
         widget.as_ref().clone()
     }
 
@@ -161,7 +157,6 @@ impl FactoryView for gtk::Fixed {
         self.factory_append(widget, position);
     }
 }
-
 
 impl FactoryView for gtk::Stack {
     type Children = gtk::Widget;
