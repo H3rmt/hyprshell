@@ -143,6 +143,10 @@ fn extract_action_args(text: &str, alias: &str) -> Option<(usize, Option<Box<str
         }
 
         if !matched {
+            if seen_match {
+                let args = text[last_byte..].trim_start();
+                return Some((last_byte, (!args.is_empty()).then(|| args.into())));
+            }
             return None;
         }
 
@@ -215,7 +219,6 @@ fn score_launch_item(
     enabled: bool,
     args: Option<Box<str>>,
 ) -> Option<MatchedLaunchItem> {
-
     let mut best_score = 0u64;
     let mut keyword_name = None;
     let mut name_indices = None;
@@ -335,17 +338,27 @@ mod tests {
         let cases = [
             ("kill rustrover", "kill", Some("rustrover")),
             ("K ll rustrover", "kill", Some("rustrover")),
+            ("Ki l rustrover", "kill", Some("rustrover")),
+            ("Kil rustrover", "kill", Some("rustrover")),
             ("kill    rustrover", "kill", Some("rustrover")),
             ("k i l l rustrover", "kill", Some("rustrover")),
             ("kill program rustrover", "kill program", Some("rustrover")),
-            ("kill program   rustrover", "kill program", Some("rustrover")),
+            ("kill progra m rustrover", "kill program", Some("rustrover")),
+            ("kill pro gram rustrover", "kill program", Some("rustrover")),
+            (
+                "kill program   rustrover",
+                "kill program",
+                Some("rustrover"),
+            ),
             ("launch firefox nightly", "launch firefox", Some("nightly")),
             ("open app my-editor", "open app", Some("my-editor")),
         ];
 
         for (text, alias, expected) in cases {
             assert_eq!(
-                extract_action_args(text, alias).map(|(_, a)| a).flatten().as_deref(),
+                extract_action_args(text, alias)
+                    .and_then(|(_, a)| a)
+                    .as_deref(),
                 expected,
                 "text={text:?} alias={alias:?}"
             );
@@ -387,7 +400,10 @@ mod tests {
                 details_long: None,
                 bonus_score: 0,
                 takes_args: true,
-                iden: Identifier::data(PluginName::Actions, format!("{name} {{}}").into_boxed_str()),
+                iden: Identifier::data(
+                    PluginName::Actions,
+                    format!("{name} {{}}").into_boxed_str(),
+                ),
                 children: Box::from([]),
             };
 
