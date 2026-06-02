@@ -233,6 +233,7 @@ impl SimpleComponent for Generate {
                     // advanced to the launcher setup
                     1 => {
                         // skip launcher config if overview disabled
+                        #[allow(clippy::collapsible_match)]
                         if self.step0_data.is_none() {
                             sender.input(GenerateInput::Advance(3));
                         }
@@ -240,6 +241,7 @@ impl SimpleComponent for Generate {
                     // advanced to websearch plugin
                     3 => {
                         // skip websearch plugin config if websearch disabled
+                        #[allow(clippy::collapsible_match)]
                         if !self.step1_data.search_the_web {
                             sender.input(GenerateInput::Advance(1));
                         }
