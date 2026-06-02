@@ -8,6 +8,9 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/h3rmt/actions-image:latest
+      options: --privileged
     outputs:
       should_publish: ${{ steps.check_commit.outputs.should_publish }}
     steps:
