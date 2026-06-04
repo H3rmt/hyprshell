@@ -459,30 +459,25 @@ impl CaptureManager {
             let (buffer_mode, dmabuf_bo, fourcc, fd, buffer, stride, size)
                 = if use_dmabuf && cs.dmabuf_device.is_some() && !cs.dmabuf_formats.is_empty()
             {
-                // Collect all format+modifier pairs, preferring LINEAR.
-                let mut all_modifiers: Vec<u64> = Vec::new();
-                let mut chosen_fmt = cs.dmabuf_formats[0].0;
-                for (fmt, mods) in &cs.dmabuf_formats {
-                    for &m in mods {
-                        if m != DRM_FORMAT_MOD_INVALID {
-                            all_modifiers.push(m);
-                            chosen_fmt = *fmt;
-                        }
-                    }
-                }
-
-                // Prefer LINEAR (0x0) if available.
                 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
-                if all_modifiers.contains(&DRM_FORMAT_MOD_LINEAR) {
-                    all_modifiers = vec![DRM_FORMAT_MOD_LINEAR];
+
+                let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
+                let mut filtered: Vec<u64> = modifiers.iter()
+                    .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
+                    .copied()
+                    .collect();
+
+                // Prefer LINEAR modifier if available.
+                if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
+                    filtered = vec![DRM_FORMAT_MOD_LINEAR];
                 }
 
                 let dev    = gbm_dev.as_ref().unwrap();
                 let gbm_bo = dev.create_buffer_object_with_modifiers::<()>( width
                                                                           , height
-                                                                          , gbm::Format::try_from(chosen_fmt)?
-                                                                          , all_modifiers.iter()
-                                                                                         .map(|&m| gbm::Modifier::from(m))
+                                                                          , gbm::Format::try_from(*chosen_fmt)?
+                                                                          , filtered.iter()
+                                                                                    .map(|&m| gbm::Modifier::from(m))
                                                                           )?;
                 let dmabuf_fd  = gbm_bo.fd()?;
                 let stride     = gbm_bo.stride();
@@ -498,13 +493,13 @@ impl CaptureManager {
                           , (mod_val & 0xFFFF_FFFF) as u32
                           );
                 let buffer = params.create_immed( width as i32, height as i32
-                                                , chosen_fmt
+                                                , *chosen_fmt
                                                 , zwp_linux_buffer_params_v1::Flags::empty()
                                                 , &eq.handle(), i
                                                 );
                 let size = stride * height;
 
-                (BufferMode::Dmabuf, Some(gbm_bo), Some(chosen_fmt), dmabuf_fd, buffer, stride, size)
+                (BufferMode::Dmabuf, Some(gbm_bo), Some(*chosen_fmt), dmabuf_fd, buffer, stride, size)
             } else {
                 let shm_format = cs.shm_format
                     .ok_or_else(|| format!("capture {}: no shm format", i))?;
@@ -695,28 +690,23 @@ impl CaptureManager {
 
         match &wc.buffer_mode {
             BufferMode::Dmabuf => {
-                // Collect valid modifiers, prefer LINEAR.
-                let mut all_modifiers: Vec<u64> = Vec::new();
-                let mut chosen_fmt = cs.dmabuf_formats[0].0;
-                for (fmt, mods) in &cs.dmabuf_formats {
-                    for &m in mods {
-                        if m != DRM_FORMAT_MOD_INVALID {
-                            all_modifiers.push(m);
-                            chosen_fmt = *fmt;
-                        }
-                    }
-                }
                 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
-                if all_modifiers.contains(&DRM_FORMAT_MOD_LINEAR) {
-                    all_modifiers = vec![DRM_FORMAT_MOD_LINEAR];
+
+                let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
+                let mut filtered: Vec<u64> = modifiers.iter()
+                    .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
+                    .copied()
+                    .collect();
+                if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
+                    filtered = vec![DRM_FORMAT_MOD_LINEAR];
                 }
 
                 let dev = self._gbm_dev.as_ref().unwrap();
                 let gbm_bo = dev.create_buffer_object_with_modifiers::<()>( width
                                                                           , height
-                                                                          , gbm::Format::try_from(chosen_fmt)?
-                                                                          , all_modifiers.iter()
-                                                                                         .map(|&m| gbm::Modifier::from(m))
+                                                                          , gbm::Format::try_from(*chosen_fmt)?
+                                                                          , filtered.iter()
+                                                                                    .map(|&m| gbm::Modifier::from(m))
                                                                           )?;
                 let dmabuf_fd = gbm_bo.fd()?;
                 let stride    = gbm_bo.stride();
@@ -732,7 +722,7 @@ impl CaptureManager {
                           , (mod_val & 0xFFFF_FFFF) as u32
                           );
                 let buffer = params.create_immed( width as i32, height as i32
-                                                , chosen_fmt
+                                                , *chosen_fmt
                                                 , zwp_linux_buffer_params_v1::Flags::empty()
                                                 , &self.event_queue.handle(), index
                                                 );
@@ -741,7 +731,7 @@ impl CaptureManager {
                 wc.fd         = dmabuf_fd;
                 wc.buffer     = buffer;
                 wc._dmabuf_bo = Some(gbm_bo);
-                wc.fourcc     = Some(chosen_fmt);
+                wc.fourcc     = Some(*chosen_fmt);
                 wc.width      = width;
                 wc.height     = height;
                 wc.stride     = stride;

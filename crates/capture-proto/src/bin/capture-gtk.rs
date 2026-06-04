@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .default_height(800)
             .build();
 
-        let display  = gtk4::prelude::RootExt::display(&window);
+        let display   = gtk4::prelude::RootExt::display(&window);
         let mgr_inner = manager_clone.clone();
         let pics      = pictures.clone();
 
@@ -72,6 +72,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _ = mgr.dispatch_pending();
 
             for i in 0..pics.len() {
+                if mgr.is_failed(i) {
+                    match mgr.capture_next(i) {
+                        Ok(_)  => {}
+                        Err(e) => eprintln!("capture {i}: retry failed: {e}"),
+                    }
+                    continue;
+                }
                 if !mgr.is_ready(i) { continue; }
 
                 match mgr.take_output(i) {
@@ -100,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 .build();
                             match texture {
                                 Ok(t)  => pics[i].set_paintable(Some(&t)),
-                                Err(e) => eprint!("Failed to build DMA-BUF texture: {e}"),
+                                Err(e) => eprintln!("capture {i}: DmabufTexture failed: {e}"),
                             }
                         }
                     }
