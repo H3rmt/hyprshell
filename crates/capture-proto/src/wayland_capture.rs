@@ -1,12 +1,13 @@
 
+use std::collections::HashMap;
 use std::os::fd::BorrowedFd;
 use std::os::fd::{AsFd, OwnedFd};
 
 use rustix::fs::MemfdFlags;
 use rustix::mm::{MapFlags, ProtFlags};
 
-use wayland_client::WEnum;
-use wayland_client::backend::WaylandError;
+use wayland_client::{Proxy, WEnum};
+use wayland_client::backend::{ObjectId, WaylandError};
 use wayland_client::{Connection, Dispatch, EventQueue};
 use wayland_client::protocol::{wl_registry, wl_shm};
 use wayland_client::protocol::wl_shm::WlShm;
@@ -92,7 +93,7 @@ pub struct WindowCapture { pub title:       Option<String>
 pub struct CaptureManager { connection:  Connection
                           , event_queue: EventQueue<AppState>
                           , state:       AppState
-                          , captures:    Vec<WindowCapture>
+                          , captures:    HashMap<ObjectId, WindowCapture>
                           , _gbm_dev:    Option<gbm::Device<OwnedFd>>
                           }
 
@@ -102,7 +103,7 @@ pub struct CaptureManager { connection:  Connection
 
 /// Per-capture event state, stored inside AppState so Dispatch handlers
 /// can route events by capture index.
-struct PerCaptureState { buffer_geometry:     Option<(u32, u32)>
+struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , shm_format:         Option<wl_shm::Format>
                        , dmabuf_formats:     Vec<(u32, Vec<u64>)>
                        , dmabuf_device:      Option<u64>
@@ -113,41 +114,38 @@ struct PerCaptureState { buffer_geometry:     Option<(u32, u32)>
                        , dmabuf_buf_failed:  bool
                        }
 
-#[derive(Debug)]
-#[allow(dead_code)]
 struct TopLevelInfo { handle: ExtForeignToplevelHandleV1
                     , title:  Option<String>
                     , app_id: Option<String>
                     }
 
 struct AppState { toplevels:            Vec<TopLevelInfo>
-               , pending_title:        Option<String>
-               , pending_app_id:       Option<String>
-               // globals
-               , wl_shm:               Option<WlShm>
-               , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
-               , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
-               , linux_dmabuf:         Option<ZwpLinuxDmabufV1>
-               // per-capture state (indexed by capture id)
-               , captures:             Vec<PerCaptureState>
-               }
+                , pending_title:        Option<String>
+                , pending_app_id:       Option<String>
+                // globals
+                , wl_shm:               Option<WlShm>
+                , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
+                , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
+                , linux_dmabuf:         Option<ZwpLinuxDmabufV1>
+                // per-capture state (indexed by capture id)
+                , captures:             HashMap<ObjectId, PerCaptureState>
+                , closed_ids:           Vec<ObjectId>
+                }
 
 // ---------------------------------------------------------------------------
 // Dispatch implementations
 // ---------------------------------------------------------------------------
 
-// Session and frame events are routed by capture index (usize user data).
-
-impl Dispatch<ExtImageCopyCaptureSessionV1, usize> for AppState {
+impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
     fn event( state:    &mut AppState
             , _proxy:   &ExtImageCopyCaptureSessionV1
             , _event:   ext_image_copy_capture_session_v1::Event
-            , id:       &usize
+            , id:       &ObjectId
             , _conn:    &wayland_client::Connection
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
     {
-        let cs = &mut state.captures[*id];
+        let Some(cs) = state.captures.get_mut(id) else { return; };
         match _event {
             ext_image_copy_capture_session_v1::Event::DmabufDevice { device } => {
                 let dev = u64::from_ne_bytes(device[..8].try_into().unwrap());
@@ -179,16 +177,16 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, usize> for AppState {
     }
 }
 
-impl Dispatch<ExtImageCopyCaptureFrameV1, usize> for AppState {
+impl Dispatch<ExtImageCopyCaptureFrameV1, ObjectId> for AppState {
     fn event( state:    &mut AppState
             , _proxy:   &ExtImageCopyCaptureFrameV1
             , _event:   ext_image_copy_capture_frame_v1::Event
-            , id:       &usize
+            , id:       &ObjectId
             , _conn:    &wayland_client::Connection
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
     {
-        let cs = &mut state.captures[*id];
+        let Some(cs) = state.captures.get_mut(id) else { return; };
         match _event {
             ext_image_copy_capture_frame_v1::Event::Ready => {
                 cs.ready = true;
@@ -202,11 +200,11 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, usize> for AppState {
     }
 }
 
-impl Dispatch<WlBuffer, usize> for AppState {
+impl Dispatch<WlBuffer, ObjectId> for AppState {
     fn event( _state:   &mut AppState
             , _proxy:   &WlBuffer
             , _event:   wl_buffer::Event
-            , _id:      &usize
+            , _id:      &ObjectId
             , _conn:    &wayland_client::Connection
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
@@ -237,11 +235,11 @@ impl Dispatch<WlShm, ()> for AppState {
             ) { }
 }
 
-impl Dispatch<ZwpLinuxBufferParamsV1, usize> for AppState {
+impl Dispatch<ZwpLinuxBufferParamsV1, ObjectId> for AppState {
     fn event( state:    &mut AppState
             , _proxy:   &ZwpLinuxBufferParamsV1
             , _event:   zwp_linux_buffer_params_v1::Event
-            , id:       &usize
+            , id:       &ObjectId
             , _conn:    &wayland_client::Connection
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
@@ -249,7 +247,7 @@ impl Dispatch<ZwpLinuxBufferParamsV1, usize> for AppState {
         match _event {
             zwp_linux_buffer_params_v1::Event::Failed => {
                 eprintln!("capture {id}: dmabuf buffer creation failed, will fall back to shm");
-                state.captures[*id].dmabuf_buf_failed = true;
+                state.captures.get_mut(id).map(|c| c.dmabuf_buf_failed = true);
             }
             _ => { }
         }
@@ -314,9 +312,15 @@ impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
             }
             ext_foreign_toplevel_handle_v1::Event::Done => {
                 state.toplevels.push(TopLevelInfo { handle: _proxy.clone()
-                                                   , title:  state.pending_title.take()
-                                                   , app_id: state.pending_app_id.take()
-                                                   });
+                                                  , title:  state.pending_title.take()
+                                                  , app_id: state.pending_app_id.take()
+                                                  });
+            }
+            ext_foreign_toplevel_handle_v1::Event::Closed => {
+                let id = _proxy.id();
+                state.captures.remove(&id);
+                state.toplevels.retain(|tl| tl.handle.id() != id);
+                state.closed_ids.push(id);
             }
             _ => { }
         }
@@ -388,7 +392,8 @@ impl CaptureManager {
                                    , source_manager:       None
                                    , copy_capture_manager: None
                                    , linux_dmabuf:         None
-                                   , captures:             Vec::new()
+                                   , captures:             HashMap::new()
+                                   , closed_ids:           Vec::new()
                                    };
 
         connection.display().get_registry(&eq.handle(), ());
@@ -404,43 +409,48 @@ impl CaptureManager {
         let ccm = state.copy_capture_manager.as_ref()
             .ok_or("No copy capture manager found")?;
 
-        // First pass: create sessions and keep proxy handles.
-        let mut sessions: Vec<ExtImageCopyCaptureSessionV1> = Vec::new();
-        let toplevel_count = state.toplevels.len();
-        for i in 0..toplevel_count {
-            state.captures.push(PerCaptureState { buffer_geometry:    None
-                                                , shm_format:        None
-                                                , dmabuf_formats:    Vec::new()
-                                                , dmabuf_device:     None
-                                                , session_done:      false
-                                                , ready:             false
-                                                , failed:            false
-                                                , size_changed:      false
-                                                , dmabuf_buf_failed: false
-                                                });
-            let source  = source_manager.create_source(&state.toplevels[i].handle, &eq.handle(), ());
+        // First pass: collect toplevel IDs and handles to avoid borrow
+        // conflict (iterating state.toplevels while inserting into
+        // state.captures).
+        let toplevel_ids: Vec<(ObjectId, ExtForeignToplevelHandleV1)> = state.toplevels.iter()
+                                                                                       .map(|tl| (tl.handle.id(), tl.handle.clone()))
+                                                                                       .collect();
+
+        let mut sessions: Vec<(ObjectId, ExtImageCopyCaptureSessionV1)> = Vec::new();
+        for (id, handle) in &toplevel_ids {
+            state.captures.insert(id.clone(), PerCaptureState { buffer_geometry:   None
+                                                              , shm_format:        None
+                                                              , dmabuf_formats:    Vec::new()
+                                                              , dmabuf_device:     None
+                                                              , session_done:      false
+                                                              , ready:             false
+                                                              , failed:            false
+                                                              , size_changed:      false
+                                                              , dmabuf_buf_failed: false
+                                                              });
+            let source  = source_manager.create_source(handle, &eq.handle(), ());
             let session = ccm.create_session( &source
                                             , ext_image_copy_capture_manager_v1::Options::empty()
                                             , &eq.handle()
-                                            , i
+                                            , id.clone()
                                             );
-            sessions.push(session);
+            sessions.push((id.clone(), session));
         }
 
         // Receive buffer constraints for all sessions.
         // One roundtrip may not suffice for all sessions to send Done.
         loop {
             eq.roundtrip(&mut state)?;
-            if state.captures.iter().all(|cs| cs.session_done) { break; }
+            if state.captures.iter().all(|(_, cs)| cs.session_done) { break; }
         }
 
         // Determine DMA-BUF support.
         let use_dmabuf = matches!(mode, CaptureMode::PreferDmabuf)
-                      && state.captures.iter().any(|cs| cs.dmabuf_device.is_some());
+                      && state.captures.iter().any(|(_, cs)| cs.dmabuf_device.is_some());
 
         let gbm_dev = if use_dmabuf {
             let dev_t = state.captures.iter()
-                .find_map(|cs| cs.dmabuf_device)
+                .find_map(|(_, cs)| cs.dmabuf_device)
                 .unwrap();
             let drm_fd = Self::find_drm_node(dev_t)?;
             Some(gbm::Device::new(drm_fd)?)
@@ -449,12 +459,17 @@ impl CaptureManager {
         };
 
         // Second pass: allocate buffers, create first frame, start capture.
-        let mut captures: Vec<WindowCapture> = Vec::new();
+        let mut window_captures: HashMap<ObjectId, WindowCapture> = HashMap::new();
 
-        for i in 0..toplevel_count {
-            let cs = &state.captures[i];
+        // Build a quick lookup for title/app_id by ObjectId.
+        let toplevel_info: HashMap<ObjectId, (Option<String>, Option<String>)> = state.toplevels.iter()
+            .map(|tl| (tl.handle.id(), (tl.title.clone(), tl.app_id.clone())))
+            .collect();
+
+        for (id, session) in sessions {
+            let cs = &state.captures[&id];
             let (width, height) = cs.buffer_geometry
-                .ok_or_else(|| format!("capture {}: no buffer geometry", i))?;
+                .ok_or_else(|| format!("capture {}: no buffer geometry", id))?;
 
             let (buffer_mode, dmabuf_bo, fourcc, fd, buffer, stride, size)
                 = if use_dmabuf && cs.dmabuf_device.is_some() && !cs.dmabuf_formats.is_empty()
@@ -485,7 +500,7 @@ impl CaptureManager {
 
                 let linux_dmabuf = state.linux_dmabuf.as_ref()
                     .ok_or("No zwp_linux_dmabuf_v1")?;
-                let params = linux_dmabuf.create_params(&eq.handle(), i);
+                let params = linux_dmabuf.create_params(&eq.handle(), id.clone());
 
                 let mod_val: u64 = modifier.into();
                 params.add( dmabuf_fd.as_fd(), 0, 0, stride
@@ -495,14 +510,14 @@ impl CaptureManager {
                 let buffer = params.create_immed( width as i32, height as i32
                                                 , *chosen_fmt
                                                 , zwp_linux_buffer_params_v1::Flags::empty()
-                                                , &eq.handle(), i
+                                                , &eq.handle(), id.clone()
                                                 );
                 let size = stride * height;
 
                 (BufferMode::Dmabuf, Some(gbm_bo), Some(*chosen_fmt), dmabuf_fd, buffer, stride, size)
             } else {
                 let shm_format = cs.shm_format
-                    .ok_or_else(|| format!("capture {}: no shm format", i))?;
+                    .ok_or_else(|| format!("capture {}: no shm format", id))?;
                 let stride = width * 4;
                 let size   = stride * height;
 
@@ -513,27 +528,29 @@ impl CaptureManager {
                 let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &eq.handle(), ());
                 let buffer = pool.create_buffer( 0, width as i32, height as i32
                                                , stride as i32, shm_format
-                                               , &eq.handle(), i
+                                               , &eq.handle(), id.clone()
                                                );
                 (BufferMode::Shm, None, None, fd, buffer, stride, size)
             };
 
-            let session = sessions.remove(0);
+            let (title, app_id) = toplevel_info.get(&id)
+                .map(|(t, a)| (t.clone(), a.clone()))
+                .unwrap_or((None, None));
 
-            captures.push(WindowCapture { title:       state.toplevels[i].title.clone()
-                                        , app_id:      state.toplevels[i].app_id.clone()
-                                        , session
-                                        , frame:       None
-                                        , buffer
-                                        , fd
-                                        , buffer_mode
-                                        , _dmabuf_bo:  dmabuf_bo
-                                        , fourcc
-                                        , width
-                                        , height
-                                        , stride
-                                        , size
-                                        });
+            window_captures.insert(id, WindowCapture { title
+                                                     , app_id
+                                                     , session
+                                                     , frame:       None
+                                                     , buffer
+                                                     , fd
+                                                     , buffer_mode
+                                                     , _dmabuf_bo:  dmabuf_bo
+                                                     , fourcc
+                                                     , width
+                                                     , height
+                                                     , stride
+                                                     , size
+                                                     });
         }
 
         // Ensure buffers are registered by the compositor before using them.
@@ -541,10 +558,10 @@ impl CaptureManager {
         eq.roundtrip(&mut state)?;
 
         // Fall back to shm for any capture whose dmabuf buffer was rejected.
-        for i in 0..captures.len() {
-            if state.captures[i].dmabuf_buf_failed {
-                let cs = &state.captures[i];
-                let wc = &mut captures[i];
+        for (id, _) in &toplevel_ids {
+            if state.captures[&id].dmabuf_buf_failed {
+                let cs = &state.captures[&id];
+                let wc = window_captures.get_mut(&id).unwrap();
 
                 // The dmabuf buffer proxy is dead (create_immed failed).
                 // Do NOT call wc.buffer.destroy() -- the compositor never
@@ -553,7 +570,7 @@ impl CaptureManager {
                 wc._dmabuf_bo = None;
 
                 let shm_format = cs.shm_format
-                    .ok_or_else(|| format!("capture {i}: dmabuf failed and no shm format"))?;
+                    .ok_or_else(|| format!("capture {id}: dmabuf failed and no shm format"))?;
                 let stride = wc.width * 4;
                 let size   = stride * wc.height;
 
@@ -564,7 +581,7 @@ impl CaptureManager {
                 let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &eq.handle(), ());
                 let buffer = pool.create_buffer( 0, wc.width as i32, wc.height as i32
                                                , stride as i32, shm_format
-                                               , &eq.handle(), i
+                                               , &eq.handle(), id.clone()
                                                );
 
                 wc.fd          = fd;
@@ -574,14 +591,13 @@ impl CaptureManager {
                 wc.stride      = stride;
                 wc.size        = size;
 
-                eprintln!("capture {i}: fell back to shm ({}x{})", wc.width, wc.height);
+                eprintln!("capture {id}: fell back to shm ({}x{})", wc.width, wc.height);
             }
         }
 
         // Start the first capture for each window.
-        for i in 0..captures.len() {
-            let wc    = &mut captures[i];
-            let frame = wc.session.create_frame(&eq.handle(), i);
+        for (id, wc) in window_captures.iter_mut() {
+            let frame = wc.session.create_frame(&eq.handle(), id.clone());
             frame.attach_buffer(&wc.buffer);
             frame.capture();
             wc.frame = Some(frame);
@@ -589,12 +605,16 @@ impl CaptureManager {
 
         eq.flush()?;
 
-        Ok(CaptureManager { connection, event_queue: eq, state, captures, _gbm_dev: gbm_dev })
+        Ok(CaptureManager { connection, event_queue: eq, state, captures: window_captures, _gbm_dev: gbm_dev })
     }
 
     pub fn connection_fd(&self) -> BorrowedFd<'_> { self.connection.as_fd() }
 
     pub fn capture_count(&self) -> usize { self.captures.len() }
+
+    pub fn capture_ids(&self) -> Vec<ObjectId> {
+        self.captures.keys().cloned().collect()
+    }
 
     pub fn dispatch_pending(&mut self) -> Result<()> {
         if let Some(guard) = self.event_queue.prepare_read() {
@@ -608,19 +628,23 @@ impl CaptureManager {
         Ok(())
     }
 
-    pub fn is_ready(&self, index: usize) -> bool {
-        self.state.captures[index].ready
+    pub fn has_capture(&self, index: &ObjectId) -> bool {
+        self.captures.contains_key(index) && self.state.captures.contains_key(index)
     }
 
-    pub fn is_failed(&self, index: usize) -> bool {
-        self.state.captures[index].failed
+    pub fn is_ready(&self, index: &ObjectId) -> bool {
+        self.state.captures.get(index).is_some_and(|cs| cs.ready)
     }
 
-    pub fn window(&self, index: usize) -> &WindowCapture {
+    pub fn is_failed(&self, index: &ObjectId) -> bool {
+        self.state.captures.get(index).is_some_and(|cs| cs.failed)
+    }
+
+    pub fn window(&self, index: &ObjectId) -> &WindowCapture {
         &self.captures[index]
     }
 
-    pub fn take_output(&self, index: usize) -> Result<CaptureOutput<'_>> {
+    pub fn take_output(&self, index: &ObjectId) -> Result<CaptureOutput<'_>> {
         let wc = &self.captures[index];
 
         match &wc.buffer_mode {
@@ -654,8 +678,8 @@ impl CaptureManager {
         }
     }
 
-    pub fn capture_next(&mut self, index: usize) -> Result<()> {
-        let cs = &mut self.state.captures[index];
+    pub fn capture_next(&mut self, index: &ObjectId) -> Result<()> {
+        let cs = self.state.captures.get_mut(index).unwrap();
         cs.ready  = false;
         cs.failed = false;
 
@@ -666,12 +690,12 @@ impl CaptureManager {
             self.reallocate_buffer(index, new_w, new_h)?;
         }
 
-        let wc = &mut self.captures[index];
+        let wc = self.captures.get_mut(index).unwrap();
         if let Some(old_frame) = wc.frame.take() {
             old_frame.destroy();
         }
 
-        let frame = wc.session.create_frame(&self.event_queue.handle(), index);
+        let frame = wc.session.create_frame(&self.event_queue.handle(), index.clone());
         frame.attach_buffer(&wc.buffer);
         frame.capture();
 
@@ -681,8 +705,22 @@ impl CaptureManager {
         Ok(())
     }
 
-    fn reallocate_buffer(&mut self, index: usize, width: u32, height: u32) -> Result<()> {
-        let wc = &mut self.captures[index];
+    pub fn drain_closed(&mut self) -> Vec<ObjectId> {
+        let ids: Vec<ObjectId> = self.state.closed_ids.drain(..).collect();
+        for id in &ids {
+            if let Some(wc) = self.captures.remove(id) {
+                wc.session.destroy();
+                if let Some(frame) = wc.frame {
+                    frame.destroy();
+                }
+                wc.buffer.destroy();
+            }
+        }
+        ids
+    }
+
+    fn reallocate_buffer(&mut self, index: &ObjectId, width: u32, height: u32) -> Result<()> {
+        let wc = &mut self.captures.get_mut(index).unwrap();
         let cs = &self.state.captures[index];
 
         // Destroy old buffer.
@@ -714,7 +752,7 @@ impl CaptureManager {
 
                 let linux_dmabuf = self.state.linux_dmabuf.as_ref()
                     .ok_or("No zwp_linux_dmabuf_v1")?;
-                let params = linux_dmabuf.create_params(&self.event_queue.handle(), index);
+                let params = linux_dmabuf.create_params(&self.event_queue.handle(), index.clone());
 
                 let mod_val: u64 = modifier.into();
                 params.add( dmabuf_fd.as_fd(), 0, 0, stride
@@ -724,7 +762,7 @@ impl CaptureManager {
                 let buffer = params.create_immed( width as i32, height as i32
                                                 , *chosen_fmt
                                                 , zwp_linux_buffer_params_v1::Flags::empty()
-                                                , &self.event_queue.handle(), index
+                                                , &self.event_queue.handle(), index.clone()
                                                 );
                 let size = stride * height;
 
@@ -750,7 +788,7 @@ impl CaptureManager {
                 let pool   = wlshm.create_pool(fd.as_fd(), size as i32, &self.event_queue.handle(), ());
                 let buffer = pool.create_buffer( 0, width as i32, height as i32
                                                , stride as i32, shm_format
-                                               , &self.event_queue.handle(), index
+                                               , &self.event_queue.handle(), index.clone()
                                                );
 
                 wc.fd     = fd;
@@ -767,7 +805,7 @@ impl CaptureManager {
     }
 
     /// Block until capture `index` is ready or has failed.
-    pub fn blocking_dispatch_until_ready(&mut self, index: usize) -> Result<()> {
+    pub fn blocking_dispatch_until_ready(&mut self, index: &ObjectId) -> Result<()> {
         loop {
             self.event_queue.blocking_dispatch(&mut self.state)?;
             if self.state.captures[index].ready  { return Ok(()); }
@@ -800,9 +838,10 @@ impl CaptureManager {
 pub fn capture() -> Result<ShmResult> {
     let mut mgr = CaptureManager::new(CaptureMode::ForceShm)?;
 
-    mgr.blocking_dispatch_until_ready(0)?;
+    let id = mgr.state.toplevels.first().unwrap().handle.id();
+    mgr.blocking_dispatch_until_ready(&id)?;
 
-    match mgr.take_output(0)? {
+    match mgr.take_output(&id)? {
         CaptureOutput::Shm(result) => Ok(result),
         CaptureOutput::Dmabuf(_)   => unreachable!("ForceShm mode should never produce Dmabuf")
     }
