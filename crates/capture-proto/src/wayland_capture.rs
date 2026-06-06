@@ -649,16 +649,19 @@ impl CaptureManager {
 
         match &wc.buffer_mode {
             BufferMode::Shm => {
-                let pixels = unsafe {
-                    let ptr  = rustix::mm::mmap( std::ptr::null_mut()
-                                               , wc.size as usize
-                                               , ProtFlags::READ
-                                               , MapFlags::SHARED
-                                               , &wc.fd, 0
-                                               )?;
-                    let data = std::slice::from_raw_parts(ptr as *const u8, wc.size as usize);
-                    data.to_vec()
+                let (mmapped_ptr, pixels) = unsafe {
+                    let mmapped_ptr  = rustix::mm::mmap( std::ptr::null_mut()
+                                                       , wc.size as usize
+                                                       , ProtFlags::READ
+                                                       , MapFlags::SHARED
+                                                       , &wc.fd, 0
+                                                       )?;
+                    let data = std::slice::from_raw_parts(mmapped_ptr as *const u8, wc.size as usize);
+                    (mmapped_ptr, data.to_vec())
                 };
+                unsafe {
+                    rustix::mm::munmap(mmapped_ptr, wc.size as usize)?; // release previously allocated bac
+                }
                 Ok(CaptureOutput::Shm(ShmResult { pixels
                                                 , width:  wc.width
                                                 , height: wc.height
