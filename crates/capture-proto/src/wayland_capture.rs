@@ -92,11 +92,10 @@ pub struct WindowCapture { pub title:       Option<String>
 /// Wayland connection and event queue.
 pub struct CaptureManager { connection:       Connection
                           , event_queue:      EventQueue<AppState>
-                          , state:            AppState
                           , captures:         HashMap<ObjectId, WindowCapture>
+                          , state:            AppState // state needs to be released after captures to avoid invalid gbm device pointer
                           , pending_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1>
                           , use_dmabuf:       bool
-                          , _gbm_dev:         Option<gbm::Device<OwnedFd>>
                           }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +107,6 @@ pub struct CaptureManager { connection:       Connection
 struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , shm_format:         Option<wl_shm::Format>
                        , dmabuf_formats:     Vec<(u32, Vec<u64>)>
-                       , dmabuf_device:      Option<u64>
                        , session_done:       bool
                        , ready:              bool
                        , failed:             bool
@@ -132,11 +130,29 @@ struct AppState { toplevels:            Vec<TopLevelInfo>
                 // per-capture state (indexed by capture id)
                 , captures:             HashMap<ObjectId, PerCaptureState>
                 , closed_ids:           Vec<ObjectId>
+                , gbm_dev:              Option<gbm::Device<OwnedFd>>
                 }
 
 // ---------------------------------------------------------------------------
 // Dispatch implementations
 // ---------------------------------------------------------------------------
+
+fn find_drm_node(device: u64) -> Result<OwnedFd> {
+    for entry in std::fs::read_dir("/dev/dri")? {
+        let entry = entry?;
+        let name  = entry.file_name();
+        if name.to_str().map_or(false, |n| n.starts_with("renderD")) {
+            let stat = rustix::fs::stat(&entry.path())?;
+            if stat.st_rdev == device {
+                return Ok(rustix::fs::open( &entry.path()
+                                          , rustix::fs::OFlags::RDWR
+                                          , rustix::fs::Mode::empty()
+                                          )?);
+            }
+        }
+    }
+    Err("No matching DRM render node found".into())
+}
 
 impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
     fn event( state:    &mut AppState
@@ -150,8 +166,24 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
         let Some(cs) = state.captures.get_mut(id) else { return; };
         match _event {
             ext_image_copy_capture_session_v1::Event::DmabufDevice { device } => {
-                let dev = u64::from_ne_bytes(device[..8].try_into().unwrap());
-                cs.dmabuf_device = Some(dev);
+                if state.gbm_dev.is_none() {
+                    let dev = u64::from_ne_bytes(device[..8].try_into().unwrap());
+                    state.gbm_dev = match find_drm_node(dev) {
+                        Ok(drm_fd) => {
+                            match gbm::Device::new(drm_fd) {
+                                Ok(d)  => Some(d),
+                                Err(e) => {
+                                    eprintln!("failed to create gbm device: {e}");
+                                    None
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            eprintln!("failed to find drm node: {e}");
+                            None
+                        }
+                    }
+                }
             }
             ext_image_copy_capture_session_v1::Event::DmabufFormat { format, modifiers } => {
                 let mods: Vec<u64> = modifiers.chunks_exact(8)
@@ -387,6 +419,7 @@ impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
     }
 }
 
+
 // ---------------------------------------------------------------------------
 // CaptureManager implementation
 // ---------------------------------------------------------------------------
@@ -399,60 +432,30 @@ impl CaptureManager {
         let connection      = Connection::connect_to_env()?;
         let mut event_queue = connection.new_event_queue::<AppState>();
         let mut state       = AppState { toplevels:            Vec::new()
-                                           , pending_title:        None
-                                           , pending_app_id:       None
-                                           , wl_shm:               None
-                                           , source_manager:       None
-                                           , copy_capture_manager: None
-                                           , linux_dmabuf:         None
-                                           , captures:             HashMap::new()
-                                           , closed_ids:           Vec::new()
-                                           };
+                                       , pending_title:        None
+                                       , pending_app_id:       None
+                                       , wl_shm:               None
+                                       , source_manager:       None
+                                       , copy_capture_manager: None
+                                       , linux_dmabuf:         None
+                                       , captures:             HashMap::new()
+                                       , closed_ids:           Vec::new()
+                                       , gbm_dev:              None
+                                       };
 
         connection.display().get_registry(&event_queue.handle(), ());
         event_queue.roundtrip(&mut state)?;
         event_queue.roundtrip(&mut state)?;
 
-        let mut sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1> = HashMap::new();
-
-        sessions.extend(Self::create_sessions(&mut state, &mut event_queue)?);
-
-        // Receive buffer constraints for all sessions.
-        // One roundtrip may not suffice for all sessions to send Done.
-        loop {
-            event_queue.roundtrip(&mut state)?;
-            if state.captures.iter().all(|(_, cs)| cs.session_done) { break; }
-        }
-
         // Determine DMA-BUF support.
-        let use_dmabuf = matches!(mode, CaptureMode::PreferDmabuf)
-                      && state.captures.values().any(|cs| cs.dmabuf_device.is_some());
-
-        let gbm_dev = if use_dmabuf {
-            let dev_t = state.captures.iter()
-                                      .find_map(|(_, cs)| cs.dmabuf_device)
-                                      .unwrap();
-            let drm_fd = Self::find_drm_node(dev_t)?;
-            Some(gbm::Device::new(drm_fd)?)
-        } else {
-            None
-        };
-
-        let mut window_captures = Self::allocate_capture(&state, &mut event_queue, sessions, use_dmabuf, &gbm_dev)?;
-
-        // Ensure buffers are registered by the compositor before using them.
-        // This roundtrip also delivers Failed events for bad dmabuf buffers.
-        event_queue.roundtrip(&mut state)?;
-
-        Self::start_frames(&mut window_captures, &mut event_queue)?;
+        let use_dmabuf = matches!(mode, CaptureMode::PreferDmabuf);
 
         Ok(CaptureManager { connection
                           , event_queue
                           , state
-                          , captures:         window_captures
+                          , captures:         HashMap::new()
                           , use_dmabuf
                           , pending_sessions: HashMap::new()
-                          , _gbm_dev:         gbm_dev
                           })
     }
 
@@ -568,7 +571,13 @@ impl CaptureManager {
             }
         }
 
-        let mut new_captures = Self::allocate_capture(&self.state, &mut self.event_queue, ready_sessions, self.use_dmabuf, &self._gbm_dev)?;
+        let mut new_captures = Self::allocate_capture(&self.state, &mut self.event_queue, ready_sessions.clone(), self.use_dmabuf, &self.state.gbm_dev)?;
+
+        for (id, s) in ready_sessions {
+            if !new_captures.contains_key(&id) {
+                self.pending_sessions.insert(id, s);
+            }
+        }
 
         Self::start_frames(&mut new_captures, &mut self.event_queue)?;
 
@@ -621,7 +630,6 @@ impl CaptureManager {
             state.captures.insert(id.clone(), PerCaptureState { buffer_geometry:   None
                                                               , shm_format:        None
                                                               , dmabuf_formats:    Vec::new()
-                                                              , dmabuf_device:     None
                                                               , session_done:      false
                                                               , ready:             false
                                                               , failed:            false
@@ -659,9 +667,12 @@ impl CaptureManager {
             let (width, height) = cs.buffer_geometry
                 .ok_or_else(|| format!("capture {}: no buffer geometry", id))?;
 
-            let (buffer_mode, dmabuf_bo, fourcc, fd, buffer, stride, size)
-                = if use_dmabuf && cs.dmabuf_device.is_some() && !cs.dmabuf_formats.is_empty()
+            let (buffer_mode, dmabuf_bo, fourcc, fd, buffer, stride, size) = if use_dmabuf  && !cs.dmabuf_formats.is_empty()
             {
+
+                // If gbm_dev is not set, it means, we still need to wait for dispatchers to initialize the GPU device.
+                if !state.gbm_dev.is_some() { continue; }
+
                 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
 
                 let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
@@ -780,7 +791,7 @@ impl CaptureManager {
                     filtered = vec![DRM_FORMAT_MOD_LINEAR];
                 }
 
-                let dev = self._gbm_dev.as_ref().unwrap();
+                let dev = self.state.gbm_dev.as_ref().unwrap();
                 let gbm_bo = dev.create_buffer_object_with_modifiers::<()>( width
                                                                           , height
                                                                           , gbm::Format::try_from(*chosen_fmt)?
@@ -845,22 +856,6 @@ impl CaptureManager {
         Ok(())
     }
 
-    fn find_drm_node(device: u64) -> Result<OwnedFd> {
-        for entry in std::fs::read_dir("/dev/dri")? {
-            let entry = entry?;
-            let name  = entry.file_name();
-            if name.to_str().map_or(false, |n| n.starts_with("renderD")) {
-                let stat = rustix::fs::stat(&entry.path())?;
-                if stat.st_rdev == device {
-                    return Ok(rustix::fs::open( &entry.path()
-                                              , rustix::fs::OFlags::RDWR
-                                              , rustix::fs::Mode::empty()
-                                              )?);
-                }
-            }
-        }
-        Err("No matching DRM render node found".into())
-    }
 }
 
 /// Capture the first available toplevel window (one-shot, shm only).
