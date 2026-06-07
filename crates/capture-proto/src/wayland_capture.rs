@@ -426,7 +426,7 @@ impl CaptureManager {
 
         // Determine DMA-BUF support.
         let use_dmabuf = matches!(mode, CaptureMode::PreferDmabuf)
-                      && state.captures.iter().any(|(_, cs)| cs.dmabuf_device.is_some());
+                      && state.captures.values().any(|cs| cs.dmabuf_device.is_some());
 
         let gbm_dev = if use_dmabuf {
             let dev_t = state.captures.iter()
@@ -438,22 +438,13 @@ impl CaptureManager {
             None
         };
 
-        // Appeler allocate_capture
         let mut window_captures = Self::allocate_capture(&state, &mut event_queue, sessions, use_dmabuf, &gbm_dev)?;
 
         // Ensure buffers are registered by the compositor before using them.
         // This roundtrip also delivers Failed events for bad dmabuf buffers.
         event_queue.roundtrip(&mut state)?;
 
-        // Start the first capture for each window.
-        for (id, wc) in window_captures.iter_mut() {
-            let frame = wc.session.create_frame(&event_queue.handle(), id.clone());
-            frame.attach_buffer(&wc.buffer);
-            frame.capture();
-            wc.frame = Some(frame);
-        }
-
-        event_queue.flush()?;
+        Self::start_frames(&mut window_captures, &mut event_queue)?;
 
         Ok(CaptureManager { connection
                           , event_queue
@@ -565,6 +556,29 @@ impl CaptureManager {
         Ok(())
     }
 
+    pub fn drain_new(&mut self) -> Result<Vec<ObjectId>> {
+        self.pending_sessions.extend(Self::create_sessions(&mut self.state, &mut self.event_queue)?);
+
+        let ready_ids: Vec<ObjectId> = self.pending_sessions.keys().filter(|id| self.state.captures[id].session_done).cloned().collect();
+
+        let mut ready_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1> = HashMap::new();
+        for id in ready_ids {
+            if let Some(s) = self.pending_sessions.remove(&id) {
+                ready_sessions.insert(id, s);
+            }
+        }
+
+        let mut new_captures = Self::allocate_capture(&self.state, &mut self.event_queue, ready_sessions, self.use_dmabuf, &self._gbm_dev)?;
+
+        Self::start_frames(&mut new_captures, &mut self.event_queue)?;
+
+        let new_ids: Vec<ObjectId> = new_captures.keys().cloned().collect();
+
+        self.captures.extend(new_captures);
+
+        Ok(new_ids)
+    }
+
     pub fn drain_closed(&mut self) -> Vec<ObjectId> {
         let ids: Vec<ObjectId> = self.state.closed_ids.drain(..).collect();
         for id in &ids {
@@ -599,6 +613,7 @@ impl CaptureManager {
         let ccm                                                                   = state.copy_capture_manager.as_ref().ok_or("No copy capture manager found")?;
 
         let toplevel_ids: Vec<(ObjectId, ExtForeignToplevelHandleV1)> = state.toplevels.iter()
+                                                                                       .filter(|tl| state.captures.get(&tl.handle.id()).is_none())
                                                                                        .map(|tl| (tl.handle.id(), tl.handle.clone()))
                                                                                        .collect();
 
@@ -727,6 +742,22 @@ impl CaptureManager {
         }
 
         Ok(window_captures)
+    }
+
+    fn start_frames( window_captures: &mut HashMap<ObjectId, WindowCapture>
+                   , event_queue:     &mut EventQueue<AppState>
+                   ) -> Result<()>
+    {
+        // Start the first capture for each window.
+        for (id, wc) in window_captures.iter_mut() {
+            let frame = wc.session.create_frame(&event_queue.handle(), id.clone());
+            frame.attach_buffer(&wc.buffer);
+            frame.capture();
+            wc.frame = Some(frame);
+        }
+
+        event_queue.flush()?;
+        Ok(())
     }
 
     fn reallocate_buffer(&mut self, index: &ObjectId, width: u32, height: u32) -> Result<()> {
