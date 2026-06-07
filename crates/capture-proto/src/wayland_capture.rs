@@ -311,10 +311,20 @@ impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
                 state.pending_app_id = Some(app_id);
             }
             ext_foreign_toplevel_handle_v1::Event::Done => {
-                state.toplevels.push(TopLevelInfo { handle: _proxy.clone()
-                                                  , title:  state.pending_title.take()
-                                                  , app_id: state.pending_app_id.take()
-                                                  });
+                let id = _proxy.id();
+                if let Some(existing) = state.toplevels.iter_mut().find(|tl| tl.handle.id() == id) {
+                    if let Some(title) = state.pending_title.take() {
+                        existing.title = Some(title);
+                    }
+                    if let Some(app_id) = state.pending_app_id.take() {
+                        existing.app_id = Some(app_id);
+                    }
+                } else {
+                    state.toplevels.push(TopLevelInfo { handle: _proxy.clone()
+                                                      , title:  state.pending_title.take()
+                                                      , app_id: state.pending_app_id.take()
+                                                      });
+                }
             }
             ext_foreign_toplevel_handle_v1::Event::Closed => {
                 let id = _proxy.id();
