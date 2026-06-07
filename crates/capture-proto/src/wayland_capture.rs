@@ -413,33 +413,9 @@ impl CaptureManager {
         event_queue.roundtrip(&mut state)?;
         event_queue.roundtrip(&mut state)?;
 
-        let source_manager = state.source_manager.as_ref().ok_or("No source manager found")?;
-        let ccm            = state.copy_capture_manager.as_ref().ok_or("No copy capture manager found")?;
+        let mut sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1> = HashMap::new();
 
-        let toplevel_ids: Vec<(ObjectId, ExtForeignToplevelHandleV1)> = state.toplevels.iter()
-                                                                                       .map(|tl| (tl.handle.id(), tl.handle.clone()))
-                                                                                       .collect();
-
-        let mut sessions: Vec<(ObjectId, ExtImageCopyCaptureSessionV1)> = Vec::new();
-        for (id, handle) in &toplevel_ids {
-            state.captures.insert(id.clone(), PerCaptureState { buffer_geometry:   None
-                                                              , shm_format:        None
-                                                              , dmabuf_formats:    Vec::new()
-                                                              , dmabuf_device:     None
-                                                              , session_done:      false
-                                                              , ready:             false
-                                                              , failed:            false
-                                                              , size_changed:      false
-                                                              , dmabuf_buf_failed: false
-                                                              });
-            let source  = source_manager.create_source(handle, &event_queue.handle(), ());
-            let session = ccm.create_session( &source
-                                            , ext_image_copy_capture_manager_v1::Options::empty()
-                                            , &event_queue.handle()
-                                            , id.clone()
-                                            );
-            sessions.push((id.clone(), session));
-        }
+        sessions.extend(Self::create_sessions(&mut state, &mut event_queue)?);
 
         // Receive buffer constraints for all sessions.
         // One roundtrip may not suffice for all sessions to send Done.
@@ -614,9 +590,44 @@ impl CaptureManager {
         }
     }
 
+    fn create_sessions( state:       &mut AppState
+                      , event_queue: &mut EventQueue<AppState>
+                      ) -> Result<HashMap<ObjectId, ExtImageCopyCaptureSessionV1>>
+    {
+        let mut pending_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1> = HashMap::new();
+        let source_manager                                                        = state.source_manager.as_ref().ok_or("No source manager found")?;
+        let ccm                                                                   = state.copy_capture_manager.as_ref().ok_or("No copy capture manager found")?;
+
+        let toplevel_ids: Vec<(ObjectId, ExtForeignToplevelHandleV1)> = state.toplevels.iter()
+                                                                                       .map(|tl| (tl.handle.id(), tl.handle.clone()))
+                                                                                       .collect();
+
+        for (id, handle) in &toplevel_ids {
+            state.captures.insert(id.clone(), PerCaptureState { buffer_geometry:   None
+                                                              , shm_format:        None
+                                                              , dmabuf_formats:    Vec::new()
+                                                              , dmabuf_device:     None
+                                                              , session_done:      false
+                                                              , ready:             false
+                                                              , failed:            false
+                                                              , size_changed:      false
+                                                              , dmabuf_buf_failed: false
+                                                              });
+            let source  = source_manager.create_source(handle, &event_queue.handle(), ());
+            let session = ccm.create_session( &source
+                                            , ext_image_copy_capture_manager_v1::Options::empty()
+                                            , &event_queue.handle()
+                                            , id.clone()
+                                            );
+            pending_sessions.insert(id.clone(), session);
+        }
+
+        Ok(pending_sessions)
+    }
+
     fn allocate_capture( state:       &AppState
                        , event_queue: &mut EventQueue<AppState>
-                       , sessions:    Vec<(ObjectId, ExtImageCopyCaptureSessionV1)>
+                       , sessions:    HashMap<ObjectId, ExtImageCopyCaptureSessionV1>
                        , use_dmabuf:  bool
                        , gbm_dev:     &Option<gbm::Device<OwnedFd>>
                        ) -> Result<HashMap<ObjectId, WindowCapture>>
