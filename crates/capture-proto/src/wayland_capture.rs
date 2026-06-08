@@ -114,14 +114,18 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , dmabuf_buf_failed:  bool
                        }
 
+#[derive(Default)]
+struct PendingToplevelProps { title:  Option<String>
+                            , app_id: Option<String>
+                            }
+
 struct TopLevelInfo { handle: ExtForeignToplevelHandleV1
                     , title:  Option<String>
                     , app_id: Option<String>
                     }
 
 struct AppState { toplevels:            Vec<TopLevelInfo>
-                , pending_title:        Option<String>
-                , pending_app_id:       Option<String>
+                , pending_props:        HashMap<ObjectId, PendingToplevelProps>
                 // globals
                 , wl_shm:               Option<WlShm>
                 , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
@@ -337,27 +341,27 @@ impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
     {
-        // TODO: make pending_title/pending_app_id depend on the ObjectId, so we can avoid mixing up title/app_id for the wrong toplevel.
         match _event {
             ext_foreign_toplevel_handle_v1::Event::Title { title } => {
-                state.pending_title = Some(title);
+                state.pending_props.entry(_proxy.id()).or_default().title = Some(title);
             }
             ext_foreign_toplevel_handle_v1::Event::AppId { app_id } => {
-                state.pending_app_id = Some(app_id);
+                state.pending_props.entry(_proxy.id()).or_default().app_id = Some(app_id);
             }
             ext_foreign_toplevel_handle_v1::Event::Done => {
-                let id = _proxy.id();
+                let id    = _proxy.id();
+                let props = state.pending_props.remove(&id).unwrap_or_default();
                 if let Some(existing) = state.toplevels.iter_mut().find(|tl| tl.handle.id() == id) {
-                    if let Some(title) = state.pending_title.take() {
+                    if let Some(title) = props.title {
                         existing.title = Some(title);
                     }
-                    if let Some(app_id) = state.pending_app_id.take() {
+                    if let Some(app_id) = props.app_id {
                         existing.app_id = Some(app_id);
                     }
                 } else {
                     state.toplevels.push(TopLevelInfo { handle: _proxy.clone()
-                                                      , title:  state.pending_title.take()
-                                                      , app_id: state.pending_app_id.take()
+                                                      , title:  props.title
+                                                      , app_id: props.app_id
                                                       });
                 }
             }
@@ -432,8 +436,7 @@ impl CaptureManager {
         let connection      = Connection::connect_to_env()?;
         let mut event_queue = connection.new_event_queue::<AppState>();
         let mut state       = AppState { toplevels:            Vec::new()
-                                       , pending_title:        None
-                                       , pending_app_id:       None
+                                       , pending_props:        HashMap::new()
                                        , wl_shm:               None
                                        , source_manager:       None
                                        , copy_capture_manager: None
