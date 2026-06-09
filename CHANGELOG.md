@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.10.7](https://github.com/H3rmt/hyprshell/compare/v4.10.6...v4.10.7) (2026-06-09)
+
+
+### Bug Fixes
+
+* fix legacy keybinds ([993f2f8](https://github.com/H3rmt/hyprshell/commit/993f2f8d6ce7d88477d322701b75b9a2685f5ca5))
+* **nix-flake:** update flake.lock ([ff72ed2](https://github.com/H3rmt/hyprshell/commit/ff72ed2f61613ff70319228527450c72dc2a8791))
+
 ## [4.10.6](https://github.com/H3rmt/hyprshell/compare/v4.10.5...v4.10.6) (2026-05-29)
 
 
