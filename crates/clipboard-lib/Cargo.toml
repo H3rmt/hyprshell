@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell-clipboard-lib"
 documentation = "https://docs.rs/hyprshell-clipboard-lib"
-version = "4.10.6"
+version = "4.10.7"
 description = "A library monitoring and storing clipboard contents"
 readme.workspace = true
 categories.workspace = true
@@ -16,7 +16,7 @@ rust-version.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 core-lib.workspace = true
-wl_clipboard = { package = "hyprshell-wl-clipboard-rs", path = "../../dep-crates/wl-clipboard-rs", version = "=4.10.6" }
+wl_clipboard = { package = "hyprshell-wl-clipboard-rs", path = "../../dep-crates/wl-clipboard-rs", version = "=4.10.7" }
 fast_image_resize = { version = "6.0.0", features = ["image"] }
 bitcode = { version = "0.6.9" }
 image = { version = "0.25.8", features = ["png", "jpeg", "webp", "gif"], default-features = false }

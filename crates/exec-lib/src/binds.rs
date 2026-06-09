@@ -128,7 +128,11 @@ pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
     let binding = binds::Binding {
         mods: mods.as_slice(),
         key: binds::Key::Key(&bind.key),
-        flags: &[],
+        flags: if bind.release {
+            &vec![binds::Flag::r, binds::Flag::t]
+        } else {
+            &vec![binds::Flag::e]
+        },
         dispatcher: DispatchType::Exec(&bind.exec),
     };
     trace!("binding exec: {binding:?}");
