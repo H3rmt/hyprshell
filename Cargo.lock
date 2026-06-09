@@ -1832,7 +1832,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1854,7 +1854,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-clipboard-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1874,7 +1874,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-config-edit-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "hyprshell-config-lib",
  "hyprshell-core-lib",
@@ -1886,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-config-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "hyprshell-core-lib",
@@ -1902,7 +1902,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-core-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "notify",
@@ -1915,7 +1915,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-exec-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "hyprshell-config-lib",
@@ -1928,7 +1928,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-hyprland"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "ahash",
  "async-net",
@@ -1947,7 +1947,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-hyprland-macros"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-launcher-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-relm4"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "criterion",
  "flume",
@@ -1998,7 +1998,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-relm4-components"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "hyprshell-relm4",
  "once_cell",
@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-windows-lib"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "anyhow",
  "gtk4-layer-shell",
@@ -2024,7 +2024,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-wl-clipboard-rs"
-version = "4.10.6"
+version = "4.10.7"
 dependencies = [
  "log",
  "os_pipe",
