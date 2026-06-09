@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::os::fd::BorrowedFd;
 use std::os::fd::{AsFd, OwnedFd};
 
@@ -81,6 +81,7 @@ pub struct WindowCapture { pub title:       Option<String>
                          , fd:              OwnedFd
                          , buffer_mode:     BufferMode
                          , _dmabuf_bo:      Option<gbm::BufferObject<()>>
+                         , _retired_bos:    VecDeque<(gbm::BufferObject<()>, OwnedFd)>
                          , fourcc:          Option<u32>
                          , width:           u32
                          , height:          u32
@@ -110,7 +111,7 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , session_done:       bool
                        , ready:              bool
                        , failed:             bool
-                       , size_changed:       bool
+                       , size_changed_at:    Option<std::time::Instant>
                        , dmabuf_buf_failed:  bool
                        }
 
@@ -203,7 +204,7 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
             ext_image_copy_capture_session_v1::Event::BufferSize { width, height } => {
                 let new_geom = (width, height);
                 if cs.buffer_geometry.is_some() && cs.buffer_geometry != Some(new_geom) {
-                    cs.size_changed = true;
+                    cs.size_changed_at = Some(std::time::Instant::now());
                 }
                 cs.buffer_geometry = Some(new_geom);
             }
@@ -536,16 +537,28 @@ impl CaptureManager {
     }
 
     pub fn capture_next(&mut self, index: &ObjectId) -> Result<()> {
-        let cs = self.state.captures.get_mut(index).unwrap();
-        cs.ready  = false;
-        cs.failed = false;
+        let realloc_spec = {
+            let cs = self.state.captures.get_mut(index).unwrap();
+            // If the window was resized, reallocate the buffer.
+            if let Some(t) = cs.size_changed_at {
+                if t.elapsed() > std::time::Duration::from_millis(200) {
+                    cs.size_changed_at = None;
+                    Some(cs.buffer_geometry.unwrap())
+                } else {
+                    return Ok(())
+                }
+            } else {
+                None
+            }
+        };
 
-        // If the window was resized, reallocate the buffer.
-        if cs.size_changed {
-            cs.size_changed = false;
-            let (new_w, new_h) = cs.buffer_geometry.unwrap();
+        if let Some((new_w, new_h)) = realloc_spec {
             self.reallocate_buffer(index, new_w, new_h)?;
         }
+
+        let cs    = self.state.captures.get_mut(index).unwrap();
+        cs.ready  = false;
+        cs.failed = false;
 
         let wc = self.captures.get_mut(index).unwrap();
         if let Some(old_frame) = wc.frame.take() {
@@ -636,7 +649,7 @@ impl CaptureManager {
                                                               , session_done:      false
                                                               , ready:             false
                                                               , failed:            false
-                                                              , size_changed:      false
+                                                              , size_changed_at:   None
                                                               , dmabuf_buf_failed: false
                                                               });
             let source  = source_manager.create_source(handle, &event_queue.handle(), ());
@@ -742,11 +755,12 @@ impl CaptureManager {
             window_captures.insert(id, WindowCapture { title
                                                      , app_id
                                                      , session
-                                                     , frame:       None
+                                                     , frame:        None
                                                      , buffer
                                                      , fd
                                                      , buffer_mode
-                                                     , _dmabuf_bo:  dmabuf_bo
+                                                     , _dmabuf_bo:   dmabuf_bo
+                                                     , _retired_bos: VecDeque::new()
                                                      , fourcc
                                                      , width
                                                      , height
@@ -819,16 +833,21 @@ impl CaptureManager {
                                                 , zwp_linux_buffer_params_v1::Flags::empty()
                                                 , &self.event_queue.handle(), index.clone()
                                                 );
-                let size = stride * height;
+                if let Some(old_bo) = wc._dmabuf_bo.take() {
+                    let old_fd = std::mem::replace(&mut wc.fd, dmabuf_fd);
+                    wc._retired_bos.push_back((old_bo, old_fd));
+                    while wc._retired_bos.len() > 3 {
+                        wc._retired_bos.pop_front();
+                    }
+                }
 
-                wc.fd         = dmabuf_fd;
-                wc.buffer     = buffer;
                 wc._dmabuf_bo = Some(gbm_bo);
+                wc.buffer     = buffer;
                 wc.fourcc     = Some(*chosen_fmt);
                 wc.width      = width;
                 wc.height     = height;
                 wc.stride     = stride;
-                wc.size       = size;
+                wc.size       = stride * height;
             }
             BufferMode::Shm => {
                 let shm_format = cs.shm_format
