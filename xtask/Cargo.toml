@@ -1,0 +1,22 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+publish = false
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+authors.workspace = true
+keywords.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tracing.workspace = true
+semver.workspace = true
+clap.workspace = true
+tracing-subscriber.workspace = true
+tracing-log.workspace = true
+
+[lints]
+workspace = true
