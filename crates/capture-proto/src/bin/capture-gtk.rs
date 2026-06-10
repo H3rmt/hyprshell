@@ -12,20 +12,13 @@ use wayland_client::backend::ObjectId;
 use capture_proto::wayland_capture;
 use capture_proto::wayland_capture::{CaptureMode, CaptureOutput};
 
-fn add_picture_box(mgr: &wayland_capture::CaptureManager, pictures: &mut HashMap<ObjectId, gtk::Picture>, flow_box: &gtk::FlowBox, id: &ObjectId) {
+fn add_picture_box(pictures: &mut HashMap<ObjectId, gtk::Picture>, flow_box: &gtk::FlowBox, id: &ObjectId) {
     let pic = gtk::Picture::new();
     pic.set_content_fit(gtk::ContentFit::Contain);
     pic.set_size_request(320, 180);
 
-    let wc    = mgr.window(id);
-    let label = format!("{} -- {}", wc.app_id.as_deref().unwrap_or("?")
-                                 , wc.title.as_deref().unwrap_or("?"));
-
     let overlay_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
-    let lbl = gtk::Label::new(Some(&label));
-    lbl.set_ellipsize(gtk4::pango::EllipsizeMode::End);
     overlay_box.append(&pic);
-    overlay_box.append(&lbl);
 
     flow_box.insert(&overlay_box, -1);
     pictures.insert(id.clone(), pic);
@@ -53,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build();
 
         for id in &ids {
-            add_picture_box(&mgr, &mut pictures, &flow_box, &id);
+            add_picture_box(&mut pictures, &flow_box, &id);
         }
 
         // Release borrow before moving into closure.
@@ -90,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match mgr.drain_new() {
                 Ok(new_ids) => {
                     for id in new_ids {
-                        add_picture_box(&mgr, &mut pictures, &flow_box, &id);
+                        add_picture_box(&mut pictures, &flow_box, &id);
                     }
                 }
                 Err(e) => eprintln!("failed to add new wayland clients to the capture list: {e}")

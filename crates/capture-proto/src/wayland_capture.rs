@@ -72,10 +72,7 @@ pub struct ShmResult { pub pixels: Vec<u8>
                      }
 
 /// Per-window capture handle stored in CaptureManager.
-pub struct WindowCapture { pub title:       Option<String>
-                         , pub app_id:      Option<String>
-                         // wayland objects
-                         , session:         ExtImageCopyCaptureSessionV1
+pub struct WindowCapture { session:         ExtImageCopyCaptureSessionV1
                          , frame:           Option<ExtImageCopyCaptureFrameV1>
                          , buffer:          WlBuffer
                          , fd:              OwnedFd
@@ -114,18 +111,7 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , size_changed_at:    Option<std::time::Instant>
                        }
 
-#[derive(Default)]
-struct PendingToplevelProps { title:  Option<String>
-                            , app_id: Option<String>
-                            }
-
-struct TopLevelInfo { handle: ExtForeignToplevelHandleV1
-                    , title:  Option<String>
-                    , app_id: Option<String>
-                    }
-
-struct AppState { toplevels:            Vec<TopLevelInfo>
-                , pending_props:        HashMap<ObjectId, PendingToplevelProps>
+struct AppState { toplevels:            Vec<ExtForeignToplevelHandleV1>
                 // globals
                 , wl_shm:               Option<WlShm>
                 , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
@@ -319,33 +305,15 @@ impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
             )
     {
         match _event {
-            ext_foreign_toplevel_handle_v1::Event::Title { title } => {
-                state.pending_props.entry(_proxy.id()).or_default().title = Some(title);
-            }
-            ext_foreign_toplevel_handle_v1::Event::AppId { app_id } => {
-                state.pending_props.entry(_proxy.id()).or_default().app_id = Some(app_id);
-            }
             ext_foreign_toplevel_handle_v1::Event::Done => {
-                let id    = _proxy.id();
-                let props = state.pending_props.remove(&id).unwrap_or_default();
-                if let Some(existing) = state.toplevels.iter_mut().find(|tl| tl.handle.id() == id) {
-                    if let Some(title) = props.title {
-                        existing.title = Some(title);
-                    }
-                    if let Some(app_id) = props.app_id {
-                        existing.app_id = Some(app_id);
-                    }
-                } else {
-                    state.toplevels.push(TopLevelInfo { handle: _proxy.clone()
-                                                      , title:  props.title
-                                                      , app_id: props.app_id
-                                                      });
+                if !state.toplevels.iter().any(|tl| tl.id() == _proxy.id()) {
+                    state.toplevels.push(_proxy.clone());
                 }
             }
             ext_foreign_toplevel_handle_v1::Event::Closed => {
                 let id = _proxy.id();
                 state.captures.remove(&id);
-                state.toplevels.retain(|tl| tl.handle.id() != id);
+                state.toplevels.retain(|tl| tl.id() != id);
                 state.closed_ids.push(id);
             }
             _ => { }
@@ -413,7 +381,6 @@ impl CaptureManager {
         let connection      = Connection::connect_to_env()?;
         let mut event_queue = connection.new_event_queue::<AppState>();
         let mut state       = AppState { toplevels:            Vec::new()
-                                       , pending_props:        HashMap::new()
                                        , wl_shm:               None
                                        , source_manager:       None
                                        , copy_capture_manager: None
@@ -615,8 +582,8 @@ impl CaptureManager {
         let ccm                                                                   = state.copy_capture_manager.as_ref().ok_or("No copy capture manager found")?;
 
         let toplevel_ids: Vec<(ObjectId, ExtForeignToplevelHandleV1)> = state.toplevels.iter()
-                                                                                       .filter(|tl| state.captures.get(&tl.handle.id()).is_none())
-                                                                                       .map(|tl| (tl.handle.id(), tl.handle.clone()))
+                                                                                       .filter(|tl| state.captures.get(&tl.id()).is_none())
+                                                                                       .map(|tl| (tl.id(), tl.clone()))
                                                                                        .collect();
 
         for (id, handle) in &toplevel_ids {
@@ -648,11 +615,6 @@ impl CaptureManager {
                        ) -> Result<HashMap<ObjectId, WindowCapture>>
     {
         let mut window_captures: HashMap<ObjectId, WindowCapture> = HashMap::new();
-
-        // Build a quick lookup for title/app_id by ObjectId.
-        let toplevel_info: HashMap<ObjectId, (Option<String>, Option<String>)> = state.toplevels.iter()
-                                                                                                .map(|tl| (tl.handle.id(), (tl.title.clone(), tl.app_id.clone())))
-                                                                                                .collect();
 
         for (id, session) in sessions {
             let cs = &state.captures[&id];
@@ -724,13 +686,7 @@ impl CaptureManager {
                 (BufferMode::Shm, None, None, fd, buffer, stride, size)
             };
 
-            let (title, app_id) = toplevel_info.get(&id)
-                                               .map(|(t, a)| (t.clone(), a.clone()))
-                                               .unwrap_or((None, None));
-
-            window_captures.insert(id, WindowCapture { title
-                                                     , app_id
-                                                     , session
+            window_captures.insert(id, WindowCapture { session
                                                      , frame:        None
                                                      , buffer
                                                      , fd
@@ -860,7 +816,7 @@ impl CaptureManager {
 pub fn capture() -> Result<ShmResult> {
     let mut mgr = CaptureManager::new(CaptureMode::ForceShm)?;
 
-    let id = mgr.state.toplevels.first().unwrap().handle.id();
+    let id = mgr.state.toplevels.first().unwrap().id();
     mgr.blocking_dispatch_until_ready(&id)?;
 
     match mgr.take_output(&id)? {
