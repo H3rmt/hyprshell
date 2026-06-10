@@ -34,6 +34,13 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1;
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
 
+use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1;
+use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1;
+use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
+
+use core_lib::ClientId;
+
 const DRM_FORMAT_MOD_INVALID: u64 = 0x00FFFFFFFFFFFFFF;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -111,16 +118,18 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , size_changed_at:    Option<std::time::Instant>
                        }
 
-struct AppState { toplevels:            Vec<ExtForeignToplevelHandleV1>
+struct AppState { toplevels:                Vec<ExtForeignToplevelHandleV1>
+                , toplevel_mapping_manager: Option<HyprlandToplevelMappingManagerV1>
+                , address_map:              HashMap<ObjectId, ClientId>
                 // globals
-                , wl_shm:               Option<WlShm>
-                , source_manager:       Option<ExtForeignToplevelImageCaptureSourceManagerV1>
-                , copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>
-                , linux_dmabuf:         Option<ZwpLinuxDmabufV1>
+                , wl_shm:                   Option<WlShm>
+                , source_manager:           Option<ExtForeignToplevelImageCaptureSourceManagerV1>
+                , copy_capture_manager:     Option<ExtImageCopyCaptureManagerV1>
+                , linux_dmabuf:             Option<ZwpLinuxDmabufV1>
                 // per-capture state (indexed by capture id)
-                , captures:             HashMap<ObjectId, PerCaptureState>
-                , closed_ids:           Vec<ObjectId>
-                , gbm_dev:              Result<Option<gbm::Device<OwnedFd>>>
+                , captures:                 HashMap<ObjectId, PerCaptureState>
+                , closed_ids:               Vec<ObjectId>
+                , gbm_dev:                  Result<Option<gbm::Device<OwnedFd>>>
                 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +151,38 @@ fn find_drm_node(device: u64) -> Result<OwnedFd> {
         }
     }
     Err("No matching DRM render node found".into())
+}
+
+impl Dispatch<HyprlandToplevelWindowMappingHandleV1, ObjectId> for AppState {
+    fn event( state:    &mut AppState
+            , _proxy:   &HyprlandToplevelWindowMappingHandleV1
+            , _event:   hyprland_toplevel_window_mapping_handle_v1::Event
+            , id:       &ObjectId
+            , _conn:    &wayland_client::Connection
+            , _qhandle: &wayland_client::QueueHandle<AppState>
+            )
+    {
+        match _event {
+            hyprland_toplevel_window_mapping_handle_v1::Event::WindowAddress { address_hi, address } => {
+                let address: u64 = ((address_hi as u64) << 32) | (address as u64);
+                state.address_map.insert(id.clone(), address);
+                _proxy.destroy();
+            }
+            hyprland_toplevel_window_mapping_handle_v1::Event::Failed => _proxy.destroy(),
+            _ => { }
+        }
+    }
+}
+
+impl Dispatch<HyprlandToplevelMappingManagerV1, ()> for AppState {
+    fn event( _state:   &mut AppState
+            , _proxy:   &HyprlandToplevelMappingManagerV1
+            , _event:   hyprland_toplevel_mapping_manager_v1::Event
+            , _udata:   &()
+            , _conn:    &wayland_client::Connection
+            , _qhandle: &wayland_client::QueueHandle<AppState>
+            )
+    { }
 }
 
 impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
@@ -363,6 +404,9 @@ impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
             wl_registry::Event::Global { name, interface, version } if interface == "ext_foreign_toplevel_list_v1" => {
                 _proxy.bind::<ExtForeignToplevelListV1, _, _>(name, version.min(1), _qhandle, ());
             }
+            wl_registry::Event::Global { name, interface, version } if interface == "hyprland_toplevel_mapping_manager_v1" => {
+                state.toplevel_mapping_manager = Some(_proxy.bind::<HyprlandToplevelMappingManagerV1, _, _>(name, version.min(1), _qhandle, ()));
+            }
             _ => { }
         }
     }
@@ -380,14 +424,16 @@ impl CaptureManager {
     pub fn new(mode: CaptureMode) -> Result<Self> {
         let connection      = Connection::connect_to_env()?;
         let mut event_queue = connection.new_event_queue::<AppState>();
-        let mut state       = AppState { toplevels:            Vec::new()
-                                       , wl_shm:               None
-                                       , source_manager:       None
-                                       , copy_capture_manager: None
-                                       , linux_dmabuf:         None
-                                       , captures:             HashMap::new()
-                                       , closed_ids:           Vec::new()
-                                       , gbm_dev:              Ok(None)
+        let mut state       = AppState { toplevels:                Vec::new()
+                                       , toplevel_mapping_manager: None
+                                       , address_map:              HashMap::new()
+                                       , wl_shm:                   None
+                                       , source_manager:           None
+                                       , copy_capture_manager:     None
+                                       , linux_dmabuf:             None
+                                       , captures:                 HashMap::new()
+                                       , closed_ids:               Vec::new()
+                                       , gbm_dev:                  Ok(None)
                                        };
 
         connection.display().get_registry(&event_queue.handle(), ());
@@ -440,6 +486,10 @@ impl CaptureManager {
 
     pub fn window(&self, index: &ObjectId) -> &WindowCapture {
         &self.captures[index]
+    }
+
+    pub fn client_id(&self, obj_id: &ObjectId) -> Option<ClientId> {
+        self.state.address_map.get(obj_id).cloned()
     }
 
     pub fn take_output(&self, index: &ObjectId) -> Result<CaptureOutput<'_>> {
@@ -602,6 +652,10 @@ impl CaptureManager {
                                             , id.clone()
                                             );
             pending_sessions.insert(id.clone(), session);
+
+            if let Some(mgr) = state.toplevel_mapping_manager.as_ref() {
+                mgr.get_window_for_toplevel(handle, &event_queue.handle(), id.clone());
+            }
         }
 
         Ok(pending_sessions)
