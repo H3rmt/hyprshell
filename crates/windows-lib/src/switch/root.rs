@@ -1,9 +1,10 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
-use crate::switch::clients::{Clients, ClientsInit};
-use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
+use crate::switch::clients::{Clients, ClientsInit, ClientsInput};
+use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
+use exec_lib::wayland_capture::{CaptureManager, CaptureMode, CaptureOutput, ObjectId};
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use relm4::adw::glib::ControlFlow;
@@ -13,6 +14,8 @@ use relm4::adw::prelude::*;
 use relm4::gtk::gdk::Key;
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
+use std::os::fd::AsRawFd;
+use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
@@ -33,6 +36,9 @@ pub struct SwitchRoot {
     items: FactoryVecDeque<Workspaces>,
     /// Factory for non-workspace mode (clients)
     clients_only: FactoryVecDeque<Clients>,
+    live_thumbnails: bool,
+    capture_manager: Option<CaptureManager>,
+    timer_handle: Option<glib::SourceId>
 }
 
 #[derive(Debug)]
@@ -44,6 +50,7 @@ pub enum SwitchRootInput {
     CloseSwitch(bool),
     CloseCurrentItem,
     ReloadSwitch,
+    RefreshThumbnails,
 }
 
 #[derive(Debug)]
@@ -120,6 +127,9 @@ impl SimpleComponent for SwitchRoot {
             data: SwitchData::default(),
             items,
             clients_only,
+            live_thumbnails: std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1"),
+            capture_manager: None,
+            timer_handle: None,
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -151,7 +161,7 @@ impl SimpleComponent for SwitchRoot {
             SwitchRootInput::OpenSwitch(direction) => {
                 if !self.open {
                     self.open = true;
-                    self.open_switch(direction);
+                    self.open_switch(direction, &sender);
                 } else {
                     sender
                         .input_sender()
@@ -188,6 +198,67 @@ impl SimpleComponent for SwitchRoot {
                     trace!("not open");
                 }
             }
+            SwitchRootInput::RefreshThumbnails => {
+                let Some(mgr) = &mut self.capture_manager else { return; };
+                let _ = mgr.dispatch_pending();
+
+                mgr.drain_closed();
+
+                let _ = mgr.drain_new();
+
+                let display = RootExt::display(&self.window);
+
+                let capture_map: HashMap<ClientId, ObjectId> = mgr.capture_ids()
+                                                                  .into_iter()
+                                                                  .filter_map(|oid| mgr.client_id(&oid).map(|cid| (cid, oid)))
+                                                                  .collect();
+                for (idx, item) in self.clients_only.iter().enumerate() {
+                    let Some(obj_id) = capture_map.get(&item.id) else { continue; };
+
+                    if mgr.is_failed(&obj_id) {
+                        // TODO: gérer l'erreur
+                        let _ = mgr.capture_next(&obj_id);
+                    }
+
+                    if !mgr.is_ready(&obj_id) { continue; }
+
+                    let texture = match mgr.take_output(&obj_id) {
+                        Ok(CaptureOutput::Dmabuf(dmabuf)) => {
+                            match unsafe {
+                                gtk::gdk::DmabufTextureBuilder::new().set_display(&display)
+                                                                     .set_width(dmabuf.width)
+                                                                     .set_height(dmabuf.height)
+                                                                     .set_fourcc(dmabuf.fourcc)
+                                                                     .set_modifier(dmabuf.modifier)
+                                                                     .set_n_planes(1)
+                                                                     .set_fd(0, dmabuf.fd.as_raw_fd())
+                                                                     .set_stride(0, dmabuf.stride)
+                                                                     .set_offset(0, 0)
+                                                                     .build()
+                            } {
+                                // TODO: gérer l'erreur
+                                Ok(t) => t.upcast(),
+                                Err(_) => {
+                                    continue;
+                                }
+                            }
+                        }
+                        Ok(CaptureOutput::Shm(shm_result)) => {
+                            let bytes = gtk::glib::Bytes::from(&shm_result.pixels);
+                            gtk::gdk::MemoryTexture::new( shm_result.width as i32
+                                                        , shm_result.height as i32
+                                                        , gtk::gdk::MemoryFormat::B8g8r8a8Premultiplied
+                                                        , &bytes
+                                                        , shm_result.stride as usize
+                                                        ).upcast()
+                        }
+                        Err(_) => { continue; }
+                    };
+                    self.clients_only.send(idx, ClientsInput::UpdateThumbnail(texture));
+
+                    let _ = mgr.capture_next(&obj_id);
+                }
+            }
         }
     }
 }
@@ -215,7 +286,7 @@ impl SwitchRoot {
         }
     }
 
-    fn open_switch(&mut self, direction: Direction) {
+    fn open_switch(&mut self, direction: Direction, sender: &ComponentSender<Self>) {
         let (hypr_data, active_prev) = match collect_data(&SortConfig {
             filter_current_monitor: self.switch.filter_by_current_monitor,
             filter_current_workspace: self.switch.filter_by_current_workspace,
@@ -264,6 +335,15 @@ impl SwitchRoot {
             self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
         } else {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
+        }
+
+        if self.live_thumbnails {
+            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf).map_err(|e| error!("{e}")).ok();
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(Duration::from_millis(100), move || {
+                sender.input(SwitchRootInput::RefreshThumbnails);
+                glib::ControlFlow::Continue
+            }))
         }
     }
 
@@ -328,6 +408,7 @@ impl SwitchRoot {
                 scale,
                 monitor_data: monitor.clone(),
                 data: client.clone(),
+                live_thumbnails: self.live_thumbnails
             });
         }
         drop(lock);
@@ -465,6 +546,10 @@ impl SwitchRoot {
                 });
             }
         }
+        if let Some(handle) = self.timer_handle.take() {
+            handle.remove();
+        }
+        self.capture_manager = None;
     }
 
     fn close_item(&mut self) {

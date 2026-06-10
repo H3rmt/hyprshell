@@ -3,6 +3,7 @@ use core_lib::{ClientData, ClientId, MonitorData};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::gtk::pango;
+use relm4::gtk::gdk;
 use relm4::prelude::*;
 
 /// Clients component for FlowBox parent (non-workspace mode)
@@ -14,11 +15,14 @@ pub struct Clients {
     pub id: ClientId,
     scale: f64,
     monitor_data: MonitorData,
+    pub paintable: Option<gdk::Paintable>,
+    live_thumbnails: bool,
 }
 
 #[derive(Debug)]
 pub enum ClientsInput {
     SetActive(bool),
+    UpdateThumbnail(gdk::Texture),
 }
 
 #[derive(Debug)]
@@ -27,6 +31,7 @@ pub struct ClientsInit {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    pub live_thumbnails: bool,
 }
 
 #[derive(Debug)]
@@ -61,10 +66,19 @@ impl FactoryComponent for Clients {
                         },
                     },
                     set_label_align: 0.5,
-                    #[name(image)]
-                    gtk::Image {
-                        set_css_classes: if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] },
-                        set_pixel_size: calc_image_size(self.monitor_data.height, self.monitor_data.width, self.scale),
+                    if self.live_thumbnails {
+                        #[name(picture)]
+                        gtk::Picture {
+                            set_content_fit: gtk::ContentFit::Contain,
+                            #[watch]
+                            set_paintable: self.paintable.as_ref(),
+                        }
+                    } else {
+                        #[name(image)]
+                        gtk::Image {
+                            set_css_classes: if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] },
+                            set_pixel_size: calc_image_size(self.monitor_data.height, self.monitor_data.width, self.scale),
+                        }
                     }
                 }
             }
@@ -79,6 +93,8 @@ impl FactoryComponent for Clients {
             monitor_data: init.monitor_data,
             id: init.id,
             scale: init.scale,
+            paintable: None,
+            live_thumbnails: init.live_thumbnails
         }
     }
 
@@ -91,11 +107,13 @@ impl FactoryComponent for Clients {
     ) -> Self::Widgets {
         let widgets = view_output!();
 
-        // Set the icon for this client
-        let client_h_w =
-            scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
-        if client_h_w > 70 {
-            set_icon(&self.data.class, self.data.pid, &widgets.image);
+        if !self.live_thumbnails {
+            // Set the icon for this client
+            let client_h_w =
+                scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
+            if client_h_w > 70 {
+                set_icon(&self.data.class, self.data.pid, &widgets.image);
+            }
         }
 
         widgets
@@ -105,6 +123,9 @@ impl FactoryComponent for Clients {
         match message {
             ClientsInput::SetActive(active) => {
                 self.active = active;
+            }
+            ClientsInput::UpdateThumbnail(texture) => {
+                self.paintable = Some(texture.upcast());
             }
         }
     }

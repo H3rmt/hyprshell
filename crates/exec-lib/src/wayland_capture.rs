@@ -6,8 +6,9 @@ use std::os::fd::{AsFd, OwnedFd};
 use rustix::fs::MemfdFlags;
 use rustix::mm::{MapFlags, ProtFlags};
 
+pub use wayland_client::backend::ObjectId;
 use wayland_client::{Proxy, WEnum};
-use wayland_client::backend::{ObjectId, WaylandError};
+use wayland_client::backend::WaylandError;
 use wayland_client::{Connection, Dispatch, EventQueue};
 use wayland_client::protocol::{wl_registry, wl_shm};
 use wayland_client::protocol::wl_shm::WlShm;
@@ -53,6 +54,7 @@ pub enum CaptureMode { PreferDmabuf
                      , ForceShm
                      }
 
+#[derive(Debug)]
 pub enum BufferMode { Shm
                     , Dmabuf
                     }
@@ -79,6 +81,7 @@ pub struct ShmResult { pub pixels: Vec<u8>
                      }
 
 /// Per-window capture handle stored in CaptureManager.
+#[derive(Debug)]
 pub struct WindowCapture { session:         ExtImageCopyCaptureSessionV1
                          , frame:           Option<ExtImageCopyCaptureFrameV1>
                          , buffer:          WlBuffer
@@ -95,6 +98,7 @@ pub struct WindowCapture { session:         ExtImageCopyCaptureSessionV1
 
 /// Manages capture sessions for all toplevel windows sharing a single
 /// Wayland connection and event queue.
+#[derive(Debug)]
 pub struct CaptureManager { connection:       Connection
                           , event_queue:      EventQueue<AppState>
                           , captures:         HashMap<ObjectId, WindowCapture>
@@ -109,6 +113,7 @@ pub struct CaptureManager { connection:       Connection
 
 /// Per-capture event state, stored inside AppState so Dispatch handlers
 /// can route events by capture index.
+#[derive(Debug)]
 struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , shm_format:         Option<wl_shm::Format>
                        , dmabuf_formats:     Vec<(u32, Vec<u64>)>
@@ -118,6 +123,7 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , size_changed_at:    Option<std::time::Instant>
                        }
 
+#[derive(Debug)]
 struct AppState { toplevels:                Vec<ExtForeignToplevelHandleV1>
                 , toplevel_mapping_manager: Option<HyprlandToplevelMappingManagerV1>
                 , address_map:              HashMap<ObjectId, ClientId>
