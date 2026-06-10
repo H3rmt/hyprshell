@@ -17,6 +17,7 @@ semver.workspace = true
 clap.workspace = true
 tracing-subscriber.workspace = true
 tracing-log.workspace = true
+toml_edit = { version = "0.25.12" }
 
 [lints]
 workspace = true
