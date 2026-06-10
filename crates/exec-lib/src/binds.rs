@@ -129,9 +129,9 @@ pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
         mods: mods.as_slice(),
         key: binds::Key::Key(&bind.key),
         flags: if bind.release {
-            &vec![binds::Flag::r, binds::Flag::t]
+            &[binds::Flag::r, binds::Flag::t]
         } else {
-            &vec![binds::Flag::e]
+            &[binds::Flag::e]
         },
         dispatcher: DispatchType::Exec(&bind.exec),
     };
