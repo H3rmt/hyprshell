@@ -1,43 +1,3 @@
-[workspace]
-members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "dep-crates/relm4", "dep-crates/relm4-components", "crates/config-edit-lib", "xtask"]
-
-[workspace.package]
-version = "4.10.7"
-description = "A modern GTK4-based window switcher and application launcher for Hyprland"
-license = "MIT"
-authors = ["h3rmt"]
-keywords = ["hyprland"]
-repository = "https://github.com/h3rmt/hyprshell/"
-# update when nixpkgs has a newer rustc
-rust-version = "1.91.0"
-edition = "2024"
-
-[workspace.dependencies]
-anyhow = { version = "1.0.100" }
-tracing = { version = "0.1.44" }
-serde_json = { version = "1.0.148" }
-serde = { version = "1.0.228", features = ["derive"] }
-semver = { version = "1.0.27" }
-regex = { version = "1.12.2" }
-tracing-subscriber = { version = "0.3.23", features = ["fmt", "env-filter", "ansi"], default-features = false }
-tracing-log = { version = "0.2.0" }
-
-clap = { version = "4.6.1", features = ["derive"] }
-clap_complete = "4.6.5"
-
-relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.10.7" }
-#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
-relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.10.7" }
-gtk4-layer-shell = { version = "0.8.0" }
-
-config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.10.7" }
-core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.10.7" }
-exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.10.7" }
-launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.10.7" }
-
-# Test dependency
-test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
-
 [package]
 name = "hyprshell"
 readme = "README.md"
@@ -93,7 +53,6 @@ ci_config_check = ["config-lib/ci_no_default_config_values"]
 
 dev = ["config-lib/disable_migrations"]
 
-
 [profile.release]
 strip = "debuginfo"
 lto = true
@@ -101,6 +60,45 @@ opt-level = 3
 
 [lints]
 workspace = true
+
+[workspace]
+members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "dep-crates/relm4", "dep-crates/relm4-components", "crates/config-edit-lib", "xtask"]
+
+[workspace.package]
+description = "A modern GTK4-based window switcher and application launcher for Hyprland"
+license = "MIT"
+authors = ["h3rmt"]
+keywords = ["hyprland"]
+repository = "https://github.com/h3rmt/hyprshell/"
+# update when nixpkgs has a newer rustc
+rust-version = "1.91.0"
+edition = "2024"
+
+[workspace.dependencies]
+anyhow = { version = "1.0.100" }
+tracing = { version = "0.1.44" }
+serde_json = { version = "1.0.148" }
+serde = { version = "1.0.228", features = ["derive"] }
+semver = { version = "1.0.27" }
+regex = { version = "1.12.2" }
+tracing-subscriber = { version = "0.3.23", features = ["fmt", "env-filter", "ansi"], default-features = false }
+tracing-log = { version = "0.2.0" }
+
+clap = { version = "4.6.1", features = ["derive"] }
+clap_complete = "4.6.5"
+
+relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.10.7" }
+#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
+relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.10.7" }
+gtk4-layer-shell = { version = "0.8.0" }
+
+config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.10.7" }
+core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.10.7" }
+exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.10.7" }
+launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.10.7" }
+
+# Test dependency
+test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }

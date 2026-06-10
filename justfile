@@ -81,10 +81,6 @@ test profile="dev":
     cargo nextest run --cargo-profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
 
 [group('checks')]
-check-feature-combinations:
-    bash {{ project_dir }}/scripts/check-all-feature-combinations.sh
-
-[group('checks')]
 check-default-nix-features:
     nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
 
@@ -108,11 +104,3 @@ run-explain-config profile="dev" *args="-vv": (run profile "config explain" args
 
 [group('run')]
 run-debug profile="dev" *args="": (run profile "debug" args)
-
-[group('dist')]
-package-usr-lib:
-    #!/usr/bin/env bash
-    sudo tar -cvf ar.tar -C /usr/share/hyprshell.debug setup_preview themes
-    ls -lah ar.tar
-    sudo mv ar.tar ./packaging/usr-share.tar
-    sudo chown user:user ./packaging/usr-share.tar
