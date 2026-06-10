@@ -112,7 +112,6 @@ struct PerCaptureState { buffer_geometry:    Option<(u32, u32)>
                        , ready:              bool
                        , failed:             bool
                        , size_changed_at:    Option<std::time::Instant>
-                       , dmabuf_buf_failed:  bool
                        }
 
 #[derive(Default)]
@@ -135,7 +134,7 @@ struct AppState { toplevels:            Vec<TopLevelInfo>
                 // per-capture state (indexed by capture id)
                 , captures:             HashMap<ObjectId, PerCaptureState>
                 , closed_ids:           Vec<ObjectId>
-                , gbm_dev:              Option<gbm::Device<OwnedFd>>
+                , gbm_dev:              Result<Option<gbm::Device<OwnedFd>>>
                 }
 
 // ---------------------------------------------------------------------------
@@ -171,23 +170,9 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
         let Some(cs) = state.captures.get_mut(id) else { return; };
         match _event {
             ext_image_copy_capture_session_v1::Event::DmabufDevice { device } => {
-                if state.gbm_dev.is_none() {
-                    let dev = u64::from_ne_bytes(device[..8].try_into().unwrap());
-                    state.gbm_dev = match find_drm_node(dev) {
-                        Ok(drm_fd) => {
-                            match gbm::Device::new(drm_fd) {
-                                Ok(d)  => Some(d),
-                                Err(e) => {
-                                    eprintln!("failed to create gbm device: {e}");
-                                    None
-                                }
-                            }
-                        },
-                        Err(e) => {
-                            eprintln!("failed to find drm node: {e}");
-                            None
-                        }
-                    }
+                if matches!(state.gbm_dev, Ok(None)) {
+                    let dev       = u64::from_ne_bytes(device[..8].try_into().unwrap());
+                    state.gbm_dev = find_drm_node(dev).and_then(|drm_fd| Ok(Some(gbm::Device::new(drm_fd)?)));
                 }
             }
             ext_image_copy_capture_session_v1::Event::DmabufFormat { format, modifiers } => {
@@ -230,8 +215,7 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, ObjectId> for AppState {
             ext_image_copy_capture_frame_v1::Event::Ready => {
                 cs.ready = true;
             }
-            ext_image_copy_capture_frame_v1::Event::Failed { reason } => {
-                eprintln!("capture {}: frame failed: {:?}", id, reason);
+            ext_image_copy_capture_frame_v1::Event::Failed { .. } => {
                 cs.failed = true;
             }
             _ => { }
@@ -275,22 +259,14 @@ impl Dispatch<WlShm, ()> for AppState {
 }
 
 impl Dispatch<ZwpLinuxBufferParamsV1, ObjectId> for AppState {
-    fn event( state:    &mut AppState
+    fn event( _state:    &mut AppState
             , _proxy:   &ZwpLinuxBufferParamsV1
             , _event:   zwp_linux_buffer_params_v1::Event
-            , id:       &ObjectId
+            , _id:       &ObjectId
             , _conn:    &wayland_client::Connection
             , _qhandle: &wayland_client::QueueHandle<AppState>
             )
-    {
-        match _event {
-            zwp_linux_buffer_params_v1::Event::Failed => {
-                eprintln!("capture {id}: dmabuf buffer creation failed, will fall back to shm");
-                state.captures.get_mut(id).map(|c| c.dmabuf_buf_failed = true);
-            }
-            _ => { }
-        }
-    }
+    { }
 }
 
 impl Dispatch<ZwpLinuxDmabufV1, ()> for AppState {
@@ -444,7 +420,7 @@ impl CaptureManager {
                                        , linux_dmabuf:         None
                                        , captures:             HashMap::new()
                                        , closed_ids:           Vec::new()
-                                       , gbm_dev:              None
+                                       , gbm_dev:              Ok(None)
                                        };
 
         connection.display().get_registry(&event_queue.handle(), ());
@@ -587,7 +563,8 @@ impl CaptureManager {
             }
         }
 
-        let mut new_captures = Self::allocate_capture(&self.state, &mut self.event_queue, ready_sessions.clone(), self.use_dmabuf, &self.state.gbm_dev)?;
+        let gbm_dev = self.state.gbm_dev.as_ref().map_err(|e| e.to_string())?;
+        let mut new_captures = Self::allocate_capture(&self.state, &mut self.event_queue, ready_sessions.clone(), self.use_dmabuf, gbm_dev)?;
 
         for (id, s) in ready_sessions {
             if !new_captures.contains_key(&id) {
@@ -650,7 +627,6 @@ impl CaptureManager {
                                                               , ready:             false
                                                               , failed:            false
                                                               , size_changed_at:   None
-                                                              , dmabuf_buf_failed: false
                                                               });
             let source  = source_manager.create_source(handle, &event_queue.handle(), ());
             let session = ccm.create_session( &source
@@ -687,7 +663,7 @@ impl CaptureManager {
             {
 
                 // If gbm_dev is not set, it means, we still need to wait for dispatchers to initialize the GPU device.
-                if !state.gbm_dev.is_some() { continue; }
+                if !gbm_dev.is_some() { continue; }
 
                 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
 
@@ -808,13 +784,13 @@ impl CaptureManager {
                     filtered = vec![DRM_FORMAT_MOD_LINEAR];
                 }
 
-                let dev = self.state.gbm_dev.as_ref().unwrap();
-                let gbm_bo = dev.create_buffer_object_with_modifiers::<()>( width
-                                                                          , height
-                                                                          , gbm::Format::try_from(*chosen_fmt)?
-                                                                          , filtered.iter()
-                                                                                    .map(|&m| gbm::Modifier::from(m))
-                                                                          )?;
+                let dev = self.state.gbm_dev.as_ref().map_err(|e| e.to_string())?;
+                let gbm_bo = dev.as_ref().unwrap().create_buffer_object_with_modifiers::<()>( width
+                                                                                            , height
+                                                                                            , gbm::Format::try_from(*chosen_fmt)?
+                                                                                            , filtered.iter()
+                                                                                                      .map(|&m| gbm::Modifier::from(m))
+                                                                                            )?;
                 let dmabuf_fd = gbm_bo.fd()?;
                 let stride    = gbm_bo.stride();
                 let modifier  = gbm_bo.modifier();
@@ -874,7 +850,6 @@ impl CaptureManager {
             }
         }
 
-        eprintln!("capture {index}: buffer reallocated ({width}x{height})");
         Ok(())
     }
 
