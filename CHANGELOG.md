@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.8](https://github.com/H3rmt/hyprshell/compare/v4.10.7...v4.10.8) (2026-06-10)
+
+
+### Bug Fixes
+
+* fix some more legacy syntax compatibility ([7d9db16](https://github.com/H3rmt/hyprshell/commit/7d9db16179a644b6cb0407437dc4459629615ede))
+
 ## [4.10.7](https://github.com/H3rmt/hyprshell/compare/v4.10.6...v4.10.7) (2026-06-09)
 
 
