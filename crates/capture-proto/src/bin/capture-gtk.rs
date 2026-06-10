@@ -9,8 +9,8 @@ use gtk4::{self as gtk, gio::ApplicationFlags};
 
 use wayland_client::backend::ObjectId;
 
-use capture_proto::wayland_capture;
-use capture_proto::wayland_capture::{CaptureMode, CaptureOutput};
+use exec_lib::wayland_capture;
+use exec_lib::wayland_capture::{CaptureMode, CaptureOutput};
 
 fn add_picture_box(pictures: &mut HashMap<ObjectId, gtk::Picture>, flow_box: &gtk::FlowBox, id: &ObjectId) {
     let pic = gtk::Picture::new();

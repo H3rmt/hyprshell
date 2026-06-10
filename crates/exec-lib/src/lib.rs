@@ -1,6 +1,7 @@
 pub mod collect;
 pub mod listener;
 pub mod switch;
+pub mod wayland_capture;
 mod util;
 
 pub mod binds;

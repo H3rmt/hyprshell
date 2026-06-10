@@ -10,12 +10,10 @@ rust-version.workspace = true
 edition.workspace      = true
 
 [dependencies]
-gbm               = "0.18"
-gtk4              = { version = "0.11.3", features = ["v4_14"] }
-image             = "0.25.10"
-rustix            = { version = "1.1.4", features = ["fs", "mm"] }
-wayland-client    = "0.31.8"
-wayland-protocols = { version = "0.32.6", features = ["client", "staging"] }
+exec-lib       = { package = "hyprshell-exec-lib", path = "../exec-lib" }
+gtk4           = { version = "0.11.3", features = ["v4_14"] }
+image          = "0.25.10"
+wayland-client = "0.31.8"
 
 [lints]
 workspace = true

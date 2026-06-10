@@ -641,12 +641,10 @@ dependencies = [
 name = "capture-proto"
 version = "4.10.6"
 dependencies = [
- "gbm",
  "gtk4",
+ "hyprshell-exec-lib",
  "image",
- "rustix 1.1.4",
  "wayland-client",
- "wayland-protocols",
 ]
 
 [[package]]
@@ -2176,12 +2174,16 @@ name = "hyprshell-exec-lib"
 version = "4.10.6"
 dependencies = [
  "anyhow",
+ "gbm",
  "hyprshell-config-lib",
  "hyprshell-core-lib",
  "hyprshell-hyprland",
  "regex",
+ "rustix 1.1.4",
  "semver",
  "tracing",
+ "wayland-client",
+ "wayland-protocols",
 ]
 
 [[package]]
