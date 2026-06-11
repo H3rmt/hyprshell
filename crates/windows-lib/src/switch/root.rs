@@ -200,10 +200,18 @@ impl SimpleComponent for SwitchRoot {
                 let Some(mgr) = &mut self.capture_manager else { return; };
                 let display = RootExt::display(&self.window);
                 let mut captures = refresh_captures(mgr, &display);
-                for (idx, item) in self.clients_only.iter().enumerate() {
-                    if let Some(texture) = captures.remove(&item.id) {
-                        self.clients_only.send(idx, ClientsInput::UpdateThumbnail(texture));
+                if self.switch.switch_workspaces {
+                  for (client_id, texture) in captures {
+                    for (idx, _) in self.items.iter().enumerate() {
+                      self.items.send(idx, WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()));
                     }
+                  }
+                } else {
+                  for (idx, item) in self.clients_only.iter().enumerate() {
+                      if let Some(texture) = captures.remove(&item.id) {
+                          self.clients_only.send(idx, ClientsInput::UpdateThumbnail(texture));
+                      }
+                  }
                 }
             }
         }
