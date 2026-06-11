@@ -18,7 +18,6 @@ pub struct Workspaces {
     pub scale: f64,
     pub monitor_data: MonitorData,
     pub clients: FactoryVecDeque<WorkspaceClients>,
-    pub live_thumbnails: bool,
 }
 
 #[derive(Debug)]
@@ -120,7 +119,6 @@ impl FactoryComponent for Workspaces {
             remove_html: init.remove_html,
             scale: init.scale,
             clients,
-            live_thumbnails: init.live_thumbnails
         }
     }
 
@@ -161,16 +159,6 @@ impl Workspaces {
                 .replace_all(&self.data.name, "")
                 .to_string()
         }
-    }
-
-    /// Get the client ID at a specific index
-    pub fn get_client_id(&self, idx: usize) -> Option<ClientId> {
-        self.clients.get(idx).map(|c| c.id)
-    }
-
-    /// Get the number of clients
-    pub fn client_count(&self) -> usize {
-        self.clients.len()
     }
 }
 
