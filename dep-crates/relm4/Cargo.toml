@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "hyprshell-relm4"
-version = "4.10.6"
+version = "4.10.8"
 authors = ["Aaron Erhardt <aaron.erhardt@t-online.de>"]
 build = false
 include = [
@@ -43,7 +43,7 @@ keywords = [
 categories = ["gui"]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Relm4/Relm4"
-resolver = "2"
+#resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true

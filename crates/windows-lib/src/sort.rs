@@ -144,7 +144,7 @@ pub fn sort_workspaces_by_recent(
 }
 
 pub fn sort_monitor_by_x(monitors: &mut [(MonitorId, MonitorData)]) {
-    monitors.sort_by(|(_, a), (_, b)| a.x.cmp(&b.x));
+    monitors.sort_by_key(|(_, a)| a.x);
 }
 
 pub fn sort_workspaces_by_position(

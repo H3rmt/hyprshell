@@ -1,12 +1,14 @@
 [package]
 name = "hyprshell-hyprland-macros"
 description = "Macros used in hyprland-rs"
-version = "4.10.6"
+version = "4.10.8"
 license = "GPL-3.0-or-later"
-readme = "README.md"
+readme.workspace = true
+categories.workspace = true
 edition = "2021"
 homepage = "https://github.com/hyprland-community/hyprland-rs/tree/master/hyprland-macros"
 repository = "https://github.com/hyprland-community/hyprland-rs"
+keywords = ["hyprland", "macros", "proc-macro"]
 
 [package.metadata.nix]
 build = true

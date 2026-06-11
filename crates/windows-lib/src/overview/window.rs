@@ -17,7 +17,6 @@ pub struct OverviewWindow {
     open: bool,
     // gtk
     window: gtk::ApplicationWindow,
-    controller: Option<gtk::EventController>,
     /// Regex for removing HTML tags from strings
     remove_html: Regex,
     /// Factory for workspaces
@@ -38,7 +37,6 @@ pub enum OverviewWindowInput {
 #[derive(Debug)]
 pub struct OverviewWindowInit {
     pub general: config_lib::WindowsGeneral,
-    pub monitor: MonitorData,
     pub gtk_monitor: gdk::Monitor,
     pub live_thumbnails: bool,
 }
@@ -91,7 +89,6 @@ impl SimpleComponent for OverviewWindow {
             general: init.general,
             open: false,
             window: root.clone(),
-            controller: None,
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
             items,
             live_thumbnails: init.live_thumbnails,
@@ -118,12 +115,12 @@ impl SimpleComponent for OverviewWindow {
                 self.general = general;
             }
             OverviewWindowInput::OpenOverview((data, top_offset)) => {
-                if !self.open {
-                    self.open = true;
-                    self.window.set_margin(Edge::Top, top_offset as i32);
-                    self.open_overview(data);
-                } else {
+                if self.open {
                     trace!("already open");
+                } else {
+                    self.open = true;
+                    self.window.set_margin(Edge::Top, i32::from(top_offset));
+                    self.open_overview(&data);
                 }
             }
             OverviewWindowInput::SetActive(prev, next) => {
@@ -143,7 +140,7 @@ impl SimpleComponent for OverviewWindow {
             }
             OverviewWindowInput::ReloadOverview(data) => {
                 if self.open {
-                    self.reload_overview(data);
+                    self.reload_overview(&data);
                 } else {
                     trace!("not open");
                 }
@@ -161,12 +158,12 @@ impl SimpleComponent for OverviewWindow {
 }
 
 impl OverviewWindow {
-    fn open_overview(&mut self, data: OverviewWindowData) {
+    fn open_overview(&mut self, data: &OverviewWindowData) {
         trace!("Showing window {:?}", self.window.id());
         self.window.set_visible(true);
         self.window.grab_focus();
 
-        self.populate_workspace_mode(&data, self.general.scale);
+        self.populate_workspace_mode(data, self.general.scale);
     }
 
     fn populate_workspace_mode(&mut self, data: &OverviewWindowData, scale: f64) {
@@ -213,20 +210,18 @@ impl OverviewWindow {
         }
     }
 
-    fn set_active(&mut self, old_active: Active, new_active: Active) {
+    fn set_active(&self, old_active: Active, new_active: Active) {
         for (idx, item) in self.items.iter().enumerate() {
             if item.workspace_id == old_active.workspace
-                && old_active.workspace != new_active.workspace
+                && item.workspace_id != new_active.workspace
             {
                 self.items.send(idx, WorkspacesInput::SetActive(false));
             }
             if item.workspace_id == new_active.workspace {
                 if let Some(cid) = new_active.client {
                     self.items.send(idx, WorkspacesInput::SetActiveClient(cid));
-                } else {
-                    if old_active.workspace != new_active.workspace {
-                        self.items.send(idx, WorkspacesInput::SetActive(true));
-                    }
+                } else if old_active.workspace != new_active.workspace {
+                    self.items.send(idx, WorkspacesInput::SetActive(true));
                 }
             }
         }
@@ -243,12 +238,12 @@ impl OverviewWindow {
         }
     }
 
-    fn reload_overview(&mut self, data: OverviewWindowData) {
+    fn reload_overview(&mut self, data: &OverviewWindowData) {
         if data.clients.is_empty() {
             self.close_overview();
             return;
         }
-        self.populate_workspace_mode(&data, self.general.scale);
+        self.populate_workspace_mode(data, self.general.scale);
     }
 }
 

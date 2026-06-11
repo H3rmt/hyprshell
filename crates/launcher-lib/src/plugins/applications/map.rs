@@ -13,11 +13,10 @@ pub struct DesktopEntry {
     pub exec_search: Box<str>,
     pub exec: Box<str>,
     pub exec_path: Option<Box<Path>>,
-    /// if launcher text exactly matches this it will be shown (use for flatpak / appimage / ...)
-    pub type_search: &'static str,
+    pub type_search: Option<Box<str>>,
     pub terminal: bool,
     pub source: Box<Path>,
-    pub other: Vec<DesktopAction>,
+    pub actions: Vec<DesktopAction>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,19 +65,19 @@ pub fn reload_desktop_entries_map() -> anyhow::Result<()> {
                         exec = exec.replace(replacement, "");
                     }
                     let (exec_search, type_search) = match analyse_exec(&exec) {
-                        ExecType::Flatpak(flatpak_identifier, _) => (flatpak_identifier, "flatpak"),
-                        ExecType::PWA(_, _) => (Box::from(""), "pwa"),
-                        ExecType::FlatpakPWA(flatpak_identifier, _) => {
-                            (flatpak_identifier, "flatpak-pwa")
+                        ExecType::Flatpak(a, b) => {
+                            (format!("[Flatpak] {a}").into_boxed_str(), Some(b))
                         }
-                        ExecType::AppImage(app_image_identifier, _) => {
-                            (app_image_identifier, "appimage")
+                        ExecType::PWA(a, b) => (format!("[PWA] {a}").into_boxed_str(), Some(b)),
+                        ExecType::FlatpakPWA(a, b) => {
+                            (format!("[Flatpak-PWA] {a}").into_boxed_str(), Some(b))
                         }
-                        ExecType::Absolute(exec_name, _) | ExecType::Relative(exec_name) => {
-                            (exec_name, "")
+                        ExecType::AppImage(a, b) => {
+                            (format!("[AppImage] {a}").into_boxed_str(), Some(b))
                         }
+                        ExecType::Absolute(a, b) => (a, Some(b)),
+                        ExecType::Relative(a) => (a, None),
                     };
-
                     let other = ini
                         .sections()
                         .iter()
@@ -107,7 +106,7 @@ pub fn reload_desktop_entries_map() -> anyhow::Result<()> {
                         terminal,
                         exec: exec.into_boxed_str(),
                         source: entry.path().into_boxed_path(),
-                        other,
+                        actions: other,
                     });
                 }
             }

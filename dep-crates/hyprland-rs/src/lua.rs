@@ -1,4 +1,5 @@
-use crate::dispatch_new::Dispatch;
+#![allow(unused)]
+
 use crate::instance::Instance;
 use crate::{command, default_instance};
 use std::fmt::Display;
@@ -74,9 +75,11 @@ fn test_format_string() {
 }
 
 #[derive(Debug, Clone)]
+/// A struct wrapping a lua expression
 pub struct EvalRaw(String);
 
 impl EvalRaw {
+    /// Creates a new EvalRaw
     pub fn new(lua: impl Display) -> Self {
         Self(lua.to_string())
     }

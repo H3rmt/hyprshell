@@ -45,13 +45,18 @@ pub mod dispatch;
 
 /// Holds the error type used throughout the crate
 pub mod error;
+
 /// Used to generate the Instances to interface with Hyprland
 pub mod instance;
 
+/// This module provides utilities for registering keybinds
 #[cfg(feature = "lua")]
 pub mod bind_new;
+
+/// This module provides utilities for dispatching events
 #[cfg(feature = "lua")]
 pub mod dispatch_new;
+
 /// This module is for interacting with [hyprpaper] using its IPC feature
 ///
 /// [hyprpaper]: https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/
@@ -60,6 +65,7 @@ pub mod hyprpaper;
 #[cfg(feature = "lua")]
 mod lua;
 #[cfg(feature = "lua")]
+/// This module provides utilities for creating window and layer rules
 pub mod window_rule;
 
 #[cfg(feature = "lua")]

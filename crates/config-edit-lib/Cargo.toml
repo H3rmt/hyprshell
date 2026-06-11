@@ -1,8 +1,10 @@
 [package]
 name = "hyprshell-config-edit-lib"
 documentation = "https://docs.rs/hyprshell-config-edit-lib"
-version = "4.10.6"
+version = "4.10.8"
 description = "A library for editing the config file with a gui"
+readme.workspace = true
+categories.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true

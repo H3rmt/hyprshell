@@ -65,7 +65,7 @@ format:
 
 [group('develop')]
 fix:
-    cargo fix --allow-dirty -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
+    cargo fix --allow-dirty -p hyprshell -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
 
 [group('develop')]
 build profile="dev":
@@ -73,12 +73,12 @@ build profile="dev":
 
 [group('checks')]
 lint profile="dev":
-    cargo +nightly fmt -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
-    cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
+    cargo +nightly fmt -p hyprshell -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
+    cargo clippy --profile {{ profile }} --all-targets -p hyprshell -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
 
 [group('checks')]
 test profile="dev":
-    cargo nextest run --cargo-profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
+    cargo nextest run --cargo-profile {{ profile }} --features default --all-targets -p hyprshell -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
 
 [group('checks')]
 check-feature-combinations:

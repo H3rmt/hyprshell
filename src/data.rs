@@ -33,7 +33,7 @@ pub fn launch_history(
     }
 
     let mut sorted = runs.into_iter().collect::<Vec<_>>();
-    sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
     for (path, run) in sorted {
         // ignore the ini parser for this, just read the file and find, is faster
         if let Ok(content) = read_to_string(&path) {

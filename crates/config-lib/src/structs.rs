@@ -36,7 +36,7 @@ pub struct WindowsGeneral {
     pub items_per_row: u8,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Overview {
     pub launcher: Launcher,
     pub key: Box<str>,
@@ -56,7 +56,7 @@ impl Default for Overview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Launcher {
     pub default_terminal: Option<Box<str>>,
     pub launch_modifier: Modifier,
@@ -74,7 +74,7 @@ impl Default for Launcher {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Plugins {
     pub applications: Option<ApplicationsPluginConfig>,
     pub terminal: Option<()>,
@@ -85,7 +85,7 @@ pub struct Plugins {
     pub actions: Option<ActionsPluginConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ActionsPluginConfig {
     pub actions: Vec<ActionsPluginAction>,
 }
@@ -113,11 +113,11 @@ impl Default for ApplicationsPluginConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ActionsPluginAction {
     LockScreen,
-    Hibernate,
     Logout,
+    Hibernate,
     Reboot,
     Shutdown,
     Suspend,
@@ -132,7 +132,7 @@ pub struct ActionsPluginActionCustom {
     pub icon: Box<Path>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WebSearchConfig {
     pub engines: Vec<SearchEngine>,
 }

@@ -59,7 +59,7 @@ flowboxchild:hover {
 
 .underline {
     text-decoration-line: underline;
-    text-decoration-style: wavy;
+    text-decoration-style: solid;
 }
 
 .text-grayed {
@@ -71,7 +71,7 @@ tooltip {
     padding: 5px;
     background: var(--bg-color, rgba(20, 20, 20, 0.9));
     border-radius: var(--border-radius, 12px);
-    border: 2px dashed var(--border-color, rgba(90, 90, 120, 0.4));
+    border: 2px solid var(--border-color, rgba(90, 90, 120, 0.4));
 }
 
 /* window text color */

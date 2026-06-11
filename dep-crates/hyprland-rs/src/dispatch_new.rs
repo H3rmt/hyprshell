@@ -124,6 +124,7 @@ pub struct FirstEmpty {
 
 /// This enum holds directions, typically used for moving
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum Direction {
     #[display("u")]
     Up,
@@ -137,6 +138,7 @@ pub enum Direction {
 
 /// This enum holds different ZLayer change names
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum ZOption {
     #[display("top")]
     Top,
@@ -158,21 +160,7 @@ fn format_special_workspace_ident(opt: &Option<String>) -> String {
     }
 }
 
-// /// This enum displays tje different fullscreen modes
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
-// pub enum FullscreenState {
-//     #[display("0")]
-//     None,
-//     #[display("1")]
-//     Maximize,
-//     #[display("2")]
-//     Fullscreen,
-//     #[display("3")]
-//     MaximizeFullscreen,
-// }
-
-pub trait ToDispatch: ToString {}
-
+/// This enum is for dispatching commands to hyprland.
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum Dispatch {
     /// This lets you use dispatchers not supported by hyprland-rs yet or for custom lua functions.
@@ -187,20 +175,20 @@ pub enum Dispatch {
     #[display("hl.dsp.exec_raw({})", format_string(_0))]
     ExecRaw(String),
     /// move the focus in a direction
-    #[display("hl.dsp.focus({{ {}}})", format_string_field("direction", &_0.to_string()))]
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("direction", _0.to_string()))]
     FocusDirection(Direction),
     /// move the focus to a monitor
-    #[display("hl.dsp.focus({{ {}}})", format_string_field("monitor", &_0.to_string()))]
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("monitor", _0.to_string()))]
     FocusMonitor(MonitorIdentifier),
     /// move the focus to a workspace (2. = on_current_monitor)
     #[display(
         "hl.dsp.focus({{ {} {}}})",
-        format_string_field("workspace", &_0.to_string()),
+        format_string_field("workspace", _0.to_string()),
         format_bool_field("on_current_monitor", *_1)
     )]
     FocusWorkspace(WorkspaceIdentifier, bool),
     /// move the focus to a window
-    #[display("hl.dsp.focus({{ {}}})", format_string_field("window", &_0.to_string()))]
+    #[display("hl.dsp.focus({{ {}}})", format_string_field("window", _0.to_string()))]
     FocusWindow(WindowIdentifier),
     /// move the focus to an urgent, or last window
     #[display("hl.dsp.focus({{ urgent_or_last }})")]
@@ -215,7 +203,7 @@ pub enum Dispatch {
     #[display("hl.dsp.submap({})", format_string(_0))]
     SubMap(String),
     /// pass the shortcut to a window
-    #[display("hl.dsp.pass({{ {}}})", format_string_field_opt("window", &_0))]
+    #[display("hl.dsp.pass({{ {}}})", format_string_field_opt("window", _0))]
     Pass(Option<WindowIdentifier>),
 
     // send a specific shortcut to a window
@@ -249,7 +237,11 @@ pub enum Dispatch {
     WindowKill(Option<WindowIdentifier>),
 
     /// mode can be “top” or “bottom”
-    #[display("hl.dsp.window.alter_zorder({{ {} {} }})", format_string_field("mode", &_0), format_string_field_opt("window", &_1))]
+    #[display(
+        "hl.dsp.window.alter_zorder({{ {} {} }})",
+        format_string_field("mode", _0),
+        format_string_field_opt("window", _1)
+    )]
     WindowAlterZ(ZOption, Option<WindowIdentifier>),
 }
 impl Dispatch {
@@ -293,4 +285,3 @@ impl Dispatch {
         Ok(())
     }
 }
-impl ToDispatch for Dispatch {}

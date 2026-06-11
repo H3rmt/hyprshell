@@ -60,13 +60,13 @@ hyprland, gtk4[v4_18], libadwaita[v1_8] and [gtk4-layer-shell](https://github.co
 cargo install hyprshell
 ```
 
-Build with less features in [slim](#feature-flags) mode
+Build with fewer features in [slim](#feature-flags) mode
 
 ```bash
 cargo install hyprshell --no-default-features --features "slim"
 ```
 
-Minimum required rustc version: `1.91.0`
+Minimum required rustc version: `1.92.0` (11 December 2025)
 
 ## Usage
 
@@ -129,7 +129,7 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
 - `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
-- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after message from restart listeners (default: `2000`).
+- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `2000`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode

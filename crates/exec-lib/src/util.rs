@@ -152,7 +152,7 @@ pub fn check_version() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub(crate) fn get_version() -> anyhow::Result<hyprland::data::Version> {
+pub fn get_version() -> anyhow::Result<hyprland::data::Version> {
     let mut tries = 0;
     loop {
         match hyprland::data::Version::get() {
