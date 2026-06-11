@@ -4,8 +4,10 @@ use crate::overview::window::{
     OverviewWindow, OverviewWindowData, OverviewWindowInit, OverviewWindowInput,
     OverviewWindowOutput,
 };
+use crate::shared::refresh_captures;
 use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceId};
 use exec_lib::switch::{switch_client, switch_workspace};
+use exec_lib::wayland_capture::{CaptureManager, CaptureMode};
 use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
 use relm4::adw::gdk::{Display, Monitor};
 use relm4::adw::glib::ControlFlow;
@@ -29,6 +31,9 @@ pub struct OverviewRoot {
 
     launcher_root: Controller<LauncherRoot>,
     windows: BTreeMap<MonitorId, Controller<OverviewWindow>>,
+    live_thumbnails: bool,
+    capture_manager: Option<CaptureManager>,
+    timer_handle: Option<glib::SourceId>,
 }
 
 #[derive(Debug)]
@@ -42,6 +47,7 @@ pub enum OverviewRootInput {
     CloseOverviewClickC(ClientId),
     CloseItem(ClientId),
     ReloadOverview,
+    RefreshThumbnails,
 }
 
 #[derive(Debug)]
@@ -73,6 +79,8 @@ impl SimpleComponent for OverviewRoot {
         let app = relm4::main_application();
         let mut windows = BTreeMap::new();
 
+        let live_thumbnails = std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1");
+
         let monitors = exec_lib::collect::get_monitors();
         let gmonitors = Display::default()
             .expect("Could not connect to a display")
@@ -91,6 +99,7 @@ impl SimpleComponent for OverviewRoot {
                         general: init.general.clone(),
                         monitor: monitor.clone(),
                         gtk_monitor,
+                        live_thumbnails: live_thumbnails,
                     })
                     .forward(sender.input_sender(), |m| match m {
                         OverviewWindowOutput::Clicked(ws) => {
@@ -123,6 +132,9 @@ impl SimpleComponent for OverviewRoot {
             windows,
             launcher_root,
             data: OverviewData::default(),
+            live_thumbnails,
+            capture_manager: None,
+            timer_handle: None,
         };
 
         let widgets = view_output!();
@@ -151,7 +163,7 @@ impl SimpleComponent for OverviewRoot {
                 if !self.open {
                     self.open = true;
                     self.launcher_root.emit(LauncherRootInput::OpenLauncher);
-                    self.open_overview();
+                    self.open_overview(&sender);
                 } else {
                     sender
                         .input_sender()
@@ -204,12 +216,21 @@ impl SimpleComponent for OverviewRoot {
                     .input_sender()
                     .emit(OverviewRootInput::CloseOverview(true));
             }
+            OverviewRootInput::RefreshThumbnails => {
+                let Some(mgr) = &mut self.capture_manager else { return; };
+                let display   = Display::default().unwrap();
+                for (client_id, texture) in refresh_captures(mgr, &display) {
+                    for window in self.windows.values() {
+                        window.emit(OverviewWindowInput::UpdateClientThumbnail(client_id, texture.clone()));
+                    }
+                }
+            }
         }
     }
 }
 
 impl OverviewRoot {
-    fn open_overview(&mut self) {
+    fn open_overview(&mut self, sender: &ComponentSender<Self>) {
         let (hypr_data, active) = match collect_data(&SortConfig {
             filter_current_monitor: self.overview.filter_by_current_monitor,
             filter_current_workspace: self.overview.filter_by_current_workspace,
@@ -232,6 +253,15 @@ impl OverviewRoot {
             hypr_data: hypr_data.clone(),
         };
         self.render(hypr_data, self.data.active, true);
+
+        if self.live_thumbnails {
+            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf).map_err(|e| error!("{e}")).ok();
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(Duration::from_millis(100), move || {
+                sender.input(OverviewRootInput::RefreshThumbnails);
+                glib::ControlFlow::Continue
+            }));
+        }
     }
 
     fn navigate(&mut self, direction: Direction, workspace: bool) {
@@ -318,6 +348,11 @@ impl OverviewRoot {
                 });
             }
         }
+
+        if let Some(handle) = self.timer_handle.take() {
+            handle.remove();
+        }
+        self.capture_manager = None;
     }
 
     fn reload_overview(&mut self) {

@@ -1,6 +1,7 @@
 use crate::icon::set_icon;
 use core_lib::{ClientData, ClientId};
 use relm4::adw::gtk;
+use relm4::gtk::gdk;
 use relm4::adw::prelude::*;
 use relm4::factory::Position;
 use relm4::gtk::pango;
@@ -14,11 +15,14 @@ pub struct WorkspaceClients {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    pub paintable: Option<gdk::Paintable>,
+    live_thumbnails: bool,
 }
 
 #[derive(Debug)]
 pub enum WorkspaceClientsInput {
     SetActive(bool),
+    UpdateThumbnail(gdk::Texture),
 }
 
 #[derive(Debug)]
@@ -26,6 +30,7 @@ pub struct WorkspaceClientsInit {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    pub live_thumbnails: bool,
 }
 
 #[derive(Debug)]
@@ -63,10 +68,19 @@ impl FactoryComponent for WorkspaceClients {
                     },
                 },
                 set_label_align: 0.5,
-                #[name(image)]
-                gtk::Image {
-                    set_css_classes: if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] },
-                    set_pixel_size: calc_image_size(self.data.height, self.data.width, self.scale),
+                if self.live_thumbnails {
+                    #[name(picture)]
+                    gtk::Picture {
+                        set_content_fit: gtk::ContentFit::Contain,
+                        #[watch]
+                        set_paintable: self.paintable.as_ref(),
+                    }
+                } else {
+                    #[name(image)]
+                    gtk::Image {
+                        set_css_classes: if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] },
+                        set_pixel_size: calc_image_size(self.data.height, self.data.width, self.scale),
+                    }
                 }
             }
         }
@@ -79,6 +93,8 @@ impl FactoryComponent for WorkspaceClients {
             data: init.data,
             id: init.id,
             scale: init.scale,
+            paintable: None,
+            live_thumbnails: init.live_thumbnails,
         }
     }
 
@@ -91,11 +107,13 @@ impl FactoryComponent for WorkspaceClients {
     ) -> Self::Widgets {
         let widgets = view_output!();
 
-        // Set the icon for this client (only if large enough to show)
-        let client_h_w =
-            scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
-        if client_h_w > 70 {
-            set_icon(&self.data.class, self.data.pid, &widgets.image);
+        if !self.live_thumbnails {
+            // Set the icon for this client (only if large enough to show)
+            let client_h_w =
+                scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
+            if client_h_w > 70 {
+                set_icon(&self.data.class, self.data.pid, &widgets.image);
+            }
         }
 
         widgets
@@ -105,6 +123,9 @@ impl FactoryComponent for WorkspaceClients {
         match message {
             WorkspaceClientsInput::SetActive(active) => {
                 self.active = active;
+            }
+            WorkspaceClientsInput::UpdateThumbnail(texture) => {
+                self.paintable = Some(texture.upcast());
             }
         }
     }

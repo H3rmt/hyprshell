@@ -14,7 +14,6 @@ use relm4::adw::prelude::*;
 use relm4::gtk::gdk::Key;
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
-use std::collections::HashMap;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
@@ -326,6 +325,7 @@ impl SwitchRoot {
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
+                live_thumbnails: self.live_thumbnails,
             });
         }
         drop(lock);
