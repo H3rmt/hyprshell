@@ -32,7 +32,7 @@ pub enum OverviewWindowInput {
     CloseOverview,
     ReloadOverview(OverviewWindowData),
     SetActive(Active, Active),
-    UpdateClientThumbnail(ClientId, gdk::Texture)
+    UpdateClientThumbnail(ClientId, gdk::Texture),
 }
 
 #[derive(Debug)]
@@ -150,7 +150,10 @@ impl SimpleComponent for OverviewWindow {
             }
             OverviewWindowInput::UpdateClientThumbnail(client_id, texture) => {
                 for (idx, _) in self.items.iter().enumerate() {
-                    self.items.send(idx, WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()));
+                    self.items.send(
+                        idx,
+                        WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()),
+                    );
                 }
             }
         }

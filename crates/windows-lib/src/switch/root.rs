@@ -36,7 +36,7 @@ pub struct SwitchRoot {
     clients_only: FactoryVecDeque<Clients>,
     live_thumbnails: bool,
     capture_manager: Option<CaptureManager>,
-    timer_handle: Option<glib::SourceId>
+    timer_handle: Option<glib::SourceId>,
 }
 
 #[derive(Debug)]
@@ -207,10 +207,7 @@ impl SimpleComponent for SwitchRoot {
                         for (idx, _) in self.items.iter().enumerate() {
                             self.items.send(
                                 idx,
-                                WorkspacesInput::UpdateClientThumbnail(
-                                    client_id,
-                                    texture.clone(),
-                                ),
+                                WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()),
                             );
                         }
                     }
@@ -378,7 +375,7 @@ impl SwitchRoot {
                 scale,
                 monitor_data: monitor.clone(),
                 data: client.clone(),
-                live_thumbnails: self.live_thumbnails
+                live_thumbnails: self.live_thumbnails,
             });
         }
         drop(lock);

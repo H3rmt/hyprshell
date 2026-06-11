@@ -1,8 +1,8 @@
 pub mod collect;
 pub mod listener;
 pub mod switch;
-pub mod wayland_capture;
 mod util;
+pub mod wayland_capture;
 
 pub mod binds;
 pub mod kill;

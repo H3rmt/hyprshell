@@ -3,7 +3,9 @@ use capture_proto::wayland_capture;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result = wayland_capture::capture()?;
 
-    let pixels: Vec<u8> = result.pixels.chunks_exact(4)
+    let pixels: Vec<u8> = result
+        .pixels
+        .chunks_exact(4)
         .flat_map(|b| [b[2], b[1], b[0], b[3]])
         .collect();
 

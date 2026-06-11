@@ -2,8 +2,8 @@ use crate::icon::set_icon;
 use core_lib::{ClientData, ClientId, MonitorData};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
-use relm4::gtk::pango;
 use relm4::gtk::gdk;
+use relm4::gtk::pango;
 use relm4::prelude::*;
 
 /// Clients component for FlowBox parent (non-workspace mode)
@@ -94,7 +94,7 @@ impl FactoryComponent for Clients {
             id: init.id,
             scale: init.scale,
             paintable: None,
-            live_thumbnails: init.live_thumbnails
+            live_thumbnails: init.live_thumbnails,
         }
     }
 

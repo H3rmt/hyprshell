@@ -4,8 +4,8 @@ use crate::shared::workspace_clients::{
 use core_lib::{ClientData, ClientId, MonitorData, WorkspaceData, WorkspaceId};
 use regex::Regex;
 use relm4::adw::gtk;
-use relm4::gtk::gdk;
 use relm4::adw::prelude::*;
+use relm4::gtk::gdk;
 use relm4::prelude::*;
 
 /// Workspace items component - displays a workspace with its clients positioned inside
@@ -141,7 +141,8 @@ impl FactoryComponent for Workspaces {
             WorkspacesInput::UpdateClientThumbnail(client_id, texture) => {
                 for (idx, item) in self.clients.iter().enumerate() {
                     if item.id == client_id {
-                        self.clients.send(idx, WorkspaceClientsInput::UpdateThumbnail(texture));
+                        self.clients
+                            .send(idx, WorkspaceClientsInput::UpdateThumbnail(texture));
                         break;
                     }
                 }

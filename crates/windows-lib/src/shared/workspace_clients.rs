@@ -1,9 +1,9 @@
 use crate::icon::set_icon;
 use core_lib::{ClientData, ClientId};
 use relm4::adw::gtk;
-use relm4::gtk::gdk;
 use relm4::adw::prelude::*;
 use relm4::factory::Position;
+use relm4::gtk::gdk;
 use relm4::gtk::pango;
 use relm4::prelude::*;
 
