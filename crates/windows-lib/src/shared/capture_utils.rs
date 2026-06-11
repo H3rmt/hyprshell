@@ -89,8 +89,8 @@ fn create_texture(
         CaptureOutput::Shm(shm_result) => {
             let bytes = gtk::glib::Bytes::from(&shm_result.pixels);
             Ok(gtk::gdk::MemoryTexture::new(
-                shm_result.width as i32,
-                shm_result.height as i32,
+                shm_result.width.cast_signed(),
+                shm_result.height.cast_signed(),
                 gtk::gdk::MemoryFormat::B8g8r8a8Premultiplied,
                 &bytes,
                 shm_result.stride as usize,

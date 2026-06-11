@@ -99,7 +99,7 @@ impl SimpleComponent for OverviewRoot {
                         general: init.general.clone(),
                         monitor: monitor.clone(),
                         gtk_monitor,
-                        live_thumbnails: live_thumbnails,
+                        live_thumbnails,
                     })
                     .forward(sender.input_sender(), |m| match m {
                         OverviewWindowOutput::Clicked(ws) => {
