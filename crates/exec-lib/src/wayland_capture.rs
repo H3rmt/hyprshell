@@ -89,8 +89,8 @@ pub struct WindowCapture {
     buffer: WlBuffer,
     fd: OwnedFd,
     buffer_mode: BufferMode,
-    _dmabuf_bo: Option<gbm::BufferObject<()>>,
-    _retired_bos: VecDeque<(gbm::BufferObject<()>, OwnedFd)>,
+    dmabuf_bo: Option<gbm::BufferObject<()>>,
+    retired_bos: VecDeque<(gbm::BufferObject<()>, OwnedFd)>,
     fourcc: Option<u32>,
     width: u32,
     height: u32,
@@ -239,10 +239,10 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
                     .collect();
                 cs.dmabuf_formats.push((format, mods));
             }
-            ext_image_copy_capture_session_v1::Event::ShmFormat { format } => {
-                if let WEnum::Value(fmt) = format {
-                    cs.shm_format = Some(fmt);
-                }
+            ext_image_copy_capture_session_v1::Event::ShmFormat {
+                format: WEnum::Value(fmt),
+            } => {
+                cs.shm_format = Some(fmt);
             }
             ext_image_copy_capture_session_v1::Event::BufferSize { width, height } => {
                 let new_geom = (width, height);
@@ -392,10 +392,10 @@ impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
         _qhandle: &wayland_client::QueueHandle<Self>,
     ) {
         match event {
-            ext_foreign_toplevel_handle_v1::Event::Done => {
-                if !state.toplevels.iter().any(|tl| tl.id() == proxy.id()) {
-                    state.toplevels.push(proxy.clone());
-                }
+            ext_foreign_toplevel_handle_v1::Event::Done
+                if !state.toplevels.iter().any(|tl| tl.id() == proxy.id()) =>
+            {
+                state.toplevels.push(proxy.clone());
             }
             ext_foreign_toplevel_handle_v1::Event::Closed => {
                 let id = proxy.id();
@@ -625,7 +625,7 @@ impl CaptureManager {
                 }))
             }
             BufferMode::Dmabuf => {
-                let bo = wc._dmabuf_bo.as_ref().ok_or("no dmabuf buffer object")?;
+                let bo = wc.dmabuf_bo.as_ref().ok_or("no dmabuf buffer object")?;
                 Ok(CaptureOutput::Dmabuf(DmabufResult {
                     fd: wc.fd.as_fd(),
                     fourcc: wc.fourcc.ok_or("no fourcc format")?,
@@ -696,7 +696,7 @@ impl CaptureManager {
     pub fn drain_new(&mut self) -> Result<Vec<ObjectId>> {
         self.pending_sessions.extend(Self::create_sessions(
             &mut self.state,
-            &mut self.event_queue,
+            &self.event_queue,
         )?);
 
         let ready_ids: Vec<ObjectId> = self
@@ -717,11 +717,11 @@ impl CaptureManager {
             .state
             .gbm_dev
             .as_ref()
-            .map_err(|e| e.to_string())?
+            .map_err(ToString::to_string)?
             .as_ref();
         let mut new_captures = Self::allocate_capture(
             &self.state,
-            &mut self.event_queue,
+            &self.event_queue,
             ready_sessions.clone(),
             self.use_dmabuf,
             gbm_dev,
@@ -733,7 +733,7 @@ impl CaptureManager {
             }
         }
 
-        Self::start_frames(&mut new_captures, &mut self.event_queue)?;
+        Self::start_frames(&mut new_captures, &self.event_queue)?;
 
         let new_ids: Vec<ObjectId> = new_captures.keys().cloned().collect();
 
@@ -771,7 +771,7 @@ impl CaptureManager {
 
     fn create_sessions(
         state: &mut AppState,
-        event_queue: &mut EventQueue<AppState>,
+        event_queue: &EventQueue<AppState>,
     ) -> Result<HashMap<ObjectId, ExtImageCopyCaptureSessionV1>> {
         let mut pending_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1> = HashMap::new();
         let source_manager = state
@@ -825,7 +825,7 @@ impl CaptureManager {
     #[allow(clippy::cast_possible_wrap)]
     fn allocate_capture(
         state: &AppState,
-        event_queue: &mut EventQueue<AppState>,
+        event_queue: &EventQueue<AppState>,
         sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1>,
         use_dmabuf: bool,
         gbm_dev: Option<&gbm::Device<OwnedFd>>,
@@ -933,8 +933,8 @@ impl CaptureManager {
                     buffer,
                     fd,
                     buffer_mode,
-                    _dmabuf_bo: dmabuf_bo,
-                    _retired_bos: VecDeque::new(),
+                    dmabuf_bo,
+                    retired_bos: VecDeque::new(),
                     fourcc,
                     width,
                     height,
@@ -949,7 +949,7 @@ impl CaptureManager {
 
     fn start_frames(
         window_captures: &mut HashMap<ObjectId, WindowCapture>,
-        event_queue: &mut EventQueue<AppState>,
+        event_queue: &EventQueue<AppState>,
     ) -> Result<()> {
         // Start the first capture for each window.
         for (id, wc) in &mut *window_captures {
@@ -992,7 +992,7 @@ impl CaptureManager {
                     .state
                     .gbm_dev
                     .as_ref()
-                    .map_err(|e| e.to_string())?
+                    .map_err(ToString::to_string)?
                     .as_ref()
                     .ok_or("gbm device not initialized")?;
                 let gbm_bo = dev.create_buffer_object_with_modifiers::<()>(
@@ -1029,15 +1029,15 @@ impl CaptureManager {
                     &self.event_queue.handle(),
                     index.clone(),
                 );
-                if let Some(old_bo) = wc._dmabuf_bo.take() {
+                if let Some(old_bo) = wc.dmabuf_bo.take() {
                     let old_fd = std::mem::replace(&mut wc.fd, dmabuf_fd);
-                    wc._retired_bos.push_back((old_bo, old_fd));
-                    while wc._retired_bos.len() > 3 {
-                        wc._retired_bos.pop_front();
+                    wc.retired_bos.push_back((old_bo, old_fd));
+                    while wc.retired_bos.len() > 3 {
+                        wc.retired_bos.pop_front();
                     }
                 }
 
-                wc._dmabuf_bo = Some(gbm_bo);
+                wc.dmabuf_bo = Some(gbm_bo);
                 wc.buffer = buffer;
                 wc.fourcc = Some(*chosen_fmt);
                 wc.width = width;
