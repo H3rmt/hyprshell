@@ -161,6 +161,16 @@ impl Workspaces {
                 .to_string()
         }
     }
+
+    /// Get the client ID at a specific index
+    pub fn get_client_id(&self, idx: usize) -> Option<ClientId> {
+        self.clients.get(idx).map(|c| c.id)
+    }
+
+    /// Get the number of clients
+    pub fn client_count(&self) -> usize {
+        self.clients.len()
+    }
 }
 
 fn scale<T: Into<f64>>(value: T, scale: f64) -> i32 {
