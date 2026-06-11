@@ -197,21 +197,30 @@ impl SimpleComponent for SwitchRoot {
                 }
             }
             SwitchRootInput::RefreshThumbnails => {
-                let Some(mgr) = &mut self.capture_manager else { return; };
+                let Some(mgr) = &mut self.capture_manager else {
+                    return;
+                };
                 let display = RootExt::display(&self.window);
                 let mut captures = refresh_captures(mgr, &display);
                 if self.switch.switch_workspaces {
-                  for (client_id, texture) in captures {
-                    for (idx, _) in self.items.iter().enumerate() {
-                      self.items.send(idx, WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()));
+                    for (client_id, texture) in captures {
+                        for (idx, _) in self.items.iter().enumerate() {
+                            self.items.send(
+                                idx,
+                                WorkspacesInput::UpdateClientThumbnail(
+                                    client_id,
+                                    texture.clone(),
+                                ),
+                            );
+                        }
                     }
-                  }
                 } else {
-                  for (idx, item) in self.clients_only.iter().enumerate() {
-                      if let Some(texture) = captures.remove(&item.id) {
-                          self.clients_only.send(idx, ClientsInput::UpdateThumbnail(texture));
-                      }
-                  }
+                    for (idx, item) in self.clients_only.iter().enumerate() {
+                        if let Some(texture) = captures.remove(&item.id) {
+                            self.clients_only
+                                .send(idx, ClientsInput::UpdateThumbnail(texture));
+                        }
+                    }
                 }
             }
         }
@@ -293,12 +302,17 @@ impl SwitchRoot {
         }
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf).map_err(|e| error!("{e}")).ok();
+            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
+                .map_err(|e| error!("{e}"))
+                .ok();
             let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(Duration::from_millis(100), move || {
-                sender.input(SwitchRootInput::RefreshThumbnails);
-                glib::ControlFlow::Continue
-            }))
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(100),
+                move || {
+                    sender.input(SwitchRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
         }
     }
 

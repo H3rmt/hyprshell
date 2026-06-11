@@ -217,11 +217,18 @@ impl SimpleComponent for OverviewRoot {
                     .emit(OverviewRootInput::CloseOverview(true));
             }
             OverviewRootInput::RefreshThumbnails => {
-                let Some(mgr) = &mut self.capture_manager else { return; };
-                let display   = Display::default().unwrap();
+                let Some(mgr) = &mut self.capture_manager else {
+                    return;
+                };
+                let Some(display) = Display::default() else {
+                    return;
+                };
                 for (client_id, texture) in refresh_captures(mgr, &display) {
                     for window in self.windows.values() {
-                        window.emit(OverviewWindowInput::UpdateClientThumbnail(client_id, texture.clone()));
+                        window.emit(OverviewWindowInput::UpdateClientThumbnail(
+                            client_id,
+                            texture.clone(),
+                        ));
                     }
                 }
             }
@@ -255,12 +262,17 @@ impl OverviewRoot {
         self.render(hypr_data, self.data.active, true);
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf).map_err(|e| error!("{e}")).ok();
+            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
+                .map_err(|e| error!("{e}"))
+                .ok();
             let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(Duration::from_millis(100), move || {
-                sender.input(OverviewRootInput::RefreshThumbnails);
-                glib::ControlFlow::Continue
-            }));
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(100),
+                move || {
+                    sender.input(OverviewRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
         }
     }
 
