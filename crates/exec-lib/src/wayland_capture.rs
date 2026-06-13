@@ -57,11 +57,21 @@ pub enum BufferMode {
     Dmabuf,
 }
 
+/// Output of a completed window capture frame.
+///
+/// `Dmabuf` provides a GPU-side file descriptor that can be imported directly
+/// into a `GdkDmabufTextureBuilder` without any CPU copy.
+/// `Shm` provides CPU-accessible pixel data that can be wrapped in a
+/// `GdkMemoryTexture`.
 pub enum CaptureOutput<'a> {
     Shm(ShmResult),
     Dmabuf(DmabufResult<'a>),
 }
 
+/// Result of a window capture via DMA-BUF.
+///
+/// The file descriptor refers to a GBM buffer object and can be passed
+/// to `GdkDmabufTextureBuilder` for zero-copy GPU texture import.
 pub struct DmabufResult<'a> {
     pub fd: BorrowedFd<'a>,
     pub fourcc: u32,
