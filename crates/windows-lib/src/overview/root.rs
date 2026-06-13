@@ -34,6 +34,7 @@ pub struct OverviewRoot {
     live_thumbnails: bool,
     capture_manager: Option<CaptureManager>,
     timer_handle: Option<glib::SourceId>,
+    thumbnail_refresh_ms: u64,
 }
 
 #[derive(Debug)]
@@ -55,6 +56,7 @@ pub struct OverviewRootInit {
     pub general: config_lib::WindowsGeneral,
     pub overview: config_lib::Overview,
     pub data_dir: Rc<PathBuf>,
+    pub thumbnail_refresh_ms: u64,
 }
 
 #[derive(Debug)]
@@ -134,6 +136,7 @@ impl SimpleComponent for OverviewRoot {
             live_thumbnails,
             capture_manager: None,
             timer_handle: None,
+            thumbnail_refresh_ms: init.thumbnail_refresh_ms,
         };
 
         let widgets = view_output!();
@@ -266,7 +269,7 @@ impl OverviewRoot {
                 .ok();
             let sender = sender.clone();
             self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(100),
+                Duration::from_millis(self.thumbnail_refresh_ms),
                 move || {
                     sender.input(OverviewRootInput::RefreshThumbnails);
                     glib::ControlFlow::Continue

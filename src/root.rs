@@ -186,6 +186,7 @@ impl Root {
                             general: windows.general.clone(),
                             overview: overview.clone(),
                             data_dir: self.data_dir.clone(),
+                            thumbnail_refresh_ms: 100,
                         })
                         .detach();
                     self.overview_root = Some(overview_root);
@@ -215,6 +216,7 @@ impl Root {
                         .launch(windows_lib::switch::SwitchRootInit {
                             general: windows.general.clone(),
                             switch: switch.clone(),
+                            thumbnail_refresh_ms: 100,
                         })
                         .detach();
                     self.switch_root = Some(switch_root);
