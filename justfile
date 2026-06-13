@@ -62,28 +62,12 @@ bloat:
     cargo bloat --release
 
 # [group('develop')]
-# format:
-#     cargo +nightly fmt --all
-
-# [group('develop')]
 # fix:
 #     cargo fix --allow-dirty -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
 
 # [group('checks')]
-# lint profile="dev":
-#     cargo +nightly fmt -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
-#     cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
-
-# [group('checks')]
-# test profile="dev":
-#     cargo nextest run --cargo-profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
-
-# [group('checks')]
 # check-default-nix-features:
 #     nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
-
-# [group('checks')]
-# check profile="dev": (build profile) (lint profile) (test profile)
 
 [group('run')]
 build profile="dev":
