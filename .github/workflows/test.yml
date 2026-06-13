@@ -14,17 +14,16 @@ jobs:
   check-nix:
     name: Run Nix Flake Check
     runs-on: "ubuntu-latest"
-    container:
-      image: ghcr.io/h3rmt/actions-image:latest
-      options: --privileged
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - run: rustup default stable
       - run: |
+          sudo apt update
+          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection zstd
+          rustup default stable
           cargo build
           cargo xtask check
           cargo xtask lint
-          cargo xtask test
+          cargo xtask test --no-nextest
       # run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
       # - name: Run Nix Flake Check check-nix-configs
       # - name: Run Nix Flake Check check-all-feature-combinations
