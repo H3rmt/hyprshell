@@ -68,6 +68,12 @@ pub fn refresh_captures(
     textures
 }
 
+/// Convert a [`CaptureOutput`] into a [`gtk::gdk::Texture`].
+///
+/// For `Dmabuf` output, builds a `DmabufTexture` via the GDK DMA-BUF
+/// importer (zero-copy, GPU-side).
+/// For `Shm` output, wraps the pixel buffer in a `MemoryTexture`
+/// (CPU-side copy).
 fn create_texture(
     output: CaptureOutput,
     display: &gtk::gdk::Display,
