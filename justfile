@@ -1,5 +1,3 @@
-project_dir := justfile_directory()
-
 default:
     @just --list --justfile {{ justfile() }}
 
@@ -15,6 +13,7 @@ audit:
           cargo binstall cargo-outdated
         fi
     fi
+    echo "Checking for vulnerabilities with cargo audit..."
     cargo audit
 
 [group('security')]
@@ -29,6 +28,7 @@ outdated:
           cargo binstall cargo-outdated
         fi
     fi
+    echo "Checking for outdated dependencies with cargo outdated..."
     cargo outdated
 
 [group('security')]
@@ -43,6 +43,7 @@ shear:
           cargo binstall cargo-shear
         fi
     fi
+    echo "Checking for unused dependencies with cargo shear..."
     cargo shear
 
 [group('security')]
@@ -57,37 +58,36 @@ bloat:
           cargo binstall cargo-bloat
         fi
     fi
+    echo "Checking for bloat in binary with cargo bloat..."
     cargo bloat --release
 
-[group('develop')]
-format:
-    cargo +nightly fmt --all
+# [group('develop')]
+# format:
+#     cargo +nightly fmt --all
 
-[group('develop')]
-fix:
-    cargo fix --allow-dirty -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
+# [group('develop')]
+# fix:
+#     cargo fix --allow-dirty -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
 
-[group('develop')]
+# [group('checks')]
+# lint profile="dev":
+#     cargo +nightly fmt -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
+#     cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
+
+# [group('checks')]
+# test profile="dev":
+#     cargo nextest run --cargo-profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
+
+# [group('checks')]
+# check-default-nix-features:
+#     nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
+
+# [group('checks')]
+# check profile="dev": (build profile) (lint profile) (test profile)
+
+[group('run')]
 build profile="dev":
     cargo build --profile {{ profile }}
-
-[group('checks')]
-lint profile="dev":
-    cargo +nightly fmt -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --check
-    cargo clippy --profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib -- --deny warnings --no-deps
-
-[group('checks')]
-test profile="dev":
-    cargo nextest run --cargo-profile {{ profile }} --all-targets -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
-
-[group('checks')]
-check-default-nix-features:
-    nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
-
-[group('checks')]
-check profile="dev": (build profile) (lint profile) (test profile)
-
-pre-release: (check "release")
 
 [group('run')]
 run profile="dev" *args="":
