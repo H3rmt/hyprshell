@@ -74,6 +74,7 @@ impl FactoryComponent for WorkspaceClients {
                         set_content_fit: gtk::ContentFit::Contain,
                         #[watch]
                         set_paintable: self.paintable.as_ref(),
+                        set_css_classes: if self.data.enabled { &["client-picture"] } else { &["client-picture", "monochrome"] },
                     }
                 } else {
                     #[name(image)]
