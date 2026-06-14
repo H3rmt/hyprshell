@@ -21,7 +21,7 @@ serde_json.workspace = true
 
 smart-default = { version = "0.7.1" }
 ron = { version = "0.12.1" }
-toml = { version = "0.9.5" }
+toml = { version = "1.0.0" }
 serde_json5 = { version = "0.2.1", optional = true }
 
 [features]
