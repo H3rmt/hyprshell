@@ -36,6 +36,7 @@ use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_
 use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
 
 use core_lib::ClientId;
+use tracing::debug;
 
 const DRM_FORMAT_MOD_INVALID: u64 = 0x00FF_FFFF_FFFF_FFFF;
 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
@@ -832,7 +833,7 @@ impl CaptureManager {
 
     // Buffer dimensions come from the Wayland compositor and fit in i32
     // (the protocol uses int32 natively for these values).
-    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_possible_wrap, clippy::too_many_lines)]
     fn allocate_capture(
         state: &AppState,
         event_queue: &EventQueue<AppState>,
@@ -935,6 +936,7 @@ impl CaptureManager {
                 (BufferMode::Shm, None, None, fd, buffer, stride, size)
             };
 
+            debug!("Capture allocated: mode={buffer_mode:?}, {width}x{height}");
             window_captures.insert(
                 id,
                 WindowCapture {
