@@ -20,7 +20,8 @@ use std::rc::Rc;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+const KILL_TIMEOUT: Duration  = Duration::from_millis(200);
+const THUMBNAIL_BURST_MS: u64 = 16;
 
 #[derive(Debug)]
 pub struct OverviewRoot {
@@ -35,6 +36,7 @@ pub struct OverviewRoot {
     capture_manager: Option<CaptureManager>,
     timer_handle: Option<glib::SourceId>,
     thumbnail_refresh_ms: u64,
+    thumbnail_burst: bool,
 }
 
 #[derive(Debug)]
@@ -137,6 +139,7 @@ impl SimpleComponent for OverviewRoot {
             capture_manager: None,
             timer_handle: None,
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
+            thumbnail_burst: false,
         };
 
         let widgets = view_output!();
@@ -225,7 +228,22 @@ impl SimpleComponent for OverviewRoot {
                 let Some(display) = Display::default() else {
                     return;
                 };
-                for (client_id, texture) in refresh_captures(mgr, &display) {
+                let captures = refresh_captures(mgr, &display);
+                if self.thumbnail_burst && !captures.is_empty() {
+                    self.thumbnail_burst = false;
+                    if let Some(h) = self.timer_handle.take() {
+                        h.remove();
+                    }
+                    let sender = sender.clone();
+                    self.timer_handle = Some(glib::timeout_add_local(
+                        Duration::from_millis(self.thumbnail_refresh_ms),
+                        move || {
+                            sender.input(OverviewRootInput::RefreshThumbnails);
+                            glib::ControlFlow::Continue
+                        },
+                    ));
+                }
+                for (client_id, texture) in captures {
                     for window in self.windows.values() {
                         window.emit(OverviewWindowInput::UpdateClientThumbnail(
                             client_id,
@@ -267,9 +285,10 @@ impl OverviewRoot {
             self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
                 .map_err(|e| error!("{e}"))
                 .ok();
+            self.thumbnail_burst = true;
             let sender = sender.clone();
             self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(self.thumbnail_refresh_ms),
+                Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
                     sender.input(OverviewRootInput::RefreshThumbnails);
                     glib::ControlFlow::Continue

@@ -17,7 +17,8 @@ use relm4::prelude::*;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+const KILL_TIMEOUT: Duration  = Duration::from_millis(200);
+const THUMBNAIL_BURST_MS: u64 = 16;
 
 #[derive(Debug)]
 pub struct SwitchRoot {
@@ -38,6 +39,7 @@ pub struct SwitchRoot {
     capture_manager: Option<CaptureManager>,
     timer_handle: Option<glib::SourceId>,
     thumbnail_refresh_ms: u64,
+    thumbnail_burst: bool,
 }
 
 #[derive(Debug)]
@@ -131,6 +133,7 @@ impl SimpleComponent for SwitchRoot {
             capture_manager: None,
             timer_handle: None,
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
+            thumbnail_burst: false,
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -205,6 +208,20 @@ impl SimpleComponent for SwitchRoot {
                 };
                 let display = RootExt::display(&self.window);
                 let mut captures = refresh_captures(mgr, &display);
+                if self.thumbnail_burst && !captures.is_empty() {
+                    self.thumbnail_burst = false;
+                    if let Some(h) = self.timer_handle.take() {
+                        h.remove();
+                    }
+                    let sender = sender.clone();
+                    self.timer_handle = Some(glib::timeout_add_local(
+                        Duration::from_millis(self.thumbnail_refresh_ms),
+                        move || {
+                            sender.input(SwitchRootInput::RefreshThumbnails);
+                            glib::ControlFlow::Continue
+                        },
+                    ));
+                }
                 if self.switch.switch_workspaces {
                     for (client_id, texture) in captures {
                         for (idx, _) in self.items.iter().enumerate() {
@@ -305,9 +322,10 @@ impl SwitchRoot {
             self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
                 .map_err(|e| error!("{e}"))
                 .ok();
+            self.thumbnail_burst = true;
             let sender = sender.clone();
             self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(self.thumbnail_refresh_ms),
+                Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
                     sender.input(SwitchRootInput::RefreshThumbnails);
                     glib::ControlFlow::Continue
