@@ -45,8 +45,7 @@ pub fn get_all_icons<'a>() -> anyhow::Result<RwLockReadGuard<'a, BTreeSet<Box<st
 pub fn theme_has_icon_name(name: &str) -> bool {
     get_icons_from_cache()
         .read()
-        .map(|map| map.contains(&Box::from(name)))
-        .unwrap_or(false)
+        .is_ok_and(|map| map.contains(&Box::from(name)))
 }
 
 pub fn get_default_desktop_file<F, R>(mime: &str, r#fn: F) -> Option<R>

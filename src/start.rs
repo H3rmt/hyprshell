@@ -163,28 +163,32 @@ pub fn register_event_restarter(
     });
 }
 
-static WATCHERS: OnceLock<Mutex<Vec<Box<dyn Any + Send>>>> = OnceLock::new();
-
 fn setup_restart_listener(config_file: &Path, css_path: &Path, restart_tx: &Sender<&'static str>) {
     let tx = restart_tx.clone();
-    if let Ok(watcher) = hyprshell_config_listener(config_file, move |mess| {
-        let _ = tx.send_blocking(mess);
-    }) {
-        WATCHERS
-            .get_or_init(|| Mutex::new(Vec::new()))
-            .lock()
-            .expect("Failed to lock watchers")
-            .push(Box::new(watcher));
+    let mut buffer = [0u8; 4096];
+    if let Ok(mut watcher) = hyprshell_config_listener(config_file) {
+        glib::spawn_future_local(async move {
+            let events = watcher
+                .read_events_blocking(&mut buffer)
+                .expect("Failed to read inotify events");
+            for event in events {
+                trace!("Received events: {event:?}");
+                let _ = tx.send_blocking("config");
+            }
+        });
     }
     let tx = restart_tx.clone();
-    if let Ok(watcher) = hyprshell_css_listener(css_path, move |mess| {
-        let _ = tx.send_blocking(mess);
-    }) {
-        WATCHERS
-            .get_or_init(|| Mutex::new(Vec::new()))
-            .lock()
-            .expect("Failed to lock watchers")
-            .push(Box::new(watcher));
+    let mut buffer2 = [0u8; 4096];
+    if let Ok(mut watcher) = hyprshell_css_listener(css_path) {
+        glib::spawn_future_local(async move {
+            let events = watcher
+                .read_events_blocking(&mut buffer2)
+                .expect("Failed to read inotify events");
+            for event in events {
+                trace!("Received events: {event:?}");
+                let _ = tx.send_blocking("config");
+            }
+        });
     }
 
     let tx = restart_tx.clone();

@@ -20,12 +20,12 @@ jobs:
           sudo apt update
           sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection zstd
           rustup default stable
-          cargo build
 
           failed=0
-          cargo xtask check || failed=1
-          cargo xtask lint || failed=1
-          cargo xtask test --no-nextest || failed=1
+          cargo build || failed=1
+          cargo xtask check -v || failed=1
+          cargo xtask lint -v || failed=1
+          cargo xtask test -v --no-nextest || failed=1
           exit "$failed"
 
       # run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L

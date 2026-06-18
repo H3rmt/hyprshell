@@ -16,8 +16,8 @@ tracing.workspace = true
 #config-lib.workspace = true
 serde_json.workspace = true
 serde.workspace = true
-notify = { version = "8.2.0", features = [], default-features = false }
-notify-rust = { version = "4.17.0", features = ["zbus"] }
+inotify = { version = "0.11.2", default-features = false }
+notify-rust = { version = "4.17.0", features = ["d"], default-features = false }
 
 [features]
 json5_config = []
