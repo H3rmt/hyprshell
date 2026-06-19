@@ -58,6 +58,13 @@ pub enum BufferMode {
     Dmabuf,
 }
 
+pub struct FrameStats {
+    pub latency: Option<std::time::Duration>,
+    pub damage_count: u32,
+    pub damage_area: u64,
+    pub buffer_area: u64,
+}
+
 /// Output of a completed window capture frame.
 ///
 /// `Dmabuf` provides a GPU-side file descriptor that can be imported directly
@@ -137,6 +144,9 @@ struct PerCaptureState {
     ready: bool,
     failed: bool,
     size_changed_at: Option<std::time::Instant>,
+    damage_count: u32,
+    damage_area: u64,
+    frame_requested_at: Option<std::time::Instant>,
 }
 
 #[derive(Debug)]
@@ -283,6 +293,10 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, ObjectId> for AppState {
             return;
         };
         match event {
+            ext_image_copy_capture_frame_v1::Event::Damage { width, height, .. } => {
+                cs.damage_count += 1;
+                cs.damage_area += u64::from(width.unsigned_abs()) * u64::from(height.unsigned_abs());
+            }
             ext_image_copy_capture_frame_v1::Event::Ready => {
                 cs.ready = true;
             }
@@ -650,6 +664,7 @@ impl CaptureManager {
     }
 
     pub fn capture_next(&mut self, index: &ObjectId) -> Result<()> {
+
         let realloc_spec = {
             let cs = self
                 .state
@@ -683,6 +698,10 @@ impl CaptureManager {
             .ok_or_else(|| format!("capture {index}: no per-capture state"))?;
         cs.ready = false;
         cs.failed = false;
+
+        cs.damage_area = 0;
+        cs.damage_count = 0;
+        cs.frame_requested_at = Some(std::time::Instant::now());
 
         let wc = self
             .captures
@@ -780,6 +799,17 @@ impl CaptureManager {
         }
     }
 
+    pub fn frame_stats(&self, id: &ObjectId) -> Option<FrameStats> {
+        let wc = self.captures.get(id)?;
+        let cs = self.state.captures.get(id)?;
+        Some(FrameStats {
+            latency: cs.frame_requested_at.map(|t| t.elapsed()),
+            damage_count: cs.damage_count,
+            damage_area: cs.damage_area,
+            buffer_area: u64::from(wc.width) * u64::from(wc.height),
+        })
+    }
+
     fn create_sessions(
         state: &mut AppState,
         event_queue: &EventQueue<AppState>,
@@ -812,6 +842,9 @@ impl CaptureManager {
                     ready: false,
                     failed: false,
                     size_changed_at: None,
+                    damage_area: 0,
+                    damage_count: 0,
+                    frame_requested_at: None
                 },
             );
             let source = source_manager.create_source(handle, &event_queue.handle(), ());
