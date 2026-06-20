@@ -621,6 +621,10 @@ impl CaptureManager {
         self.state.address_map.get(obj_id).copied()
     }
 
+    pub fn pending_count(&self) -> usize {
+        self.state.captures.values().filter(|c| !c.ready && !c.failed).count()
+    }
+
     pub fn take_output(&self, index: &ObjectId) -> Result<CaptureOutput<'_>> {
         let wc = &self.captures[index];
 

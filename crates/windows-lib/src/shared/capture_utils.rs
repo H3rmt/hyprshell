@@ -11,6 +11,7 @@ use exec_lib::wayland_capture::{CaptureManager, CaptureOutput, ObjectId};
 pub fn refresh_captures(
     mgr: &mut CaptureManager,
     display: &gtk::gdk::Display,
+    continuous: bool,
 ) -> HashMap<ClientId, gtk::gdk::Texture> {
     if let Err(e) = mgr.dispatch_pending() {
         warn!("Failed to dispatch pending Wayland events: {e}");
@@ -39,7 +40,7 @@ pub fn refresh_captures(
     let mut total_buffer_area: u64 = 0;
 
     for (client_id, obj_id) in &capture_map {
-        if mgr.is_failed(obj_id) {
+        if mgr.is_failed(obj_id) && continuous {
             trace!("Capture failed for client {client_id}, retrying");
             if let Err(e) = mgr.capture_next(obj_id) {
                 warn!("Failed to restart capture for client {client_id}: {e}");
@@ -80,7 +81,7 @@ pub fn refresh_captures(
 
         if let Some(texture) = texture {
             textures.insert(*client_id, texture);
-            if let Err(e) = mgr.capture_next(obj_id) {
+            if continuous && let Err(e) = mgr.capture_next(obj_id) {
                 warn!("Failed to schedule next capture for client {client_id}: {e}");
             }
         }

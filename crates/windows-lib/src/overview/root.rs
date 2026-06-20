@@ -222,14 +222,19 @@ impl SimpleComponent for OverviewRoot {
                     .emit(OverviewRootInput::CloseOverview(true));
             }
             OverviewRootInput::RefreshThumbnails => {
+                let continuous = self.thumbnail_refresh_ms != 0;
                 let Some(mgr) = &mut self.capture_manager else {
                     return;
                 };
                 let Some(display) = Display::default() else {
                     return;
                 };
-                let captures = refresh_captures(mgr, &display);
-                if self.thumbnail_burst && !captures.is_empty() {
+                let (captures, all_done) = {
+                    let captures = refresh_captures(mgr, &display, continuous);
+                    let done = !continuous && mgr.pending_count() == 0;
+                    (captures, done)
+                };
+                if continuous && self.thumbnail_burst && !captures.is_empty() {
                     self.thumbnail_burst = false;
                     if let Some(h) = self.timer_handle.take() {
                         h.remove();
@@ -250,6 +255,9 @@ impl SimpleComponent for OverviewRoot {
                             texture.clone(),
                         ));
                     }
+                }
+                if all_done {
+                    self.timer_handle.take().map(|h| h.remove());
                 }
             }
         }
