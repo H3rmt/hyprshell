@@ -23,14 +23,12 @@ jobs:
 
           failed=0
           cargo build || failed=1
-          cargo xtask check -v || failed=1
-          cargo xtask lint -v || failed=1
-          cargo xtask test -v --no-nextest || failed=1
+          cargo xtask cmd check -v || failed=1
+          cargo xtask cmd lint -v || failed=1
+          cargo xtask cmd test -v --no-nextest || failed=1
           exit "$failed"
 
       # run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
-      # - name: Run Nix Flake Check check-nix-configs
-      # - name: Run Nix Flake Check check-all-feature-combinations
       # run: nix build '.#checks.x86_64-linux.hyprshell-check-all-feature-combinations' -L
 
   check:
