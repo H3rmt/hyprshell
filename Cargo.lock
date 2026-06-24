@@ -449,9 +449,9 @@ dependencies = [
 
 [[package]]
 name = "brotli"
-version = "8.0.2"
+version = "8.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bd8b9603c7aa97359dbd97ecf258968c95f3adddd6db2f7e7a5bef101c84560"
+checksum = "8119e4516436f5708bbc474a9d395bf12f1b5395e93a92a56e647ac3388c8610"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -1843,7 +1843,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1865,7 +1865,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-clipboard-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1885,7 +1885,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-config-edit-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "hyprshell-config-lib",
  "hyprshell-core-lib",
@@ -1897,7 +1897,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-config-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "hyprshell-core-lib",
@@ -1913,7 +1913,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-core-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "inotify",
@@ -1926,7 +1926,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-exec-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "hyprshell-core-lib",
@@ -1938,7 +1938,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-hyprland"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "ahash",
  "async-net",
@@ -1957,7 +1957,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-hyprland-macros"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1966,7 +1966,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-launcher-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1984,7 +1984,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-relm4"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "criterion",
  "flume",
@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-relm4-components"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "hyprshell-relm4",
  "once_cell",
@@ -2018,7 +2018,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-windows-lib"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "anyhow",
  "gtk4-layer-shell",
@@ -2034,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "hyprshell-wl-clipboard-rs"
-version = "4.10.7"
+version = "4.10.8"
 dependencies = [
  "log",
  "os_pipe",
@@ -2197,9 +2197,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.25.9"
+version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6506c6c10786659413faa717ceebcb8f70731c0a60cbae39795fdf114519c1a"
+checksum = "85ab80394333c02fe689eaf900ab500fbd0c2213da414687ebf995a65d5a6104"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -2582,9 +2582,9 @@ dependencies = [
 
 [[package]]
 name = "moxcms"
-version = "0.7.11"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac9557c559cd6fc9867e122e20d2cbefc9ca29d80d027a8e39310920ed2f0a97"
+checksum = "bb85c154ba489f01b25c0d36ae69a87e4a1c73a72631fc6c0eb6dde34a73e44b"
 dependencies = [
  "num-traits",
  "pxfm",
@@ -3587,9 +3587,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.149"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
+checksum = "e8014e44b4736ed0538adeecded0fce2a272f22dc9578a7eb6b2d9993c74cfb9"
 dependencies = [
  "itoa",
  "memchr",

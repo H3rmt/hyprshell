@@ -6,16 +6,16 @@ use std::ffi::OsStr;
 use std::fs::{File, create_dir_all};
 use std::io::Write;
 use std::path::Path;
-use tracing::{debug, debug_span, info};
+use tracing::{debug, info, instrument};
 
 const CONFIG_EXPLANATION: &str = "Edit with `hyprshell config edit`";
 
-pub fn write_config(
+#[instrument(skip(config, config_file), level = "debug", name = "write_config", fields(config_file = %config_file.display()))]
+pub fn write_io_config(
     config_file: &Path,
     config: &crate::io::Config,
     override_file: bool,
 ) -> anyhow::Result<()> {
-    let _span = debug_span!("write_config").entered();
     let config_file_display = config_file.display();
     if config_file.exists() && !override_file {
         bail!(
@@ -31,12 +31,12 @@ pub fn write_config(
             .with_default_extension(Extensions::IMPLICIT_SOME)
             .with_default_extension(Extensions::UNWRAP_NEWTYPES)
             .with_default_extension(Extensions::UNWRAP_VARIANT_NEWTYPES)
-            .to_string_pretty(config, PrettyConfig::default())
+            .to_string_pretty(&config, PrettyConfig::default())
             .with_context(|| format!("Failed to write RON config to ({config_file_display})")),
         Some("json5" | "json") => {
-            serde_json::to_string_pretty(config).context("Failed to generate JSON config")
+            serde_json::to_string_pretty(&config).context("Failed to generate JSON config")
         }
-        Some("toml") => toml::to_string_pretty(config).context("Failed to generate TOML config"),
+        Some("toml") => toml::to_string_pretty(&config).context("Failed to generate TOML config"),
         Some(ext) => bail!(
             "Invalid config file extension: {ext} (run with -vv and check `FEATURES: ` debug log to see enabled extensions)"
         ),
@@ -59,4 +59,13 @@ pub fn write_config(
 
     debug!("Config file written successfully at {config_file_display}");
     Ok(())
+}
+
+pub fn write_config(
+    config_file: &Path,
+    config: &crate::Config,
+    override_file: bool,
+) -> anyhow::Result<()> {
+    let config = crate::io::Config::from(config.clone());
+    write_io_config(config_file, &config, override_file)
 }

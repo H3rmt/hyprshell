@@ -22,7 +22,7 @@ use windows_lib::switch::{SwitchRoot, SwitchRootInput};
 
 #[derive(Debug)]
 pub struct Root {
-    config: config_lib::Config,
+    config: Box<config_lib::Config>,
     switch_root: Option<Controller<SwitchRoot>>,
     overview_root: Option<Controller<OverviewRoot>>,
     data_dir: Rc<PathBuf>,
@@ -37,7 +37,7 @@ pub enum RootInput {
     OpenSwitch(core_lib::Direction),
     CloseSwitch(bool),
     OpenOverview,
-    SetConfig(config_lib::Config),
+    SetConfig(Box<config_lib::Config>),
     Reload,
 }
 
@@ -72,7 +72,7 @@ impl SimpleComponent for Root {
     ) -> ComponentParts<Self> {
         trace!("Initializing Root");
         let model = Self {
-            config: config_lib::Config::default(),
+            config: Box::from(config_lib::Config::default()),
             switch_root: None,
             overview_root: None,
             data_dir: init.data_dir,
@@ -104,29 +104,29 @@ impl SimpleComponent for Root {
             RootInput::OpenSwitch(dir) => {
                 trace!("Opening switch, dir: {:?}", dir);
                 if let Some(switch) = &self.switch_root {
-                    switch.emit(SwitchRootInput::OpenSwitch(dir))
+                    switch.emit(SwitchRootInput::OpenSwitch(dir));
                 }
             }
             RootInput::CloseSwitch(do_switch) => {
                 trace!("Closing switch: {:?}", do_switch);
                 if let Some(switch) = &self.switch_root {
-                    switch.emit(SwitchRootInput::CloseSwitch(do_switch))
+                    switch.emit(SwitchRootInput::CloseSwitch(do_switch));
                 }
             }
             RootInput::OpenOverview => {
                 trace!("Opening overview");
                 if let Some(overview) = &self.overview_root {
-                    overview.emit(OverviewRootInput::OpenOverview)
+                    overview.emit(OverviewRootInput::OpenOverview);
                 }
             }
-            RootInput::Reload => self.load_config(sender),
+            RootInput::Reload => self.load_config(&sender),
             RootInput::SetConfig(config) => {
                 self.config = config;
                 let app = relm4::main_application();
                 let windows = app.windows();
                 for window in windows {
-                    if !(window.title() == Some("main-window".into())) {
-                        window.close()
+                    if window.title() != Some("main-window".into()) {
+                        window.close();
                     }
                 }
                 self.apply_css().warn_details("Failed to apply css");
@@ -227,7 +227,7 @@ impl Root {
         }
     }
 
-    fn load_config(&self, sender: ComponentSender<Self>) {
+    fn load_config(&self, sender: &ComponentSender<Self>) {
         let config = match config_lib::load_and_migrate_config(&self.config_file, true) {
             Ok(config) => config,
             Err(err) => {
@@ -267,7 +267,9 @@ impl Root {
 
         exec_lib::set_follow_mouse_default()
             .warn_details("Failed to set set_remain_focused default");
-        sender.input_sender().emit(RootInput::SetConfig(config));
+        sender
+            .input_sender()
+            .emit(RootInput::SetConfig(Box::from(config)));
     }
 
     fn apply_css(&self) -> anyhow::Result<()> {

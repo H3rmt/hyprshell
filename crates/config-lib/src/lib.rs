@@ -1,7 +1,6 @@
-pub mod actions;
 mod check;
 mod explain;
-pub mod io;
+mod io;
 #[cfg(not(feature = "disable_migrations"))]
 mod migrate;
 mod modifier;

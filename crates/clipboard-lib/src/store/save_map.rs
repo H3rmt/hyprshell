@@ -71,7 +71,7 @@ fn store_map(
     trace!(
         "Wrote clipboard data to {} ({} bytes) in {:?}",
         storage_path.display(),
-        file.metadata().map(|m| m.len()).unwrap_or(0),
+        file.metadata().map_or(0, |m| m.len()),
         now.elapsed()?
     );
     Ok(())

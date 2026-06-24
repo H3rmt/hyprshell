@@ -81,6 +81,7 @@ impl WindowRule {
 
 /// Enum containing all match options
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum WindowMatch {
     #[display("{}", format_string_field("class", _0))]
     Class(String),
@@ -120,6 +121,7 @@ pub enum WindowMatch {
 
 /// Enum containing all effects
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum WindowEffect {
     #[display("{}", format_bool_field("float", *_0))]
     Float(bool),
@@ -272,6 +274,7 @@ impl LayerRule {
 
 /// Enum containing all match options
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum LayerMatch {
     #[display("{}", format_string_field("namespace", _0))]
     Namespace(String),
@@ -279,6 +282,7 @@ pub enum LayerMatch {
 
 /// Enum containing all effects
 #[derive(Debug, Clone, PartialEq, Display)]
+#[allow(missing_docs)]
 pub enum LayerEffect {
     #[display("{}", format_bool_field("no_anim", *_0))]
     NoAnim(bool),

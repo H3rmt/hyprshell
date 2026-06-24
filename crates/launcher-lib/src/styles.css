@@ -34,6 +34,10 @@
     background: var(--bg-color, rgba(20, 20, 20, 0.9));
 }
 
+.launcher-item-inner-color-probe-element {
+    color: var(--border-color-active, rgba(239, 9, 9, 0.9));
+}
+
 .launcher-item-inner:hover {
     background: var(--bg-color-hover, rgba(40, 40, 50, 1));
 }
@@ -47,48 +51,8 @@
 }
 
 .launcher-item-details {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-family: monospace;
-}
-
-.launcher-other-menu-button {
-    padding: 2px 4px;
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border: 1px var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
-}
-
-.launcher-other-menu-button:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
-}
-
-.launcher-other-menu {
-    background: transparent;
-    margin: 0;
-    padding: 0;
-
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border: calc(var(--border-size, 3px) / 1.5) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
-}
-
-.launcher-other-menu-item {
-    padding: 2px;
-
-    border-radius: calc(var(--border-radius, 12px) / 2);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-}
-
-.launcher-other-menu-item-inner {
-    padding: 2px 5px;
-    font-size: 1.1rem;
-
-    border-radius: calc(var(--border-radius, 12px) / 2);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-}
-
-.launcher-other-menu-item-inner:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
 }
 
 .launcher-key {

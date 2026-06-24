@@ -95,7 +95,7 @@ impl SimpleComponent for Applications {
                     gtk::Label {
                         #[watch]
                         set_css_classes: if model.config.show_execs == model.prev_config.show_execs { &[] } else { &["blue-label"]  },
-                        set_label: "Show Execs",
+                        set_label: "Show Execs (Ignored, on by default)",
                     },
                     gtk::Image::from_icon_name("dialog-information-symbolic") {
                         set_cursor_by_name: "help",
@@ -115,11 +115,11 @@ impl SimpleComponent for Applications {
                     gtk::Label {
                         #[watch]
                         set_css_classes: if model.config.show_actions_submenu == model.prev_config.show_actions_submenu { &[] } else { &["blue-label"]  },
-                        set_label: "Show Actions",
+                        set_label: "Show Actions (Ignored, on by default)",
                     },
                     gtk::Image::from_icon_name("dialog-information-symbolic") {
                         set_cursor_by_name: "help",
-                        set_tooltip_text: Some("Show a dropdown menu with all the desktop actions specified in the `.desktop` files of the applications, like `new private window`, etc.")
+                        set_tooltip_text: Some("Show second select menu with all the desktop actions specified in the `.desktop` files of the applications, like `new private window`, etc.")
                     },
                     gtk::Switch {
                         set_valign: Align::Center,

@@ -5,7 +5,7 @@ use relm4::adw::prelude::*;
 use relm4::gtk::pango;
 use relm4::prelude::*;
 
-/// Clients component for FlowBox parent (non-workspace mode)
+/// Clients component for `FlowBox` parent (non-workspace mode)
 /// Shows clients in a flow layout without positioning
 #[derive(Debug)]
 pub struct Clients {

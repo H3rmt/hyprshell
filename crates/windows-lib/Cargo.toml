@@ -1,7 +1,9 @@
 [package]
 name = "hyprshell-windows-lib"
 documentation = "https://docs.rs/hyprshell-windows-lib"
-version = "4.10.7"
+version = "4.10.8"
+readme.workspace = true
+categories.workspace = true
 edition.workspace = true
 description.workspace = true
 license.workspace = true

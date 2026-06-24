@@ -114,7 +114,6 @@ pub fn handle_key(val: Key, state: ModifierType) -> Option<(String, ConfigModifi
 pub fn default_config() -> config_lib::Config {
     config_lib::Config {
         windows: Some(config_lib::Windows::default()),
-        ..Default::default()
     }
 }
 

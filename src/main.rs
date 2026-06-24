@@ -146,7 +146,6 @@ fn main() -> anyhow::Result<()> {
                         switch: Some(config_lib::Switch::default()),
                         ..Default::default()
                     }),
-                    ..Default::default()
                 };
                 if config == config_all {
                     tracing::info!("Current config matches the default configuration");
@@ -227,9 +226,9 @@ fn main() -> anyhow::Result<()> {
         }
         cli::Command::Socat { json } => {
             #[cfg(debug_assertions)]
-            core_lib::notify(&json, std::time::Duration::from_millis(2000));
+            core_lib::notify(&json, std::time::Duration::from_secs(2));
             core_lib::transfer::send_raw_to_socket(&json)
-                .context("Failed to send JSON to socket: is hyprshell running?")?
+                .context("Failed to send JSON to socket: is hyprshell running?")?;
         }
     }
     Ok(())
@@ -237,16 +236,17 @@ fn main() -> anyhow::Result<()> {
 
 fn check_features() {
     tracing::debug!(
-        "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
+        // "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
+        "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}",
         cfg!(feature = "json5_config"),
         cfg!(feature = "gui_settings_editor"),
         cfg!(feature = "debug_command"),
         cfg!(feature = "launcher_calc"),
-        cfg!(feature = "clipboard_compress_lz4"),
-        cfg!(feature = "clipboard_compress_zstd"),
-        cfg!(feature = "clipboard_compress_brotli"),
-        cfg!(feature = "clipboard_encrypt_chacha20poly1305"),
-        cfg!(feature = "clipboard_encrypt_aes_gcm"),
+        // cfg!(feature = "clipboard_compress_lz4"),
+        // cfg!(feature = "clipboard_compress_zstd"),
+        // cfg!(feature = "clipboard_compress_brotli"),
+        // cfg!(feature = "clipboard_encrypt_chacha20poly1305"),
+        // cfg!(feature = "clipboard_encrypt_aes_gcm"),
     );
 }
 

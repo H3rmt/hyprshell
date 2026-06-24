@@ -71,7 +71,7 @@ pub fn compress_and_store_image(
     trace!(
         "Wrote image to {:?} ({} bytes)",
         storage_path.display(),
-        file.metadata().map(|m| m.len()).unwrap_or(0)
+        file.metadata().map_or(0, |m| m.len())
     );
     Ok(())
 }

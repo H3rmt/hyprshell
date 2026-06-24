@@ -1,4 +1,4 @@
-use crate::dispatch_new::{Direction, Dispatch, ToDispatch, WindowIdentifier};
+use crate::dispatch_new::Dispatch;
 use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_string_field};
 use crate::{command, default_instance};
@@ -7,6 +7,7 @@ use std::fmt;
 
 /// Enum for mod keys
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum Mod {
     #[display("SUPER")]
     Super,
@@ -20,6 +21,7 @@ pub enum Mod {
 
 /// Enum for bind flags
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
+#[allow(missing_docs)]
 pub enum Flag {
     #[display("{}", format_bool_field("locked", true))]
     Locked,
@@ -57,17 +59,17 @@ pub enum Flag {
 
 /// A struct providing a key bind
 #[derive(Debug, Clone)]
-pub struct Binding<D: ToDispatch> {
+pub struct Binding {
     /// All the mods
     pub mods: Vec<Mod>,
     /// The key
     pub key: String,
     /// Dispatcher
-    pub dispatcher: D,
+    pub dispatcher: Dispatch,
     /// Bind flags
     pub flags: Vec<Flag>,
 }
-impl<D: ToDispatch> fmt::Display for Binding<D> {
+impl fmt::Display for Binding {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut bind = String::new();
         for m in &self.mods {
@@ -89,7 +91,7 @@ impl<D: ToDispatch> fmt::Display for Binding<D> {
     }
 }
 
-impl<D: ToDispatch> Binding<D> {
+impl Binding {
     /// Binds a keybinding
     pub fn bind(&self) -> crate::Result<()> {
         self.instance_bind(default_instance()?)
@@ -179,6 +181,8 @@ impl<D: ToDispatch> Binding<D> {
 
 #[test]
 fn test_key_bindinds() {
+    use crate::dispatch_new::{Direction, Dispatch, WindowIdentifier};
+
     let binds = vec![
         (
             Binding {

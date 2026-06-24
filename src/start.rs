@@ -45,7 +45,7 @@ pub fn start(
                 ),
                 Duration::from_secs(3),
             );
-            thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_secs(1));
             for info in messages {
                 notify_resident(&info, Duration::from_secs(12));
             }
@@ -70,7 +70,7 @@ pub fn start(
         );
     }
     thread::spawn(move || {
-        socket_handler(external_event_sender);
+        socket_handler(&external_event_sender);
     });
     configure_wm_initial();
 
@@ -92,11 +92,11 @@ pub fn start(
     debug!("Application created");
 
     relm.run::<Root>(RootInit {
+        external_event_receiver,
+        data_dir,
         config_file,
         css_path,
-        data_dir,
         cache_dir,
-        external_event_receiver: external_event_receiver.clone(),
     });
 
     Ok(())

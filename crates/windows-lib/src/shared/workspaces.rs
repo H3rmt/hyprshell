@@ -89,7 +89,8 @@ impl FactoryComponent for Workspaces {
             sorted_clients.sort_by(|(_, a), (_, b)| {
                 // prefer smaller windows to be on top (for floating)
                 if a.floating && b.floating {
-                    (b.width as i32 * b.height as i32).cmp(&(a.width as i32 * a.height as i32))
+                    (i32::from(b.width) * i32::from(b.height))
+                        .cmp(&(i32::from(a.width) * i32::from(a.height)))
                 } else {
                     a.floating.cmp(&b.floating)
                 }
@@ -134,7 +135,7 @@ impl FactoryComponent for Workspaces {
                         .send(idx, WorkspaceClientsInput::SetActive(id == item.id));
                 }
             }
-        };
+        }
     }
 }
 
@@ -147,16 +148,6 @@ impl Workspaces {
                 .replace_all(&self.data.name, "")
                 .to_string()
         }
-    }
-
-    /// Get the client ID at a specific index
-    pub fn get_client_id(&self, idx: usize) -> Option<ClientId> {
-        self.clients.get(idx).map(|c| c.id)
-    }
-
-    /// Get the number of clients
-    pub fn client_count(&self) -> usize {
-        self.clients.len()
     }
 }
 

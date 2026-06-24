@@ -1,8 +1,10 @@
 [package]
 name = "hyprshell-config-lib"
 documentation = "https://docs.rs/hyprshell-config-lib"
-version = "4.10.7"
+version = "4.10.8"
 description = "A library for reading, writing and migrating configuration files for hyprshell"
+readme.workspace = true
+categories.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true

@@ -1,5 +1,4 @@
 use crate::util::SetCursor;
-use config_lib::actions::ToAction;
 use config_lib::{ActionsPluginAction, ActionsPluginActionCustom};
 use relm4::adw::prelude::*;
 use relm4::gtk::{Align, SelectionMode};
@@ -188,14 +187,14 @@ impl SimpleComponent for Actions {
                 sender.input(ActionsInput::Set(self.prev_config.clone()));
             }
             ActionsInput::Action(msg) => match msg {
-                ActionOutput::Delete(command) => {
+                ActionOutput::Delete(name) => {
                     #[allow(clippy::iter_overeager_cloned)]
                     let actions = self
                         .config
                         .actions
                         .iter()
                         .cloned()
-                        .filter(|e| e.clone().to_action().command != command)
+                        .filter(|e| details(e).0 != name)
                         .collect::<Vec<_>>();
                     sender.output_sender().emit(ActionsOutput::Actions(actions));
                 }
@@ -240,7 +239,9 @@ impl SimpleComponent for Actions {
 
 #[derive(Debug)]
 struct Action {
-    action: config_lib::ActionsPluginActionCustom,
+    name: Box<str>,
+    details: Box<str>,
+    icon: Box<Path>,
 }
 
 #[derive(Debug)]
@@ -264,20 +265,23 @@ impl FactoryComponent for Action {
 
     view! {
         adw::ActionRow {
-            set_title: &self.action.names.join(", "),
-            set_subtitle: &self.action.details,
+            set_title: &self.name,
+            set_subtitle: &self.details,
             #[name = "image"]
             add_prefix = &gtk::Image {},
             add_suffix = &gtk::Button::from_icon_name("delete-symbolic") {
-                connect_clicked[sender, command = self.action.command.clone()] => move |_| sender.output_sender().emit(ActionOutput::Delete(command.clone())),
+                connect_clicked[sender, name = self.name.clone()] => move |_| sender.output_sender().emit(ActionOutput::Delete(name.clone())),
             }
         }
     }
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, sender: FactorySender<Self>) -> Self {
         sender.input(ActionInput::Update);
+        let (name, details, icon) = details(&init);
         Self {
-            action: init.to_action(),
+            name,
+            details,
+            icon,
         }
     }
 
@@ -287,7 +291,7 @@ impl FactoryComponent for Action {
         _message: Self::Input,
         _sender: FactorySender<Self>,
     ) {
-        let icon_path = self.action.icon.clone();
+        let icon_path = self.icon.clone();
         if icon_path.is_absolute() {
             widgets.image.set_from_file(Some(Path::new(&*icon_path)));
         } else {
@@ -301,5 +305,41 @@ impl FactoryComponent for Action {
         match msg {
             ActionInput::Update => {}
         }
+    }
+}
+
+pub fn details(action: &ActionsPluginAction) -> (Box<str>, Box<str>, Box<Path>) {
+    match action {
+        ActionsPluginAction::LockScreen => (
+            "Lock Screen".into(),
+            "Lock the screen".into(),
+            Path::new("system-lock-screen").into(),
+        ),
+        ActionsPluginAction::Logout => (
+            "Log Out".into(),
+            "Log out of the session".into(),
+            Path::new("system-log-out").into(),
+        ),
+        ActionsPluginAction::Hibernate => (
+            "Hibernate".into(),
+            "Writes RAM to disk, then powers off. Boots on wake".into(),
+            Path::new("system-hibernate").into(),
+        ),
+        ActionsPluginAction::Reboot => (
+            "Reboot / Restart".into(),
+            "Reboot the computer".into(),
+            Path::new("system-reboot").into(),
+        ),
+        ActionsPluginAction::Shutdown => (
+            "Shutdown / Poweroff".into(),
+            "Shut down the computer".into(),
+            Path::new("system-shutdown").into(),
+        ),
+        ActionsPluginAction::Suspend => (
+            "Sleep / Suspend".into(),
+            "Enters low-power sleep".into(),
+            Path::new("system-suspend").into(),
+        ),
+        ActionsPluginAction::Custom(c) => (c.names[0].clone(), c.details.clone(), c.icon.clone()),
     }
 }

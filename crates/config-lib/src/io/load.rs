@@ -4,34 +4,33 @@ use ron::extensions::Extensions;
 use serde::de::DeserializeOwned;
 use std::ffi::OsStr;
 use std::path::Path;
-use tracing::{debug, debug_span, info, trace, warn};
 
 pub fn load_and_migrate_config(
     config_file: &Path,
     allow_migrate: bool,
 ) -> anyhow::Result<crate::Config> {
-    let _span = debug_span!("load_config", path =? config_file).entered();
+    let _span = tracing::debug_span!("load_config", path =? config_file).entered();
     if !config_file.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
 
     #[cfg(feature = "disable_migrations")]
-    debug!("migrations disabled, not checking if updates are needed");
+    tracing::debug!("migrations disabled, not checking if updates are needed");
 
     #[cfg(not(feature = "disable_migrations"))]
     {
         if crate::migrate::check_migration_needed(config_file)
-            .inspect_err(|e| warn!("Failed to check if migration is needed: {e:?}"))
+            .inspect_err(|e| tracing::warn!("Failed to check if migration is needed: {e:?}"))
             .unwrap_or(false)
         {
-            info!("Config needs migration");
+            tracing::info!("Config needs migration");
             if !allow_migrate {
                 bail!("Config file needs migration, but migration is not allowed.");
             }
             let migrated = crate::migrate::migrate(config_file);
             match migrated {
                 Ok(config) => {
-                    info!("Config migrated successfully");
+                    tracing::info!("Config migrated successfully");
                     let config: crate::Config = config
                         .try_into()
                         .context("Failed to convert config to internal format")?;
@@ -43,7 +42,11 @@ pub fn load_and_migrate_config(
                 }
             }
         }
-        trace!("No migration needed");
+        tracing::trace!("No migration needed");
+    }
+    #[cfg(feature = "disable_migrations")]
+    {
+        _ = allow_migrate;
     }
 
     let config: crate::io::Config = load_config_file(config_file).with_context(|| {
@@ -52,7 +55,7 @@ pub fn load_and_migrate_config(
             config_file.display()
         )
     })?;
-    debug!("Loaded config");
+    tracing::debug!("Loaded config");
     let config: crate::Config = config
         .try_into()
         .context("Failed to convert config to internal format")?;

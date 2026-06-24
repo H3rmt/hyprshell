@@ -17,7 +17,7 @@ fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)
             .filter(|w| w.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
             .collect::<Vec<_>>();
 
-        workspaces.sort_by(|a, b| a.id.cmp(&b.id));
+        workspaces.sort_by_key(|a| a.id);
         workspaces
     };
     let clients = Clients::get()
@@ -29,10 +29,10 @@ fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)
     Ok((monitors, workspaces, clients))
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_lines)]
 #[instrument(level = "debug")]
 pub fn collect_hypr_data(
-    exclude_workspaces: Option<Regex>,
+    exclude_workspaces: Option<&Regex>,
 ) -> anyhow::Result<(
     Vec<(ClientId, ClientData)>,
     Vec<(WorkspaceId, WorkspaceData)>,
@@ -132,23 +132,16 @@ pub fn collect_hypr_data(
         "workspaces bevore filter by regex: {}",
         workspace_data.len()
     );
-    workspace_data = workspace_data
-        .into_iter()
-        .filter(|(_, ws)| {
-            exclude_workspaces
-                .as_ref()
-                .map(|reg| !reg.is_match(&ws.name))
-                .unwrap_or(true)
-        })
-        .collect();
+    workspace_data.retain(|(_, ws)| {
+        exclude_workspaces
+            .as_ref()
+            .is_none_or(|reg| !reg.is_match(&ws.name))
+    });
     trace!("workspaces after filter by regex: {}", workspace_data.len());
-    client_data = client_data
-        .into_iter()
-        .filter(|(_id, cl)| workspace_data.find_by_first(&cl.workspace).is_some())
-        .collect();
+    client_data.retain(|(_id, cl)| workspace_data.find_by_first(&cl.workspace).is_some());
 
-    workspace_data.sort_by(|a, b| a.0.cmp(&b.0));
-    monitor_data.sort_by(|a, b| a.0.cmp(&b.0));
+    workspace_data.sort_by_key(|a| a.0);
+    monitor_data.sort_by_key(|a| a.0);
 
     // is broken, reports the "normal" workspace as active when a client in special workspace is selected
     // let active_ws = Workspace::get_active()?.id;

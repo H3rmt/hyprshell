@@ -1,4 +1,4 @@
-use crate::plugins::SortableLaunchOption;
+use crate::plugin::{HighlightElement, LaunchItem, MatchedLaunchItem};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use rink_core::output::{NumberParts, QueryReply};
@@ -22,34 +22,45 @@ pub fn init_context() {
     get_context();
 }
 
-pub fn get_calc_options(matches: &mut Vec<SortableLaunchOption>, text: &str) {
+pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
     let Some(context_lock) = get_context() else {
-        return;
+        return vec![];
     };
     let Ok(mut context) = context_lock.write() else {
-        return;
+        return vec![];
     };
     let eval = rink_core::eval(&mut context, text);
 
+    let mut matches = Vec::new();
     if let Ok(eval) = eval {
         trace!("Eval: {eval:?}");
         for (title, desc) in parse_result(eval) {
             trace!("Added calc option: {title}, {desc:?}");
-            matches.push(SortableLaunchOption {
+            let title_box: Box<str> = title.clone().into_boxed_str();
+            let item = LaunchItem {
                 icon: Some(Box::from(Path::new("accessories-calculator"))),
-                names: Box::from(vec![title.clone().into_boxed_str()]),
+                name: title_box.clone(),
+                keywords: Box::from([]),
                 details: desc.clone().into_boxed_str(),
                 details_long: Some(Box::from("Copy to clipboard")),
-                bonus_score: 5,
-                enabled: true,
+                bonus_score: 0,
                 takes_args: false,
-                iden: Identifier::data(PluginName::Calc, title.into_boxed_str()),
-                subactions: vec![],
+                iden: Identifier::data(PluginName::Calc, title_box.clone()),
+                children: Box::from([]),
+            };
+            matches.push(MatchedLaunchItem {
+                item,
+                highlight: HighlightElement::None,
+                score: title_box.len() as u64,
+                args: None,
+                enabled: true,
             });
         }
     } else {
         trace!("No option added: expression error: {eval:?}");
     }
+
+    matches
 }
 
 pub fn copy_result(data: Option<&str>) -> bool {
@@ -86,8 +97,8 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                 d.years, d.months, d.weeks, d.days, d.hours, d.minutes, d.seconds,
             ]
             .iter()
-            .cloned()
             .filter(|n| n.exact_value.as_deref() != Some("0"))
+            .cloned()
             .map(|n| n.raw_value.map(|n| str_from_np(&n.to_parts_simple())))
             .collect::<Vec<_>>();
             vec![(join(parts.as_slice(), ", "), join(&[d.raw.quantity], ""))]
@@ -106,14 +117,15 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                         .iter()
                         .enumerate()
                         .map(|(idx, (u, &p))| {
+                            let p = i64::try_from(p).expect("factorization power fits in i64");
                             if idx == 0 {
-                                pow(&u.clone(), p as i64)
+                                pow(u, p)
                             } else {
-                                format!("⋅{}", pow(&u.clone(), p as i64))
+                                format!("⋅{}", pow(u, p))
                             }
                         })
                         .collect(),
-                    String::from(""),
+                    String::new(),
                 )
             })
             .collect(),
@@ -133,7 +145,7 @@ fn parse_result(result: QueryReply) -> Vec<(String, String)> {
                     .iter()
                     .map(str_from_np)
                     .enumerate()
-                    .map(|(idx, s)| if idx == 0 { s } else { format!(", {}", s) })
+                    .map(|(idx, s)| if idx == 0 { s } else { format!(", {s}") })
                     .collect(),
                 l.rest.quantity.unwrap_or_else(|| String::from("other")),
             )]
@@ -160,15 +172,12 @@ fn str_from_np(n: &NumberParts) -> String {
         (None, Some(d)) => Some(format!("× 1⁄{d}")),
         (Some(n), Some(d)) => Some(format!("× {n}⁄{d}")),
     };
-    fn mkpow(x: (&BaseUnit, &i64)) -> String {
-        pow(x.0.id.as_ref(), *x.1)
-    }
     let pos_units = n.raw_unit.as_ref().map(|d| {
         d.iter()
             .filter(|(_, p)| **p > 0)
             .map(mkpow)
             .enumerate()
-            .map(|(idx, s)| if idx == 0 { s } else { format!(" {}", s) })
+            .map(|(idx, s)| if idx == 0 { s } else { format!(" {s}") })
             .collect()
     });
     let mut neg_units = n
@@ -176,20 +185,20 @@ fn str_from_np(n: &NumberParts) -> String {
         .as_ref()
         .map(|d| d.iter().filter(|(_, p)| **p < 0).collect::<Vec<_>>());
     let div = if let Some(ref u) = neg_units
-        && u.len() >= 1
+        && !u.is_empty()
     {
         Some(String::from("/"))
     } else {
         None
     };
     let neg_units = if let Some(ref mut u) = neg_units
-        && u.len() >= 1
+        && !u.is_empty()
     {
         Some(
             u.drain(0..)
                 .map(mkpow)
                 .enumerate()
-                .map(|(idx, s)| if idx == 0 { s } else { format!(" {}", s) })
+                .map(|(idx, s)| if idx == 0 { s } else { format!(" {s}") })
                 .collect(),
         )
     } else {
@@ -212,7 +221,11 @@ fn str_from_np(n: &NumberParts) -> String {
 }
 
 fn tuple_from_np(n: &NumberParts) -> (String, String) {
-    (str_from_np(&n), join(&[n.quantity.clone()], " "))
+    (str_from_np(n), join(std::slice::from_ref(&n.quantity), " "))
+}
+
+fn mkpow(x: (&BaseUnit, &i64)) -> String {
+    pow(x.0.id.as_ref(), *x.1)
 }
 
 fn pow(n: &str, p: i64) -> String {
@@ -230,7 +243,7 @@ fn pow(n: &str, p: i64) -> String {
     }
 }
 
-fn superscript_from_digit(d: char) -> Option<char> {
+const fn superscript_from_digit(d: char) -> Option<char> {
     // From the Unicode "Superscripts and Subscripts" block, U+2070 to U+209F
     match d {
         '0' => Some('⁰'),
@@ -255,7 +268,7 @@ mod tests {
 
     use crate::plugins::calc::{get_context, parse_result};
 
-    /// workaround for the fact that rink’s QueryError doesn’t impl Error
+    /// workaround for the fact that rink’s `QueryError` doesn’t impl Error
     /// See <https://github.com/tiffany352/rink-rs/issues/238>.
     #[derive(Debug)]
     struct QueryError(rink_core::output::QueryError);
@@ -270,7 +283,7 @@ mod tests {
 
     impl From<rink_core::output::QueryError> for QueryError {
         fn from(value: rink_core::output::QueryError) -> Self {
-            QueryError(value)
+            Self(value)
         }
     }
 
@@ -286,80 +299,88 @@ mod tests {
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_simple() {
+    fn test_parse_result_simple() -> Result<()> {
         let result = eval("42")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "42");
         assert_eq!(result[0].1, "dimensionless");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_fraction() {
+    fn test_parse_result_fraction() -> Result<()> {
         let result = eval("1/2")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "0.5");
         assert_eq!(result[0].1, "dimensionless");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_approx_with_dimensions() {
+    fn test_parse_result_approx_with_dimensions() -> Result<()> {
         let result = eval("12|123 kg")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "97.[56097]... gram");
         assert_eq!(result[0].1, "mass");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_interesting_dimensions() {
+    fn test_parse_result_interesting_dimensions() -> Result<()> {
         let result = eval("1m * 1 m/s / 1s / 1s")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "1 meter² / second³");
         assert_eq!(result[0].1, "absorbed_dose_rate");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_date() {
+    fn test_parse_result_date() -> Result<()> {
         let result = eval("#September 2, 1945#")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "1945-09-02 00:00:00");
         // TODO(db48x): this depends on the current date and so should not be tested
         //assert_eq!(result[0].1, "80 years ago");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_duration() {
+    fn test_parse_result_duration() -> Result<()> {
         let result = eval("1year+1day+1s")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "1 year, 1 day, 1 second");
         assert_eq!(result[0].1, "time");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_conversion() {
+    fn test_parse_result_conversion() -> Result<()> {
         let result = eval("1 kg → gram")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "1000 gram");
         assert_eq!(result[0].1, "mass");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_conversion_with_fractional_dimensions() {
+    fn test_parse_result_conversion_with_fractional_dimensions() -> Result<()> {
         let result = eval("1m → 21|32ft")?;
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, "4.999375 × 21⁄32 foot");
         assert_eq!(result[0].1, "length");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_unit_list() {
+    fn test_parse_result_unit_list() -> Result<()> {
         let result = eval(
             "1month → siderealmonth;fortnight;watch;decimalminute;blink;millisecond;microsecond;shake",
         )?;
@@ -369,11 +390,12 @@ mod tests {
             "1 siderealmonth, 0 fortnight, 18 watch, 115 decimalminute, 18 blink, 768 millisecond, 823 microsecond, 20 shake"
         );
         assert_eq!(result[0].1, "time");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_definition() {
+    fn test_parse_result_definition() -> Result<()> {
         let result = eval("erg")?;
         assert_eq!(result.len(), 1);
         assert_eq!(
@@ -381,11 +403,12 @@ mod tests {
             "Definition: erg = cm dyne = 100 nanojoule (energy; kg m^2 / s^2)"
         );
         assert_eq!(result[0].1, "energy");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_substance() {
+    fn test_parse_result_substance() -> Result<()> {
         let result = eval("hydrogen")?;
         assert_eq!(result.len(), 3);
         let hash = result
@@ -396,20 +419,22 @@ mod tests {
         assert_eq!(hash["atomic_number"], "1");
         assert_eq!(hash["molar_mass"], "1.00794 gram / mole");
         assert_eq!(hash["specific_heat"], "14300 meter^2 / kelvin second^2");
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_factorize() {
+    fn test_parse_result_factorize() -> Result<()> {
         let results = eval("factorize velocity")?;
         assert_eq!(results.len(), 5);
         assert!(results.iter().any(|(f, _)| f == "acceleration⋅time"));
         assert!(results.iter().any(|(f, _)| f == "jerk⋅time²"));
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_search() {
+    fn test_parse_result_search() -> Result<()> {
         let results = eval("search milk")?;
         assert_eq!(results.len(), 5);
         assert!(results.contains(&(String::from("milk"), String::from("substance"))));
@@ -417,11 +442,12 @@ mod tests {
         assert!(results.contains(&(String::from("mile"), String::from("length"))));
         assert!(results.contains(&(String::from("mill"), String::from("dimensionless"))));
         assert!(results.contains(&(String::from("mi"), String::from("length"))));
+        Ok(())
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_parse_result_units_for() {
+    fn test_parse_result_units_for() -> Result<()> {
         let results = eval("units for velocity")?;
         assert_eq!(results.len(), 9);
         assert!(results.contains(&(
@@ -435,5 +461,6 @@ mod tests {
         assert!(results.contains(&(String::from("kine"), String::from("CGS Units"))));
         assert!(results.contains(&(String::from("㎧"), String::from("Unicode aliases"))));
         assert!(results.contains(&(String::from("c, mach"), String::from("Physical Constants"))));
+        Ok(())
     }
 }
