@@ -25,6 +25,9 @@
       <sourceFolder url="file://$MODULE_DIR$/dep-crates/relm4/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/dep-crates/relm4/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/xtask/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dep-crates/hyprland/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dep-crates/hyprland/hyprland-macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dep-crates/hyprland/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/config" />
       <excludeFolder url="file://$MODULE_DIR$/gui-lib/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />

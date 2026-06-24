@@ -1,0 +1,548 @@
+use anyhow::Context;
+use tracing::{debug, info, trace, warn};
+
+use crate::{WS, load::load_toml};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    fs,
+    path::Path,
+    rc::Rc,
+};
+
+#[derive(Clone, Debug)]
+pub struct GraphElement {
+    pub ws: WS,
+    pub published: bool,
+    pub deps: Vec<Rc<RefCell<GraphElement>>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WSD {
+    ws: WS,
+    deps: HashSet<String>,
+}
+
+pub fn load_deps(workspace_members: &[WS]) -> anyhow::Result<Vec<WSD>> {
+    let mut main_cargo =
+        load_toml(&Path::new("Cargo.toml")).context("Failed to load Cargo.toml")?;
+    let workspace_deps = main_cargo
+        .get_mut("workspace")
+        .and_then(|w| w.get_mut("dependencies"))
+        .and_then(|d| d.as_table_like_mut())
+        .context("couldnt find ws dependencies")?;
+    trace!("loaded {} workspace dependencies", workspace_deps.len());
+    let mut ws_dep_names = HashMap::new();
+    for (name, dep) in workspace_deps.iter_mut() {
+        if let Some(dep_table) = dep.as_table_like_mut() {
+            trace!("checking dependency: {name}");
+            if let Some(p) = dep_table.get("path") {
+                if check_dep(
+                    p,
+                    Path::new("."),
+                    dep_table
+                        .get("package")
+                        .and_then(|a| a.as_str().map(String::from))
+                        .unwrap_or_else(|| name.to_string()),
+                    workspace_members,
+                ) {
+                    ws_dep_names.insert(
+                        name.to_string(),
+                        dep_table
+                            .get("package")
+                            .and_then(|a| a.as_str().map(String::from))
+                            .unwrap_or_else(|| name.to_string()),
+                    );
+                }
+            }
+        }
+    }
+
+    let mut members = Vec::with_capacity(workspace_members.len());
+    for member in workspace_members {
+        let mut dep_names = HashSet::new();
+        let path = Path::new(&member.path);
+        let mut main_cargo = load_toml(&path.join("Cargo.toml"))
+            .with_context(|| format!("Failed to load {}", path.display()))?;
+        let name = main_cargo
+            .get("package")
+            .and_then(|p| p.get("name"))
+            .and_then(|n| n.as_str())
+            .with_context(|| format!("Failed to get package name for {}", path.display()))?;
+        if name != member.name {
+            warn!(
+                "workspace member {} has a different package name {} in its Cargo.toml",
+                member.name, name
+            );
+        }
+        let deps = main_cargo
+            .get_mut("dependencies")
+            .and_then(|d| d.as_table_like_mut())
+            .context("couldnt find dependencies")?;
+        trace!(
+            "loaded {} direct dependencies for {}",
+            deps.len(),
+            member.name
+        );
+        for (name, dep) in deps.iter_mut() {
+            if let Some(dep_table) = dep.as_table_like_mut() {
+                trace!("checking dependency: {name}");
+                if let Some(p) = dep_table.get("path") {
+                    if check_dep(
+                        p,
+                        path,
+                        dep_table
+                            .get("package")
+                            .and_then(|a| a.as_str().map(String::from))
+                            .unwrap_or_else(|| name.to_string()),
+                        workspace_members,
+                    ) {
+                        dep_names.insert(
+                            dep_table
+                                .get("package")
+                                .and_then(|a| a.as_str().map(String::from))
+                                .unwrap_or_else(|| name.to_string()),
+                        );
+                    }
+                } else if let Some(ws) = dep_table.get("workspace")
+                    && ws.as_bool() == Some(true)
+                {
+                    trace!("dependency {name} is workspace dependency");
+                    if let Some(real_name) = ws_dep_names.get(&name.to_string()) {
+                        dep_names.insert(real_name.clone());
+                    }
+                } else {
+                    trace!("skipping dependency {name} because it is not a path dependency");
+                }
+            } else {
+                trace!("skipping dependency {name} because it is not a table");
+            }
+        }
+        members.push(WSD {
+            ws: member.clone(),
+            deps: dep_names,
+        });
+    }
+
+    members.sort_by(|a, b| b.deps.len().cmp(&a.deps.len()));
+    trace!("sorted workspace members by number of dependencies");
+    for member in &members {
+        trace!(
+            "workspace member {} has {} dependencies: {:?}",
+            member.ws.name,
+            member.deps.len(),
+            member.deps
+        );
+    }
+    Ok(members)
+}
+
+fn check_dep(
+    p: &toml_edit::Item,
+    member_path: &Path,
+    name: String,
+    workspace_members: &[WS],
+) -> bool {
+    let p = p.as_str().unwrap_or_default();
+    let Ok(ppath) = fs::canonicalize(Path::new(member_path).join(p)) else {
+        trace!("skipping dependency {name} because its path {p} does not resolve to a valid path");
+        return false;
+    };
+    debug!(
+        "found path dependency {name} with path {} in {}",
+        ppath.display(),
+        member_path.display()
+    );
+    // check if the path resolves to a workspace member, if so, update the version
+    if workspace_members.iter().any(|ws| *ws.path == ppath) {
+        debug!(
+            "dependency {name} with path {} in {} is a workspace member",
+            ppath.display(),
+            member_path.display()
+        );
+        return true;
+    } else {
+        trace!(
+            "skipping dependency {name} because its path {p} does not match any workspace member in {workspace_members:?}"
+        );
+    }
+    return false;
+}
+
+pub fn sort_workspace_names(members: Vec<WSD>) -> anyhow::Result<Vec<GraphElement>> {
+    fn build_graph(
+        name: &str,
+        members: &HashMap<String, WSD>,
+        nodes: &mut HashMap<String, Rc<RefCell<GraphElement>>>,
+        visiting: &mut HashSet<String>,
+    ) -> anyhow::Result<Rc<RefCell<GraphElement>>> {
+        if let Some(node) = nodes.get(name) {
+            return Ok(node.clone());
+        }
+
+        let member = members
+            .get(name)
+            .with_context(|| format!("workspace member {name} not found"))?;
+
+        if !visiting.insert(name.to_string()) {
+            anyhow::bail!("cycle detected while visiting workspace member {name}");
+        }
+
+        let node = Rc::new(RefCell::new(GraphElement {
+            ws: member.ws.clone(),
+            published: false,
+            deps: Vec::new(),
+        }));
+        nodes.insert(name.to_string(), node.clone());
+
+        let mut deps = member
+            .deps
+            .iter()
+            .map(|dep| build_graph(dep, members, nodes, visiting))
+            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        visiting.remove(name);
+        deps.sort_by(|a, b| a.borrow().ws.name.cmp(&b.borrow().ws.name));
+        node.borrow_mut().deps = deps;
+
+        Ok(node)
+    }
+
+    let members_by_name = members
+        .into_iter()
+        .map(|member| (member.ws.name.clone(), member))
+        .collect::<HashMap<_, _>>();
+
+    let referenced = members_by_name
+        .values()
+        .flat_map(|member| member.deps.iter().cloned())
+        .collect::<HashSet<_>>();
+
+    for dep in &referenced {
+        if !members_by_name.contains_key(dep) {
+            anyhow::bail!("workspace dependency {dep} not found");
+        }
+    }
+
+    let mut roots = members_by_name
+        .keys()
+        .filter(|name| !referenced.contains(*name))
+        .cloned()
+        .collect::<Vec<_>>();
+    roots.sort();
+
+    let mut nodes = HashMap::new();
+
+    roots
+        .into_iter()
+        .map(|name| {
+            let node = build_graph(&name, &members_by_name, &mut nodes, &mut HashSet::new())?;
+            Ok(node.borrow().clone())
+        })
+        .collect()
+}
+
+impl std::fmt::Display for GraphElement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt_node(
+            node: &GraphElement,
+            f: &mut std::fmt::Formatter<'_>,
+            indent: &str,
+            children_indent: &str,
+        ) -> std::fmt::Result {
+            writeln!(
+                f,
+                "{}{} ({})",
+                indent,
+                node.ws.name,
+                if node.published { "✅" } else { "⌛" }
+            )?;
+            for (idx, dep) in node.deps.iter().enumerate() {
+                let add_ident = if idx == node.deps.iter().len() - 1 {
+                    "└── "
+                } else {
+                    "├── "
+                };
+                let child_ident = if idx == node.deps.iter().len() - 1 {
+                    "    "
+                } else {
+                    "│   "
+                };
+                let dep = dep.borrow();
+                fmt_node(
+                    &dep,
+                    f,
+                    &format!("{}{}", children_indent, add_ident),
+                    &format!("{}{}", children_indent, child_ident),
+                )?;
+            }
+            Ok(())
+        }
+
+        write!(f, "\n")?;
+        fmt_node(self, f, "", "")
+    }
+}
+
+impl IntoIterator for &GraphElement {
+    type Item = Rc<RefCell<GraphElement>>;
+    type IntoIter = GraphElementIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        GraphElementIterator {
+            stack: vec![(Rc::new(RefCell::new(self.clone())), false)],
+        }
+    }
+}
+
+pub struct GraphElementIterator {
+    stack: Vec<(Rc<RefCell<GraphElement>>, bool)>,
+}
+
+impl Iterator for GraphElementIterator {
+    type Item = Rc<RefCell<GraphElement>>;
+
+    fn next(&mut self) -> Option<Rc<RefCell<GraphElement>>> {
+        while let Some((node, visited)) = self.stack.pop() {
+            if visited {
+                return Some(node);
+            }
+
+            let deps = node.borrow().deps.clone();
+            self.stack.push((node, true));
+            for child in deps.into_iter().rev() {
+                self.stack.push((child, false));
+            }
+        }
+
+        None
+    }
+}
+
+pub(crate) fn publish_package(
+    pkg: &Rc<RefCell<GraphElement>>,
+    _dry_run: bool,
+) -> anyhow::Result<()> {
+    // use cargo to publish the package
+
+    pkg.borrow_mut().published = true;
+    Ok(())
+}
+
+#[cfg(test)]
+fn create_test_ws(name: &str) -> WS {
+    return WS {
+        name: name.to_string(),
+        path: name.to_string().into(),
+    };
+}
+
+#[cfg(test)]
+#[derive(Debug, PartialEq, Eq)]
+struct GraphShape {
+    name: String,
+    published: bool,
+    deps: Vec<GraphShape>,
+}
+
+#[cfg(test)]
+fn graph_shape(node: &GraphElement) -> GraphShape {
+    GraphShape {
+        name: node.ws.name.clone(),
+        published: node.published,
+        deps: node
+            .deps
+            .iter()
+            .map(|dep| graph_shape(&dep.borrow()))
+            .collect(),
+    }
+}
+
+#[test]
+fn test_sort_workspace_names_0() {
+    let workspace_members = vec![
+        WSD {
+            ws: create_test_ws("a"),
+            deps: HashSet::from(["b".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("b"),
+            deps: HashSet::new(),
+        },
+    ];
+    let out = sort_workspace_names(workspace_members).unwrap();
+    let exp = vec![GraphShape {
+        name: "a".to_string(),
+        published: false,
+        deps: vec![GraphShape {
+            name: "b".to_string(),
+            published: false,
+            deps: vec![],
+        }],
+    }];
+    assert!(out.len() == exp.len());
+    assert_eq!(out.iter().map(graph_shape).collect::<Vec<_>>(), exp);
+}
+
+#[test]
+fn test_sort_workspace_names_1() {
+    let workspace_members = vec![
+        WSD {
+            ws: create_test_ws("a"),
+            deps: HashSet::from(["b".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("b"),
+            deps: HashSet::from(["c".to_string(), "e".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("c"),
+            deps: HashSet::from(["d".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("d"),
+            deps: HashSet::from(["e".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("e"),
+            deps: HashSet::new(),
+        },
+    ];
+    let out = sort_workspace_names(workspace_members).unwrap();
+    let exp = vec![GraphShape {
+        name: "a".to_string(),
+        published: false,
+        deps: vec![GraphShape {
+            name: "b".to_string(),
+            published: false,
+            deps: vec![
+                GraphShape {
+                    name: "c".to_string(),
+                    published: false,
+                    deps: vec![GraphShape {
+                        name: "d".to_string(),
+                        published: false,
+                        deps: vec![GraphShape {
+                            name: "e".to_string(),
+                            published: false,
+                            deps: vec![],
+                        }],
+                    }],
+                },
+                GraphShape {
+                    name: "e".to_string(),
+                    published: false,
+                    deps: vec![],
+                },
+            ],
+        }],
+    }];
+    assert!(out.len() == exp.len());
+    assert_eq!(out.iter().map(graph_shape).collect::<Vec<_>>(), exp);
+
+    let shared_e = out[0].deps[0].borrow().deps[1].clone();
+    let nested_e = out[0].deps[0].borrow().deps[0].borrow().deps[0]
+        .borrow()
+        .deps[0]
+        .clone();
+    assert!(Rc::ptr_eq(&shared_e, &nested_e));
+}
+
+#[test]
+fn test_sort_workspace_names_2() {
+    let workspace_members = vec![
+        WSD {
+            ws: create_test_ws("a"),
+            deps: HashSet::from(["b".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("b"),
+            deps: HashSet::new(),
+        },
+        WSD {
+            ws: create_test_ws("c"),
+            deps: HashSet::new(),
+        },
+    ];
+    let out = sort_workspace_names(workspace_members).unwrap();
+    let exp = vec![
+        GraphShape {
+            name: "a".to_string(),
+            published: false,
+            deps: vec![GraphShape {
+                name: "b".to_string(),
+                published: false,
+                deps: vec![],
+            }],
+        },
+        GraphShape {
+            name: "c".to_string(),
+            published: false,
+            deps: vec![],
+        },
+    ];
+    assert!(out.len() == exp.len());
+    assert_eq!(out.iter().map(graph_shape).collect::<Vec<_>>(), exp);
+}
+
+#[test]
+fn test_sort_workspace_names_iter_0() {
+    let workspace_members = vec![
+        WSD {
+            ws: create_test_ws("a"),
+            deps: HashSet::from(["b".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("b"),
+            deps: HashSet::new(),
+        },
+    ];
+    let exp = vec!["b", "a"];
+    let out = sort_workspace_names(workspace_members)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    let out_iter = out.into_iter().collect::<Vec<_>>();
+    assert!(out_iter.len() == exp.len());
+    for (i, node) in out_iter.iter().enumerate() {
+        assert!(node.borrow().ws.name == exp[i]);
+    }
+}
+
+#[test]
+fn test_sort_workspace_names_iter_1() {
+    let workspace_members = vec![
+        WSD {
+            ws: create_test_ws("a"),
+            deps: HashSet::from(["b".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("b"),
+            deps: HashSet::from(["c".to_string(), "e".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("c"),
+            deps: HashSet::from(["d".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("d"),
+            deps: HashSet::from(["e".to_string()]),
+        },
+        WSD {
+            ws: create_test_ws("e"),
+            deps: HashSet::new(),
+        },
+    ];
+    let exp = vec!["e", "d", "c", "e", "b", "a"];
+    let out = sort_workspace_names(workspace_members)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    let out_iter = out.into_iter().collect::<Vec<_>>();
+    assert!(out_iter.len() == exp.len());
+    for (i, node) in out_iter.iter().enumerate() {
+        assert!(node.borrow().ws.name == exp[i]);
+    }
+}
