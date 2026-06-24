@@ -1,2 +1,2 @@
 [alias]
-xtask = "run --package hyprshell-xtask --"
+xtask = "run --package hyprshell-xtask -q --"

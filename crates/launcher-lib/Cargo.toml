@@ -2,10 +2,10 @@
 name = "hyprshell-launcher-lib"
 documentation = "https://docs.rs/hyprshell-launcher-lib"
 version = "4.10.8"
-readme.workspace = true
+description = "A library for managing the launcher window in hyprshell"
+readme = "./README.md"
 categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true

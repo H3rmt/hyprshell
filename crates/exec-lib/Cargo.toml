@@ -2,10 +2,10 @@
 name = "hyprshell-exec-lib"
 documentation = "https://docs.rs/hyprshell-exec-lib"
 version = "4.10.8"
-readme.workspace = true
+description = "A library containing hyprland specific code"
+readme = "./README.md"
 categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true

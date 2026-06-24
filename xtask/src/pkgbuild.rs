@@ -16,13 +16,13 @@ pub fn set_version_in_pkgbuild(
     let content = fs::read_to_string(pkgbuild_path).context("failed to read PKGBUILD file")?;
     let mut lines = content
         .lines()
-        .map(|line| line.to_string())
+        .map(std::string::ToString::to_string)
         .collect::<Vec<_>>();
     let version_line_index = lines
         .iter()
         .position(|line| line.starts_with("pkgver="))
         .context("failed to find pkgver line in PKGBUILD file")?;
-    lines[version_line_index] = format!("pkgver={}", version);
+    lines[version_line_index] = format!("pkgver={version}");
     if dry_run {
         info!(
             "Dry run: would update version in {} to {version}. look at trace logs for details",
@@ -58,7 +58,7 @@ pub fn clone_pkgbuild_to_tmp(
     tmp_dir: &std::path::Path,
     private_key: &str,
 ) -> anyhow::Result<PathBuf> {
-    let repo_url = format!("ssh://aur@aur.archlinux.org/{}.git", name);
+    let repo_url = format!("ssh://aur@aur.archlinux.org/{name}.git");
     let key = tmp_dir.join("key");
     let mut key_file =
         File::create(&key).context("failed to create temporary file for private key")?;
@@ -66,7 +66,7 @@ pub fn clone_pkgbuild_to_tmp(
         .set_permissions(std::fs::Permissions::from_mode(0o600))
         .context("failed to set permissions on temporary private key file")?;
     key_file
-        .write_fmt(format_args!("{}\n", private_key))
+        .write_fmt(format_args!("{private_key}\n"))
         .context("failed to write private key to temporary file")?;
     let path = tmp_dir.join(name);
     let output = std::process::Command::new("git")
@@ -209,7 +209,7 @@ pub fn commit_and_push_pkgbuild(
     let args = ["add", "-fv", "PKGBUILD", ".SRCINFO"];
     debug!("running git command with args: {:?}", args);
     let output = std::process::Command::new("git")
-        .args(&args)
+        .args(args)
         .current_dir(pkgbuild_dir)
         .output()
         .context("failed to run git add command")?;
@@ -234,7 +234,7 @@ pub fn commit_and_push_pkgbuild(
         envs.insert("GIT_AUTHOR_EMAIL", email);
     }
     let output = std::process::Command::new("git")
-        .args(&args)
+        .args(args)
         .envs(envs)
         .current_dir(pkgbuild_dir)
         .output()

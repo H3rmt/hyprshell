@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use std::{env, fs};
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
 
 use crate::load::load_toml;
@@ -100,7 +100,7 @@ pub enum Cmd {
         pf: ProfileFrozen,
     },
     /// Run clippy with --fix on all workspace members with the specified profile, and optionally with --frozen. This will attempt to automatically fix any clippy warnings, but may not be able to fix all of them.
-    ClippyFix {
+    Fix {
         #[clap(flatten)]
         pf: ProfileFrozen,
     },
@@ -177,14 +177,14 @@ fn main() -> anyhow::Result<()> {
             Release::SetVersion { version, dry_run } => {
                 let version =
                     semver::Version::parse(&version).context("Failed to parse version")?;
-                let workspace = get_workspace_names(GetWorkspaceConfig {
+                let workspace = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: true,
                     include_xtask: false,
                 })
                 .context("Failed to get workspace members from main Cargo.toml")?;
                 debug!("workspace members: {workspace:?}");
-                for member in workspace.iter() {
+                for member in &workspace {
                     version::increment_versions(&version, member, dry_run)
                         .context("Failed to increment versions")?;
                     version::increment_dependencies(&version, member, &workspace, dry_run)
@@ -196,7 +196,7 @@ fn main() -> anyhow::Result<()> {
                     "packaging/pkgbuild/PKGBUILD-slim",
                     "packaging/pkgbuild/PKGBUILD-bin",
                 ] {
-                    pkgbuild::set_version_in_pkgbuild(&Path::new(path), &version, dry_run)
+                    pkgbuild::set_version_in_pkgbuild(Path::new(path), &version, dry_run)
                         .context("Failed to set version in PKGBUILD")?;
                 }
                 version::update_lockfile(dry_run).context("Failed to update Cargo.lock file")?;
@@ -259,18 +259,18 @@ fn main() -> anyhow::Result<()> {
                 .context("Failed to push PKGBUILD to AUR")?;
                 info!("Comitted and pushed PKGBUILD to AUR");
                 // remove the temporary directory
-                if !dry_run {
-                    fs::remove_dir_all(&tmp_path)
-                        .context("Failed to remove temporary directory")?;
-                } else {
+                if dry_run {
                     info!(
                         "Dry run: not removing temporary directory {}",
                         tmp_path.display()
                     );
+                } else {
+                    fs::remove_dir_all(&tmp_path)
+                        .context("Failed to remove temporary directory")?;
                 }
             }
             Release::Publish { dry_run } => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: true,
                     include_xtask: false,
@@ -293,7 +293,7 @@ fn main() -> anyhow::Result<()> {
         },
         Command::Cmd { command } => match command {
             Cmd::Check { pf } => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: false,
                     include_xtask: true,
@@ -314,12 +314,13 @@ fn main() -> anyhow::Result<()> {
                 args.extend(["--", "--deny", "warnings"]);
                 info!("Running clippy");
                 let out = cmd::run_cargo_command(&args, false).context("Failed to run clippy")?;
+                info!("clippy finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("clippy failed with exit code {out}");
                 }
             }
-            Cmd::ClippyFix { pf } => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+            Cmd::Fix { pf } => {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: false,
                     include_xtask: true,
@@ -341,12 +342,13 @@ fn main() -> anyhow::Result<()> {
                 info!("Running clippy fix");
                 let out =
                     cmd::run_cargo_command(&args, false).context("Failed to run clippy fix")?;
+                info!("clippy fix finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("clippy fix failed with exit code {out}");
                 }
             }
             Cmd::Lint {} => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: false,
                     include_xtask: true,
@@ -355,14 +357,15 @@ fn main() -> anyhow::Result<()> {
                 let mut args = vec!["fmt"];
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 args.extend(["--", "--check"]);
-                info!("Running fmt");
+                info!("Running fmt check");
                 let out = cmd::run_cargo_command(&args, false).context("Failed to run fmt")?;
+                info!("fmt check finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("fmt failed with exit code {out}");
                 }
             }
             Cmd::Format {} => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: false,
                     include_xtask: true,
@@ -372,18 +375,21 @@ fn main() -> anyhow::Result<()> {
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running fmt");
                 let out = cmd::run_cargo_command(&args, false).context("Failed to run fmt")?;
+                info!("fmt finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("fmt failed with exit code {out}");
                 }
             }
             Cmd::Test { no_nextest, pf } => {
-                let ws = get_workspace_names(GetWorkspaceConfig {
+                let ws = get_workspace_names(&GetWorkspaceConfig {
                     include_base: true,
                     include_vendored_deps: false,
                     include_xtask: true,
                 })
                 .context("Failed to get workspace names")?;
-                let mut args = if !no_nextest {
+                let mut args = if no_nextest {
+                    vec!["test", "--profile", &pf.profile, "--all-targets"]
+                } else {
                     vec![
                         "nextest",
                         "run",
@@ -391,8 +397,6 @@ fn main() -> anyhow::Result<()> {
                         &pf.profile,
                         "--all-targets",
                     ]
-                } else {
-                    vec!["test", "--profile", &pf.profile, "--all-targets"]
                 };
                 if pf.frozen {
                     args.push("--frozen");
@@ -401,6 +405,7 @@ fn main() -> anyhow::Result<()> {
                 info!("Running test/nextest");
                 let out =
                     cmd::run_cargo_command(&args, false).context("Failed to run test/nextest")?;
+                info!("test/nextest finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("test/nextest failed with exit code {out}");
                 }
@@ -426,7 +431,7 @@ struct GetWorkspaceConfig {
     include_base: bool,
 }
 
-fn get_workspace_names(config: GetWorkspaceConfig) -> anyhow::Result<Vec<WS>> {
+fn get_workspace_names(config: &GetWorkspaceConfig) -> anyhow::Result<Vec<WS>> {
     let main_cargo =
         load_toml(Path::new("Cargo.toml")).context("Failed to load main Cargo.toml")?;
     let workspace = main_cargo
@@ -442,7 +447,7 @@ fn get_workspace_names(config: GetWorkspaceConfig) -> anyhow::Result<Vec<WS>> {
                 .filter_map(|m| {
                     let can = fs::canonicalize(Path::new(&m))
                         .inspect_err(|e| {
-                            warn!("Failed to canonicalize path for workspace member {m}: {e:?}")
+                            warn!("Failed to canonicalize path for workspace member {m}: {e:?}");
                         })
                         .ok()?;
                     Some(WS {
@@ -493,5 +498,5 @@ fn tmp_dir(name: &str) -> anyhow::Result<PathBuf> {
             tmp_path.display()
         )
     })?;
-    return Ok(tmp_path);
+    Ok(tmp_path)
 }

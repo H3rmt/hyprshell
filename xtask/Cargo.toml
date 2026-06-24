@@ -1,13 +1,10 @@
 [package]
 name = "hyprshell-xtask"
-version = "0.0.0"
 publish = false
+version = "0.0.0"
+description = "Common tasks for hyprshell development and realease"
 edition.workspace = true
-description.workspace = true
 license.workspace = true
-authors.workspace = true
-keywords.workspace = true
-repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]

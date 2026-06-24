@@ -16,5 +16,5 @@ pub fn run_cargo_command(args: &[&str], dry: bool) -> anyhow::Result<u32> {
     if !status.success() {
         debug!("Cargo command failed with status: {status}");
     }
-    return Ok(status.code().unwrap_or(1) as u32);
+    Ok(status.code().unwrap_or(1).cast_unsigned())
 }
