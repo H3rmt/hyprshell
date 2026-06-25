@@ -202,52 +202,7 @@ impl SimpleComponent for SwitchRoot {
                     trace!("not open");
                 }
             }
-            SwitchRootInput::RefreshThumbnails => {
-                let continuous = self.thumbnail_refresh_ms != 0;
-                let Some(mgr) = &mut self.capture_manager else {
-                    return;
-                };
-                let (mut captures, all_done) = {
-                    let display = RootExt::display(&self.window);
-                    let captures = refresh_captures(mgr, &display, continuous);
-                    let done = !continuous && mgr.pending_count() == 0;
-                    (captures, done)
-                };
-                if continuous && self.thumbnail_burst && !captures.is_empty() {
-                    self.thumbnail_burst = false;
-                    if let Some(h) = self.timer_handle.take() {
-                        h.remove();
-                    }
-                    let sender = sender.clone();
-                    self.timer_handle = Some(glib::timeout_add_local(
-                        Duration::from_millis(self.thumbnail_refresh_ms),
-                        move || {
-                            sender.input(SwitchRootInput::RefreshThumbnails);
-                            glib::ControlFlow::Continue
-                        },
-                    ));
-                }
-                if self.switch.switch_workspaces {
-                    for (client_id, texture) in captures {
-                        for (idx, _) in self.items.iter().enumerate() {
-                            self.items.send(
-                                idx,
-                                WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()),
-                            );
-                        }
-                    }
-                } else {
-                    for (idx, item) in self.clients_only.iter().enumerate() {
-                        if let Some(texture) = captures.remove(&item.id) {
-                            self.clients_only
-                                .send(idx, ClientsInput::UpdateThumbnail(texture));
-                        }
-                    }
-                }
-                if all_done && let Some(h) = self.timer_handle.take() {
-                    h.remove();
-                }
-            }
+            SwitchRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
         }
     }
 }
@@ -647,6 +602,53 @@ impl SwitchRoot {
             self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
         } else {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
+        }
+    }
+
+    fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
+        let continuous = self.thumbnail_refresh_ms != 0;
+        let Some(mgr) = &mut self.capture_manager else {
+            return;
+        };
+        let (mut captures, all_done) = {
+            let display = RootExt::display(&self.window);
+            let captures = refresh_captures(mgr, &display, continuous);
+            let done = !continuous && mgr.pending_count() == 0;
+            (captures, done)
+        };
+        if continuous && self.thumbnail_burst && !captures.is_empty() {
+            self.thumbnail_burst = false;
+            if let Some(h) = self.timer_handle.take() {
+                h.remove();
+            }
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(self.thumbnail_refresh_ms),
+                move || {
+                    sender.input(SwitchRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
+        }
+        if self.switch.switch_workspaces {
+            for (client_id, texture) in captures {
+                for (idx, _) in self.items.iter().enumerate() {
+                    self.items.send(
+                        idx,
+                        WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()),
+                    );
+                }
+            }
+        } else {
+            for (idx, item) in self.clients_only.iter().enumerate() {
+                if let Some(texture) = captures.remove(&item.id) {
+                    self.clients_only
+                        .send(idx, ClientsInput::UpdateThumbnail(texture));
+                }
+            }
+        }
+        if all_done && let Some(h) = self.timer_handle.take() {
+            h.remove();
         }
     }
 }

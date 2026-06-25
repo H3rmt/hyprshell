@@ -221,45 +221,7 @@ impl SimpleComponent for OverviewRoot {
                     .input_sender()
                     .emit(OverviewRootInput::CloseOverview(true));
             }
-            OverviewRootInput::RefreshThumbnails => {
-                let continuous = self.thumbnail_refresh_ms != 0;
-                let Some(mgr) = &mut self.capture_manager else {
-                    return;
-                };
-                let Some(display) = Display::default() else {
-                    return;
-                };
-                let (captures, all_done) = {
-                    let captures = refresh_captures(mgr, &display, continuous);
-                    let done = !continuous && mgr.pending_count() == 0;
-                    (captures, done)
-                };
-                if continuous && self.thumbnail_burst && !captures.is_empty() {
-                    self.thumbnail_burst = false;
-                    if let Some(h) = self.timer_handle.take() {
-                        h.remove();
-                    }
-                    let sender = sender.clone();
-                    self.timer_handle = Some(glib::timeout_add_local(
-                        Duration::from_millis(self.thumbnail_refresh_ms),
-                        move || {
-                            sender.input(OverviewRootInput::RefreshThumbnails);
-                            glib::ControlFlow::Continue
-                        },
-                    ));
-                }
-                for (client_id, texture) in captures {
-                    for window in self.windows.values() {
-                        window.emit(OverviewWindowInput::UpdateClientThumbnail(
-                            client_id,
-                            texture.clone(),
-                        ));
-                    }
-                }
-                if all_done && let Some(h) = self.timer_handle.take() {
-                    h.remove();
-                }
-            }
+            OverviewRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
         }
     }
 }
@@ -472,6 +434,46 @@ impl OverviewRoot {
                     window.emit(OverviewWindowInput::ReloadOverview(data));
                 }
             }
+        }
+    }
+
+    fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
+        let continuous = self.thumbnail_refresh_ms != 0;
+        let Some(mgr) = &mut self.capture_manager else {
+            return;
+        };
+        let Some(display) = Display::default() else {
+            return;
+        };
+        let (captures, all_done) = {
+            let captures = refresh_captures(mgr, &display, continuous);
+            let done = !continuous && mgr.pending_count() == 0;
+            (captures, done)
+        };
+        if continuous && self.thumbnail_burst && !captures.is_empty() {
+            self.thumbnail_burst = false;
+            if let Some(h) = self.timer_handle.take() {
+                h.remove();
+            }
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(self.thumbnail_refresh_ms),
+                move || {
+                    sender.input(OverviewRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
+        }
+        for (client_id, texture) in captures {
+            for window in self.windows.values() {
+                window.emit(OverviewWindowInput::UpdateClientThumbnail(
+                    client_id,
+                    texture.clone(),
+                ));
+            }
+        }
+        if all_done && let Some(h) = self.timer_handle.take() {
+            h.remove();
         }
     }
 }
