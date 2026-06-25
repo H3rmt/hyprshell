@@ -90,10 +90,11 @@ impl FactoryComponent for ThemeCarousel {
             gtk::Picture {
                 set_file:  self.theme.image_path.as_ref().map(gio::File::for_path).as_ref(),
                 set_css_classes: &["theme-image"],
-                set_vexpand: true,
-                set_hexpand: false,
-                set_valign: Align::Fill,
-                set_halign: Align::Center,
+                set_margin_top: 50,
+                set_vexpand: false,
+                set_hexpand: true,
+                set_valign: Align::Center,
+                set_halign: Align::Fill,
             }
         }
     }

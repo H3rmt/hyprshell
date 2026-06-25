@@ -1,6 +1,11 @@
 :root {
-    --border-color: rgba(45, 45, 45, 1);
+    --border-color: rgba(45, 45, 45, 0.9);
     --border-color-active: rgba(0, 180, 255, 1);
+
+    --box-shadow-color: rgba(45, 45, 45, 0.6);
+    --box-shadow-multiplier: 1;
+    --box-shadow-launcher-color: rgba(45, 65, 65, 0.6);
+    --box-shadow-launcher-multiplier: 2;
 
     --bg-color: rgba(12, 12, 12, 0.8);
     --bg-color-hover: rgba(28, 28, 28, 1);

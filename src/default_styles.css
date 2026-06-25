@@ -31,12 +31,12 @@ row {
 
 entry {
     background: transparent;
-    color: var(--text-color, rgba(245, 245, 245, 1));
+    color: var(--text-color);
 }
 
 label {
     padding-top: 2px;
-    color: var(--text-color, rgba(245, 245, 245, 1));
+    color: var(--text-color);
 }
 
 /* fix size for icons in launcher */
@@ -69,14 +69,18 @@ flowboxchild:hover {
 tooltip {
     font-size: 1rem;
     padding: 5px;
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border-radius: var(--border-radius, 12px);
-    border: 2px solid var(--border-color, rgba(90, 90, 120, 0.4));
+
+    background: var(--bg-window-color);
+
+    box-shadow: inset 0 0 12px 2px var(--box-shadow-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
 }
 
 /* window text color */
 .window {
-    color: var(--text-color, rgba(245, 245, 245, 1));
+    color: var(--text-color);
     /* padding for the window */
     padding: 18px;
 }

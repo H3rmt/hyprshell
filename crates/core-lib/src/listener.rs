@@ -8,7 +8,6 @@ pub fn hyprshell_config_listener(file_path: &Path) -> anyhow::Result<Inotify> {
         bail!("unable to watch for file changes as the file doesnt exist");
     }
     let inotify = Inotify::init().context("Failed to create watcher")?;
-    info!("Starting hyprshell config reload listener");
 
     inotify
         .watches()
@@ -23,7 +22,6 @@ pub fn hyprshell_css_listener(file_path: &Path) -> anyhow::Result<Inotify> {
         bail!("unable to watch for file changes as the file doesnt exist");
     }
     let inotify = Inotify::init().context("Failed to create watcher")?;
-    info!("Starting hyprshell css reload listener");
 
     inotify
         .watches()

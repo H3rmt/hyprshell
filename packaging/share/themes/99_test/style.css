@@ -1,3 +1,30 @@
+:root {
+    --border-color: orange;
+    --border-color-active: rgba(250, 189, 47, 0.95);
+
+    --box-shadow-color: rgba(0, 0, 0, 0.6);
+    --box-shadow-multiplier: 1;
+    --box-shadow-launcher-color: rgba(0, 0, 0, 0.6);
+    --box-shadow-launcher-multiplier: 1;
+
+    --bg-color: rgba(55, 50, 30, 0.3);
+    --bg-color-hover: rgba(60, 56, 54, 1);
+
+    --border-radius: 12px;
+    --border-size: 2px;
+    --border-style: solid;
+
+    --text-color: rgba(235, 219, 178, 1);
+
+    --window-padding: 3px;
+    --bg-window-color: rgba(29, 32, 33, 0.95);
+}
+
+:root {
+    --box-shadow-color: rgba(0, 0, 0, 0.6);
+    --box-shadow-launcher-color: rgba(0, 0, 0, 0.6);
+}
+
 .window {
     background: rgba(90, 45, 45, 0.9);
 }
@@ -15,7 +42,7 @@
 }
 
 .client-image {
-    background: rgba(45, 60, 90, 0.9);
+    background: rgba(90, 45, 60, 0.9);
 }
 
 .launcher {
@@ -31,7 +58,7 @@
 }
 
 .launcher-item {
-    background: rgba(70, 70, 70, 0.9);
+    background: rgba(255, 0, 0, 0.9);
 }
 
 .launcher-item-inner {
@@ -43,7 +70,7 @@
 }
 
 .launcher-item-image {
-    background: rgb(72/ 45 90 / 0.9);
+    background: rgb(72 45 90 / 0.9);
 }
 
 .launcher-item-details {
@@ -60,7 +87,7 @@
 }
 
 .launcher-plugin {
-    background: rgba(75, 45, 90, 0.9);
+    background: rgba(0, 255, 0, 0.9);
 }
 
 .launcher-plugin-inner {
@@ -68,5 +95,9 @@
 }
 
 .launcher-plugin-key {
-    background: rgba(90, 45, 60, 0.9);
+    background: rgba(61, 148, 150, 0.9);
+}
+
+.launcher-plugin-image {
+    background: rgb(72 45 90 / 0.9);
 }

@@ -165,26 +165,32 @@ fn setup_restart_listener(config_file: &Path, css_path: &Path, restart_tx: &Send
     let tx = restart_tx.clone();
     let mut buffer = [0u8; 4096];
     if let Ok(mut watcher) = hyprshell_config_listener(config_file) {
-        glib::spawn_future_local(async move {
-            let events = watcher
-                .read_events_blocking(&mut buffer)
-                .expect("Failed to read inotify events");
-            for event in events {
-                trace!("Received events: {event:?}");
-                let _ = tx.send_blocking("config");
+        thread::spawn(move || {
+            info!("Starting hyprshell config reload listener");
+            loop {
+                let events = watcher
+                    .read_events_blocking(&mut buffer)
+                    .expect("Failed to read inotify events");
+                for event in events {
+                    trace!("Received events: {event:?}");
+                    let _ = tx.send_blocking("config");
+                }
             }
         });
     }
     let tx = restart_tx.clone();
     let mut buffer2 = [0u8; 4096];
     if let Ok(mut watcher) = hyprshell_css_listener(css_path) {
-        glib::spawn_future_local(async move {
-            let events = watcher
-                .read_events_blocking(&mut buffer2)
-                .expect("Failed to read inotify events");
-            for event in events {
-                trace!("Received events: {event:?}");
-                let _ = tx.send_blocking("config");
+        thread::spawn(move || {
+            info!("Starting hyprshell css reload listener");
+            loop {
+                let events = watcher
+                    .read_events_blocking(&mut buffer2)
+                    .expect("Failed to read inotify events");
+                for event in events {
+                    trace!("Received events: {event:?}");
+                    let _ = tx.send_blocking("config");
+                }
             }
         });
     }

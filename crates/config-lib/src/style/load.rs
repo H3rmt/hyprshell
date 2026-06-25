@@ -71,7 +71,7 @@ pub fn load_themes(
                 };
 
                 let data = parse_data(&data, name);
-                let image_path = dir_path.join("image.png");
+                let image_path = dir_path.join("img.png");
                 themes.push(Theme {
                     is_current: theme_content == current_css,
                     name: name.to_string(),

@@ -89,15 +89,20 @@
 }
 
 .theme {
-    padding: 24px;
+    padding: 26px;
     /*background: red;*/
+
+    border-radius: 18px;
+    border: 2px solid var(--border-color);
+
+    margin: 0 80px;
 }
 
 .theme-image {
     border-radius: 18px;
     border: 2px solid var(--border-color);
-    min-height: 100px;
-    min-width: 100px;
+    min-height: 80px;
+    min-width: 80px;
 }
 
 .blue-label {
