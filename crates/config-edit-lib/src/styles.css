@@ -90,7 +90,6 @@
 
 .theme {
     padding: 26px;
-    /*background: red;*/
 
     border-radius: 18px;
     border: 2px solid var(--border-color);
@@ -101,8 +100,8 @@
 .theme-image {
     border-radius: 18px;
     border: 2px solid var(--border-color);
-    min-height: 80px;
-    min-width: 80px;
+    min-height: 400px;
+    min-width: 400px;
 }
 
 .blue-label {
