@@ -1,6 +1,6 @@
 # Hyprshell
 
-[![crates.io](https://img.shields.io/crates/v/hyprshell.svg)](https://crates.io/crates/hyprshell) [![Docs](https://docs.rs/built/badge.svg)](https://docs.rs/hyprshell)
+[![crates.io](https://img.shields.io/crates/v/hyprshell.svg)](https://crates.io/crates/hyprshell) [![Docs](https://docs.rs/built/badge.svg)](https://docs.rs/hyprshell) [![Tests](https://github.com/H3rmt/hyprshell/actions/workflows/test.yml/badge.svg)](https://github.com/H3rmt/hyprshell/actions/workflows/test.yml)
 
 ![img.png](.github/imgs/img.png)
 
@@ -13,18 +13,17 @@ It provides a customizable GUI for switching between windows or workspaces, laun
 
 - **Window Switching**: Switch between windows or workspaces using keyboard shortcuts in a GUI.
 - **Customizable Keybindings**: Define your own keybindings for window switching and GUI interactions.
-- **Settings App**: Customize switching, launcher behavior, keybindings and themes using a settings app.
+- **Settings App**: Customize switching, launcher behavior, keybindings, and themes using a settings app.
 - **Launcher Integration**: Launch applications directly from the GUI, sorted by usage frequency.
-- **Launcher Plugins**: Different plugins like Web search, terminal commands, actions or calculations can be enabled.
+- **Launcher Plugins**: Different plugins like Web search, terminal commands, actions, or calculations can be enabled.
 - **Theming**: Customize the GUI appearance (gtk4) using [CSS](docs/CONFIGURE.md), Settings app comes with some default themes.
 - **Dynamic Configuration**: Automatically reloads configuration/style changes without restarting the application.
-- **CLI Tooling**: Validate configs, change default applications, inspect launch history and generate shell completions.
-- **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons, launcher matching and default applications.
+- **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons, launcher matching, and default applications.
 - **Nix Support**: Includes a flake and home-manager module for Nix-based setups.
 
 ## Installation
 
-**Minimum hyprland version: 0.55.0, using lua for configuration**
+**Minimum Hyprland version: 0.55.0, using lua or legacy configuration**
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
 
@@ -66,7 +65,7 @@ Build with fewer features in [slim](#feature-flags) mode
 cargo install hyprshell --no-default-features --features "slim"
 ```
 
-Minimum required rustc version: `1.92.0` (11 December 2025)
+Minimum required rustc version: `1.92.0` (from 11 December 2025)
 
 ## Usage
 
@@ -85,7 +84,7 @@ To validate or explain the current configuration, use `hyprshell config check` a
 
 ### Initialization
 
-Enable the systemd service (generated with `hyprshell config generate`) [recommended]:
+Enable the systemd service [recommended]:
 
 ```bash
 systemctl --user enable --now hyprshell.service
@@ -93,7 +92,7 @@ systemctl --user enable --now hyprshell.service
 
 Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
 
-```ini
+```lua
 hl.on("hyprland.start", function()
     -- Run hyprshell daemon
     hl.exec_cmd("hyprshell run")
@@ -105,7 +104,7 @@ end)
 
 ### Debugging
 
-Debug commands are provided to help troubleshoot desktop files, icons, launcher search results, default applications and general system information, see [Debug.md](docs/DEBUG.md) for detailed information about available commands and their usage.
+Debug commands are provided to help troubleshoot desktop files, icons, launcher search results, default applications, and general system information, see [Debug.md](docs/DEBUG.md) for detailed information about available commands and their usage.
 
 ### Feature Flags
 
@@ -113,16 +112,23 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 
 ✨ = included in the slim feature set. (build with ``--no-default-features --features "slim"``)
 
-- `gui_settings_editor`✅✨: Adds the `hyprshell config edit` command to open the settings editor.
 - `json5_config`✅: Adds support for a json5 config file.
+- `gui_settings_editor`✅✨: Adds the `hyprshell config edit` + `hyprshell config generate` command to open the settings editor.
 - `launcher_calc`✅: Adds support for the calc plugin in the launcher.
 - `debug_command`✅✨: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
-- `clipboard_compress_lz4`✅✨: Adds support for compressing clipboard content using lz4.
-- `clipboard_compress_brotli`✅: Adds support for compressing clipboard content using brotli.
-- `clipboard_compress_zstd`✅: Adds support for compressing clipboard content using zstd.
-- `clipboard_encrypt_chacha20poly1305`✅: Adds support for encrypting clipboard content using chacha20poly1305.
-- `clipboard_encrypt_aes_gcm`✅: Adds support for encrypting clipboard content using aes_256_gcm.
-- `ci_config_check`: (!used for ci tests) Adds a command to check if the loaded config is equal to the default config or the full config. Also diables loading of configs without all values.
+
+[//]: # (- `clipboard_compress_lz4`✅✨: Adds support for compressing clipboard content using lz4.)
+
+[//]: # (- `clipboard_compress_brotli`✅: Adds support for compressing clipboard content using brotli.)
+
+[//]: # (- `clipboard_compress_zstd`✅: Adds support for compressing clipboard content using zstd.)
+
+[//]: # (- `clipboard_encrypt_chacha20poly1305`✅: Adds support for encrypting clipboard content using chacha20poly1305.)
+
+[//]: # (- `clipboard_encrypt_aes_gcm`✅: Adds support for encrypting clipboard content using aes_256_gcm.)
+
+- `ci_config_check`: (!used for ci tests) Adds a command to check if the loaded config is equal to the default config or the full config.
+- `dev`: Used to deactivate migrations and other checks. Used if config changes are not implemented in the migrations.
 
 ### Env Variables
 
