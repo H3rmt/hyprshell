@@ -100,9 +100,14 @@ pub fn refresh_captures(
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    let damage_ratio = if total_buffer_area > 0 {
+        (total_damage_area as f64 / total_buffer_area as f64) * 100.0
+    } else {
+        0.0
+    };
     debug!("tick: {:?} total, {} ready, {} textures ({:?} texture_time), {} no_damage, {:?} max_latency, damage_ratio={:.1}%",
-           tick_start.elapsed(), ready_count, textures.len(), total_texture_time, no_damage_count, max_latency,
-           if total_buffer_area > 0 { (total_damage_area as f64 / total_buffer_area as f64) * 100.0 } else { 0.0 });
+           tick_start.elapsed(), ready_count, textures.len(), total_texture_time, no_damage_count, max_latency, damage_ratio);
 
     textures
 }
