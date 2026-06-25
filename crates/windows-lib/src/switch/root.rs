@@ -1,9 +1,10 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
-use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
-use crate::switch::clients::{Clients, ClientsInit};
+use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, refresh_captures};
+use crate::switch::clients::{Clients, ClientsInit, ClientsInput};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
+use exec_lib::wayland_capture::{CaptureManager};
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use relm4::adw::glib::ControlFlow;
@@ -16,7 +17,8 @@ use relm4::prelude::*;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+const KILL_TIMEOUT: Duration  = Duration::from_millis(200);
+const THUMBNAIL_BURST_MS: u64 = 16;
 
 #[derive(Debug)]
 pub struct SwitchRoot {
@@ -33,6 +35,11 @@ pub struct SwitchRoot {
     items: FactoryVecDeque<Workspaces>,
     /// Factory for non-workspace mode (clients)
     clients_only: FactoryVecDeque<Clients>,
+    live_thumbnails: bool,
+    capture_manager: Option<CaptureManager>,
+    timer_handle: Option<glib::SourceId>,
+    thumbnail_refresh_ms: u64,
+    thumbnail_burst: bool,
 }
 
 #[derive(Debug)]
@@ -44,12 +51,14 @@ pub enum SwitchRootInput {
     CloseSwitch(bool),
     CloseCurrentItem,
     ReloadSwitch,
+    RefreshThumbnails,
 }
 
 #[derive(Debug)]
 pub struct SwitchRootInit {
     pub general: config_lib::WindowsGeneral,
     pub switch: config_lib::Switch,
+    pub thumbnail_refresh_ms: u64,
 }
 
 #[derive(Debug)]
@@ -120,6 +129,11 @@ impl SimpleComponent for SwitchRoot {
             data: SwitchData::default(),
             items,
             clients_only,
+            live_thumbnails: std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1"),
+            capture_manager: None,
+            timer_handle: None,
+            thumbnail_refresh_ms: init.thumbnail_refresh_ms,
+            thumbnail_burst: false,
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -155,7 +169,7 @@ impl SimpleComponent for SwitchRoot {
                         .emit(SwitchRootInput::Switch(direction));
                 } else {
                     self.open = true;
-                    self.open_switch(direction);
+                    self.open_switch(direction, &sender);
                 }
             }
             SwitchRootInput::Switch(direction) => {
@@ -188,6 +202,7 @@ impl SimpleComponent for SwitchRoot {
                     trace!("not open");
                 }
             }
+            SwitchRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
         }
     }
 }
@@ -215,7 +230,7 @@ impl SwitchRoot {
         }
     }
 
-    fn open_switch(&mut self, direction: Direction) {
+    fn open_switch(&mut self, direction: Direction, sender: &ComponentSender<Self>) {
         let (hypr_data, active_prev) = match collect_data(&SortConfig {
             filter_current_monitor: self.switch.filter_by_current_monitor,
             filter_current_workspace: self.switch.filter_by_current_workspace,
@@ -265,6 +280,21 @@ impl SwitchRoot {
         } else {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
         }
+
+        if self.live_thumbnails {
+            self.capture_manager = CaptureManager::new()
+                .map_err(|e| error!("{e}"))
+                .ok();
+            self.thumbnail_burst = true;
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(THUMBNAIL_BURST_MS),
+                move || {
+                    sender.input(SwitchRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
+        }
     }
 
     fn populate_workspace_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: Active) {
@@ -298,6 +328,7 @@ impl SwitchRoot {
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
+                live_thumbnails: self.live_thumbnails,
             });
         }
         drop(lock);
@@ -328,6 +359,7 @@ impl SwitchRoot {
                 scale,
                 monitor_data: monitor.clone(),
                 data: client.clone(),
+                live_thumbnails: self.live_thumbnails,
             });
         }
         drop(lock);
@@ -465,6 +497,10 @@ impl SwitchRoot {
                 });
             }
         }
+        if let Some(handle) = self.timer_handle.take() {
+            handle.remove();
+        }
+        self.capture_manager = None;
     }
 
     fn close_item(&self) {
@@ -566,6 +602,53 @@ impl SwitchRoot {
             self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
         } else {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
+        }
+    }
+
+    fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
+        let continuous = self.thumbnail_refresh_ms != 0;
+        let Some(mgr) = &mut self.capture_manager else {
+            return;
+        };
+        let (mut captures, all_done) = {
+            let display = RootExt::display(&self.window);
+            let captures = refresh_captures(mgr, &display, continuous);
+            let done = !continuous && mgr.pending_count() == 0;
+            (captures, done)
+        };
+        if continuous && self.thumbnail_burst && !captures.is_empty() {
+            self.thumbnail_burst = false;
+            if let Some(h) = self.timer_handle.take() {
+                h.remove();
+            }
+            let sender = sender.clone();
+            self.timer_handle = Some(glib::timeout_add_local(
+                Duration::from_millis(self.thumbnail_refresh_ms),
+                move || {
+                    sender.input(SwitchRootInput::RefreshThumbnails);
+                    glib::ControlFlow::Continue
+                },
+            ));
+        }
+        if self.switch.switch_workspaces {
+            for (client_id, texture) in captures {
+                for (idx, _) in self.items.iter().enumerate() {
+                    self.items.send(
+                        idx,
+                        WorkspacesInput::UpdateClientThumbnail(client_id, texture.clone()),
+                    );
+                }
+            }
+        } else {
+            for (idx, item) in self.clients_only.iter().enumerate() {
+                if let Some(texture) = captures.remove(&item.id) {
+                    self.clients_only
+                        .send(idx, ClientsInput::UpdateThumbnail(texture));
+                }
+            }
+        }
+        if all_done && let Some(h) = self.timer_handle.take() {
+            h.remove();
         }
     }
 }
