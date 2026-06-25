@@ -256,8 +256,8 @@ impl SimpleComponent for OverviewRoot {
                         ));
                     }
                 }
-                if all_done {
-                    self.timer_handle.take().map(|h| h.remove());
+                if all_done && let Some(h) = self.timer_handle.take() {
+                    h.remove();
                 }
             }
         }
