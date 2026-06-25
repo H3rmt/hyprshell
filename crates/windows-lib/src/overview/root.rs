@@ -7,7 +7,7 @@ use crate::overview::window::{
 use crate::shared::refresh_captures;
 use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceId};
 use exec_lib::switch::{switch_client, switch_workspace};
-use exec_lib::wayland_capture::{CaptureManager, CaptureMode};
+use exec_lib::wayland_capture::CaptureManager;
 use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
 use relm4::adw::gdk::{Display, Monitor};
 use relm4::adw::glib::ControlFlow;
@@ -290,7 +290,7 @@ impl OverviewRoot {
         self.render(hypr_data, self.data.active, true);
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
+            self.capture_manager = CaptureManager::new()
                 .map_err(|e| error!("{e}"))
                 .ok();
             self.thumbnail_burst = true;

@@ -1,16 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 
-use rustix::fs::MemfdFlags;
-use rustix::mm::{MapFlags, ProtFlags};
 
 pub use wayland_client::backend::ObjectId;
 use wayland_client::backend::WaylandError;
 use wayland_client::protocol::wl_buffer::WlBuffer;
-use wayland_client::protocol::wl_shm::WlShm;
-use wayland_client::protocol::wl_shm_pool::WlShmPool;
-use wayland_client::protocol::{wl_buffer, wl_registry, wl_shm, wl_shm_pool};
-use wayland_client::{Connection, Dispatch, EventQueue, Proxy, WEnum};
+use wayland_client::protocol::{wl_buffer, wl_registry};
+use wayland_client::{Connection, Dispatch, EventQueue, Proxy};
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1;
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1;
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_list_v1;
@@ -47,33 +43,11 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 // Public types
 // ---------------------------------------------------------------------------
 
-pub enum CaptureMode {
-    PreferDmabuf,
-    ForceShm,
-}
-
-#[derive(Debug)]
-pub enum BufferMode {
-    Shm,
-    Dmabuf,
-}
-
 pub struct FrameStats {
     pub latency: Option<std::time::Duration>,
     pub damage_count: u32,
     pub damage_area: u64,
     pub buffer_area: u64,
-}
-
-/// Output of a completed window capture frame.
-///
-/// `Dmabuf` provides a GPU-side file descriptor that can be imported directly
-/// into a `GdkDmabufTextureBuilder` without any CPU copy.
-/// `Shm` provides CPU-accessible pixel data that can be wrapped in a
-/// `GdkMemoryTexture`.
-pub enum CaptureOutput<'a> {
-    Shm(ShmResult),
-    Dmabuf(DmabufResult<'a>),
 }
 
 /// Result of a window capture via DMA-BUF.
@@ -106,7 +80,6 @@ pub struct WindowCapture {
     frame: Option<ExtImageCopyCaptureFrameV1>,
     buffer: WlBuffer,
     fd: OwnedFd,
-    buffer_mode: BufferMode,
     dmabuf_bo: Option<gbm::BufferObject<()>>,
     retired_bos: VecDeque<(gbm::BufferObject<()>, OwnedFd)>,
     fourcc: Option<u32>,
@@ -126,7 +99,6 @@ pub struct CaptureManager {
     captures: HashMap<ObjectId, WindowCapture>,
     state: AppState,
     pending_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1>,
-    use_dmabuf: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +110,6 @@ pub struct CaptureManager {
 #[derive(Debug)]
 struct PerCaptureState {
     buffer_geometry: Option<(u32, u32)>,
-    shm_format: Option<wl_shm::Format>,
     dmabuf_formats: Vec<(u32, Vec<u64>)>,
     session_done: bool,
     ready: bool,
@@ -155,7 +126,6 @@ struct AppState {
     toplevel_mapping_manager: Option<HyprlandToplevelMappingManagerV1>,
     address_map: HashMap<ObjectId, ClientId>,
     // globals
-    wl_shm: Option<WlShm>,
     source_manager: Option<ExtForeignToplevelImageCaptureSourceManagerV1>,
     copy_capture_manager: Option<ExtImageCopyCaptureManagerV1>,
     linux_dmabuf: Option<ZwpLinuxDmabufV1>,
@@ -260,11 +230,6 @@ impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
                     .collect();
                 cs.dmabuf_formats.push((format, mods));
             }
-            ext_image_copy_capture_session_v1::Event::ShmFormat {
-                format: WEnum::Value(fmt),
-            } => {
-                cs.shm_format = Some(fmt);
-            }
             ext_image_copy_capture_session_v1::Event::BufferSize { width, height } => {
                 let new_geom = (width, height);
                 if cs.buffer_geometry.is_some() && cs.buffer_geometry != Some(new_geom) {
@@ -322,30 +287,6 @@ impl Dispatch<WlBuffer, ObjectId> for AppState {
 }
 
 // Globals and toplevel discovery use () user data (no per-capture routing).
-
-impl Dispatch<WlShmPool, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &WlShmPool,
-        _event: wl_shm_pool::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<WlShm, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &WlShm,
-        _event: wl_shm::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
 
 impl Dispatch<ZwpLinuxBufferParamsV1, ObjectId> for AppState {
     fn event(
@@ -466,13 +407,6 @@ impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
                 name,
                 interface,
                 version,
-            } if interface == "wl_shm" => {
-                state.wl_shm = Some(proxy.bind::<WlShm, _, _>(name, version.min(1), qhandle, ()));
-            }
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
             } if interface == "zwp_linux_dmabuf_v1" => {
                 state.linux_dmabuf =
                     Some(proxy.bind::<ZwpLinuxDmabufV1, _, _>(name, version.min(4), qhandle, ()));
@@ -537,14 +471,13 @@ impl CaptureManager {
     /// Connect to the Wayland compositor, discover all toplevel windows
     /// and start capturing each one.
     #[allow(clippy::needless_pass_by_value)]
-    pub fn new(mode: CaptureMode) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let connection = Connection::connect_to_env()?;
         let mut event_queue = connection.new_event_queue::<AppState>();
         let mut state = AppState {
             toplevels: Vec::new(),
             toplevel_mapping_manager: None,
             address_map: HashMap::new(),
-            wl_shm: None,
             source_manager: None,
             copy_capture_manager: None,
             linux_dmabuf: None,
@@ -557,14 +490,11 @@ impl CaptureManager {
         event_queue.roundtrip(&mut state)?;
         event_queue.roundtrip(&mut state)?;
 
-        let use_dmabuf = matches!(mode, CaptureMode::PreferDmabuf);
-
         Ok(Self {
             connection,
             event_queue,
             state,
             captures: HashMap::new(),
-            use_dmabuf,
             pending_sessions: HashMap::new(),
         })
     }
@@ -621,50 +551,22 @@ impl CaptureManager {
         self.state.address_map.get(obj_id).copied()
     }
 
+    #[must_use]
     pub fn pending_count(&self) -> usize {
         self.state.captures.values().filter(|c| !c.ready && !c.failed).count()
     }
 
-    pub fn take_output(&self, index: &ObjectId) -> Result<CaptureOutput<'_>> {
+    pub fn take_output(&self, index: &ObjectId) -> Result<DmabufResult<'_>> {
         let wc = &self.captures[index];
-
-        match &wc.buffer_mode {
-            BufferMode::Shm => {
-                let (mmapped_ptr, pixels) = unsafe {
-                    let mmapped_ptr = rustix::mm::mmap(
-                        std::ptr::null_mut(),
-                        wc.size as usize,
-                        ProtFlags::READ,
-                        MapFlags::SHARED,
-                        &wc.fd,
-                        0,
-                    )?;
-                    let data =
-                        std::slice::from_raw_parts(mmapped_ptr as *const u8, wc.size as usize);
-                    (mmapped_ptr, data.to_vec())
-                };
-                unsafe {
-                    rustix::mm::munmap(mmapped_ptr, wc.size as usize)?;
-                }
-                Ok(CaptureOutput::Shm(ShmResult {
-                    pixels,
-                    width: wc.width,
-                    height: wc.height,
-                    stride: wc.stride,
-                }))
-            }
-            BufferMode::Dmabuf => {
-                let bo = wc.dmabuf_bo.as_ref().ok_or("no dmabuf buffer object")?;
-                Ok(CaptureOutput::Dmabuf(DmabufResult {
-                    fd: wc.fd.as_fd(),
-                    fourcc: wc.fourcc.ok_or("no fourcc format")?,
-                    modifier: bo.modifier().into(),
-                    width: wc.width,
-                    height: wc.height,
-                    stride: wc.stride,
-                }))
-            }
-        }
+        let bo = wc.dmabuf_bo.as_ref().ok_or("no dmabuf buffer object")?;
+        Ok(DmabufResult {
+            fd: wc.fd.as_fd(),
+            fourcc: wc.fourcc.ok_or("no fourcc format")?,
+            modifier: bo.modifier().into(),
+            width: wc.width,
+            height: wc.height,
+            stride: wc.stride,
+        })
     }
 
     pub fn capture_next(&mut self, index: &ObjectId) -> Result<()> {
@@ -757,7 +659,6 @@ impl CaptureManager {
             &self.state,
             &self.event_queue,
             ready_sessions.clone(),
-            self.use_dmabuf,
             gbm_dev,
         )?;
 
@@ -803,6 +704,7 @@ impl CaptureManager {
         }
     }
 
+    #[must_use]
     pub fn frame_stats(&self, id: &ObjectId) -> Option<FrameStats> {
         let wc = self.captures.get(id)?;
         let cs = self.state.captures.get(id)?;
@@ -840,7 +742,6 @@ impl CaptureManager {
                 id.clone(),
                 PerCaptureState {
                     buffer_geometry: None,
-                    shm_format: None,
                     dmabuf_formats: Vec::new(),
                     session_done: false,
                     ready: false,
@@ -875,7 +776,6 @@ impl CaptureManager {
         state: &AppState,
         event_queue: &EventQueue<AppState>,
         sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1>,
-        use_dmabuf: bool,
         gbm_dev: Option<&gbm::Device<OwnedFd>>,
     ) -> Result<HashMap<ObjectId, WindowCapture>> {
         let mut window_captures: HashMap<ObjectId, WindowCapture> = HashMap::new();
@@ -886,94 +786,67 @@ impl CaptureManager {
                 .buffer_geometry
                 .ok_or_else(|| format!("capture {id}: no buffer geometry"))?;
 
-            let (buffer_mode, dmabuf_bo, fourcc, fd, buffer, stride, size) = if use_dmabuf
-                && !cs.dmabuf_formats.is_empty()
-            {
-                // If gbm_dev is not set, we still need to wait for
-                // dispatchers to initialize the GPU device.
-                let Some(dev) = gbm_dev else { continue };
+            // If gbm_dev is not set, we still need to wait for
+            // dispatchers to initialize the GPU device.
+            let Some(dev) = gbm_dev else { continue };
 
-                let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
-                let mut filtered: Vec<u64> = modifiers
-                    .iter()
-                    .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
-                    .copied()
-                    .collect();
+            let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
+            let mut filtered: Vec<u64> = modifiers
+                .iter()
+                .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
+                .copied()
+                .collect();
 
-                // Prefer LINEAR modifier if available.
-                if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
-                    filtered = vec![DRM_FORMAT_MOD_LINEAR];
-                }
+            // Prefer LINEAR modifier if available.
+            if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
+                filtered = vec![DRM_FORMAT_MOD_LINEAR];
+            }
 
-                let gbm_bo = dev.create_buffer_object_with_modifiers::<()>(
-                    width,
-                    height,
-                    gbm::Format::try_from(*chosen_fmt)?,
-                    filtered.iter().map(|&m| gbm::Modifier::from(m)),
-                )?;
-                let dmabuf_fd = gbm_bo.fd()?;
-                let stride = gbm_bo.stride();
-                let modifier = gbm_bo.modifier();
+            let gbm_bo = dev.create_buffer_object_with_modifiers::<()>(
+                width,
+                height,
+                gbm::Format::try_from(*chosen_fmt)?,
+                filtered.iter().map(|&m| gbm::Modifier::from(m)),
+            )?;
+            let dmabuf_fd = gbm_bo.fd()?;
+            let stride = gbm_bo.stride();
+            let modifier = gbm_bo.modifier();
 
-                let linux_dmabuf = state
-                    .linux_dmabuf
-                    .as_ref()
-                    .ok_or("No zwp_linux_dmabuf_v1")?;
-                let params = linux_dmabuf.create_params(&event_queue.handle(), id.clone());
+            let linux_dmabuf = state
+                .linux_dmabuf
+                .as_ref()
+                .ok_or("No zwp_linux_dmabuf_v1")?;
+            let params = linux_dmabuf.create_params(&event_queue.handle(), id.clone());
 
-                let mod_val: u64 = modifier.into();
-                params.add(
-                    dmabuf_fd.as_fd(),
-                    0,
-                    0,
-                    stride,
-                    (mod_val >> 32) as u32,
-                    (mod_val & 0xFFFF_FFFF) as u32,
-                );
-                let buffer = params.create_immed(
-                    width as i32,
-                    height as i32,
-                    *chosen_fmt,
-                    zwp_linux_buffer_params_v1::Flags::empty(),
-                    &event_queue.handle(),
-                    id.clone(),
-                );
-                let size = stride * height;
+            let mod_val: u64 = modifier.into();
+            params.add(
+                dmabuf_fd.as_fd(),
+                0,
+                0,
+                stride,
+                (mod_val >> 32) as u32,
+                (mod_val & 0xFFFF_FFFF) as u32,
+            );
+            let buffer = params.create_immed(
+                width as i32,
+                height as i32,
+                *chosen_fmt,
+                zwp_linux_buffer_params_v1::Flags::empty(),
+                &event_queue.handle(),
+                id.clone(),
+            );
+            let size = stride * height;
 
-                (
-                    BufferMode::Dmabuf,
-                    Some(gbm_bo),
-                    Some(*chosen_fmt),
-                    dmabuf_fd,
-                    buffer,
-                    stride,
-                    size,
-                )
-            } else {
-                let shm_format = cs
-                    .shm_format
-                    .ok_or_else(|| format!("capture {id}: no shm format"))?;
-                let stride = width * 4;
-                let size = stride * height;
+            let (dmabuf_bo, fourcc, fd, buffer, stride, size) = (
+                Some(gbm_bo),
+                Some(*chosen_fmt),
+                dmabuf_fd,
+                buffer,
+                stride,
+                size,
+            );
 
-                let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
-                rustix::fs::ftruncate(&fd, size.into())?;
-
-                let wlshm = state.wl_shm.as_ref().ok_or("No wl_shm")?;
-                let pool = wlshm.create_pool(fd.as_fd(), size as i32, &event_queue.handle(), ());
-                let buffer = pool.create_buffer(
-                    0,
-                    width as i32,
-                    height as i32,
-                    stride as i32,
-                    shm_format,
-                    &event_queue.handle(),
-                    id.clone(),
-                );
-                (BufferMode::Shm, None, None, fd, buffer, stride, size)
-            };
-
-            debug!("Capture allocated: mode={buffer_mode:?}, {width}x{height}");
+            debug!("Capture allocated: {width}x{height}");
             window_captures.insert(
                 id,
                 WindowCapture {
@@ -981,7 +854,6 @@ impl CaptureManager {
                     frame: None,
                     buffer,
                     fd,
-                    buffer_mode,
                     dmabuf_bo,
                     retired_bos: VecDeque::new(),
                     fourcc,
@@ -1025,124 +897,74 @@ impl CaptureManager {
         // Destroy old buffer.
         wc.buffer.destroy();
 
-        match &wc.buffer_mode {
-            BufferMode::Dmabuf => {
-                let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
-                let mut filtered: Vec<u64> = modifiers
-                    .iter()
-                    .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
-                    .copied()
-                    .collect();
-                if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
-                    filtered = vec![DRM_FORMAT_MOD_LINEAR];
-                }
+        let (chosen_fmt, modifiers) = &cs.dmabuf_formats[0];
+        let mut filtered: Vec<u64> = modifiers
+            .iter()
+            .filter(|&&m| m != DRM_FORMAT_MOD_INVALID)
+            .copied()
+            .collect();
+        if filtered.contains(&DRM_FORMAT_MOD_LINEAR) {
+            filtered = vec![DRM_FORMAT_MOD_LINEAR];
+        }
 
-                let dev = self
-                    .state
-                    .gbm_dev
-                    .as_ref()
-                    .map_err(ToString::to_string)?
-                    .as_ref()
-                    .ok_or("gbm device not initialized")?;
-                let gbm_bo = dev.create_buffer_object_with_modifiers::<()>(
-                    width,
-                    height,
-                    gbm::Format::try_from(*chosen_fmt)?,
-                    filtered.iter().map(|&m| gbm::Modifier::from(m)),
-                )?;
-                let dmabuf_fd = gbm_bo.fd()?;
-                let stride = gbm_bo.stride();
-                let modifier = gbm_bo.modifier();
+        let dev = self
+            .state
+            .gbm_dev
+            .as_ref()
+            .map_err(ToString::to_string)?
+            .as_ref()
+            .ok_or("gbm device not initialized")?;
+        let gbm_bo = dev.create_buffer_object_with_modifiers::<()>(
+            width,
+            height,
+            gbm::Format::try_from(*chosen_fmt)?,
+            filtered.iter().map(|&m| gbm::Modifier::from(m)),
+        )?;
+        let dmabuf_fd = gbm_bo.fd()?;
+        let stride = gbm_bo.stride();
+        let modifier = gbm_bo.modifier();
 
-                let linux_dmabuf = self
-                    .state
-                    .linux_dmabuf
-                    .as_ref()
-                    .ok_or("No zwp_linux_dmabuf_v1")?;
-                let params = linux_dmabuf.create_params(&self.event_queue.handle(), index.clone());
+        let linux_dmabuf = self
+            .state
+            .linux_dmabuf
+            .as_ref()
+            .ok_or("No zwp_linux_dmabuf_v1")?;
+        let params = linux_dmabuf.create_params(&self.event_queue.handle(), index.clone());
 
-                let mod_val: u64 = modifier.into();
-                params.add(
-                    dmabuf_fd.as_fd(),
-                    0,
-                    0,
-                    stride,
-                    (mod_val >> 32) as u32,
-                    (mod_val & 0xFFFF_FFFF) as u32,
-                );
-                let buffer = params.create_immed(
-                    width as i32,
-                    height as i32,
-                    *chosen_fmt,
-                    zwp_linux_buffer_params_v1::Flags::empty(),
-                    &self.event_queue.handle(),
-                    index.clone(),
-                );
-                if let Some(old_bo) = wc.dmabuf_bo.take() {
-                    let old_fd = std::mem::replace(&mut wc.fd, dmabuf_fd);
-                    wc.retired_bos.push_back((old_bo, old_fd));
-                    while wc.retired_bos.len() > 3 {
-                        wc.retired_bos.pop_front();
-                    }
-                }
-
-                wc.dmabuf_bo = Some(gbm_bo);
-                wc.buffer = buffer;
-                wc.fourcc = Some(*chosen_fmt);
-                wc.width = width;
-                wc.height = height;
-                wc.stride = stride;
-                wc.size = stride * height;
-            }
-            BufferMode::Shm => {
-                let shm_format = cs.shm_format.ok_or("no shm format for reallocation")?;
-                let stride = width * 4;
-                let size = stride * height;
-
-                let fd = rustix::fs::memfd_create("capture", MemfdFlags::CLOEXEC)?;
-                rustix::fs::ftruncate(&fd, size.into())?;
-
-                let wlshm = self.state.wl_shm.as_ref().ok_or("No wl_shm")?;
-                let pool =
-                    wlshm.create_pool(fd.as_fd(), size as i32, &self.event_queue.handle(), ());
-                let buffer = pool.create_buffer(
-                    0,
-                    width as i32,
-                    height as i32,
-                    stride as i32,
-                    shm_format,
-                    &self.event_queue.handle(),
-                    index.clone(),
-                );
-
-                wc.fd = fd;
-                wc.buffer = buffer;
-                wc.width = width;
-                wc.height = height;
-                wc.stride = stride;
-                wc.size = size;
+        let mod_val: u64 = modifier.into();
+        params.add(
+            dmabuf_fd.as_fd(),
+            0,
+            0,
+            stride,
+            (mod_val >> 32) as u32,
+            (mod_val & 0xFFFF_FFFF) as u32,
+        );
+        let buffer = params.create_immed(
+            width as i32,
+            height as i32,
+            *chosen_fmt,
+            zwp_linux_buffer_params_v1::Flags::empty(),
+            &self.event_queue.handle(),
+            index.clone(),
+        );
+        if let Some(old_bo) = wc.dmabuf_bo.take() {
+            let old_fd = std::mem::replace(&mut wc.fd, dmabuf_fd);
+            wc.retired_bos.push_back((old_bo, old_fd));
+            while wc.retired_bos.len() > 3 {
+                wc.retired_bos.pop_front();
             }
         }
+
+        wc.dmabuf_bo = Some(gbm_bo);
+        wc.buffer = buffer;
+        wc.fourcc = Some(*chosen_fmt);
+        wc.width = width;
+        wc.height = height;
+        wc.stride = stride;
+        wc.size = stride * height;
 
         Ok(())
     }
 }
 
-/// Capture the first available toplevel window (one-shot, shm only).
-/// Returns raw pixels in BGRA format.
-pub fn capture() -> Result<ShmResult> {
-    let mut mgr = CaptureManager::new(CaptureMode::ForceShm)?;
-
-    let id = mgr
-        .state
-        .toplevels
-        .first()
-        .ok_or("no toplevel windows found")?
-        .id();
-    mgr.blocking_dispatch_until_ready(&id)?;
-
-    match mgr.take_output(&id)? {
-        CaptureOutput::Shm(result) => Ok(result),
-        CaptureOutput::Dmabuf(_) => unreachable!("ForceShm mode should never produce Dmabuf"),
-    }
-}

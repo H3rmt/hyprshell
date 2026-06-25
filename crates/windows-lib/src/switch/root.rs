@@ -4,7 +4,7 @@ use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, refresh_capture
 use crate::switch::clients::{Clients, ClientsInit, ClientsInput};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
-use exec_lib::wayland_capture::{CaptureManager, CaptureMode};
+use exec_lib::wayland_capture::{CaptureManager};
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use relm4::adw::glib::ControlFlow;
@@ -327,7 +327,7 @@ impl SwitchRoot {
         }
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new(CaptureMode::PreferDmabuf)
+            self.capture_manager = CaptureManager::new()
                 .map_err(|e| error!("{e}"))
                 .ok();
             self.thumbnail_burst = true;

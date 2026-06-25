@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::os::fd::AsRawFd;
 
-use relm4::adw::prelude::*;
-use relm4::adw::{glib, gtk};
+use relm4::adw::gtk;
 use tracing::{debug, trace, warn};
 
 use core_lib::ClientId;
-use exec_lib::wayland_capture::{CaptureManager, CaptureOutput, ObjectId};
+use exec_lib::wayland_capture::{CaptureManager, ObjectId};
 
 pub fn refresh_captures(
     mgr: &mut CaptureManager,
@@ -65,13 +64,27 @@ pub fn refresh_captures(
 
         let t0 = std::time::Instant::now();
         let texture = match mgr.take_output(obj_id) {
-            Ok(output) => match create_texture(output, display) {
-                Ok(tex) => Some(tex),
-                Err(e) => {
-                    warn!("Failed to create texture for client {client_id}: {e}");
-                    None
-                }
-            },
+            Ok(output) => {
+                let tex = unsafe {
+                    gtk::gdk::DmabufTextureBuilder::new()
+                        .set_display(display)
+                        .set_width(output.width)
+                        .set_height(output.height)
+                        .set_fourcc(output.fourcc)
+                        .set_modifier(output.modifier)
+                        .set_n_planes(1)
+                        .set_fd(0, output.fd.as_raw_fd())
+                        .set_stride(0, output.stride)
+                        .set_offset(0, 0)
+                        .build()
+                };
+                match tex {
+                    Ok(t) => Some(t),
+                    Err(e) => {
+                        warn!("Failed to create texture for client {client_id}: {e}");
+                        None
+                    }
+                }},
             Err(e) => {
                 warn!("Failed to take capture output for client {client_id}: {e}");
                 None
@@ -94,40 +107,3 @@ pub fn refresh_captures(
     textures
 }
 
-/// Convert a [`CaptureOutput`] into a [`gtk::gdk::Texture`].
-///
-/// For `Dmabuf` output, builds a `DmabufTexture` via the GDK DMA-BUF
-/// importer (zero-copy, GPU-side).
-/// For `Shm` output, wraps the pixel buffer in a `MemoryTexture`
-/// (CPU-side copy).
-fn create_texture(
-    output: CaptureOutput,
-    display: &gtk::gdk::Display,
-) -> Result<gtk::gdk::Texture, glib::Error> {
-    match output {
-        CaptureOutput::Dmabuf(dmabuf) => unsafe {
-            gtk::gdk::DmabufTextureBuilder::new()
-                .set_display(display)
-                .set_width(dmabuf.width)
-                .set_height(dmabuf.height)
-                .set_fourcc(dmabuf.fourcc)
-                .set_modifier(dmabuf.modifier)
-                .set_n_planes(1)
-                .set_fd(0, dmabuf.fd.as_raw_fd())
-                .set_stride(0, dmabuf.stride)
-                .set_offset(0, 0)
-                .build()
-        },
-        CaptureOutput::Shm(shm_result) => {
-            let bytes = gtk::glib::Bytes::from(&shm_result.pixels);
-            Ok(gtk::gdk::MemoryTexture::new(
-                shm_result.width.cast_signed(),
-                shm_result.height.cast_signed(),
-                gtk::gdk::MemoryFormat::B8g8r8a8Premultiplied,
-                &bytes,
-                shm_result.stride as usize,
-            )
-            .upcast())
-        }
-    }
-}
