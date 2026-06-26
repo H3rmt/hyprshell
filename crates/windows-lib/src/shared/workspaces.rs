@@ -36,6 +36,7 @@ pub struct WorkspacesInit {
     pub scale: f64,
     pub clients: Vec<(ClientId, ClientData)>,
     pub live_thumbnails: bool,
+    pub live_thumbnails_icons: bool,
 }
 
 #[derive(Debug)]
@@ -107,6 +108,7 @@ impl FactoryComponent for Workspaces {
                         scale: init.scale,
                         data: client.clone(),
                         live_thumbnails: init.live_thumbnails,
+                        live_thumbnails_icons: init.live_thumbnails_icons,
                     });
                 }
             }

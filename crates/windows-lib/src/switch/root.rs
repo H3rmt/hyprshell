@@ -36,6 +36,8 @@ pub struct SwitchRoot {
     /// Factory for non-workspace mode (clients)
     clients_only: FactoryVecDeque<crate::switch::clients::Clients>,
     live_thumbnails: bool,
+    live_thumbnails_icons: bool,
+
     capture_manager: Option<CaptureManager>,
     timer_handle: Option<glib::SourceId>,
     thumbnail_refresh_ms: u64,
@@ -131,6 +133,8 @@ impl SimpleComponent for SwitchRoot {
             items,
             clients_only,
             live_thumbnails: std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1"),
+            live_thumbnails_icons: std::env::var_os("HYPRSHELL_EXPERIMENTAL_ICONS")
+                .is_none_or(|v| v != "0"),
             capture_manager: None,
             timer_handle: None,
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
@@ -328,6 +332,7 @@ impl SwitchRoot {
                 scale,
                 clients: workspace_clients,
                 live_thumbnails: self.live_thumbnails,
+                live_thumbnails_icons: self.live_thumbnails_icons,
             });
         }
         drop(lock);

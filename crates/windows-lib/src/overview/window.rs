@@ -22,6 +22,7 @@ pub struct OverviewWindow {
     /// Factory for workspaces
     items: FactoryVecDeque<Workspaces>,
     live_thumbnails: bool,
+    live_thumbnails_icons: bool,
 }
 
 #[derive(Debug)]
@@ -39,6 +40,7 @@ pub struct OverviewWindowInit {
     pub general: config_lib::WindowsGeneral,
     pub gtk_monitor: gdk::Monitor,
     pub live_thumbnails: bool,
+    pub live_thumbnails_icons: bool,
 }
 
 #[derive(Debug)]
@@ -92,6 +94,7 @@ impl SimpleComponent for OverviewWindow {
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
             items,
             live_thumbnails: init.live_thumbnails,
+            live_thumbnails_icons: init.live_thumbnails_icons,
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -192,6 +195,7 @@ impl OverviewWindow {
                 scale,
                 clients: workspace_clients,
                 live_thumbnails: self.live_thumbnails,
+                live_thumbnails_icons: self.live_thumbnails_icons,
             });
         }
         drop(lock);

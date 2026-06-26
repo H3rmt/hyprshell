@@ -84,6 +84,8 @@ impl SimpleComponent for OverviewRoot {
         let mut windows = BTreeMap::new();
 
         let live_thumbnails = std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1");
+        let live_thumbnails_icons =
+            std::env::var_os("HYPRSHELL_EXPERIMENTAL_ICONS").is_none_or(|v| v != "0");
 
         let monitors = exec_lib::collect::get_monitors();
         let gmonitors = Display::default()
@@ -103,6 +105,7 @@ impl SimpleComponent for OverviewRoot {
                         general: init.general.clone(),
                         gtk_monitor,
                         live_thumbnails,
+                        live_thumbnails_icons,
                     })
                     .forward(sender.input_sender(), |m| match m {
                         OverviewWindowOutput::Clicked(ws) => {
