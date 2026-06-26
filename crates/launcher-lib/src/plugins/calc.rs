@@ -1,4 +1,5 @@
 use crate::plugin::{HighlightElement, LaunchItem, MatchedLaunchItem};
+use config_lib::CalcPluginConfig;
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
 use rink_core::output::{NumberParts, QueryReply};
@@ -22,7 +23,15 @@ pub fn init_context() {
     get_context();
 }
 
-pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
+pub fn get_launch_items(text: &str, calc: &CalcPluginConfig) -> Vec<MatchedLaunchItem> {
+    let text = if let Some(prefix) = &calc.prefix {
+        if !text.starts_with(prefix) {
+            return vec![];
+        }
+        &text[prefix.len()..]
+    } else {
+        text
+    };
     let Some(context_lock) = get_context() else {
         return vec![];
     };

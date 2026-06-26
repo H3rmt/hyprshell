@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::os::fd::AsRawFd;
 
 use relm4::adw::gtk;
-use tracing::{debug, trace, warn};
+use tracing::{trace, warn};
 
 use core_lib::ClientId;
 use exec_lib::wayland_capture::{CaptureManager, ObjectId};
@@ -84,7 +84,8 @@ pub fn refresh_captures(
                         warn!("Failed to create texture for client {client_id}: {e}");
                         None
                     }
-                }},
+                }
+            }
             Err(e) => {
                 warn!("Failed to take capture output for client {client_id}: {e}");
                 None
@@ -106,9 +107,16 @@ pub fn refresh_captures(
     } else {
         0.0
     };
-    debug!("tick: {:?} total, {} ready, {} textures ({:?} texture_time), {} no_damage, {:?} max_latency, damage_ratio={:.1}%",
-           tick_start.elapsed(), ready_count, textures.len(), total_texture_time, no_damage_count, max_latency, damage_ratio);
+    trace!(
+        "screen capture tick: {:?} total, {} ready, {} textures ({:?} texture_time), {} no_damage, {:?} max_latency, damage_ratio={:.1}%",
+        tick_start.elapsed(),
+        ready_count,
+        textures.len(),
+        total_texture_time,
+        no_damage_count,
+        max_latency,
+        damage_ratio
+    );
 
     textures
 }
-

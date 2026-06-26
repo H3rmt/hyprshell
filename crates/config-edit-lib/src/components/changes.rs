@@ -210,6 +210,18 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                             ),
                         );
                     }
+                    if prev_config.windows.overview.top_offset != config.windows.overview.top_offset
+                    {
+                        add_info_subtitle(
+                            changes,
+                            "Changed overview top offset",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.overview.top_offset,
+                                config.windows.overview.top_offset,
+                            ),
+                        );
+                    }
                     if prev_config.windows.overview.launcher.launch_modifier
                         != config.windows.overview.launcher.launch_modifier
                     {
@@ -570,13 +582,37 @@ fn add_plugin_changes(changes: &gtk::ListBox, prev: &Plugins, current: &Plugins)
     }
 
     match (&prev.calc.enabled, &current.calc.enabled) {
+        (false, false) => {}
         (true, false) => {
             add_info(changes, "Disabled Calculator Plugin");
         }
-        (false, true) => {
-            add_info(changes, "Enabled Calculator Plugin");
+        (_, true) => {
+            if !prev.calc.enabled {
+                add_info(changes, "Enabled Calculator Plugin");
+            }
+            match (&prev.calc.prefix, &current.calc.prefix) {
+                (None, None) => {}
+                (Some(_), None) => {
+                    add_info(changes, "Disabled calculator plugin prefix");
+                }
+                (None, Some(dt)) => {
+                    add_info_subtitle(
+                        changes,
+                        "Enabled calculator plugin prefix",
+                        format!("{dt:?}"),
+                    );
+                }
+                (Some(pdt), Some(cdt)) => {
+                    if pdt != cdt {
+                        add_info_subtitle(
+                            changes,
+                            "Changed calculator plugin prefix",
+                            format!("{pdt:?} -> {cdt:?}"),
+                        );
+                    }
+                }
+            }
         }
-        _ => {}
     }
 
     match (&prev.path.enabled, &current.path.enabled) {

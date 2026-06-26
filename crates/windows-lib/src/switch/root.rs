@@ -1,12 +1,12 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, refresh_captures};
-use crate::switch::clients::{Clients, ClientsInit, ClientsInput};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
-use exec_lib::wayland_capture::{CaptureManager};
+use exec_lib::wayland_capture::CaptureManager;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
+use relm4::adw::gdk::Display;
 use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
@@ -17,8 +17,8 @@ use relm4::prelude::*;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration  = Duration::from_millis(200);
-const THUMBNAIL_BURST_MS: u64 = 16;
+const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+const THUMBNAIL_BURST_MS: u64 = 8;
 
 #[derive(Debug)]
 pub struct SwitchRoot {
@@ -34,7 +34,7 @@ pub struct SwitchRoot {
     /// Factory for workspace mode (workspaces)
     items: FactoryVecDeque<Workspaces>,
     /// Factory for non-workspace mode (clients)
-    clients_only: FactoryVecDeque<Clients>,
+    clients_only: FactoryVecDeque<crate::switch::clients::Clients>,
     live_thumbnails: bool,
     capture_manager: Option<CaptureManager>,
     timer_handle: Option<glib::SourceId>,
@@ -115,9 +115,10 @@ impl SimpleComponent for SwitchRoot {
             .launch(gtk::FlowBox::default())
             .detach();
 
-        let clients_only: FactoryVecDeque<Clients> = FactoryVecDeque::builder()
-            .launch(gtk::FlowBox::default())
-            .detach();
+        let clients_only: FactoryVecDeque<crate::switch::clients::Clients> =
+            FactoryVecDeque::builder()
+                .launch(gtk::FlowBox::default())
+                .detach();
 
         let model = Self {
             general: init.general,
@@ -282,16 +283,14 @@ impl SwitchRoot {
         }
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new()
-                .map_err(|e| error!("{e}"))
-                .ok();
+            self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
             let sender = sender.clone();
             self.timer_handle = Some(glib::timeout_add_local(
                 Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
                     sender.input(SwitchRootInput::RefreshThumbnails);
-                    glib::ControlFlow::Continue
+                    ControlFlow::Continue
                 },
             ));
         }
@@ -354,7 +353,7 @@ impl SwitchRoot {
                 error!("Client {} has invalid monitor {}", id, client.monitor);
                 continue;
             };
-            lock.push_back(ClientsInit {
+            lock.push_back(crate::switch::clients::ClientsInit {
                 id: *id,
                 scale,
                 monitor_data: monitor.clone(),
@@ -606,30 +605,36 @@ impl SwitchRoot {
     }
 
     fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
-        let continuous = self.thumbnail_refresh_ms != 0;
         let Some(mgr) = &mut self.capture_manager else {
             return;
         };
-        let (mut captures, all_done) = {
-            let display = RootExt::display(&self.window);
-            let captures = refresh_captures(mgr, &display, continuous);
-            let done = !continuous && mgr.pending_count() == 0;
-            (captures, done)
+        let Some(display) = Display::default() else {
+            return;
         };
-        if continuous && self.thumbnail_burst && !captures.is_empty() {
+        let mut captures = refresh_captures(mgr, &display, !self.thumbnail_burst);
+        if self.thumbnail_burst && mgr.pending_count() == 0 {
             self.thumbnail_burst = false;
+            // all initial thumbnails are loaded
+            // remove initial thumbnail burst timer
             if let Some(h) = self.timer_handle.take() {
                 h.remove();
             }
-            let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(self.thumbnail_refresh_ms),
-                move || {
-                    sender.input(SwitchRootInput::RefreshThumbnails);
-                    glib::ControlFlow::Continue
-                },
-            ));
+            // start new slower timer if thumbnail_refresh_ms is set
+            if self.thumbnail_refresh_ms != 0 {
+                trace!("Switching from thumbnail_burst refresh to slow refresh");
+                let sender = sender.clone();
+                self.timer_handle = Some(glib::timeout_add_local(
+                    Duration::from_millis(self.thumbnail_refresh_ms),
+                    move || {
+                        sender.input(SwitchRootInput::RefreshThumbnails);
+                        ControlFlow::Continue
+                    },
+                ));
+            } else {
+                trace!("All initial thumbnail captures loaded");
+            }
         }
+
         if self.switch.switch_workspaces {
             for (client_id, texture) in captures {
                 for (idx, _) in self.items.iter().enumerate() {
@@ -642,13 +647,12 @@ impl SwitchRoot {
         } else {
             for (idx, item) in self.clients_only.iter().enumerate() {
                 if let Some(texture) = captures.remove(&item.id) {
-                    self.clients_only
-                        .send(idx, ClientsInput::UpdateThumbnail(texture));
+                    self.clients_only.send(
+                        idx,
+                        crate::switch::clients::ClientsInput::UpdateThumbnail(texture),
+                    );
                 }
             }
-        }
-        if all_done && let Some(h) = self.timer_handle.take() {
-            h.remove();
         }
     }
 }

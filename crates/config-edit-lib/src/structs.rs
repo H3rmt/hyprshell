@@ -22,6 +22,7 @@ pub struct Overview {
     pub enabled: bool,
     pub launcher: Launcher,
     pub key: String,
+    pub top_offset: u16,
     pub modifier: ConfigModifier,
     pub same_class: bool,
     pub current_workspace: bool,
@@ -45,7 +46,7 @@ pub struct Plugins {
     pub terminal: EmptyConfig,
     pub shell: EmptyConfig,
     pub websearch: WebSearchConfig,
-    pub calc: EmptyConfig,
+    pub calc: CalcPluginConfig,
     pub path: EmptyConfig,
     pub actions: ActionsPluginConfig,
 }
@@ -59,6 +60,12 @@ pub struct WebSearchConfig {
 #[derive(Debug, Clone)]
 pub struct EmptyConfig {
     pub enabled: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CalcPluginConfig {
+    pub enabled: bool,
+    pub prefix: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -258,6 +265,7 @@ impl From<Option<config_lib::Overview>> for Overview {
             enabled,
             launcher: v.launcher.into(),
             key: v.key.to_string(),
+            top_offset: v.top_offset,
             modifier: v.modifier.into(),
             same_class: v.filter_by_same_class,
             current_workspace: v.filter_by_current_workspace,
@@ -273,7 +281,7 @@ impl From<Overview> for Option<config_lib::Overview> {
             Some(config_lib::Overview {
                 launcher: value.launcher.into(),
                 key: Box::from(value.key),
-                top_offset: 430,
+                top_offset: value.top_offset,
                 modifier: value.modifier.into(),
                 filter_by_same_class: value.same_class,
                 filter_by_current_workspace: value.current_workspace,
@@ -391,6 +399,29 @@ impl From<WebSearchConfig> for Option<config_lib::WebSearchConfig> {
         if value.enabled {
             Some(config_lib::WebSearchConfig {
                 engines: value.engines,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl From<Option<config_lib::CalcPluginConfig>> for CalcPluginConfig {
+    fn from(value: Option<config_lib::CalcPluginConfig>) -> Self {
+        let enabled = value.is_some();
+        let v = value.unwrap_or_default();
+        Self {
+            enabled,
+            prefix: v.prefix,
+        }
+    }
+}
+
+impl From<CalcPluginConfig> for Option<config_lib::CalcPluginConfig> {
+    fn from(value: CalcPluginConfig) -> Self {
+        if value.enabled {
+            Some(config_lib::CalcPluginConfig {
+                prefix: value.prefix,
             })
         } else {
             None

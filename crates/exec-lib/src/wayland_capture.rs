@@ -1,47 +1,28 @@
 use std::collections::{HashMap, VecDeque};
 use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 
-
 pub use wayland_client::backend::ObjectId;
 use wayland_client::backend::WaylandError;
 use wayland_client::protocol::wl_buffer::WlBuffer;
-use wayland_client::protocol::{wl_buffer, wl_registry};
-use wayland_client::{Connection, Dispatch, EventQueue, Proxy};
-use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1;
+use wayland_client::{Connection, EventQueue, Proxy};
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1;
-use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_list_v1;
-use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1;
-use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1;
 use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
-use wayland_protocols::ext::image_capture_source::v1::client::ext_image_capture_source_v1;
-use wayland_protocols::ext::image_capture_source::v1::client::ext_image_capture_source_v1::ExtImageCaptureSourceV1;
-use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_frame_v1;
 use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_frame_v1::ExtImageCopyCaptureFrameV1;
 use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_manager_v1;
 use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_manager_v1::ExtImageCopyCaptureManagerV1;
-use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1;
 use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1::ExtImageCopyCaptureSessionV1;
 use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_buffer_params_v1;
-use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_buffer_params_v1::ZwpLinuxBufferParamsV1;
-use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1;
 use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
 
-use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1;
 use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
-use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1;
-use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
 
 use core_lib::ClientId;
-use tracing::debug;
+use tracing::trace;
 
 const DRM_FORMAT_MOD_INVALID: u64 = 0x00FF_FFFF_FFFF_FFFF;
 const DRM_FORMAT_MOD_LINEAR: u64 = 0;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
-// ---------------------------------------------------------------------------
-// Public types
-// ---------------------------------------------------------------------------
 
 pub struct FrameStats {
     pub latency: Option<std::time::Duration>,
@@ -58,16 +39,6 @@ pub struct DmabufResult<'a> {
     pub fd: BorrowedFd<'a>,
     pub fourcc: u32,
     pub modifier: u64,
-    pub width: u32,
-    pub height: u32,
-    pub stride: u32,
-}
-
-/// Result of a window capture via shared memory.
-/// Pixels are in BGRA format (native Wayland ARGB8888 byte order on
-/// little-endian).
-pub struct ShmResult {
-    pub pixels: Vec<u8>,
     pub width: u32,
     pub height: u32,
     pub stride: u32,
@@ -93,17 +64,12 @@ pub struct WindowCapture {
 /// Wayland connection and event queue.
 #[derive(Debug)]
 pub struct CaptureManager {
-    connection: Connection,
     event_queue: EventQueue<AppState>,
     // captures needs to be released before state to avoid invalid gbm device pointer
     captures: HashMap<ObjectId, WindowCapture>,
     state: AppState,
     pending_sessions: HashMap<ObjectId, ExtImageCopyCaptureSessionV1>,
 }
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
 
 /// Per-capture event state, stored inside `AppState` so Dispatch handlers
 /// can route events by capture index.
@@ -135,10 +101,6 @@ struct AppState {
     gbm_dev: Result<Option<gbm::Device<OwnedFd>>>,
 }
 
-// ---------------------------------------------------------------------------
-// Dispatch implementations
-// ---------------------------------------------------------------------------
-
 fn find_drm_node(device: u64) -> Result<OwnedFd> {
     for entry in std::fs::read_dir("/dev/dri")? {
         let entry = entry?;
@@ -157,315 +119,249 @@ fn find_drm_node(device: u64) -> Result<OwnedFd> {
     Err("No matching DRM render node found".into())
 }
 
-impl Dispatch<HyprlandToplevelWindowMappingHandleV1, ObjectId> for AppState {
-    fn event(
-        state: &mut Self,
-        proxy: &HyprlandToplevelWindowMappingHandleV1,
-        event: hyprland_toplevel_window_mapping_handle_v1::Event,
-        id: &ObjectId,
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        match event {
-            hyprland_toplevel_window_mapping_handle_v1::Event::WindowAddress {
-                address_hi,
-                address,
-            } => {
-                let address: u64 = (u64::from(address_hi) << 32) | u64::from(address);
-                state.address_map.insert(id.clone(), address);
-                proxy.destroy();
+mod wl_impls {
+    use crate::wayland_capture::{find_drm_node, AppState, ObjectId};
+    use wayland_client::protocol::wl_registry;
+    use wayland_client::{Connection, Dispatch, Proxy};
+    use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1;
+    use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1;
+    use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_list_v1;
+    use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1;
+    use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_frame_v1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_frame_v1::ExtImageCopyCaptureFrameV1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_manager_v1::ExtImageCopyCaptureManagerV1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1::ExtImageCopyCaptureSessionV1;
+    use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
+    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1;
+    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
+
+    impl Dispatch<HyprlandToplevelWindowMappingHandleV1, ObjectId> for AppState {
+        fn event(
+            state: &mut Self,
+            proxy: &HyprlandToplevelWindowMappingHandleV1,
+            event: hyprland_toplevel_window_mapping_handle_v1::Event,
+            id: &ObjectId,
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+            match event {
+                hyprland_toplevel_window_mapping_handle_v1::Event::WindowAddress {
+                    address_hi,
+                    address,
+                } => {
+                    let address: u64 = (u64::from(address_hi) << 32) | u64::from(address);
+                    state.address_map.insert(id.clone(), address);
+                    proxy.destroy();
+                }
+                hyprland_toplevel_window_mapping_handle_v1::Event::Failed => proxy.destroy(),
+                _ => {}
             }
-            hyprland_toplevel_window_mapping_handle_v1::Event::Failed => proxy.destroy(),
-            _ => {}
         }
     }
-}
 
-impl Dispatch<HyprlandToplevelMappingManagerV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &HyprlandToplevelMappingManagerV1,
-        _event: hyprland_toplevel_mapping_manager_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
-    fn event(
-        state: &mut Self,
-        _proxy: &ExtImageCopyCaptureSessionV1,
-        event: ext_image_copy_capture_session_v1::Event,
-        id: &ObjectId,
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        let Some(cs) = state.captures.get_mut(id) else {
-            return;
-        };
-        match event {
-            ext_image_copy_capture_session_v1::Event::DmabufDevice { device } => {
-                if matches!(state.gbm_dev, Ok(None)) {
-                    let dev = u64::from_ne_bytes(
-                        device[..8]
-                            .try_into()
-                            .expect("protocol guarantees 8-byte device ID"),
-                    );
-                    state.gbm_dev =
-                        find_drm_node(dev).and_then(|drm_fd| Ok(Some(gbm::Device::new(drm_fd)?)));
-                }
-            }
-            ext_image_copy_capture_session_v1::Event::DmabufFormat { format, modifiers } => {
-                let mods: Vec<u64> = modifiers
-                    .chunks_exact(8)
-                    .map(|chunk| {
-                        u64::from_ne_bytes(
-                            chunk
+    impl Dispatch<ExtImageCopyCaptureSessionV1, ObjectId> for AppState {
+        fn event(
+            state: &mut Self,
+            _proxy: &ExtImageCopyCaptureSessionV1,
+            event: ext_image_copy_capture_session_v1::Event,
+            id: &ObjectId,
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+            let Some(cs) = state.captures.get_mut(id) else {
+                return;
+            };
+            match event {
+                ext_image_copy_capture_session_v1::Event::DmabufDevice { device } => {
+                    if matches!(state.gbm_dev, Ok(None)) {
+                        let dev = u64::from_ne_bytes(
+                            device[..8]
                                 .try_into()
-                                .expect("chunks_exact(8) guarantees 8 bytes"),
-                        )
-                    })
-                    .collect();
-                cs.dmabuf_formats.push((format, mods));
-            }
-            ext_image_copy_capture_session_v1::Event::BufferSize { width, height } => {
-                let new_geom = (width, height);
-                if cs.buffer_geometry.is_some() && cs.buffer_geometry != Some(new_geom) {
-                    cs.size_changed_at = Some(std::time::Instant::now());
+                                .expect("protocol guarantees 8-byte device ID"),
+                        );
+                        state.gbm_dev = find_drm_node(dev)
+                            .and_then(|drm_fd| Ok(Some(gbm::Device::new(drm_fd)?)));
+                    }
                 }
-                cs.buffer_geometry = Some(new_geom);
+                ext_image_copy_capture_session_v1::Event::DmabufFormat { format, modifiers } => {
+                    let mods: Vec<u64> = modifiers
+                        .chunks_exact(8)
+                        .map(|chunk| {
+                            u64::from_ne_bytes(
+                                chunk
+                                    .try_into()
+                                    .expect("chunks_exact(8) guarantees 8 bytes"),
+                            )
+                        })
+                        .collect();
+                    cs.dmabuf_formats.push((format, mods));
+                }
+                ext_image_copy_capture_session_v1::Event::BufferSize { width, height } => {
+                    let new_geom = (width, height);
+                    if cs.buffer_geometry.is_some() && cs.buffer_geometry != Some(new_geom) {
+                        cs.size_changed_at = Some(std::time::Instant::now());
+                    }
+                    cs.buffer_geometry = Some(new_geom);
+                }
+                ext_image_copy_capture_session_v1::Event::Done => {
+                    cs.session_done = true;
+                }
+                _ => {}
             }
-            ext_image_copy_capture_session_v1::Event::Done => {
-                cs.session_done = true;
-            }
-            _ => {}
         }
     }
-}
 
-impl Dispatch<ExtImageCopyCaptureFrameV1, ObjectId> for AppState {
-    fn event(
-        state: &mut Self,
-        _proxy: &ExtImageCopyCaptureFrameV1,
-        event: ext_image_copy_capture_frame_v1::Event,
-        id: &ObjectId,
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        let Some(cs) = state.captures.get_mut(id) else {
-            return;
-        };
-        match event {
-            ext_image_copy_capture_frame_v1::Event::Damage { width, height, .. } => {
-                cs.damage_count += 1;
-                cs.damage_area += u64::from(width.unsigned_abs()) * u64::from(height.unsigned_abs());
+    impl Dispatch<ExtImageCopyCaptureFrameV1, ObjectId> for AppState {
+        fn event(
+            state: &mut Self,
+            _proxy: &ExtImageCopyCaptureFrameV1,
+            event: ext_image_copy_capture_frame_v1::Event,
+            id: &ObjectId,
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+            let Some(cs) = state.captures.get_mut(id) else {
+                return;
+            };
+            match event {
+                ext_image_copy_capture_frame_v1::Event::Damage { width, height, .. } => {
+                    cs.damage_count += 1;
+                    cs.damage_area +=
+                        u64::from(width.unsigned_abs()) * u64::from(height.unsigned_abs());
+                }
+                ext_image_copy_capture_frame_v1::Event::Ready => {
+                    cs.ready = true;
+                }
+                ext_image_copy_capture_frame_v1::Event::Failed { .. } => {
+                    cs.failed = true;
+                }
+                _ => {}
             }
-            ext_image_copy_capture_frame_v1::Event::Ready => {
-                cs.ready = true;
-            }
-            ext_image_copy_capture_frame_v1::Event::Failed { .. } => {
-                cs.failed = true;
-            }
-            _ => {}
         }
     }
-}
 
-impl Dispatch<WlBuffer, ObjectId> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &WlBuffer,
-        _event: wl_buffer::Event,
-        _id: &ObjectId,
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        // wl_buffer.release is unused by ext-image-copy-capture
-    }
-}
-
-// Globals and toplevel discovery use () user data (no per-capture routing).
-
-impl Dispatch<ZwpLinuxBufferParamsV1, ObjectId> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ZwpLinuxBufferParamsV1,
-        _event: zwp_linux_buffer_params_v1::Event,
-        _id: &ObjectId,
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ZwpLinuxDmabufV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ZwpLinuxDmabufV1,
-        _event: zwp_linux_dmabuf_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ExtImageCaptureSourceV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ExtImageCaptureSourceV1,
-        _event: ext_image_capture_source_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ExtForeignToplevelImageCaptureSourceManagerV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ExtForeignToplevelImageCaptureSourceManagerV1,
-        _event: ext_foreign_toplevel_image_capture_source_manager_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ExtImageCopyCaptureManagerV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ExtImageCopyCaptureManagerV1,
-        _event: ext_image_copy_capture_manager_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-    }
-}
-
-impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
-    fn event(
-        state: &mut Self,
-        proxy: &ExtForeignToplevelHandleV1,
-        event: ext_foreign_toplevel_handle_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        match event {
-            ext_foreign_toplevel_handle_v1::Event::Done
-                if !state.toplevels.iter().any(|tl| tl.id() == proxy.id()) =>
-            {
-                state.toplevels.push(proxy.clone());
+    impl Dispatch<ExtForeignToplevelHandleV1, ()> for AppState {
+        fn event(
+            state: &mut Self,
+            proxy: &ExtForeignToplevelHandleV1,
+            event: ext_foreign_toplevel_handle_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+            match event {
+                ext_foreign_toplevel_handle_v1::Event::Done
+                    if !state.toplevels.iter().any(|tl| tl.id() == proxy.id()) =>
+                {
+                    state.toplevels.push(proxy.clone());
+                }
+                ext_foreign_toplevel_handle_v1::Event::Closed => {
+                    let id = proxy.id();
+                    state.captures.remove(&id);
+                    state.toplevels.retain(|tl| tl.id() != id);
+                    state.closed_ids.push(id);
+                }
+                _ => {}
             }
-            ext_foreign_toplevel_handle_v1::Event::Closed => {
-                let id = proxy.id();
-                state.captures.remove(&id);
-                state.toplevels.retain(|tl| tl.id() != id);
-                state.closed_ids.push(id);
-            }
-            _ => {}
         }
     }
-}
 
-impl Dispatch<ExtForeignToplevelListV1, ()> for AppState {
-    fn event(
-        _state: &mut Self,
-        _proxy: &ExtForeignToplevelListV1,
-        _event: ext_foreign_toplevel_list_v1::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        _qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
+    impl Dispatch<ExtForeignToplevelListV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ExtForeignToplevelListV1,
+            _event: ext_foreign_toplevel_list_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+
+        fn event_created_child(
+            _opcode: u16,
+            qhandle: &wayland_client::QueueHandle<Self>,
+        ) -> std::sync::Arc<dyn wayland_client::backend::ObjectData> {
+            qhandle.make_data::<ExtForeignToplevelHandleV1, _>(())
+        }
     }
 
-    fn event_created_child(
-        _opcode: u16,
-        qhandle: &wayland_client::QueueHandle<Self>,
-    ) -> std::sync::Arc<dyn wayland_client::backend::ObjectData> {
-        qhandle.make_data::<ExtForeignToplevelHandleV1, _>(())
-    }
-}
-
-impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
-    fn event(
-        state: &mut Self,
-        proxy: &wl_registry::WlRegistry,
-        event: wl_registry::Event,
-        _udata: &(),
-        _conn: &wayland_client::Connection,
-        qhandle: &wayland_client::QueueHandle<Self>,
-    ) {
-        match event {
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
-            } if interface == "zwp_linux_dmabuf_v1" => {
-                state.linux_dmabuf =
-                    Some(proxy.bind::<ZwpLinuxDmabufV1, _, _>(name, version.min(4), qhandle, ()));
-            }
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
-            } if interface == "ext_foreign_toplevel_image_capture_source_manager_v1" => {
-                state.source_manager = Some(
-                    proxy.bind::<ExtForeignToplevelImageCaptureSourceManagerV1, _, _>(
+    impl Dispatch<wl_registry::WlRegistry, ()> for AppState {
+        fn event(
+            state: &mut Self,
+            proxy: &wl_registry::WlRegistry,
+            event: wl_registry::Event,
+            _udata: &(),
+            _conn: &Connection,
+            qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+            match event {
+                wl_registry::Event::Global {
+                    name,
+                    interface,
+                    version,
+                } if interface == "zwp_linux_dmabuf_v1" => {
+                    state.linux_dmabuf = Some(proxy.bind::<ZwpLinuxDmabufV1, _, _>(
                         name,
-                        version.min(1),
-                        qhandle,
-                        (),
-                    ),
-                );
-            }
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
-            } if interface == "ext_image_copy_capture_manager_v1" => {
-                state.copy_capture_manager =
-                    Some(proxy.bind::<ExtImageCopyCaptureManagerV1, _, _>(
-                        name,
-                        version.min(1),
+                        version.min(4),
                         qhandle,
                         (),
                     ));
+                }
+                wl_registry::Event::Global {
+                    name,
+                    interface,
+                    version,
+                } if interface == "ext_foreign_toplevel_image_capture_source_manager_v1" => {
+                    state.source_manager = Some(
+                        proxy.bind::<ExtForeignToplevelImageCaptureSourceManagerV1, _, _>(
+                            name,
+                            version.min(1),
+                            qhandle,
+                            (),
+                        ),
+                    );
+                }
+                wl_registry::Event::Global {
+                    name,
+                    interface,
+                    version,
+                } if interface == "ext_image_copy_capture_manager_v1" => {
+                    state.copy_capture_manager =
+                        Some(proxy.bind::<ExtImageCopyCaptureManagerV1, _, _>(
+                            name,
+                            version.min(1),
+                            qhandle,
+                            (),
+                        ));
+                }
+                wl_registry::Event::Global {
+                    name,
+                    interface,
+                    version,
+                } if interface == "ext_foreign_toplevel_list_v1" => {
+                    proxy.bind::<ExtForeignToplevelListV1, _, _>(name, version.min(1), qhandle, ());
+                }
+                wl_registry::Event::Global {
+                    name,
+                    interface,
+                    version,
+                } if interface == "hyprland_toplevel_mapping_manager_v1" => {
+                    state.toplevel_mapping_manager =
+                        Some(proxy.bind::<HyprlandToplevelMappingManagerV1, _, _>(
+                            name,
+                            version.min(1),
+                            qhandle,
+                            (),
+                        ));
+                }
+                _ => {}
             }
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
-            } if interface == "ext_foreign_toplevel_list_v1" => {
-                proxy.bind::<ExtForeignToplevelListV1, _, _>(name, version.min(1), qhandle, ());
-            }
-            wl_registry::Event::Global {
-                name,
-                interface,
-                version,
-            } if interface == "hyprland_toplevel_mapping_manager_v1" => {
-                state.toplevel_mapping_manager =
-                    Some(proxy.bind::<HyprlandToplevelMappingManagerV1, _, _>(
-                        name,
-                        version.min(1),
-                        qhandle,
-                        (),
-                    ));
-            }
-            _ => {}
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// CaptureManager implementation
-// ---------------------------------------------------------------------------
 
 impl CaptureManager {
     /// Connect to the Wayland compositor, discover all toplevel windows
@@ -491,22 +387,11 @@ impl CaptureManager {
         event_queue.roundtrip(&mut state)?;
 
         Ok(Self {
-            connection,
             event_queue,
             state,
             captures: HashMap::new(),
             pending_sessions: HashMap::new(),
         })
-    }
-
-    #[must_use]
-    pub fn connection_fd(&self) -> BorrowedFd<'_> {
-        self.connection.as_fd()
-    }
-
-    #[must_use]
-    pub fn capture_count(&self) -> usize {
-        self.captures.len()
     }
 
     #[must_use]
@@ -527,11 +412,6 @@ impl CaptureManager {
     }
 
     #[must_use]
-    pub fn has_capture(&self, index: &ObjectId) -> bool {
-        self.captures.contains_key(index) && self.state.captures.contains_key(index)
-    }
-
-    #[must_use]
     pub fn is_ready(&self, index: &ObjectId) -> bool {
         self.state.captures.get(index).is_some_and(|cs| cs.ready)
     }
@@ -540,12 +420,6 @@ impl CaptureManager {
     pub fn is_failed(&self, index: &ObjectId) -> bool {
         self.state.captures.get(index).is_some_and(|cs| cs.failed)
     }
-
-    #[must_use]
-    pub fn window(&self, index: &ObjectId) -> &WindowCapture {
-        &self.captures[index]
-    }
-
     #[must_use]
     pub fn client_id(&self, obj_id: &ObjectId) -> Option<ClientId> {
         self.state.address_map.get(obj_id).copied()
@@ -553,7 +427,11 @@ impl CaptureManager {
 
     #[must_use]
     pub fn pending_count(&self) -> usize {
-        self.state.captures.values().filter(|c| !c.ready && !c.failed).count()
+        self.state
+            .captures
+            .values()
+            .filter(|c| !c.ready && !c.failed)
+            .count()
     }
 
     pub fn take_output(&self, index: &ObjectId) -> Result<DmabufResult<'_>> {
@@ -570,7 +448,6 @@ impl CaptureManager {
     }
 
     pub fn capture_next(&mut self, index: &ObjectId) -> Result<()> {
-
         let realloc_spec = {
             let cs = self
                 .state
@@ -630,10 +507,8 @@ impl CaptureManager {
     }
 
     pub fn drain_new(&mut self) -> Result<Vec<ObjectId>> {
-        self.pending_sessions.extend(Self::create_sessions(
-            &mut self.state,
-            &self.event_queue,
-        )?);
+        self.pending_sessions
+            .extend(Self::create_sessions(&mut self.state, &self.event_queue)?);
 
         let ready_ids: Vec<ObjectId> = self
             .pending_sessions
@@ -691,19 +566,6 @@ impl CaptureManager {
         ids
     }
 
-    /// Block until capture `index` is ready or has failed.
-    pub fn blocking_dispatch_until_ready(&mut self, index: &ObjectId) -> Result<()> {
-        loop {
-            self.event_queue.blocking_dispatch(&mut self.state)?;
-            if self.state.captures[index].ready {
-                return Ok(());
-            }
-            if self.state.captures[index].failed {
-                return Err(format!("capture {index}: compositor returned an error").into());
-            }
-        }
-    }
-
     #[must_use]
     pub fn frame_stats(&self, id: &ObjectId) -> Option<FrameStats> {
         let wc = self.captures.get(id)?;
@@ -749,7 +611,7 @@ impl CaptureManager {
                     size_changed_at: None,
                     damage_area: 0,
                     damage_count: 0,
-                    frame_requested_at: None
+                    frame_requested_at: None,
                 },
             );
             let source = source_manager.create_source(handle, &event_queue.handle(), ());
@@ -846,7 +708,7 @@ impl CaptureManager {
                 size,
             );
 
-            debug!("Capture allocated: {width}x{height}");
+            trace!("Capture allocated: {width}x{height}");
             window_captures.insert(
                 id,
                 WindowCapture {
@@ -968,3 +830,97 @@ impl CaptureManager {
     }
 }
 
+mod empty_impls {
+    use crate::wayland_capture::{AppState, ObjectId};
+    use wayland_client::protocol::wl_buffer;
+    use wayland_client::protocol::wl_buffer::WlBuffer;
+    use wayland_client::{Connection, Dispatch};
+    use wayland_protocols::ext::image_capture_source::v1::client::ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1;
+    use wayland_protocols::ext::image_capture_source::v1::client::ext_image_capture_source_v1::ExtImageCaptureSourceV1;
+    use wayland_protocols::ext::image_capture_source::v1::client::{ext_foreign_toplevel_image_capture_source_manager_v1, ext_image_capture_source_v1};
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_manager_v1;
+    use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_manager_v1::ExtImageCopyCaptureManagerV1;
+    use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_buffer_params_v1::ZwpLinuxBufferParamsV1;
+    use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
+    use wayland_protocols::wp::linux_dmabuf::zv1::client::{zwp_linux_buffer_params_v1, zwp_linux_dmabuf_v1};
+    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1;
+    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+
+    impl Dispatch<HyprlandToplevelMappingManagerV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &HyprlandToplevelMappingManagerV1,
+            _event: hyprland_toplevel_mapping_manager_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<WlBuffer, ObjectId> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &WlBuffer,
+            _event: wl_buffer::Event,
+            _id: &ObjectId,
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<ZwpLinuxBufferParamsV1, ObjectId> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ZwpLinuxBufferParamsV1,
+            _event: zwp_linux_buffer_params_v1::Event,
+            _id: &ObjectId,
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<ZwpLinuxDmabufV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ZwpLinuxDmabufV1,
+            _event: zwp_linux_dmabuf_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<ExtImageCaptureSourceV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ExtImageCaptureSourceV1,
+            _event: ext_image_capture_source_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<ExtForeignToplevelImageCaptureSourceManagerV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ExtForeignToplevelImageCaptureSourceManagerV1,
+            _event: ext_foreign_toplevel_image_capture_source_manager_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+    impl Dispatch<ExtImageCopyCaptureManagerV1, ()> for AppState {
+        fn event(
+            _state: &mut Self,
+            _proxy: &ExtImageCopyCaptureManagerV1,
+            _event: ext_image_copy_capture_manager_v1::Event,
+            _udata: &(),
+            _conn: &Connection,
+            _qhandle: &wayland_client::QueueHandle<Self>,
+        ) {
+        }
+    }
+}

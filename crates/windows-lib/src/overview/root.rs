@@ -20,8 +20,8 @@ use std::rc::Rc;
 use std::time::Duration;
 use tracing::{debug, error, trace};
 
-const KILL_TIMEOUT: Duration  = Duration::from_millis(200);
-const THUMBNAIL_BURST_MS: u64 = 16;
+const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+const THUMBNAIL_BURST_MS: u64 = 8;
 
 #[derive(Debug)]
 pub struct OverviewRoot {
@@ -252,16 +252,14 @@ impl OverviewRoot {
         self.render(hypr_data, self.data.active, true);
 
         if self.live_thumbnails {
-            self.capture_manager = CaptureManager::new()
-                .map_err(|e| error!("{e}"))
-                .ok();
+            self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
             let sender = sender.clone();
             self.timer_handle = Some(glib::timeout_add_local(
                 Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
                     sender.input(OverviewRootInput::RefreshThumbnails);
-                    glib::ControlFlow::Continue
+                    ControlFlow::Continue
                 },
             ));
         }
@@ -438,32 +436,36 @@ impl OverviewRoot {
     }
 
     fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
-        let continuous = self.thumbnail_refresh_ms != 0;
         let Some(mgr) = &mut self.capture_manager else {
             return;
         };
         let Some(display) = Display::default() else {
             return;
         };
-        let (captures, all_done) = {
-            let captures = refresh_captures(mgr, &display, continuous);
-            let done = !continuous && mgr.pending_count() == 0;
-            (captures, done)
-        };
-        if continuous && self.thumbnail_burst && !captures.is_empty() {
+        let captures = refresh_captures(mgr, &display, !self.thumbnail_burst);
+        if self.thumbnail_burst && mgr.pending_count() == 0 {
             self.thumbnail_burst = false;
+            // all initial thumbnails are loaded
+            // remove initial thumbnail burst timer
             if let Some(h) = self.timer_handle.take() {
                 h.remove();
             }
-            let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(self.thumbnail_refresh_ms),
-                move || {
-                    sender.input(OverviewRootInput::RefreshThumbnails);
-                    glib::ControlFlow::Continue
-                },
-            ));
+            // start new slower timer if thumbnail_refresh_ms is set
+            if self.thumbnail_refresh_ms != 0 {
+                trace!("Switching from thumbnail_burst refresh to slow refresh");
+                let sender = sender.clone();
+                self.timer_handle = Some(glib::timeout_add_local(
+                    Duration::from_millis(self.thumbnail_refresh_ms),
+                    move || {
+                        sender.input(OverviewRootInput::RefreshThumbnails);
+                        ControlFlow::Continue
+                    },
+                ));
+            } else {
+                trace!("All initial thumbnail captures loaded");
+            }
         }
+
         for (client_id, texture) in captures {
             for window in self.windows.values() {
                 window.emit(OverviewWindowInput::UpdateClientThumbnail(
@@ -471,9 +473,6 @@ impl OverviewRoot {
                     texture.clone(),
                 ));
             }
-        }
-        if all_done && let Some(h) = self.timer_handle.take() {
-            h.remove();
         }
     }
 }

@@ -61,13 +61,13 @@ pub fn get_input_driven_launch_items(plugins: &Plugins, text: &str) -> Vec<Match
         debug_span!("path").in_scope(|| out.extend(path::get_launch_items(text)));
     }
 
-    if plugins.calc.is_some() {
+    if let Some(calc) = plugins.calc.as_ref() {
         #[cfg(feature = "calc")]
         debug_span!("calc").in_scope(|| {
-            out.extend(crate::plugins::calc::get_launch_items(text));
+            out.extend(crate::plugins::calc::get_launch_items(text, calc));
         });
         #[cfg(not(feature = "calc"))]
-        tracing::warn!("calc plugin is not enabled");
+        tracing::warn!("calc plugin is not enabled, config: {calc:?}");
     }
 
     out.sort_by_key(|b| std::cmp::Reverse(b.score));

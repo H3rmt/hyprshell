@@ -57,11 +57,17 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
                 let _ = builder.write_str(&format!("\t- Press {blue}Ctrl{reset} + {bold}{blue}<key>{reset} to search the typed text in any of the configured SearchEngines: {}.\n",
                                                    engines.engines.iter().map(|e| e.name.to_string()).collect::<Vec<_>>().join(", ")));
             }
-            if overview.launcher.plugins.calc.is_some() {
+            if let Some(calc) = &overview.launcher.plugins.calc {
                 any_plugin = true;
-                let _ = builder.write_str(
-                    "\t- Typing a mathematical expression will calculate it and display the result in the launcher.\n",
-                );
+                if let Some(prefix) = &calc.prefix {
+                    let _ = builder.write_str(&format!(
+                        "\t- Typing `{prefix}` followed by a mathematical expression will calculate it and display the result in the launcher.\n",
+                    ));
+                } else {
+                    let _ = builder.write_str(
+                        "\t- Typing a mathematical expression will calculate it and display the result in the launcher.\n",
+                    );
+                }
             }
             if overview.launcher.plugins.path.is_some() {
                 any_plugin = true;
@@ -120,7 +126,39 @@ mod tests {
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
-    fn test_explain_with_overview() {
+    fn test_explain_with_overview_calc_0() {
+        const CONFIG: &str = r"Config is valid (/test/config.ron)
+Explanation (blue are keys, bold blue keys can be configured in config):
+Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
+You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
+After opening the Overview the Launcher is available:
+	- Start typing to search through applications (sorted by how often they were opened). Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
+	- Press Ctrl + t to run the typed command in a terminal.
+	- Press Ctrl + <key> to search the typed text in any of the configured SearchEngines: Google, Wikipedia.
+	- Typing `=` followed by a mathematical expression will calculate it and display the result in the launcher.
+	- Paths (starting with ~ or /) can be open in default file-manager.
+	- Type Reboot/Shutdown/etc. to run corresponding commands. Type `actions` to see all available ones.
+
+Press Alt + tab and hold Alt to view recently used applications. Press tab and grave / shift + tab to select a different window, release Alt to close the window.
+";
+        let mut config = create_test_config();
+        let a = config.windows.as_mut().expect("must exist");
+        a.overview
+            .as_mut()
+            .expect("must exist")
+            .launcher
+            .plugins
+            .calc = Some(CalcPluginConfig {
+            prefix: Some("=".to_string()),
+        });
+        let path = PathBuf::from("/test/config.ron");
+        let result = explain(&config, Some(&path), false);
+        assert_eq!(result, CONFIG);
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_explain_with_overview_calc_1() {
         const CONFIG: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
 Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
@@ -142,7 +180,7 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             .expect("must exist")
             .launcher
             .plugins
-            .calc = Some(());
+            .calc = Some(CalcPluginConfig { prefix: None });
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
         assert_eq!(result, CONFIG);

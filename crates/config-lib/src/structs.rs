@@ -80,7 +80,7 @@ pub struct Plugins {
     pub terminal: Option<()>,
     pub shell: Option<()>,
     pub websearch: Option<WebSearchConfig>,
-    pub calc: Option<()>,
+    pub calc: Option<CalcPluginConfig>,
     pub path: Option<()>,
     pub actions: Option<ActionsPluginConfig>,
 }
@@ -150,6 +150,19 @@ pub struct SearchEngine {
     pub url: Box<str>,
     pub name: Box<str>,
     pub key: char,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct CalcPluginConfig {
+    pub prefix: Option<String>,
+}
+
+impl Default for CalcPluginConfig {
+    fn default() -> Self {
+        crate::io::CalcPluginConfig::default()
+            .try_into()
+            .expect("the default config invalid")
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

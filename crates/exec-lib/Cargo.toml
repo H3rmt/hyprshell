@@ -19,11 +19,14 @@ core-lib.workspace = true
 semver.workspace = true
 regex.workspace = true
 hyprland = { package = "hyprshell-hyprland", path = "../../dep-crates/hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config", "lua", "trace"], default-features = false, version = "=4.10.8" }
-wayland-client = "0.31.8"
-wayland-protocols = { version = "0.32.6", features = ["client", "staging"] }
-gbm = "0.18"
-rustix = { version = "1.1.4", features = ["fs", "mm"] }
-wayland-protocols-hyprland = { version = "1.2.0", features = ["client"] }
+wayland-client = { version = "0.31.8", optional = true }
+wayland-protocols = { version = "0.32.6", features = ["client", "staging"], optional = true }
+gbm = { version = "0.18", optional = true }
+rustix = { version = "1.1.4", features = ["fs", "mm"], optional = true }
+wayland-protocols-hyprland = { version = "1.2.0", features = ["client"], optional = true }
+
+[features]
+live_windows = ["dep:wayland-client", "dep:wayland-protocols", "dep:gbm", "dep:rustix", "dep:wayland-protocols-hyprland"]
 
 [lints]
 workspace = true
