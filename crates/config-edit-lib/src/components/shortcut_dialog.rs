@@ -161,7 +161,6 @@ impl SimpleComponent for KeyboardShortcut {
                     self.entry.set_text("");
                 }
                 self.dialog.emit(AlertMsg::Show);
-                self.dialog.widgets().gtk_window_12.set_modal(true); // TODO remove if https://github.com/Relm4/Relm4/issues/837 fixed
             }
             KeyboardShortcutInput::SetLabelText(text) => {
                 self.label = text;

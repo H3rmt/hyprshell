@@ -305,7 +305,6 @@ impl SimpleComponent for Root {
                 );
                 if changes {
                     self.alert_dialog.emit(AlertMsg::Show);
-                    self.alert_dialog.widgets().gtk_window_12.set_modal(true); // TODO remove if https://github.com/Relm4/Relm4/issues/837 fixed
                 } else {
                     sender.input(RootInput::Close);
                 }
