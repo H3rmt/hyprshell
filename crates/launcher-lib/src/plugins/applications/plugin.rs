@@ -116,6 +116,7 @@ pub fn launch_option(
                 entry.exec_path.as_deref(),
                 entry.terminal,
                 default_terminal,
+                false,
             )
             .warn_details("Failed to run program");
             trace!("Saving run: {:?}", entry.source);

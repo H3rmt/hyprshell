@@ -44,7 +44,7 @@ pub fn run_action(
             info!("Not running action: {command} (debug mode)");
         } else {
             info!("Running action: {command}");
-            exec_lib::run::run_program(&command, None, false, None)
+            exec_lib::run::run_program(&command, None, false, None, true)
                 .warn_details("Failed to run command");
         }
     }

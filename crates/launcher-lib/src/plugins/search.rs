@@ -56,7 +56,7 @@ pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {
             format!("{} '{}'", browser.exec, url)
         };
         debug!("Launching browser: {}", cmdline);
-        run_program(&cmdline, None, false, None).warn_details("Failed to run program");
+        run_program(&cmdline, None, false, None, false).warn_details("Failed to run program");
 
         // try to focus browser
         if let Some(class) = &browser.startup_wm_class {

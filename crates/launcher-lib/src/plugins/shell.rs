@@ -23,7 +23,7 @@ pub fn launch_option(text: &str, default_terminal: Option<&str>) -> PluginReturn
             show_animation: false,
         };
     }
-    run_program(text, None, false, default_terminal).warn_details("Failed to run program");
+    run_program(text, None, false, default_terminal, false).warn_details("Failed to run program");
     PluginReturn {
         show_animation: true,
     }
