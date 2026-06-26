@@ -43,6 +43,9 @@ Use `hyprshell-slim` for the [slim](#feature-flags) version (faster buildtime).
 
 Download and extract from the latest release on the [releases](https://github.com/h3rmt/hyprshell/releases) page.
 
+**Look at [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files need to be installed where.
+DON'T just copy only the executable, else the settings app won't work correctly.**
+
 ### NixOS
 
 Hyprshell is also available in `nixpkgs` repository and can be configured using a generic `home-manager` module.
@@ -67,13 +70,16 @@ cargo install hyprshell --no-default-features --features "slim"
 
 Minimum required rustc version: `1.92.0` (from 11 December 2025)
 
+**Look at [build-binary](./scripts/ci/build-x86.sh) and [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files get bundled and need to be installed where.
+DON'T just build only the executable, else the settings app won't work correctly.**
+
 ## Usage
 
 Run `hyprshell --help` to see available commands and options.
 
 ### Config
 
-To generate or edit a configuration, run `hyprshell config generate`, `hyprshell config edit` or launch the `Hyprshell Settings Editor` App.
+To generate or edit a configuration, run `hyprshell config generate`, `hyprshell config edit` or launch the `Hyprshell Settings Editor` App. (they all do the same thing)
 
 To validate or explain the current configuration, use `hyprshell config check` and `hyprshell config explain`.
 
