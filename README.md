@@ -96,6 +96,9 @@ Enable the systemd service [recommended]:
 systemctl --user enable --now hyprshell.service
 ```
 
+This will only work if you either use `uwsm` or have [Systemd Startup](https://wiki.hypr.land/Useful-Utilities/Systemd-start/) configured.
+Check with `systemctl status graphical.target` to see if hyprshell would be started.
+
 Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
 
 ```lua
@@ -138,10 +141,12 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 
 ### Env Variables
 
+**You can override these via `systemctl --user edit hyprshell.service` by setting `Environment="HYPRSHELL_...=value"` in a `[Service]` block**
+
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
 - `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
-- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `2000`).
+- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `750`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode
