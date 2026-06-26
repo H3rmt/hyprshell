@@ -37,6 +37,7 @@ pub fn launch_option(text: &str, default_terminal: Option<&str>) -> PluginReturn
         None,
         true,
         default_terminal,
+        false,
     )
     .warn_details("Failed to run program");
     PluginReturn {

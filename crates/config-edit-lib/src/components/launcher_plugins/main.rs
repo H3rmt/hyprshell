@@ -4,6 +4,9 @@ use crate::components::launcher_plugins::actions::{
 use crate::components::launcher_plugins::applications::{
     Applications, ApplicationsInit, ApplicationsInput, ApplicationsOutput,
 };
+use crate::components::launcher_plugins::calc::{
+    CalcPlugin, CalcPluginInit, CalcPluginInput, CalcPluginOutput,
+};
 use crate::components::launcher_plugins::simple::{
     SimplePlugin, SimplePluginInit, SimplePluginInput, SimplePluginOutput,
 };
@@ -25,7 +28,7 @@ pub struct LauncherPlugins {
     applications: Controller<Applications>,
     run_in_terminal: Controller<SimplePlugin>,
     run_in_shell: Controller<SimplePlugin>,
-    calculator: Controller<SimplePlugin>,
+    calculator: Controller<CalcPlugin>,
     file_path: Controller<SimplePlugin>,
     web_search: Controller<WebSearch>,
     actions: Controller<Actions>,
@@ -48,7 +51,7 @@ pub enum LauncherPluginsOutput {
     Applications(ApplicationsOutput),
     Terminal(SimplePluginOutput),
     Shell(SimplePluginOutput),
-    Calculator(SimplePluginOutput),
+    Calculator(CalcPluginOutput),
     FilePath(SimplePluginOutput),
     WebSearch(WebSearchOutput),
     Actions(ActionsOutput),
@@ -124,11 +127,9 @@ impl SimpleComponent for LauncherPlugins {
                 description: "Run the typed command in a shell (in the background).",
             })
             .forward(sender.output_sender(), LauncherPluginsOutput::Shell);
-        let calculator = SimplePlugin::builder()
-            .launch(SimplePluginInit {
+        let calculator = CalcPlugin::builder()
+            .launch(CalcPluginInit {
                 config: init.config.calc.clone(),
-                name: "Calculator",
-                description: "Calculates any mathematical expression typed into the launcher.",
             })
             .forward(sender.output_sender(), LauncherPluginsOutput::Calculator);
         let file_path = SimplePlugin::builder()
@@ -177,7 +178,7 @@ impl SimpleComponent for LauncherPlugins {
                 self.run_in_shell
                     .emit(SimplePluginInput::Set(self.config.shell.clone()));
                 self.calculator
-                    .emit(SimplePluginInput::Set(self.config.calc.clone()));
+                    .emit(CalcPluginInput::Set(self.config.calc.clone()));
                 self.file_path
                     .emit(SimplePluginInput::Set(self.config.path.clone()));
                 self.web_search
@@ -196,7 +197,7 @@ impl SimpleComponent for LauncherPlugins {
                 self.run_in_shell
                     .emit(SimplePluginInput::SetPrev(self.prev_config.shell.clone()));
                 self.calculator
-                    .emit(SimplePluginInput::SetPrev(self.prev_config.calc.clone()));
+                    .emit(CalcPluginInput::SetPrev(self.prev_config.calc.clone()));
                 self.file_path
                     .emit(SimplePluginInput::SetPrev(self.prev_config.path.clone()));
                 self.web_search
@@ -209,7 +210,7 @@ impl SimpleComponent for LauncherPlugins {
                 self.applications.emit(ApplicationsInput::Reset);
                 self.run_in_terminal.emit(SimplePluginInput::Reset);
                 self.run_in_shell.emit(SimplePluginInput::Reset);
-                self.calculator.emit(SimplePluginInput::Reset);
+                self.calculator.emit(CalcPluginInput::Reset);
                 self.file_path.emit(SimplePluginInput::Reset);
                 self.web_search.emit(WebSearchInput::Reset);
                 self.actions.emit(ActionsInput::Reset);

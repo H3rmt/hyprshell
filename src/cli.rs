@@ -60,7 +60,6 @@ pub enum Command {
         command: ConfigCommand,
     },
 
-    #[cfg(feature = "debug_command")]
     /// Debug command to debug finding icons for the GUI, desktop files, etc.
     Debug {
         #[clap(subcommand)]

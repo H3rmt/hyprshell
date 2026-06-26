@@ -80,7 +80,7 @@ impl SimpleComponent for Applications {
                         set_tooltip_text: Some("Number of weeks to retain run history; used to rank applications by usage.")
                     },
                     gtk::SpinButton {
-                        set_adjustment: &Adjustment::new(0.0, 0.0, 52.0, 1.0, 8.0, 0.0),
+                        set_adjustment: &Adjustment::new(0.0, 1.0, 52.0, 1.0, 8.0, 0.0),
                         set_digits: 0,
                         set_hexpand: true,
                         #[watch]

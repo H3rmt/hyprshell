@@ -41,6 +41,7 @@ pub enum WindowsOverviewOutput {
     FilterWorkspace(bool),
     FilterMonitor(bool),
     ExcludeWorkspaces(String),
+    TopOffset(u16),
 }
 
 #[relm4::component(pub)]
@@ -157,11 +158,35 @@ impl SimpleComponent for WindowsOverview {
                         set_text_if_different: &model.config.exclude_workspaces,
                         connect_changed[sender] => move |e| { sender.output_sender().emit(WindowsOverviewOutput::ExcludeWorkspaces(e.text().into())); } @h_4,
                     }
+                },
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: 10,
+                    gtk::Label {
+                        set_label: "Top Offset",
+                        #[watch]
+                        set_css_classes: if model.config.top_offset == model.prev_config.top_offset { &[] } else { &["blue-label"] },
+                    },
+                    gtk::Image::from_icon_name("dialog-information-symbolic") {
+                        set_cursor_by_name: "help",
+                        set_tooltip_text: Some("Configure offset of the overview window from the top of the screen in pixels")
+                    },
+                    gtk::SpinButton {
+                        set_adjustment: &gtk::Adjustment::new(0.0, 0.0, 5000.0, 50.0, 100.0, 0.0),
+                        set_digits: 0,
+                        set_hexpand: true,
+                        set_valign: Align::Center,
+                        #[watch]
+                        #[block_signal(h_5)]
+                        set_value: f64::from(model.config.top_offset),
+                        connect_value_changed[sender] => move |e| { sender.output_sender().emit(WindowsOverviewOutput::TopOffset(e.value() as u16)) } @h_5,
+                    }
                 }
             }
         }
     }
 
+    #[allow(clippy::cast_sign_loss)]
     fn init(
         init: Self::Init,
         root: Self::Root,

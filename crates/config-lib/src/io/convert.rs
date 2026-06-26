@@ -173,7 +173,7 @@ impl TryFrom<Plugins> for crate::Plugins {
                 None
             },
             websearch: value.websearch.map(WebSearchConfig::try_into).transpose()?,
-            calc: if value.calc.is_some() { Some(()) } else { None },
+            calc: value.calc.map(CalcPluginConfig::try_into).transpose()?,
             path: if value.path.is_some() { Some(()) } else { None },
             actions: value
                 .actions
@@ -198,11 +198,7 @@ impl From<crate::Plugins> for Plugins {
                 None
             },
             websearch: value.websearch.map(Into::into),
-            calc: if value.calc.is_some() {
-                Some(EmptyConfig {})
-            } else {
-                None
-            },
+            calc: value.calc.map(Into::into),
             path: if value.path.is_some() {
                 Some(EmptyConfig {})
             } else {
@@ -352,6 +348,24 @@ impl From<crate::ActionsPluginActionCustom> for ActionsPluginActionCustom {
             details: value.details,
             command: value.command,
             icon: value.icon,
+        }
+    }
+}
+
+impl TryFrom<CalcPluginConfig> for crate::CalcPluginConfig {
+    type Error = anyhow::Error;
+
+    fn try_from(value: CalcPluginConfig) -> Result<Self, Self::Error> {
+        Ok(Self {
+            prefix: value.prefix,
+        })
+    }
+}
+
+impl From<crate::CalcPluginConfig> for CalcPluginConfig {
+    fn from(value: crate::CalcPluginConfig) -> Self {
+        Self {
+            prefix: value.prefix,
         }
     }
 }

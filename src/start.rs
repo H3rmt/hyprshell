@@ -111,7 +111,7 @@ pub fn register_event_restarter(
     let debounce_delay = env::var("HYPRSHELL_RELOAD_DEBOUNCE")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(2000);
+        .unwrap_or(750);
     let debounce_timer = Rc::new(RefCell::new(None::<glib::SourceId>));
     glib::spawn_future_local(async move {
         loop {

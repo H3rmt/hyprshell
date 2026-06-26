@@ -43,6 +43,9 @@ Use `hyprshell-slim` for the [slim](#feature-flags) version (faster buildtime).
 
 Download and extract from the latest release on the [releases](https://github.com/h3rmt/hyprshell/releases) page.
 
+**Look at [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files need to be installed where.
+DON'T just copy only the executable, else the settings app won't work correctly.**
+
 ### NixOS
 
 Hyprshell is also available in `nixpkgs` repository and can be configured using a generic `home-manager` module.
@@ -67,13 +70,16 @@ cargo install hyprshell --no-default-features --features "slim"
 
 Minimum required rustc version: `1.92.0` (from 11 December 2025)
 
+**Look at [build-binary](./scripts/ci/build-x86.sh) and [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files get bundled and need to be installed where.
+DON'T just build only the executable, else the settings app won't work correctly.**
+
 ## Usage
 
 Run `hyprshell --help` to see available commands and options.
 
 ### Config
 
-To generate or edit a configuration, run `hyprshell config generate`, `hyprshell config edit` or launch the `Hyprshell Settings Editor` App.
+To generate or edit a configuration, run `hyprshell config generate`, `hyprshell config edit` or launch the `Hyprshell Settings Editor` App. (they all do the same thing)
 
 To validate or explain the current configuration, use `hyprshell config check` and `hyprshell config explain`.
 
@@ -89,6 +95,9 @@ Enable the systemd service [recommended]:
 ```bash
 systemctl --user enable --now hyprshell.service
 ```
+
+This will only work if you either use `uwsm` or have [Systemd Startup](https://wiki.hypr.land/Useful-Utilities/Systemd-start/) configured.
+Check with `systemctl status graphical.target` to see if hyprshell would be started.
 
 Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
 
@@ -132,10 +141,12 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 
 ### Env Variables
 
+**You can override these via `systemctl --user edit hyprshell.service` by setting `Environment="HYPRSHELL_...=value"` in a `[Service]` block**
+
 - `HYPRSHELL_NO_LISTENERS`: Disable all config listeners (config file, css file, hyprland config, monitor count)
 - `HYPRSHELL_NO_ALL_ICONS`: Don't check for all icons on fs and just use the ones provided by the `gtk4` icon theme.
 - `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
-- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `2000`).
+- `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `750`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode

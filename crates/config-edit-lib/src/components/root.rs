@@ -7,6 +7,7 @@ use crate::components::launcher::{Launcher, LauncherInit, LauncherInput, Launche
 use crate::components::launcher_plugins::LauncherPluginsOutput;
 use crate::components::launcher_plugins::actions::ActionsOutput;
 use crate::components::launcher_plugins::applications::ApplicationsOutput;
+use crate::components::launcher_plugins::calc::CalcPluginOutput;
 use crate::components::launcher_plugins::simple::SimplePluginOutput;
 use crate::components::launcher_plugins::websearch::WebSearchOutput;
 use crate::components::nix_preview::{NixPreview, NixPreviewInit};
@@ -304,7 +305,6 @@ impl SimpleComponent for Root {
                 );
                 if changes {
                     self.alert_dialog.emit(AlertMsg::Show);
-                    self.alert_dialog.widgets().gtk_window_12.set_modal(true); // TODO remove if https://github.com/Relm4/Relm4/issues/837 fixed
                 } else {
                     sender.input(RootInput::Close);
                 }
@@ -539,8 +539,11 @@ impl SimpleComponent for Root {
                             }
                         },
                         LauncherPluginsOutput::Calculator(msg) => match msg {
-                            SimplePluginOutput::Enabled(enabled) => {
+                            CalcPluginOutput::Enabled(enabled) => {
                                 r#ref.plugins.calc.enabled = enabled;
+                            }
+                            CalcPluginOutput::SetPrefix(prefix) => {
+                                r#ref.plugins.calc.prefix = prefix;
                             }
                         },
                         LauncherPluginsOutput::FilePath(msg) => match msg {
@@ -608,6 +611,9 @@ impl SimpleComponent for Root {
                         }
                         WindowsOverviewOutput::ExcludeWorkspaces(exclude_workspaces) => {
                             r#ref.overview.exclude_workspaces = exclude_workspaces;
+                        }
+                        WindowsOverviewOutput::TopOffset(top_offset) => {
+                            r#ref.overview.top_offset = top_offset;
                         }
                     },
                     WindowsOutput::Switch(msg) => match msg {

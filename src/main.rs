@@ -12,18 +12,15 @@ use tracing_subscriber::EnvFilter;
 mod cli;
 mod data;
 // mod receive_handle;
+mod completions;
+mod debug;
+mod default_apps;
+mod explain;
+mod root;
 mod socket;
 mod start;
 mod util;
 mod wm;
-
-mod completions;
-#[cfg(feature = "debug_command")]
-mod debug;
-#[cfg(feature = "debug_command")]
-mod default_apps;
-mod explain;
-mod root;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> anyhow::Result<()> {
@@ -78,7 +75,7 @@ fn main() -> anyhow::Result<()> {
         .global_opts
         .config_file
         .unwrap_or_else(get_default_config_file);
-    #[cfg(any(feature = "gui_settings_editor", feature = "debug_command"))]
+    #[cfg(feature = "gui_settings_editor")]
     let system_data_dir = cli
         .global_opts
         .system_data_dir
@@ -157,7 +154,6 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         },
-        #[cfg(feature = "debug_command")]
         #[allow(clippy::print_stderr, clippy::print_stdout)]
         cli::Command::Debug { command } => {
             println!("run with -vv as args to see all logs");
@@ -236,11 +232,10 @@ fn main() -> anyhow::Result<()> {
 
 fn check_features() {
     tracing::debug!(
-        // "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
-        "FEATURES: json5_config: {}, gui_settings_editor: {}, debug_command: {}, launcher_calc: {}",
+        // "FEATURES: json5_config: {}, gui_settings_editor: {}, launcher_calc: {}, clipboard_compress_lz4: {}, clipboard_compress_zstd: {}, clipboard_compress_brotli: {}, clipboard_encrypt_chacha20poly1305: {}, clipboard_encrypt_aes_gcm: {}",
+        "FEATURES: json5_config: {}, gui_settings_editor: {}, launcher_calc: {}",
         cfg!(feature = "json5_config"),
         cfg!(feature = "gui_settings_editor"),
-        cfg!(feature = "debug_command"),
         cfg!(feature = "launcher_calc"),
         // cfg!(feature = "clipboard_compress_lz4"),
         // cfg!(feature = "clipboard_compress_zstd"),

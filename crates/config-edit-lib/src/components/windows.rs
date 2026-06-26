@@ -104,7 +104,7 @@ impl SimpleComponent for Windows {
                             set_tooltip_text: Some("The number of workspaces or windows to show per row. \nIf you have 6 workspaces open and set this to 3, you will see 2 rows of 3 workspaces")
                         },
                         gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(1.0, 0.0, 50.0, 1.0, 5.0, 0.0),
+                            set_adjustment: &gtk::Adjustment::new(1.0, 1.0, 100.0, 1.0, 5.0, 0.0),
                             set_hexpand: true,
                             set_digits: 0,
                             #[watch]

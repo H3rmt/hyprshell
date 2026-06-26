@@ -36,14 +36,15 @@ config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config
 test-log.workspace = true
 
 [features]
-default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command"]
+default = ["json5_config", "gui_settings_editor", "launcher_calc", "live_windows"]
 #default = ["json5_config", "gui_settings_editor", "launcher_calc", "debug_command", "clipboard_compress_lz4", "clipboard_compress_zstd", "clipboard_compress_brotli", "clipboard_encrypt_chacha20poly1305", "clipboard_encrypt_aes_gcm"]
-slim = ["gui_settings_editor", "debug_command"]
+slim = ["gui_settings_editor"]
 #slim = ["gui_settings_editor", "debug_command", "clipboard_compress_lz4"]
 json5_config = ["config-lib/json5_config"]
 gui_settings_editor = ["dep:config-edit-lib"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin", "config-edit-lib?/launcher_calc_plugin"]
-debug_command = []
+# adds arround 40 dependencies
+live_windows = ["exec-lib/live_windows"]
 ci_config_check = ["config-lib/ci_no_default_config_values"]
 #clipboard_compress_lz4 = ["clipboard-lib/compress_lz4"]
 #clipboard_compress_zstd = ["clipboard-lib/compress_zstd"]

@@ -200,7 +200,6 @@ impl SimpleComponent for WebSearch {
                     .widget()
                     .set_transient_for(self.create.toplevel_window().as_ref());
                 self.create_dialog.emit(AlertMsg::Show);
-                self.create_dialog.widgets().gtk_window_12.set_modal(true); // TODO remove if https://github.com/Relm4/Relm4/issues/837 fixed
             }
             WebSearchInput::Create => {
                 let name = self.name.text().to_string().into_boxed_str();

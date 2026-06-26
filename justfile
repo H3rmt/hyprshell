@@ -61,9 +61,30 @@ bloat:
     echo "Checking for bloat in binary with cargo bloat..."
     cargo bloat --release
 
-# [group('develop')]
-# fix:
-#     cargo fix --allow-dirty -p hyprshell-config-lib -p hyprshell-core-lib -p hyprshell-exec-lib -p hyprshell-launcher-lib -p hyprshell-windows-lib -p hyprshell-clipboard-lib -p hyprshell-config-edit-lib
+[group('security')]
+about:
+    #!/usr/bin/env bash
+    if ! command -v cargo-about >/dev/null 2>&1; then
+        echo "cargo-about not found, installing..."
+        if ! command -v cargo binstall >/dev/null 2>&1; then
+          cargo install --locked cargo-about
+        else
+          echo "installing with cargo binstall"
+          cargo binstall cargo-about
+        fi
+    fi
+    cargo audit
+
+    OUTPUT_FILE="./packaging/THIRD_PARTY_NOTICES.md"
+    cargo about generate --locked --all-features --fail ./packaging/license.hbs > "$OUTPUT_FILE"
+    # yoinked from zed (https://github.com/zed-industries/zed/blob/main/script/generate-licenses)
+    sed -i.bak 's/&quot;/"/g' "$OUTPUT_FILE"
+    sed -i.bak 's/&#x27;/'\''/g' "$OUTPUT_FILE" # The ` '\'' ` thing ends the string, appends a single quote, and re-opens the string
+    sed -i.bak 's/&#x3D;/=/g' "$OUTPUT_FILE"
+    sed -i.bak 's/&#x60;/`/g' "$OUTPUT_FILE"
+    sed -i.bak 's/&lt;/</g' "$OUTPUT_FILE"
+    sed -i.bak 's/&gt;/>/g' "$OUTPUT_FILE"
+    rm -rf "${OUTPUT_FILE}.bak"
 
 # [group('checks')]
 # check-default-nix-features:

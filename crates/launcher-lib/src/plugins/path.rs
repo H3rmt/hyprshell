@@ -64,7 +64,7 @@ pub fn launch_option(text: &str) -> PluginReturn {
         format!("{} {}", file_manager.exec, text)
     };
     debug!("Launching file-manger: {}", cmdline);
-    run_program(&cmdline, None, false, None).warn_details("Failed to run program");
+    run_program(&cmdline, None, false, None, false).warn_details("Failed to run program");
     PluginReturn {
         show_animation: true,
     }

@@ -7,11 +7,13 @@ use std::process::{Command, Stdio};
 use std::{env, thread};
 use tracing::{debug, trace};
 
+// use force_same_sysd_unit for things like loginctl terminate-session self
 pub fn run_program(
     run: &str,
     path: Option<&Path>,
     terminal: bool,
     default_terminal: Option<&str>,
+    force_same_sysd_unit: bool,
 ) -> anyhow::Result<()> {
     debug!("Running: {run}");
     let home_path_buf = env::var_os("HOME").map(PathBuf::from);
@@ -19,7 +21,7 @@ pub fn run_program(
     if terminal {
         if let Some(term) = default_terminal {
             let command = format!("{term} -e {run}");
-            run_command(&command, path).context("Failed to run command")?;
+            run_command(&command, path, force_same_sysd_unit).context("Failed to run command")?;
         } else {
             let env_path = env::var_os("PATH")
                 .unwrap_or_else(|| OsString::from("/usr/bin:/bin:/usr/local/bin"));
@@ -32,7 +34,7 @@ pub fn run_program(
             for term in TERMINALS {
                 if paths.iter().any(|p| p.join(term).exists()) {
                     let command = format!("{term} -e {run}");
-                    if run_command(&command, path).is_ok() {
+                    if run_command(&command, path, force_same_sysd_unit).is_ok() {
                         trace!("Found and launched terminal: {term}");
                         found_terminal = true;
                         break;
@@ -44,19 +46,19 @@ pub fn run_program(
             }
         }
     } else {
-        run_command(run, path).context("Failed to run command")?;
+        run_command(run, path, force_same_sysd_unit).context("Failed to run command")?;
     }
     Ok(())
 }
 
-fn get_command(command: &str) -> Command {
+fn get_command(command: &str, force_same_sysd_unit: bool) -> Command {
     // replace common exec placeholders
     let mut command = command.to_string();
     for replacement in ["%f", "%F", "%u", "%U"] {
         command = command.replace(replacement, "");
     }
     // if run as systemd unit all programs exit when not run outside the units cgroup
-    if env::var_os("INVOCATION_ID").is_some() {
+    if env::var_os("INVOCATION_ID").is_some() && !force_same_sysd_unit {
         let mut cmd = Command::new("systemd-run");
         cmd.args([
             "--user",
@@ -75,10 +77,12 @@ fn get_command(command: &str) -> Command {
     }
 }
 
-fn run_command(run: &str, path: Option<&Path>) -> anyhow::Result<()> {
+fn run_command(run: &str, path: Option<&Path>, force_same_sysd_unit: bool) -> anyhow::Result<()> {
     trace!("Original command: {run:?}");
-    let mut cmd = get_command(run);
-    cmd.process_group(0);
+    let mut cmd = get_command(run, force_same_sysd_unit);
+    if !force_same_sysd_unit {
+        cmd.process_group(0);
+    }
     if let Some(path) = path {
         cmd.current_dir(path);
     }

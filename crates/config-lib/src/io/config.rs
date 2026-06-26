@@ -65,7 +65,7 @@ pub struct Launcher {
         terminal: Some(EmptyConfig::default()),
         shell: None,
         websearch: Some(WebSearchConfig::default()),
-        calc: Some(EmptyConfig::default()),
+        calc: Some(CalcPluginConfig::default()),
         path: Some(EmptyConfig::default()),
         actions: Some(ActionsPluginConfig::default()),
     })]
@@ -81,7 +81,7 @@ pub struct Plugins {
     pub terminal: Option<EmptyConfig>,
     pub shell: Option<EmptyConfig>,
     pub websearch: Option<WebSearchConfig>,
-    pub calc: Option<EmptyConfig>,
+    pub calc: Option<CalcPluginConfig>,
     pub path: Option<EmptyConfig>,
     pub actions: Option<ActionsPluginConfig>,
 }
@@ -90,6 +90,14 @@ pub struct Plugins {
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct EmptyConfig {}
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
+#[serde(deny_unknown_fields)]
+pub struct CalcPluginConfig {
+    #[default(None)]
+    pub prefix: Option<String>,
+}
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]

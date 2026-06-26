@@ -3,7 +3,7 @@ use core_lib::{ClientData, ClientId};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::Position;
-use relm4::gtk::pango;
+use relm4::gtk::{Align, gdk, pango};
 use relm4::prelude::*;
 
 /// Workspace clients component for Fixed parent (workspace mode)
@@ -14,11 +14,15 @@ pub struct WorkspaceClients {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    pub paintable: Option<gdk::Paintable>,
+    live_thumbnails: bool,
+    live_thumbnails_icons: bool,
 }
 
 #[derive(Debug)]
 pub enum WorkspaceClientsInput {
     SetActive(bool),
+    UpdateThumbnail(gdk::Texture),
 }
 
 #[derive(Debug)]
@@ -26,6 +30,8 @@ pub struct WorkspaceClientsInit {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    pub live_thumbnails: bool,
+    pub live_thumbnails_icons: bool,
 }
 
 #[derive(Debug)]
@@ -49,24 +55,42 @@ impl FactoryComponent for WorkspaceClients {
             set_cursor_from_name: Some("pointer"),
             set_width_request: scale(self.data.width, self.scale),
             set_height_request: scale(self.data.height, self.scale),
+            set_overflow: gtk::Overflow::Hidden,
             connect_clicked[sender, id = self.id] => move |_| sender.output_sender().emit(WorkspaceClientsOutput::Clicked(id)),
-            gtk::Frame {
-                #[wrap(Some)]
-                set_label_widget = &gtk::Label {
-                    set_overflow: gtk::Overflow::Visible,
-                    set_margin_start: 6,
-                    set_ellipsize: pango::EllipsizeMode::End,
-                    set_label: if self.data.title.trim().is_empty() {
-                        &self.data.class
-                    } else {
-                        &self.data.title
-                    },
+            gtk::Overlay {
+                #[name(picture)]
+                gtk::Picture {
+                    set_content_fit: gtk::ContentFit::Fill,
+                    set_halign: Align::Fill,
+                    set_valign: Align::Fill,
+                    #[watch]
+                    set_paintable: self.paintable.as_ref(),
+                    set_css_classes: if self.data.enabled { &["client-picture"] } else { &["client-picture", "monochrome"] },
                 },
-                set_label_align: 0.5,
-                #[name(image)]
-                gtk::Image {
-                    set_css_classes: if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] },
-                    set_pixel_size: calc_image_size(self.data.height, self.data.width, self.scale),
+                add_overlay = &gtk::Frame {
+                    set_label_align: 0.5,
+                    set_halign: Align::Center,
+                    set_valign: Align::Fill,
+                    #[wrap(Some)]
+                    set_label_widget = &gtk::Label {
+                        set_overflow: gtk::Overflow::Visible,
+                        set_margin_start: 6,
+                        set_ellipsize: pango::EllipsizeMode::End,
+                        set_label: if self.data.title.trim().is_empty() {
+                            &self.data.class
+                        } else {
+                            &self.data.title
+                        },
+                    },
+                    #[name(image)]
+                    gtk::Image {
+                        set_css_classes: if self.live_thumbnails && self.live_thumbnails_icons {
+                            if self.data.enabled { &["client-image-layered"] } else { &["client-image-layered", "monochrome"] }
+                        } else {
+                            if self.data.enabled { &["client-image"] } else { &["client-image", "monochrome"] }
+                        },
+                        set_pixel_size: calc_image_size(self.data.height, self.data.width, self.scale),
+                    }
                 }
             }
         }
@@ -79,6 +103,9 @@ impl FactoryComponent for WorkspaceClients {
             data: init.data,
             id: init.id,
             scale: init.scale,
+            paintable: None,
+            live_thumbnails: init.live_thumbnails,
+            live_thumbnails_icons: init.live_thumbnails_icons,
         }
     }
 
@@ -90,14 +117,14 @@ impl FactoryComponent for WorkspaceClients {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
-
-        // Set the icon for this client (only if large enough to show)
-        let client_h_w =
-            scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
-        if client_h_w > 70 {
-            set_icon(&self.data.class, self.data.pid, &widgets.image);
+        if !self.live_thumbnails || self.live_thumbnails_icons {
+            // Set the icon for this client (only if large enough to show)
+            let client_h_w =
+                scale(self.data.height, self.scale).min(scale(self.data.width, self.scale));
+            if client_h_w > 70 {
+                set_icon(&self.data.class, self.data.pid, &widgets.image);
+            }
         }
-
         widgets
     }
 
@@ -105,6 +132,9 @@ impl FactoryComponent for WorkspaceClients {
         match message {
             WorkspaceClientsInput::SetActive(active) => {
                 self.active = active;
+            }
+            WorkspaceClientsInput::UpdateThumbnail(texture) => {
+                self.paintable = Some(texture.upcast());
             }
         }
     }
@@ -131,60 +161,3 @@ fn calc_image_size(height: i16, width: i16, scale_val: f64) -> i32 {
         0 // Hide image for very small clients
     }
 }
-
-/*
-impl FactoryView for gtk::Fixed {
-    type Children = gtk::Widget;
-    type ReturnedWidget = gtk::Widget;
-    type Position = (f64, f64);
-
-    fn factory_remove(&self, widget: &Self::ReturnedWidget) {
-        use gtk::prelude::FixedExt;
-        self.remove(widget);
-    }
-
-    fn factory_append(
-        &self,
-        widget: impl AsRef<Self::Children>,
-        position: &Self::Position,
-    ) -> Self::ReturnedWidget {
-        use gtk::prelude::FixedExt;
-        self.put(
-            widget.as_ref(),
-            position.0,
-            position.1
-        );
-        widget.as_ref().clone()
-    }
-
-    fn factory_prepend(
-        &self,
-        widget: impl AsRef<Self::Children>,
-        position: &Self::Position,
-    ) -> Self::ReturnedWidget {
-        self.factory_append(widget, position)
-    }
-
-    fn factory_insert_after(
-        &self,
-        widget: impl AsRef<Self::Children>,
-        position: &Self::Position,
-        _other: &Self::ReturnedWidget,
-    ) -> Self::ReturnedWidget {
-        self.factory_append(widget, position)
-    }
-
-    fn factory_move_after(&self, _widget: &Self::ReturnedWidget, _other: &Self::ReturnedWidget) {}
-
-    fn factory_move_start(&self, _widget: &Self::ReturnedWidget) {}
-
-    fn returned_widget_to_child(returned_widget: &Self::ReturnedWidget) -> Self::Children {
-        returned_widget.clone()
-    }
-
-    fn factory_update_position(&self, widget: &Self::ReturnedWidget, position: &Self::Position) {
-        self.factory_remove(widget);
-        self.factory_append(widget, position);
-    }
-}
- */

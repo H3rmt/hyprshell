@@ -94,7 +94,7 @@ impl SimpleComponent for Launcher {
                             set_tooltip_text: Some("The width of the launcher in pixels.")
                         },
                         gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(0.0, 0.0, 2000.0, 50.0, 100.0, 0.0),
+                            set_adjustment: &gtk::Adjustment::new(0.0, 10.0, 5000.0, 50.0, 100.0, 0.0),
                             set_hexpand: true,
                             set_digits: 0,
                             #[watch]
@@ -116,7 +116,7 @@ impl SimpleComponent for Launcher {
                             set_tooltip_text: Some("Sets the maximum number of items to show in the launcher.")
                         },
                         gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(0.0, 0.0, 10.0, 1.0, 2.0, 0.0),
+                            set_adjustment: &gtk::Adjustment::new(0.0, 1.0, 20.0, 1.0, 2.0, 0.0),
                             set_hexpand: true,
                             set_digits: 0,
                             #[watch]

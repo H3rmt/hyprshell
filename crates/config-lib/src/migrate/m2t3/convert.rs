@@ -55,7 +55,7 @@ impl From<old_structs::Plugins> for crate::io::Plugins {
             terminal: value.terminal,
             shell: value.shell,
             websearch: value.websearch,
-            calc: value.calc,
+            calc: value.calc.map(|_| crate::io::CalcPluginConfig::default()),
             path: value.path,
             actions: Some(crate::io::ActionsPluginConfig::default()),
         }
