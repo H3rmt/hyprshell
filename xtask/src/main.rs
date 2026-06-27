@@ -12,6 +12,7 @@ use crate::load::load_toml;
 mod bundle;
 mod cmd;
 mod edit;
+mod licenses;
 mod load;
 mod pkgbuild;
 mod version;
@@ -88,6 +89,20 @@ pub enum Release {
         #[arg(long)]
         email: Option<String>,
     },
+
+    Licenses {
+        /// List of allowed licenses [default: CC0-1.0, Apache-2.0, Apache-2.0 WITH LLVM-exception, MIT, ISC, BSD-3-Clause, Zlib, Unicode-3.0, MPL-2.0, LGPL-3.0-only, GPL-3.0-or-later]
+        #[arg(
+            long,
+            value_delimiter = ',',
+            default_value = "CC0-1.0, Apache-2.0, Apache-2.0 WITH LLVM-exception, MIT, ISC, BSD-3-Clause, Zlib, Unicode-3.0, MPL-2.0, LGPL-3.0-only, GPL-3.0-or-later"
+        )]
+        licenses: Vec<String>,
+
+        /// Output file to write the licenses to.
+        #[arg(long, short, default_value = "THIRD_PARTY_NOTICES.md")]
+        out: PathBuf,
+    },
     /// Installs all needed dependencies for building the package.
     Dependencies,
 }
@@ -138,12 +153,13 @@ pub enum Command {
 
 #[derive(Args, Debug, Clone)]
 pub struct ProfileFrozen {
-    /// Profile to use for linting (e.g., "dev", "release", "check"). Defaults to "dev".
+    /// Profile to use (e.g., "dev", "release"). Defaults to "dev".
     #[arg(short, long, default_value = "dev")]
     profile: String,
-    /// Whether to run clippy with --frozen, which prevents Cargo from accessing the network and requires a Cargo.lock file.
+    /// Whether to run clippy with --locked, which requires that the Cargo.lock file is up-to-date.
+    /// If the lock file is missing, or it needs to be updated, Cargo will exit with an error.
     #[arg(long)]
-    frozen: bool,
+    locked: bool,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -156,6 +172,8 @@ fn main() -> anyhow::Result<()> {
         1 => "debug",
         2.. => "trace",
     };
+    tracing_log::LogTracer::init()
+        .unwrap_or_else(|e| warn!("Unable to initialize log logging: {e}"));
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| format!("hyprshell_xtask={level}").into());
     let subscriber = tracing_subscriber::fmt()
@@ -289,6 +307,12 @@ fn main() -> anyhow::Result<()> {
                     anyhow::bail!("cargo publish failed with exit code {out}");
                 }
             }
+            Release::Licenses { licenses, out } => {
+                let gen_ =
+                    licenses::gen_licenses(&licenses).context("Failed to generate licenses")?;
+                fs::write(out, &gen_).context("Failed to write licenses output")?;
+                info!("Generated licenses output ({} lines)", gen_.lines().count());
+            }
             Release::Dependencies => {}
         },
         Command::Cmd { command } => match command {
@@ -306,8 +330,8 @@ fn main() -> anyhow::Result<()> {
                     "--all-targets",
                     "--no-deps",
                 ];
-                if pf.frozen {
-                    args.push("--frozen");
+                if pf.locked {
+                    args.push("--locked");
                 }
                 args.extend(["-p", "hyprshell"]);
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
@@ -335,8 +359,8 @@ fn main() -> anyhow::Result<()> {
                     "--fix",
                     "--allow-dirty",
                 ];
-                if pf.frozen {
-                    args.push("--frozen");
+                if pf.locked {
+                    args.push("--locked");
                 }
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running clippy fix");
@@ -398,8 +422,8 @@ fn main() -> anyhow::Result<()> {
                         "--all-targets",
                     ]
                 };
-                if pf.frozen {
-                    args.push("--frozen");
+                if pf.locked {
+                    args.push("--locked");
                 }
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running test/nextest");

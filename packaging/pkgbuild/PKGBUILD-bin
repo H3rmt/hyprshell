@@ -15,6 +15,7 @@ source_aarch64=("https://github.com/H3rmt/hyprshell/releases/download/v$pkgver/h
 package() {
     install -Dm755 "hyprshell"                  "$pkgdir/usr/bin/hyprshell"
     install -Dm644 "LICENSE"                    "$pkgdir/usr/share/licenses/hyprshell/LICENSE"
+    install -Dm644 "THIRD_PARTY_NOTICES.md"     "$pkgdir/usr/share/licenses/hyprshell/THIRD_PARTY_NOTICES.md"
     install -Dm644 "README.md"                  "$pkgdir/usr/share/doc/hyprshell/README.md"
     install -Dm644 "CONFIGURE.md"               "$pkgdir/usr/share/doc/hyprshell/CONFIGURE.md"
     install -Dm644 "DEBUG.md"                   "$pkgdir/usr/share/doc/hyprshell/DEBUG.md"
