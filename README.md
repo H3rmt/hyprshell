@@ -20,6 +20,7 @@ It provides a customizable GUI for switching between windows or workspaces, laun
 - **Dynamic Configuration**: Automatically reloads configuration/style changes without restarting the application.
 - **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons, launcher matching, and default applications.
 - **Nix Support**: Includes a flake and home-manager module for Nix-based setups.
+- **Live Window Preview** (Experimental): Can use live window content directly within the overview.
 
 ## Installation
 
@@ -70,7 +71,7 @@ cargo install hyprshell --no-default-features --features "slim"
 
 Minimum required rustc version: `1.92.0` (from 11 December 2025)
 
-**Look at [build-binary](./scripts/ci/build-x86.sh) and [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files get bundled and need to be installed where.
+**Look at [pkbuild](./packaging/pkgbuild/PKGBUILD) to see which files need to be installed where.
 DON'T just build only the executable, else the settings app won't work correctly.**
 
 ## Usage
