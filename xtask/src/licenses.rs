@@ -14,7 +14,7 @@ pub fn gen_licenses(licenses: &[String]) -> anyhow::Result<String> {
     let licenses = licenses
         .iter()
         .filter_map(|license| match spdx::Licensee::parse_mode(license, MODE) {
-            Ok(licensee) => Some(licensee),
+            Ok(licenseee) => Some(licenseee),
             Err(error) => {
                 warn!("invalid license passed: {error:?}");
                 None

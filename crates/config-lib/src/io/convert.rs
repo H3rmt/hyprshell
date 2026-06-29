@@ -132,6 +132,10 @@ impl TryFrom<Launcher> for crate::Launcher {
         Ok(Self {
             default_terminal: value.default_terminal,
             launch_modifier: value.launch_modifier,
+            alt_launch_modifier: match value.launch_modifier {
+                crate::Modifier::Alt => crate::Modifier::Ctrl,
+                _ => crate::Modifier::Alt,
+            },
             width: value.width,
             show_when_empty: value.show_when_empty,
             max_items: value.max_items,

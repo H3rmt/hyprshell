@@ -37,10 +37,11 @@ pub enum LauncherRootInput {
     CloseLauncher,
     LaunchPlugin(char),
     LaunchIndex(usize),
-    Escape,
+    LaunchIndexAlt(usize),
     Return,
     Switch(Direction, bool),
     Type,
+    Escape,
 }
 
 #[derive(Debug)]
@@ -54,13 +55,6 @@ pub enum LauncherRootOutput {
     Switch(Direction, bool),
     /// `do_switch`: if true, opens program / does switch and closes, if false only closes
     Close(bool),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ActivationOutcome {
-    OpenChildMode,
-    Launched,
-    NotLaunched,
 }
 
 #[relm4::component(pub)]
@@ -161,6 +155,7 @@ impl SimpleComponent for LauncherRoot {
         ComponentParts { model, widgets }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
             LauncherRootInput::SetLauncher(launcher) => {
@@ -194,15 +189,40 @@ impl SimpleComponent for LauncherRoot {
             }
             LauncherRootInput::LaunchIndex(index) => {
                 trace!("Closing launcher with index: {}", index);
-                match self.activate_selected(index) {
-                    ActivationOutcome::OpenChildMode => (),
-                    ActivationOutcome::Launched => {
-                        sender
-                            .output_sender()
-                            .emit(LauncherRootOutput::Close(false));
-                    }
-                    ActivationOutcome::NotLaunched => {}
+                let Some(item) = self.data.active_results.get(index).map(|entry| &entry.item)
+                else {
+                    return;
+                };
+                plugins::launch(
+                    &item.item.iden,
+                    &self.ui.entry.text(),
+                    self.settings.default_terminal.as_deref(),
+                    &self.data_dir,
+                    item.args.as_deref(),
+                );
+                sender
+                    .output_sender()
+                    .emit(LauncherRootOutput::Close(false));
+            }
+            LauncherRootInput::LaunchIndexAlt(index) => {
+                trace!("Closing launcher with alt index: {}", index);
+                if self.data.active_parent.is_some() {
+                    sender
+                        .input_sender()
+                        .emit(LauncherRootInput::LaunchIndex(index));
                 }
+                let Some(item) = self.data.active_results.get(index).map(|entry| &entry.item)
+                else {
+                    return;
+                };
+                if item.item.children.is_empty() {
+                    return;
+                }
+                self.data.parent_text = Some(self.ui.entry.text().into());
+                self.data.parent_cursor = Some(self.ui.entry.position());
+                self.data.active_parent = Some(item.item.clone());
+                self.ui.entry.set_text("");
+                self.handle_type();
             }
             LauncherRootInput::Escape => {
                 if self.data.active_parent.is_some() {
@@ -305,29 +325,6 @@ impl LauncherRoot {
         exec_lib::reset_no_follow_mouse().warn_details("Failed to reset follow mouse");
     }
 
-    fn activate_selected(&mut self, index: usize) -> ActivationOutcome {
-        let Some(item) = self.data.active_results.get(index).map(|entry| &entry.item) else {
-            return ActivationOutcome::NotLaunched;
-        };
-        if item.item.children.is_empty() {
-            plugins::launch(
-                &item.item.iden,
-                &self.ui.entry.text(),
-                self.settings.default_terminal.as_deref(),
-                &self.data_dir,
-                item.args.as_deref(),
-            );
-            ActivationOutcome::Launched
-        } else {
-            self.data.parent_text = Some(self.ui.entry.text().into());
-            self.data.parent_cursor = Some(self.ui.entry.position());
-            self.data.active_parent = Some(item.item.clone());
-            self.ui.entry.set_text("");
-            self.handle_type();
-            ActivationOutcome::OpenChildMode
-        }
-    }
-
     fn handle_type(&mut self) {
         let text: &str = &self.ui.entry.text();
 
@@ -362,11 +359,18 @@ impl LauncherRoot {
             .into_iter()
             .enumerate()
             .map(|(idx, item)| LauncherResultsInit {
-                item,
-                key: match idx {
-                    0 => "Return".to_string(),
-                    i => format!("{}+{i}", self.settings.launch_modifier),
+                key: match (idx, &item.item.children.is_empty()) {
+                    (0, true) => "Return".to_string(),
+                    (0, false) => {
+                        format!("({}+)Return", self.settings.alt_launch_modifier)
+                    }
+                    (i, true) => format!("{}+{i}", self.settings.launch_modifier),
+                    (i, false) => format!(
+                        "{}/{}+{i}",
+                        self.settings.alt_launch_modifier, self.settings.launch_modifier
+                    ),
                 },
+                item,
             })
             .take(max_items)
             .collect();
@@ -399,9 +403,15 @@ fn handle_key(
         Modifier::Super => modt == ModifierType::SUPER_MASK,
         Modifier::None => false,
     };
+    let alt_launch_mod = match launcher.alt_launch_modifier {
+        Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
+        Modifier::Alt => modt == ModifierType::ALT_MASK,
+        Modifier::Super => modt == ModifierType::SUPER_MASK,
+        Modifier::None => false,
+    };
     trace!(
-        "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}",
-        key, key, modt, launch_mod, launcher.launch_modifier
+        "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}, alt_launch_modifier: {}",
+        key, key, modt, launch_mod, launcher.launch_modifier, launcher.alt_launch_modifier
     );
     if launch_mod && plugin_keys.contains(&key) {
         if let Some(ch) = key.name().unwrap_or_default().to_string().pop() {
@@ -412,36 +422,36 @@ fn handle_key(
         return glib::Propagation::Stop;
     }
 
-    match (launch_mod, key) {
-        (_, gdk::Key::Escape) => {
+    match (launch_mod, alt_launch_mod, key) {
+        (_, _, gdk::Key::Escape) => {
             sender.input_sender().emit(LauncherRootInput::Escape);
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Tab) => {
+        (_, _, gdk::Key::Tab) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Right, false));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::ISO_Left_Tab | gdk::Key::grave | gdk::Key::dead_grave) => {
+        (_, _, gdk::Key::ISO_Left_Tab | gdk::Key::grave | gdk::Key::dead_grave) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Left, false));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::h) => {
+        (true, _, gdk::Key::h) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Left, true));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::l) => {
+        (true, _, gdk::Key::l) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Right, true));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Left) => {
+        (_, _, gdk::Key::Left) => {
             if !text_empty {
                 // allow using with text in launcher
                 return glib::Propagation::Proceed;
@@ -451,7 +461,7 @@ fn handle_key(
                 .emit(LauncherRootInput::Switch(Direction::Left, true));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Right) => {
+        (_, _, gdk::Key::Right) => {
             if !text_empty {
                 // allow using with text in launcher
                 return glib::Propagation::Proceed;
@@ -461,74 +471,134 @@ fn handle_key(
                 .emit(LauncherRootInput::Switch(Direction::Right, true));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Up) | (true, gdk::Key::k) => {
+        (_, _, gdk::Key::Up) | (true, _, gdk::Key::k) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Up, true));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Down) | (true, gdk::Key::j) => {
+        (_, _, gdk::Key::Down) | (true, _, gdk::Key::j) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::Switch(Direction::Down, true));
             glib::Propagation::Stop
         }
-        (_, gdk::Key::Return) => {
+        (_, false, gdk::Key::Return) => {
             sender.input_sender().emit(LauncherRootInput::Return);
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_1) => {
+        (_, true, gdk::Key::Return) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(0));
+            glib::Propagation::Stop
+        }
+        (true, false, gdk::Key::_1) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(1));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_2) => {
+        (_, true, gdk::Key::_1) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(1));
+            glib::Propagation::Stop
+        }
+        (true, false, gdk::Key::_2) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(2));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_3) => {
+        (_, true, gdk::Key::_2) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(2));
+            glib::Propagation::Stop
+        }
+        (true, false, gdk::Key::_3) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(3));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_4) => {
+        (_, true, gdk::Key::_3) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(3));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_4) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(4));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_5) => {
+        (_, true, gdk::Key::_4) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(4));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_5) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(5));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_6) => {
+        (_, true, gdk::Key::_5) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(5));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_6) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(6));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_7) => {
+        (_, true, gdk::Key::_6) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(6));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_7) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(7));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_8) => {
+        (_, true, gdk::Key::_7) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(7));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_8) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(8));
             glib::Propagation::Stop
         }
-        (true, gdk::Key::_9) => {
+        (_, true, gdk::Key::_8) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(8));
+            glib::Propagation::Stop
+        }
+        (true, _, gdk::Key::_9) => {
             sender
                 .input_sender()
                 .emit(LauncherRootInput::LaunchIndex(9));
+            glib::Propagation::Stop
+        }
+        (_, true, gdk::Key::_9) => {
+            sender
+                .input_sender()
+                .emit(LauncherRootInput::LaunchIndexAlt(9));
             glib::Propagation::Stop
         }
         _ => glib::Propagation::Proceed,

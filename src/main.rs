@@ -113,7 +113,7 @@ fn main() -> anyhow::Result<()> {
                 );
             }
             cli::ConfigCommand::Explain {} => {
-                explain_config(&config_file, false);
+                explain_config(&config_file);
             }
             cli::ConfigCommand::Check {} => {
                 if let Err(err) = config_lib::load_and_migrate_config(&config_file, true) {

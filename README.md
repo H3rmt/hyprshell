@@ -110,7 +110,7 @@ end)
 ```
 
 ![image.png](.github/imgs/switch.png)
-![img.png](.github/imgs/calc.png)
+![img.png](.github/imgs/math.png)
 
 ### Debugging
 
