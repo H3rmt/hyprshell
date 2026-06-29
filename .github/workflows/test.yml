@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           sudo apt update
-          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection zstd libdbus-1-dev
+          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection libgbm-dev zstd libdbus-1-dev
           rustup default stable
 
           failed=0
