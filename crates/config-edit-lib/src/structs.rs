@@ -1,4 +1,3 @@
-use config_lib::WindowsGeneral;
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -206,7 +205,7 @@ impl From<Windows> for Option<config_lib::Windows> {
     fn from(value: Windows) -> Self {
         if value.enabled {
             Some(config_lib::Windows {
-                general: WindowsGeneral {
+                general: config_lib::WindowsGeneral {
                     scale: value.scale,
                     items_per_row: value.items_per_row,
                 },
@@ -312,6 +311,10 @@ impl From<Launcher> for config_lib::Launcher {
         Self {
             default_terminal: value.default_terminal.map(Box::from),
             launch_modifier: value.launch_modifier.into(),
+            alt_launch_modifier: match value.launch_modifier {
+                ConfigModifier::Alt => config_lib::Modifier::Ctrl,
+                _ => config_lib::Modifier::Alt,
+            },
             width: value.width,
             max_items: value.max_items,
             show_when_empty: value.show_when_empty,

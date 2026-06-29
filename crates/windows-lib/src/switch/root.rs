@@ -1,12 +1,14 @@
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
-use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, refresh_captures};
+#[cfg(feature = "live_windows")]
+use crate::shared::refresh_captures;
+use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
+#[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
-use relm4::adw::gdk::Display;
 use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
@@ -18,6 +20,7 @@ use std::time::Duration;
 use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+#[cfg(feature = "live_windows")]
 const THUMBNAIL_BURST_MS: u64 = 8;
 
 #[derive(Debug)]
@@ -35,12 +38,19 @@ pub struct SwitchRoot {
     items: FactoryVecDeque<Workspaces>,
     /// Factory for non-workspace mode (clients)
     clients_only: FactoryVecDeque<crate::switch::clients::Clients>,
+
+    #[cfg(feature = "live_windows")]
     live_thumbnails: bool,
+    #[cfg(feature = "live_windows")]
     live_thumbnails_icons: bool,
 
+    #[cfg(feature = "live_windows")]
     capture_manager: Option<CaptureManager>,
+    #[cfg(feature = "live_windows")]
     timer_handle: Option<glib::SourceId>,
+    #[cfg(feature = "live_windows")]
     thumbnail_refresh_ms: u64,
+    #[cfg(feature = "live_windows")]
     thumbnail_burst: bool,
 }
 
@@ -53,6 +63,7 @@ pub enum SwitchRootInput {
     CloseSwitch(bool),
     CloseCurrentItem,
     ReloadSwitch,
+    #[cfg(feature = "live_windows")]
     RefreshThumbnails,
 }
 
@@ -132,12 +143,18 @@ impl SimpleComponent for SwitchRoot {
             data: SwitchData::default(),
             items,
             clients_only,
+            #[cfg(feature = "live_windows")]
             live_thumbnails: std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1"),
+            #[cfg(feature = "live_windows")]
             live_thumbnails_icons: std::env::var_os("HYPRSHELL_EXPERIMENTAL_ICONS")
                 .is_none_or(|v| v != "0"),
+            #[cfg(feature = "live_windows")]
             capture_manager: None,
+            #[cfg(feature = "live_windows")]
             timer_handle: None,
+            #[cfg(feature = "live_windows")]
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
+            #[cfg(feature = "live_windows")]
             thumbnail_burst: false,
         };
 
@@ -207,6 +224,7 @@ impl SimpleComponent for SwitchRoot {
                     trace!("not open");
                 }
             }
+            #[cfg(feature = "live_windows")]
             SwitchRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
         }
     }
@@ -235,6 +253,7 @@ impl SwitchRoot {
         }
     }
 
+    #[allow(unused_variables)]
     fn open_switch(&mut self, direction: Direction, sender: &ComponentSender<Self>) {
         let (hypr_data, active_prev) = match collect_data(&SortConfig {
             filter_current_monitor: self.switch.filter_by_current_monitor,
@@ -286,6 +305,7 @@ impl SwitchRoot {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
         }
 
+        #[cfg(feature = "live_windows")]
         if self.live_thumbnails {
             self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
@@ -331,7 +351,9 @@ impl SwitchRoot {
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
+                #[cfg(feature = "live_windows")]
                 live_thumbnails: self.live_thumbnails,
+                #[cfg(feature = "live_windows")]
                 live_thumbnails_icons: self.live_thumbnails_icons,
             });
         }
@@ -363,6 +385,7 @@ impl SwitchRoot {
                 scale,
                 monitor_data: monitor.clone(),
                 data: client.clone(),
+                #[cfg(feature = "live_windows")]
                 live_thumbnails: self.live_thumbnails,
             });
         }
@@ -501,10 +524,13 @@ impl SwitchRoot {
                 });
             }
         }
-        if let Some(handle) = self.timer_handle.take() {
-            handle.remove();
+        #[cfg(feature = "live_windows")]
+        {
+            if let Some(handle) = self.timer_handle.take() {
+                handle.remove();
+            }
+            self.capture_manager = None;
         }
-        self.capture_manager = None;
     }
 
     fn close_item(&self) {
@@ -609,7 +635,9 @@ impl SwitchRoot {
         }
     }
 
+    #[cfg(feature = "live_windows")]
     fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
+        use relm4::adw::gdk::Display;
         let Some(mgr) = &mut self.capture_manager else {
             return;
         };

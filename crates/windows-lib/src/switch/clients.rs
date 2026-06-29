@@ -22,6 +22,7 @@ pub struct Clients {
 #[derive(Debug)]
 pub enum ClientsInput {
     SetActive(bool),
+    #[cfg(feature = "live_windows")]
     UpdateThumbnail(gdk::Texture),
 }
 
@@ -31,6 +32,7 @@ pub struct ClientsInit {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails: bool,
 }
 
@@ -95,7 +97,10 @@ impl FactoryComponent for Clients {
             id: init.id,
             scale: init.scale,
             paintable: None,
+            #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
+            #[cfg(not(feature = "live_windows"))]
+            live_thumbnails: false,
         }
     }
 
@@ -125,6 +130,7 @@ impl FactoryComponent for Clients {
             ClientsInput::SetActive(active) => {
                 self.active = active;
             }
+            #[cfg(feature = "live_windows")]
             ClientsInput::UpdateThumbnail(texture) => {
                 self.paintable = Some(texture.upcast());
             }

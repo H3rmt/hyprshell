@@ -11,9 +11,10 @@ EOF
 sudo apt remove -y libpango1.0-dev:amd64 libgtk-4-dev:amd64 libadwaita-1-dev:amd64
 sudo apt autoremove -y
 
+# TODO check new deps
 sudo dpkg --add-architecture arm64 && sudo apt update
 sudo apt -y install --no-install-recommends \
   crossbuild-essential-arm64 \
   libgtk-4-dev:arm64 libadwaita-1-dev:arm64 libpango1.0-dev:arm64 \
-  libgirepository1.0-dev:arm64 libgtk4-layer-shell-dev:arm64 \
+  libgirepository1.0-dev:arm64 libgtk4-layer-shell-dev:arm64 libgbm-dev:arm64 libdbus-1-dev:arm64 \
   gobject-introspection

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use relm4::adw::gtk::gdk::Display;
 use relm4::adw::gtk::{
-    CssProvider, STYLE_PROVIDER_PRIORITY_USER, style_context_add_provider_for_display,
+    CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, style_context_add_provider_for_display,
 };
 
 pub fn get_css() -> anyhow::Result<()> {
@@ -10,7 +10,7 @@ pub fn get_css() -> anyhow::Result<()> {
     style_context_add_provider_for_display(
         &Display::default().context("Could not connect to a display.")?,
         &provider_app,
-        STYLE_PROVIDER_PRIORITY_USER,
+        STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
     Ok(())
 }

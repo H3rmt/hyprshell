@@ -13,13 +13,7 @@
     crane.url = "github:ipetkov/crane";
   };
   outputs =
-    inputs@{
-      self,
-      nixpkgs,
-      home-manager,
-      flake-parts,
-      crane,
-    }:
+    inputs@{ self, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "aarch64-linux"
@@ -28,52 +22,24 @@
       perSystem =
         { pkgs, self', ... }:
         let
-          craneLib = crane.mkLib pkgs;
+          craneLib = inputs.crane.mkLib pkgs;
           buildLib = import ./nix/build.nix { inherit craneLib pkgs; };
         in
         {
           formatter = pkgs.nixfmt-tree;
           packages = rec {
             hyprshell = craneLib.buildPackage (
-              buildLib.commonArgs
-              // {
-                cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                postInstall = buildLib.postInstall;
-              }
+              buildLib.commonArgsFull
             );
-            hyprshell-nixpkgs = craneLib.buildPackage (
-              buildLib.commonArgs
-              // {
-                cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                postInstall = buildLib.postInstall;
-              }
-            );
+            hyprshell-nixpkgs = hyprshell;
             hyprshell-slim = craneLib.buildPackage (
-              buildLib.commonArgs
+              buildLib.commonArgsFull
               // {
-                cargoArtifacts = buildLib.cargoReleaseArtifacts;
                 cargoExtraArgs = "--no-default-features --features slim";
-                postInstall = buildLib.postInstall;
               }
             );
-            hyprshell-slim-nixpkgs = craneLib.buildPackage (
-              buildLib.commonArgs
-              // {
-                cargoArtifacts = buildLib.cargoReleaseArtifacts;
-                cargoExtraArgs = "--no-default-features --features slim";
-                postInstall = buildLib.postInstall;
-              }
-            );
+            hyprshell-slim-nixpkgs = hyprshell-slim;
             default = hyprshell;
-          };
-          checks = import ./nix/checks.nix {
-            inherit
-              self
-              pkgs
-              craneLib
-              buildLib
-              home-manager
-              ;
           };
           devShells.default = craneLib.devShell {
             checks = self'.checks;

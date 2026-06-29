@@ -1,11 +1,11 @@
 [package]
 name = "hyprshell-core-lib"
 documentation = "https://docs.rs/hyprshell-core-lib"
-version = "4.10.8"
-readme.workspace = true
+version = "4.11.0-alpha"
+description = "A library for containing common structs and core functionality"
+readme = "./README.md"
 categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true
@@ -17,8 +17,8 @@ anyhow.workspace = true
 tracing.workspace = true
 serde_json.workspace = true
 serde.workspace = true
-notify = { version = "8.2.0", features = [], default-features = false }
-notify-rust = { version = "4.17.0", features = ["zbus"] }
+inotify = { version = "0.11.2", default-features = false }
+notify-rust = { version = "4.17.0", features = ["d"], default-features = false }
 
 [features]
 json5_config = []

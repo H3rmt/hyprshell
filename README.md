@@ -20,6 +20,7 @@ It provides a customizable GUI for switching between windows or workspaces, laun
 - **Dynamic Configuration**: Automatically reloads configuration/style changes without restarting the application.
 - **Debug commands**: Many [Commands](docs/DEBUG.md) to debug desktop files, icons, launcher matching, and default applications.
 - **Nix Support**: Includes a flake and home-manager module for Nix-based setups.
+- **Live Window Preview** (Experimental): Can use live window content directly within the overview.
 
 ## Installation
 
@@ -70,7 +71,7 @@ cargo install hyprshell --no-default-features --features "slim"
 
 Minimum required rustc version: `1.92.0` (from 11 December 2025)
 
-**Look at [build-binary](./scripts/ci/build-x86.sh) and [bin-pkbuild](./packaging/pkgbuild/PKGBUILD-bin) to see which files get bundled and need to be installed where.
+**Look at [pkbuild](./packaging/pkgbuild/PKGBUILD) to see which files need to be installed where.
 DON'T just build only the executable, else the settings app won't work correctly.**
 
 ## Usage
@@ -109,7 +110,7 @@ end)
 ```
 
 ![image.png](.github/imgs/switch.png)
-![img.png](.github/imgs/calc.png)
+![img.png](.github/imgs/math.png)
 
 ### Debugging
 
@@ -124,7 +125,7 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 - `json5_config`✅: Adds support for a json5 config file.
 - `gui_settings_editor`✅✨: Adds the `hyprshell config edit` + `hyprshell config generate` command to open the settings editor.
 - `launcher_calc`✅: Adds support for the calc plugin in the launcher.
-- `debug_command`✅✨: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
+- `live_windows`✅: Adds support for live window preview in the overview and switch windows.
 
 [//]: # (- `clipboard_compress_lz4`✅✨: Adds support for compressing clipboard content using lz4.)
 

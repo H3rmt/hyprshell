@@ -74,6 +74,8 @@ jobs:
           git push origin HEAD:hyprshell
           
           gh release edit ${{ github.ref_name }} --latest --draft=false --title "hyprshell ${{ github.ref_name }}"
+          
+          cargo run --package hyprshell-xtask -- release licenses -v -o ./THIRD_PARTY_NOTICES.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish AUR package

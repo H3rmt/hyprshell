@@ -21,7 +21,9 @@ pub struct OverviewWindow {
     remove_html: Regex,
     /// Factory for workspaces
     items: FactoryVecDeque<Workspaces>,
+    #[cfg(feature = "live_windows")]
     live_thumbnails: bool,
+    #[cfg(feature = "live_windows")]
     live_thumbnails_icons: bool,
 }
 
@@ -32,6 +34,7 @@ pub enum OverviewWindowInput {
     CloseOverview,
     ReloadOverview(OverviewWindowData),
     SetActive(Active, Active),
+    #[cfg(feature = "live_windows")]
     UpdateClientThumbnail(ClientId, gdk::Texture),
 }
 
@@ -39,7 +42,9 @@ pub enum OverviewWindowInput {
 pub struct OverviewWindowInit {
     pub general: config_lib::WindowsGeneral,
     pub gtk_monitor: gdk::Monitor,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails: bool,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
 }
 
@@ -93,7 +98,9 @@ impl SimpleComponent for OverviewWindow {
             window: root.clone(),
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
             items,
+            #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
+            #[cfg(feature = "live_windows")]
             live_thumbnails_icons: init.live_thumbnails_icons,
         };
 
@@ -148,6 +155,7 @@ impl SimpleComponent for OverviewWindow {
                     trace!("not open");
                 }
             }
+            #[cfg(feature = "live_windows")]
             OverviewWindowInput::UpdateClientThumbnail(client_id, texture) => {
                 for (idx, _) in self.items.iter().enumerate() {
                     self.items.send(
@@ -194,7 +202,9 @@ impl OverviewWindow {
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
+                #[cfg(feature = "live_windows")]
                 live_thumbnails: self.live_thumbnails,
+                #[cfg(feature = "live_windows")]
                 live_thumbnails_icons: self.live_thumbnails_icons,
             });
         }

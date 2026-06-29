@@ -9,7 +9,8 @@ use relm4::adw::gdk::Display;
 use relm4::adw::prelude::*;
 use relm4::adw::{glib, gtk};
 use relm4::gtk::{
-    CssProvider, STYLE_PROVIDER_PRIORITY_USER, style_context_add_provider_for_display,
+    CssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION, STYLE_PROVIDER_PRIORITY_USER,
+    style_context_add_provider_for_display,
 };
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent,
@@ -275,18 +276,6 @@ impl Root {
     }
 
     fn apply_css(&self) -> anyhow::Result<()> {
-        let provider_app = CssProvider::new();
-
-        provider_app.load_from_string(include_str!("default_styles.css"));
-        style_context_add_provider_for_display(
-            &Display::default().context("Could not connect to a display.")?,
-            &provider_app,
-            STYLE_PROVIDER_PRIORITY_USER,
-        );
-
-        windows_lib::get_css()?;
-        launcher_lib::get_css()?;
-
         if self.css_path.exists() {
             debug!("Loading custom css file {:?}", self.css_path);
             let provider_user = CssProvider::new();
@@ -298,7 +287,25 @@ impl Root {
             );
         } else {
             debug!("Custom css file {:?} does not exist", self.css_path);
+            let provider_app = CssProvider::new();
+            provider_app.load_from_string(include_str!("fallback-styles.css"));
+            style_context_add_provider_for_display(
+                &Display::default().context("Could not connect to a display.")?,
+                &provider_app,
+                STYLE_PROVIDER_PRIORITY_USER,
+            );
         }
+
+        let provider_app = CssProvider::new();
+        provider_app.load_from_string(include_str!("default_styles.css"));
+        style_context_add_provider_for_display(
+            &Display::default().context("Could not connect to a display.")?,
+            &provider_app,
+            STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
+        windows_lib::get_css()?;
+        launcher_lib::get_css()?;
         Ok(())
     }
 }

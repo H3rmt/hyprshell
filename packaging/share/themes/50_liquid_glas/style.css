@@ -1,0 +1,29 @@
+/* please add layerrules to hyprland config:
+
+hl.layer_rule({ match = { namespace = "hyprshell_overview" }, blur = true, ignore_alpha = 0.0, dim_around = true })
+hl.layer_rule({ match = { namespace = "hyprshell_launcher" }, blur = true, ignore_alpha = 0.0 })
+hl.layer_rule({ match = { namespace = "hyprshell_switch" }, blur = true, ignore_alpha = 0.0 })
+*/
+
+:root {
+    --border-color: rgba(255, 255, 255, 0);
+    --border-color-active: rgba(120, 245, 255, 0.85);
+
+    --box-shadow-color: rgba(255, 255, 255, 0.7);
+    --box-shadow-multiplier: 5;
+    --box-shadow-launcher-color: rgba(255, 255, 255, 0.7);
+    --box-shadow-launcher-multiplier: 2;
+    /*--box-shadow-color-hover: rgba(255, 255, 255, 0.85);*/
+
+    --bg-color: rgba(255, 255, 255, 0.01);
+    --bg-color-hover: rgba(255, 255, 255, 0.15);
+
+    --border-radius: 18px;
+    --border-size: 2px;
+    --border-style: solid;
+
+    --text-color: rgba(245, 245, 245, 1);
+
+    --window-padding: 3px;
+    --bg-window-color: rgba(255, 255, 255, 0.01);
+}

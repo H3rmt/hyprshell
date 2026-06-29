@@ -3,25 +3,22 @@
   pkgs,
 }:
 rec {
-  meta = import ./meta.nix { inherit pkgs; };
-  pname = "hyprshell";
-  version = (pkgs.lib.trivial.importTOML ../Cargo.toml).workspace.package.version;
-  # no more filtering, excluded to many files
-  src = ../.;
   commonArgs = {
-    inherit
-      src
-      pname
-      version
-      meta
-      ;
+    pname = "hyprshell";
+    src = ../.;
+    version = (pkgs.lib.trivial.importTOML ../Cargo.toml).workspace.package.version;
+
+    meta = {
+      mainProgram = "hyprshell";
+      description = "A modern GTK4-based window switcher and application launcher for Hyprland";
+      homepage = "https://github.com/h3rmt/hyprshell";
+      license = pkgs.lib.licenses.mit;
+      platforms = pkgs.hyprland.meta.platforms;
+    };
+
     strictDeps = true;
     doCheck = false;
     cargoBuildCommand = "cargo build --release --locked";
-    cargoTestCommand = "";
-    cargoCheckCommand = "";
-    cargoCheckExtraArgs = "";
-    cargoExtraArgs = "";
 
     nativeBuildInputs = [
       pkgs.pkg-config
@@ -34,33 +31,6 @@ rec {
     ];
   };
 
-  cargoReleaseArtifacts = craneLib.buildDepsOnly (
-    commonArgs
-    // {
-      mkDummySrc = craneLib.mkDummySrc {
-        src = ../.;
-      };
-      pname = "hyprshell";
-    }
-  );
-  cargoFullArtifacts = craneLib.buildDepsOnly (
-    commonArgs
-    // {
-      src = craneLib.cleanCargoSource ../.;
-      pname = "hyprshell-full";
-      doCheck = true;
-      cargoBuildCommand = "cargo build --profile dev --locked --all-targets --all-features";
-      cargoCheckCommand = "cargo check --profile dev --locked --all-targets --all-features";
-      cargoTestCommand = "cargo test --profile dev --locked --all-targets --all-features";
-    }
-  );
-  commonArgsFullCached = (
-    commonArgs
-    // {
-      cargoArtifacts = cargoFullArtifacts;
-    }
-  );
-
   postInstall = ''
     # Desktop entry
     install -Dm644 packaging/hyprshell-settings.desktop $out/share/applications/hyprshell-settings.desktop
@@ -72,4 +42,13 @@ rec {
     mkdir -p $out/share/hyprshell
     tar -xf packaging/usr-share.tar -C $out/share/hyprshell
   '';
+
+  cargoArtifacts = craneLib.buildDepsOnly (
+    commonArgs
+    // {
+      src = craneLib.cleanCargoSource ../.;
+    }
+  );
+
+  commonArgsFull = (commonArgs // { inherit postInstall cargoArtifacts; });
 }

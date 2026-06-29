@@ -3,8 +3,8 @@ name: test
 on:
   push:
     branches-ignore:
-      - 'release-please-**'
-      - 'hyprshell-release'
+      - "release-please-**"
+      - "hyprshell-release"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -13,44 +13,34 @@ concurrency:
 jobs:
   check-nix:
     name: Run Nix Flake Check
-    runs-on: "ubuntu-latest"
-    container:
-      image: ghcr.io/h3rmt/actions-image:latest
-      options: --privileged
+    runs-on: "ubuntu-26.04"
     steps:
-      - run: rustup default stable
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: cachix/cachix-action@3ba601ff5bbb07c7220846facfa2cd81eeee15a1 # v16
-        with:
-          name: hyprshell-dev
-          extraPullNames: hyprland
-          pushFilter: "hyprshell-(nextest|clippy|fmt|check-all-feature-combinations|check-nix-configs).*"
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN_DEV }}
-      - name: Run Nix Flake Build deps
-        run: nix build '.#checks.x86_64-linux.hyprshell-build-deps' -L
-      - name: Run Nix Flake Check build
-        run: nix build '.#checks.x86_64-linux.hyprshell-config-check' -L
-      - name: Run Nix Flake Check clippy
-        run: nix build '.#checks.x86_64-linux.hyprshell-clippy' -L
-      - name: Run Nix Flake Check fmt
-        run: nix build '.#checks.x86_64-linux.hyprshell-fmt' -L
-      - name: Run Nix Flake Check test
-        run: nix build '.#checks.x86_64-linux.hyprshell-test' -L
-      - name: Run Nix Flake Check check-nix-configs
-        run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
-      - name: Run Nix Flake Check check-all-feature-combinations
-        run: nix build '.#checks.x86_64-linux.hyprshell-check-all-feature-combinations' -L
+      - run: |
+          sudo apt update
+          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection libgbm-dev zstd libdbus-1-dev
+          rustup default stable
+
+          failed=0
+          cargo build || failed=1
+          cargo xtask cmd check -v --locked || failed=1
+          cargo xtask cmd lint -v || failed=1
+          cargo xtask cmd test -v --no-nextest --locked || failed=1
+          exit "$failed"
+
+      # run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
+      # run: nix build '.#checks.x86_64-linux.hyprshell-check-all-feature-combinations' -L
 
   check:
     name: Run build tests
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     container:
       image: ghcr.io/h3rmt/actions-image:latest
       options: --privileged
     if: github.ref == 'refs/heads/hyprshell'
     steps:
-      - run: rustup default stable
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - run: rustup default stable
       - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
         with:
           prefix-key: hyprshell
@@ -63,4 +53,3 @@ jobs:
         run: |
           ./scripts/ci/install-gtk4-layer-shell-aarch64.sh
           ./scripts/ci/build-aarch64.sh
-

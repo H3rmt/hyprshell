@@ -1,0 +1,81 @@
+[package]
+name = "hyprshell-hyprland"
+edition = "2024"
+readme = "README.md"
+description = "A unoffical rust wrapper for hyprland's IPC"
+homepage = "https://github.com/hyprland-community/hyprland-rs"
+
+rust-version = "1.85.0"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = "4.11.0-alpha"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/hyprland-community/hyprland-rs"
+keywords = ["hyprland", "ipc", "hypr", "wayland", "hyprpaper"]
+categories = ["api-bindings"]
+authors = ["yavko <yavornkolev@gmail.com>"]
+
+[package.metadata.nix]
+build = true
+
+#[profile.release]
+#opt-level = 3
+#strip = true
+#lto = true
+
+[dependencies]
+hyprland-macros = { package = "hyprshell-hyprland-macros", path = "./hyprland-macros", version = "=4.11.0-alpha" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_repr = "0.1"
+tokio = { version = "1", features = [
+    "io-std",
+    "io-util",
+    "macros",
+    "net",
+    "sync",
+    "rt"
+], optional = true }
+async-net = { version = "2.0", optional = true }
+futures-lite = { version = "2.6", default-features = false }
+paste = { version = "0.1.1", package = "pastey" }
+derive_more = { version = "2.0.1", features = [
+    "display",
+    "constructor",
+] }
+ahash = { version = "0.8.12", features = [
+    "std",
+    "no-rng",
+    "serde",
+], optional = true, default-features = false }
+either = "1.15.0"
+async-stream = "0.3.6"
+tracing = { version = "0.1", optional = true }
+
+[features]
+default = [
+    "listener",
+    "dispatch",
+    "data",
+    "keyword",
+    "config",
+    "ctl",
+    "tokio",
+    "hyprpaper",
+    "lua"
+]
+listener = ["data", "dispatch"]
+dispatch = []
+data = []
+keyword = []
+config = ["dispatch", "keyword"]
+ctl = []
+hyprpaper = []
+lua = []
+trace = ["dep:tracing"]
+
+ahash = ["dep:ahash"]
+parking_lot = ["tokio?/parking_lot"]
+unsafe-impl = []
+
+tokio = ["dep:tokio"]
+async-lite = ["dep:async-net"]

@@ -1,11 +1,11 @@
 [package]
 name = "hyprshell-exec-lib"
 documentation = "https://docs.rs/hyprshell-exec-lib"
-version = "4.10.8"
-readme.workspace = true
+version = "4.11.0-alpha"
+description = "A library containing hyprland specific code"
+readme = "./README.md"
 categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true
@@ -18,7 +18,7 @@ tracing.workspace = true
 core-lib.workspace = true
 semver.workspace = true
 regex.workspace = true
-hyprland = { package = "hyprshell-hyprland", path = "../../dep-crates/hyprland-rs", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config", "lua", "trace"], default-features = false, version = "=4.10.8" }
+hyprland = { package = "hyprshell-hyprland", path = "../../dep-crates/hyprland", features = ["async-lite", "dispatch", "keyword", "data", "listener", "ctl", "config", "lua", "trace"], default-features = false, version = "=4.11.0-alpha" }
 wayland-client = { version = "0.31.8", optional = true }
 wayland-protocols = { version = "0.32.6", features = ["client", "staging"], optional = true }
 gbm = { version = "0.18", optional = true }

@@ -4,9 +4,11 @@ use crate::overview::window::{
     OverviewWindow, OverviewWindowData, OverviewWindowInit, OverviewWindowInput,
     OverviewWindowOutput,
 };
+#[cfg(feature = "live_windows")]
 use crate::shared::refresh_captures;
 use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceId};
 use exec_lib::switch::{switch_client, switch_workspace};
+#[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
 use launcher_lib::{LauncherRoot, LauncherRootInit, LauncherRootInput, LauncherRootOutput};
 use relm4::adw::gdk::{Display, Monitor};
@@ -21,6 +23,7 @@ use std::time::Duration;
 use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
+#[cfg(feature = "live_windows")]
 const THUMBNAIL_BURST_MS: u64 = 8;
 
 #[derive(Debug)]
@@ -32,10 +35,17 @@ pub struct OverviewRoot {
 
     launcher_root: Controller<LauncherRoot>,
     windows: BTreeMap<MonitorId, Controller<OverviewWindow>>,
+
+    #[cfg(feature = "live_windows")]
     live_thumbnails: bool,
+
+    #[cfg(feature = "live_windows")]
     capture_manager: Option<CaptureManager>,
+    #[cfg(feature = "live_windows")]
     timer_handle: Option<glib::SourceId>,
+    #[cfg(feature = "live_windows")]
     thumbnail_refresh_ms: u64,
+    #[cfg(feature = "live_windows")]
     thumbnail_burst: bool,
 }
 
@@ -50,6 +60,7 @@ pub enum OverviewRootInput {
     CloseOverviewClickC(ClientId),
     CloseItem(ClientId),
     ReloadOverview,
+    #[cfg(feature = "live_windows")]
     RefreshThumbnails,
 }
 
@@ -83,7 +94,9 @@ impl SimpleComponent for OverviewRoot {
         let app = relm4::main_application();
         let mut windows = BTreeMap::new();
 
+        #[cfg(feature = "live_windows")]
         let live_thumbnails = std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1");
+        #[cfg(feature = "live_windows")]
         let live_thumbnails_icons =
             std::env::var_os("HYPRSHELL_EXPERIMENTAL_ICONS").is_none_or(|v| v != "0");
 
@@ -104,7 +117,9 @@ impl SimpleComponent for OverviewRoot {
                     .launch(OverviewWindowInit {
                         general: init.general.clone(),
                         gtk_monitor,
+                        #[cfg(feature = "live_windows")]
                         live_thumbnails,
+                        #[cfg(feature = "live_windows")]
                         live_thumbnails_icons,
                     })
                     .forward(sender.input_sender(), |m| match m {
@@ -138,10 +153,15 @@ impl SimpleComponent for OverviewRoot {
             windows,
             launcher_root,
             data: OverviewData::default(),
+            #[cfg(feature = "live_windows")]
             live_thumbnails,
+            #[cfg(feature = "live_windows")]
             capture_manager: None,
+            #[cfg(feature = "live_windows")]
             timer_handle: None,
+            #[cfg(feature = "live_windows")]
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
+            #[cfg(feature = "live_windows")]
             thumbnail_burst: false,
         };
 
@@ -224,12 +244,14 @@ impl SimpleComponent for OverviewRoot {
                     .input_sender()
                     .emit(OverviewRootInput::CloseOverview(true));
             }
+            #[cfg(feature = "live_windows")]
             OverviewRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
         }
     }
 }
 
 impl OverviewRoot {
+    #[allow(unused_variables)]
     fn open_overview(&mut self, sender: &ComponentSender<Self>) {
         let (hypr_data, active) = match collect_data(&SortConfig {
             filter_current_monitor: self.overview.filter_by_current_monitor,
@@ -254,6 +276,7 @@ impl OverviewRoot {
         };
         self.render(hypr_data, self.data.active, true);
 
+        #[cfg(feature = "live_windows")]
         if self.live_thumbnails {
             self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
@@ -353,11 +376,13 @@ impl OverviewRoot {
                 });
             }
         }
-
-        if let Some(handle) = self.timer_handle.take() {
-            handle.remove();
+        #[cfg(feature = "live_windows")]
+        {
+            if let Some(handle) = self.timer_handle.take() {
+                handle.remove();
+            }
+            self.capture_manager = None;
         }
-        self.capture_manager = None;
     }
 
     fn reload_overview(&mut self) {
@@ -438,6 +463,7 @@ impl OverviewRoot {
         }
     }
 
+    #[cfg(feature = "live_windows")]
     fn refresh_thumbnails(&mut self, sender: &ComponentSender<Self>) {
         let Some(mgr) = &mut self.capture_manager else {
             return;

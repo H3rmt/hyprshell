@@ -1,61 +1,27 @@
-[workspace]
-members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/clipboard-lib", "dep-crates/hyprland-rs", "dep-crates/hyprland-rs/hyprland-macros", "dep-crates/wl-clipboard-rs", "dep-crates/relm4", "dep-crates/relm4-components", "crates/config-edit-lib"]
-
-[workspace.package]
-version = "4.10.8"
-readme = "README.md"
-categories = ["gui", "command-line-utilities"]
-description = "A modern GTK4-based window switcher and application launcher for Hyprland"
-license = "MIT"
-authors = ["h3rmt"]
-keywords = ["hyprland"]
-repository = "https://github.com/h3rmt/hyprshell/"
-rust-version = "1.92.0"
-edition = "2024"
-
-[workspace.dependencies]
-anyhow = { version = "1.0.100" }
-tracing = { version = "0.1.44" }
-serde_json = { version = "1.0.148" }
-serde = { version = "1.0.228", features = ["derive"] }
-semver = { version = "1.0.27" }
-regex = { version = "1.12.2" }
-test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
-
-relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.10.8" }
-#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
-relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.10.8" }
-gtk4-layer-shell = { version = "0.8.0" }
-
-config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.10.8" }
-core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.10.8" }
-exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.10.8" }
-launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.10.8" }
-
 [package]
 name = "hyprshell"
-readme.workspace = true
-categories.workspace = true
 documentation = "https://docs.rs/hyprshell"
-version = "4.10.8"
+version = "4.11.0-alpha"
+description = "A modern GTK4-based window switcher and application launcher for Hyprland"
+readme = "./README.md"
+exclude = [".idea/*", ".github/*", ".githooks", "nix", "test-files"]
+categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-exclude = [".idea/*", ".github/*"]
 
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
 relm4.workspace = true
 semver.workspace = true
-clap = { version = "4.6.1", features = ["derive"] }
-clap_complete = "4.6.5"
-tracing-subscriber = { version = "0.3.23", features = ["fmt", "env-filter", "ansi"], default-features = false }
-tracing-log = { version = "0.2.0" }
+clap.workspace = true
+clap_complete.workspace = true
+tracing-subscriber.workspace = true
+tracing-log.workspace = true
 async-channel = "2.5.0"
 
 config-lib.workspace = true
@@ -63,8 +29,8 @@ core-lib.workspace = true
 exec-lib.workspace = true
 launcher-lib.workspace = true
 #clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.10.4" }
-windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.10.8" }
-config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.10.8", optional = true }
+windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.11.0-alpha" }
+config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.11.0-alpha", optional = true }
 
 [dev-dependencies]
 test-log.workspace = true
@@ -78,7 +44,7 @@ json5_config = ["config-lib/json5_config"]
 gui_settings_editor = ["dep:config-edit-lib"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin", "config-edit-lib?/launcher_calc_plugin"]
 # adds arround 40 dependencies
-live_windows = ["exec-lib/live_windows"]
+live_windows = ["exec-lib/live_windows", "windows-lib/live_windows"]
 ci_config_check = ["config-lib/ci_no_default_config_values"]
 #clipboard_compress_lz4 = ["clipboard-lib/compress_lz4"]
 #clipboard_compress_zstd = ["clipboard-lib/compress_zstd"]
@@ -88,7 +54,6 @@ ci_config_check = ["config-lib/ci_no_default_config_values"]
 
 dev = ["config-lib/disable_migrations"]
 
-
 [profile.release]
 strip = "debuginfo"
 lto = true
@@ -96,6 +61,45 @@ opt-level = 3
 
 [lints]
 workspace = true
+
+[workspace]
+members = ["crates/exec-lib", "crates/core-lib", "crates/windows-lib", "crates/launcher-lib", "crates/config-lib", "crates/clipboard-lib", "dep-crates/hyprland", "dep-crates/hyprland/hyprland-macros", "dep-crates/wl-clipboard-rs", "dep-crates/relm4", "dep-crates/relm4-components", "crates/config-edit-lib", "xtask"]
+
+[workspace.package]
+categories = []
+edition = "2024"
+license = "MIT"
+authors = ["h3rmt"]
+keywords = ["hyprland"]
+repository = "https://github.com/h3rmt/hyprshell/"
+# update when nixpkgs has a newer rustc
+rust-version = "1.92.0"
+
+[workspace.dependencies]
+anyhow = { version = "1.0.100" }
+tracing = { version = "0.1.44" }
+serde_json = { version = "1.0.148" }
+serde = { version = "1.0.228", features = ["derive"] }
+semver = { version = "1.0.27" }
+regex = { version = "1.12.2" }
+tracing-subscriber = { version = "0.3.23", features = ["fmt", "env-filter", "ansi"], default-features = false }
+tracing-log = { version = "0.2.0" }
+
+clap = { version = "4.6.1", features = ["derive"] }
+clap_complete = "4.6.5"
+
+relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.11.0-alpha" }
+#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
+relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.11.0-alpha" }
+gtk4-layer-shell = { version = "0.8.0" }
+
+config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.11.0-alpha" }
+core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.11.0-alpha" }
+exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.11.0-alpha" }
+launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.11.0-alpha" }
+
+# Test dependency
+test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }

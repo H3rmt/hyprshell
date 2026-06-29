@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.85"
 name = "hyprshell-relm4"
-version = "4.10.8"
+version = "4.11.0-alpha"
 authors = ["Aaron Erhardt <aaron.erhardt@t-online.de>"]
 build = false
 include = [
@@ -33,7 +33,7 @@ autobenches = false
 description = "An idiomatic GUI library inspired by Elm and based on gtk4-rs"
 homepage = "https://relm4.org"
 documentation = "https://docs.rs/relm4/"
-readme = "README.md"
+readme = "./README.md"
 keywords = [
     "gui",
     "gtk",

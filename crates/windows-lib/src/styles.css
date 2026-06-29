@@ -1,23 +1,25 @@
 .monitor {
-    padding: var(--window-padding, 2px);
+    padding: var(--window-padding);
 
-    box-shadow: 0 0 16px 5px var(--bg-window-color, rgba(20, 30, 40, 0.9));
+    box-shadow: 0 0 16px 5px var(--bg-window-color), inset 0 0 calc(var(--box-shadow-multiplier, 1) * 8px) 2px var(--box-shadow-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
 
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-window-color, rgba(20, 20, 20, 0.9));
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    border-radius: var(--border-radius);
+    background: var(--bg-window-color);
+    border: var(--border-size) var(--border-style) var(--border-color);
 }
 
 .workspace {
     font-size: 1.8rem;
     font-weight: bolder;
 
-    border-radius: var(--border-radius, 12px);
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    box-shadow: inset 0 0 calc(var(--box-shadow-multiplier, 1) * 4px) 2px var(--box-shadow-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    border-radius: var(--border-radius);
+    border: var(--border-size) var(--border-style) var(--border-color);
 }
 
 .workspace.active {
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color-active, rgba(239, 9, 9, 0.9));
+    border: var(--border-size) var(--border-style) var(--border-color-active);
 }
 
 .workspace.special {
@@ -29,21 +31,23 @@
     font-size: 1.3rem;
     font-weight: normal;
 
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    box-shadow: inset 0 0 calc(var(--box-shadow-multiplier, 1) * 4px) 2px var(--box-shadow-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    border-radius: var(--border-radius);
+    background: var(--bg-color);
+    border: var(--border-size) var(--border-style) var(--border-color);
 }
 
 .client.active {
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color-active, rgba(239, 9, 9, 0.9));
+    border: var(--border-size) var(--border-style) var(--border-color-active);
 }
 
 .client.no-hover:hover {
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+    background: var(--bg-color);
 }
 
 .client:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
+    background: var(--bg-color-hover);
 }
 
 
@@ -53,7 +57,7 @@
 }
 
 .client-image-layered {
-    opacity: 75%;
+    opacity: 80%;
 
     margin-top: 6px;
     margin-bottom: 6px;

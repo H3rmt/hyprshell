@@ -1,7 +1,5 @@
 pkgname=hyprshell-slim
-# x-release-please-start-version
 pkgver=4.10.8
-# x-release-please-end
 pkgrel=1
 pkgdesc="A modern GTK4-based window switcher and application launcher for Hyprland (lightweight version)"
 arch=('x86_64' 'aarch64')
@@ -24,12 +22,16 @@ build() {
     export RUSTUP_TOOLCHAIN=stable
     export CARGO_TARGET_DIR=target
     cd "hyprshell-$pkgver"
+    echo "Building..."
     cargo build --frozen --release --no-default-features --features=slim
+    echo "Generating licenses..."
+    cargo run --package hyprshell-xtask -- release licenses -v -o ./THIRD_PARTY_NOTICES.md
 }
 
 package() {
     install -Dm755 "hyprshell-$pkgver/target/release/hyprshell"             "$pkgdir/usr/bin/hyprshell"
     install -Dm644 "hyprshell-$pkgver/LICENSE"                              "$pkgdir/usr/share/licenses/hyprshell/LICENSE"
+    install -Dm644 "hyprshell-$pkgver/THIRD_PARTY_NOTICES.md"               "$pkgdir/usr/share/licenses/hyprshell/THIRD_PARTY_NOTICES.md"
     install -Dm644 "hyprshell-$pkgver/README.md"                            "$pkgdir/usr/share/doc/hyprshell/README.md"
     install -Dm644 "hyprshell-$pkgver/docs/CONFIGURE.md"                    "$pkgdir/usr/share/doc/hyprshell/CONFIGURE.md"
     install -Dm644 "hyprshell-$pkgver/docs/DEBUG.md"                        "$pkgdir/usr/share/doc/hyprshell/DEBUG.md"

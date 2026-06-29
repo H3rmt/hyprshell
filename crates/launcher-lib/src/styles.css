@@ -1,18 +1,21 @@
 .launcher {
-    padding: var(--window-padding, 2px);
+    padding: var(--window-padding);
 
-    box-shadow: 0 0 16px 5px var(--bg-window-color, rgba(20, 30, 40, 0.9));
+    box-shadow: 0 0 16px 5px var(--bg-window-color), inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
 
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-window-color, rgba(20, 20, 20, 0.9));
-    border: var(--border-size, 3px) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    border-radius: var(--border-radius);
+    background: var(--bg-window-color);
+    border: var(--border-size) var(--border-style) var(--border-color);
 }
 
 .launcher-input {
     font-size: 1.5rem;
     margin: 6px;
     padding: 4px 8px;
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+
+    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 3px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    background: var(--bg-color);
 }
 
 .launcher-results {
@@ -22,24 +25,26 @@
 .launcher-item {
     padding: 2px;
 
-    border-radius: calc(1.2 * var(--border-radius, 12px));
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+    border-radius: calc(1.2 * var(--border-radius));
+    background: var(--bg-color);
 }
 
 .launcher-item-inner {
     padding: 0 6px;
     font-size: 1.5rem;
 
-    border-radius: var(--border-radius, 12px);
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 6px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    border-radius: var(--border-radius);
+    background: var(--bg-color);
 }
 
 .launcher-item-inner-color-probe-element {
-    color: var(--border-color-active, rgba(239, 9, 9, 0.9));
+    color: color-mix(in srgb, currentColor 50%, var(--border-color-active) 50%);
 }
 
 .launcher-item-inner:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
+    background: var(--bg-color-hover);
 }
 
 .launcher-item-name {
@@ -63,21 +68,23 @@
 .launcher-plugins {
     padding: 4px 2px 2px;
 
-    border-top: calc(var(--border-size, 3px) / 1.5) var(--border-style, solid) var(--border-color, rgba(90, 90, 120, 0.4));
+    border-top: calc(var(--border-size) / 1.5) var(--border-style) var(--border-color);
 }
 
 .launcher-plugin {
     padding: 2px;
 
-    border-radius: calc(1.5 * var(--border-radius, 12px));
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+    border-radius: calc(1.3 * var(--border-radius));
+    background: var(--bg-color);
 }
 
 .launcher-plugin-inner {
-    padding: 6px;
+    padding: 6px 10px;
 
-    border-radius: calc(1.5 * var(--border-radius, 12px));
-    background: var(--bg-color, rgba(20, 20, 20, 0.9));
+    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 10px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+
+    border-radius: calc(1.3 * var(--border-radius));
+    background: var(--bg-color);
 }
 
 .launcher-plugin-image {
@@ -90,18 +97,5 @@
 }
 
 .launcher-plugin-inner:hover {
-    background: var(--bg-color-hover, rgba(40, 40, 50, 1));
-}
-
-.launch {
-    animation: background-moving 450ms cubic-bezier(0.25, 0.8, 0.4, 0.95) normal forwards;
-}
-
-@keyframes background-moving {
-    0% {
-        background: linear-gradient(90deg, var(--border-color-active, rgba(239, 9, 9, 0.9)) 0%, transparent 0%);
-    }
-    100% {
-        background: linear-gradient(90deg, var(--border-color-active, rgba(239, 9, 9, 0.9)) 100%, transparent 100%);
-    }
+    background: var(--bg-color-hover);
 }

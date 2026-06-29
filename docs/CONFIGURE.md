@@ -115,22 +115,15 @@ The config is loaded at startup and is reloaded when the file changes. (removing
 > Themes are located under /usr/share/hyprshell/themes/
 
 
-**Some examples can be found in the [CSS Examples folder](css-examples).**
-
-To generate a default file with all possible classes and CSS variables, run the following command:
-
-```bash
-hyprshell config generate
-```
+**Some examples can be found in the Settings App under Style [source](../packaging/share/themes)**
 
 GTK only supports a subset of CSS, so not all CSS properties will work. The supported properties are listed in the [GTK documentation](https://docs.gtk.org/gtk4/css-overview.html).
 
-The override file contains many empty classes that can be used to configure padding, fonts, etc.
-These settings will take priority over the default values set by the application itself. The application defaults can be found in the CSS files inside the codebase (for example, [this one](../src/default_styles.css) or [that one](../crates/windows-lib/src/styles.css)).
+These settings will take priority over the default values set by the application itself.
+The application defaults can be found in the CSS files inside the codebase (for example, [this one](../src/fallback-styles.css) or [that one](../crates/windows-lib/src/styles.css)).
 
 If you want to change colors borders, etc. you can edit the CSS variables in the `:root {}` section.
 These styles are automatically used everywhere in the application, so you don't have to set them for every class.
-The values in the `:root {}` are set as fallbacks everywhere in the application, so you can just not set the ones you don't want to change.
+The values in the `:root {}` are set as fallbacks everywhere in the application, so you must set all values.
 
-![image.png](css/swappy-20250510_222852.png)
-![image.png](css/swappy-20250510_224344.png)
+To see what classes affect what styles, apply the `Test` theme from the Settings App. It applies distinting colors to all available classes.

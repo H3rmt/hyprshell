@@ -101,7 +101,7 @@ in
               "super"
             ]) "ctrl";
             max_items = mkOpt "Max shown items" int 5;
-            default_terminal = mkOpt "Default terminal" (nullOr (str)) null;
+            default_terminal = mkOpt "Default terminal" (nullOr str) null;
             show_when_empty = mkOpt "Show entries when no text is entered" bool true;
 
             plugins = {
@@ -256,7 +256,7 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable ({
+  config = lib.mkIf cfg.enable {
     home.packages = [ cfg.package ];
 
     systemd.user.services.hyprshell = lib.mkIf cfg.systemd.enable {
@@ -300,5 +300,5 @@ in
         {
           text = "";
         };
-  });
+  };
 }

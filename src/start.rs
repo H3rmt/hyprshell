@@ -11,12 +11,10 @@ use core_lib::{WarnWithDetails, notify, notify_resident, notify_warn};
 use exec_lib::listener::{hyprland_config_listener, monitor_listener};
 use relm4::RelmApp;
 use relm4::adw::gtk::glib;
-use std::any::Any;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use std::{env, thread};
 use tracing::{debug, info, trace};
@@ -163,28 +161,38 @@ pub fn register_event_restarter(
     });
 }
 
-static WATCHERS: OnceLock<Mutex<Vec<Box<dyn Any + Send>>>> = OnceLock::new();
-
 fn setup_restart_listener(config_file: &Path, css_path: &Path, restart_tx: &Sender<&'static str>) {
     let tx = restart_tx.clone();
-    if let Ok(watcher) = hyprshell_config_listener(config_file, move |mess| {
-        let _ = tx.send_blocking(mess);
-    }) {
-        WATCHERS
-            .get_or_init(|| Mutex::new(Vec::new()))
-            .lock()
-            .expect("Failed to lock watchers")
-            .push(Box::new(watcher));
+    let mut buffer = [0u8; 4096];
+    if let Ok(mut watcher) = hyprshell_config_listener(config_file) {
+        thread::spawn(move || {
+            info!("Starting hyprshell config reload listener");
+            loop {
+                let events = watcher
+                    .read_events_blocking(&mut buffer)
+                    .expect("Failed to read inotify events");
+                for event in events {
+                    trace!("Received events: {event:?}");
+                    let _ = tx.send_blocking("config");
+                }
+            }
+        });
     }
     let tx = restart_tx.clone();
-    if let Ok(watcher) = hyprshell_css_listener(css_path, move |mess| {
-        let _ = tx.send_blocking(mess);
-    }) {
-        WATCHERS
-            .get_or_init(|| Mutex::new(Vec::new()))
-            .lock()
-            .expect("Failed to lock watchers")
-            .push(Box::new(watcher));
+    let mut buffer2 = [0u8; 4096];
+    if let Ok(mut watcher) = hyprshell_css_listener(css_path) {
+        thread::spawn(move || {
+            info!("Starting hyprshell css reload listener");
+            loop {
+                let events = watcher
+                    .read_events_blocking(&mut buffer2)
+                    .expect("Failed to read inotify events");
+                for event in events {
+                    trace!("Received events: {event:?}");
+                    let _ = tx.send_blocking("config");
+                }
+            }
+        });
     }
 
     let tx = restart_tx.clone();

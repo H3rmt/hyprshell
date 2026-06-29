@@ -1,103 +1,63 @@
-use crate::WarnWithDetails;
 use anyhow::{Context, bail};
-use notify::event::{DataChange, ModifyKind};
-use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use inotify::{Inotify, WatchMask};
 use std::path::Path;
-use tracing::{debug, info, trace, warn};
+use tracing::{info, trace};
 
-pub fn hyprshell_config_listener<F>(
-    file_path: &Path,
-    callback: F,
-) -> anyhow::Result<RecommendedWatcher>
-where
-    F: Fn(&'static str) + 'static + Clone + Send,
-{
+pub fn hyprshell_config_listener(file_path: &Path) -> anyhow::Result<Inotify> {
     if !file_path.exists() {
         bail!("unable to watch for file changes as the file doesnt exist");
     }
+    let inotify = Inotify::init().context("Failed to create watcher")?;
 
-    let mut watcher = RecommendedWatcher::new(
-        move |res: notify::Result<Event>| match res {
-            Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
-                trace!("Event: {event:?}");
-                callback("hyprshell config change");
-            }
-            Err(err) => {
-                warn!("Watch error: {err:?}");
-            }
-            Ok(_) => {}
-        },
-        Config::default(),
-    )
-    .context("Failed to create watcher")?;
-
-    info!("Starting hyprshell config reload listener");
-    watcher
-        .watch(file_path, RecursiveMode::NonRecursive)
+    inotify
+        .watches()
+        .add(file_path, WatchMask::MODIFY)
         .context("Failed to start hyprshell config reload listener")?;
 
-    Ok(watcher)
+    Ok(inotify)
 }
 
-pub fn hyprshell_css_listener<F>(
-    file_path: &Path,
-    callback: F,
-) -> anyhow::Result<RecommendedWatcher>
-where
-    F: Fn(&'static str) + 'static + Clone + Send,
-{
+pub fn hyprshell_css_listener(file_path: &Path) -> anyhow::Result<Inotify> {
     if !file_path.exists() {
         bail!("unable to watch for file changes as the file doesnt exist");
     }
+    let inotify = Inotify::init().context("Failed to create watcher")?;
 
-    let mut watcher = RecommendedWatcher::new(
-        move |res: notify::Result<Event>| match res {
-            Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
-                trace!("Event: {event:?}");
-                callback("hyprshell css change");
-            }
-            Err(err) => {
-                warn!("Watch error: {err:?}");
-            }
-            Ok(_) => {}
-        },
-        Config::default(),
-    )
-    .context("Failed to create watcher")?;
-
-    info!("Starting hyprshell css reload listener");
-    watcher
-        .watch(file_path.as_ref(), RecursiveMode::NonRecursive)
+    inotify
+        .watches()
+        .add(file_path, WatchMask::MODIFY)
         .context("Failed to start hyprshell css reload listener")?;
 
-    Ok(watcher)
+    Ok(inotify)
 }
 
 pub fn hyprshell_config_block(file_path: &Path) -> anyhow::Result<()> {
     if !file_path.exists() {
         bail!("unable to watch for file changes as the file doesnt exist, exiting");
     }
+    let mut inotify = Inotify::init().context("Failed to create watcher")?;
+    info!("Starting hyprshell config reload listener");
 
-    let (tx, rx) = std::sync::mpsc::channel();
-    let mut watcher = RecommendedWatcher::new(
-        move |res: notify::Result<Event>| match res {
-            Ok(event) if event.kind == EventKind::Modify(ModifyKind::Data(DataChange::Any)) => {
-                trace!("Event: {event:?}");
-                tx.send(()).warn_details("Failed to send reload signal");
-            }
-            Err(err) => {
-                warn!("Watch error: {err:?}");
-            }
-            Ok(_) => {}
-        },
-        Config::default(),
-    )
-    .context("Failed to create watcher")?;
-    debug!("Starting hyprshell config reload blocker");
+    inotify
+        .watches()
+        .add(file_path, WatchMask::MODIFY)
+        .context("Failed to start hyprshell config reload listener")?;
 
-    watcher
-        .watch(file_path.as_ref(), RecursiveMode::NonRecursive)
-        .context("Failed to start hyprshell config reload blocker")?;
-    rx.recv().warn_details("Failed to receive reload signal");
-    Ok(())
+    let mut buffer = [0u8; 4096];
+    loop {
+        match inotify.read_events_blocking(&mut buffer) {
+            Ok(events) => {
+                trace!("Received events: {events:?}");
+                for event in events {
+                    if event.mask.contains(inotify::EventMask::MODIFY) {
+                        trace!("Event: {event:?}");
+                        return Ok(());
+                    }
+                }
+            }
+            Err(e) => {
+                bail!("Failed to read events: {e}");
+            }
+        }
+    }
 }

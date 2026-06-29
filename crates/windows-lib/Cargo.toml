@@ -1,11 +1,11 @@
 [package]
 name = "hyprshell-windows-lib"
 documentation = "https://docs.rs/hyprshell-windows-lib"
-version = "4.10.8"
-readme.workspace = true
+version = "4.11.0-alpha"
+description = "A library for managing the overview and switch windows in hyprshell"
+readme = "./README.md"
 categories.workspace = true
 edition.workspace = true
-description.workspace = true
 license.workspace = true
 authors.workspace = true
 keywords.workspace = true
@@ -25,6 +25,9 @@ launcher-lib.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+live_windows = ["exec-lib/live_windows"]
 
 [dev-dependencies]
 test-log.workspace = true

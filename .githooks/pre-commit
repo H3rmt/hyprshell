@@ -1,1 +1,3 @@
-just check
+cargo xtask cmd lint
+cargo xtask cmd check
+cargo xtask cmd test

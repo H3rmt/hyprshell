@@ -24,7 +24,6 @@ mod wm;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> anyhow::Result<()> {
-    let _ = format!("{}", 2);
     let cli = cli::App::parse();
     let opts = cli.global_opts.clone();
 
@@ -37,7 +36,8 @@ fn main() -> anyhow::Result<()> {
             2.. => "trace",
         }
     };
-    tracing_log::LogTracer::init().warn_details("failed to configure log tracer");
+    tracing_log::LogTracer::init()
+        .unwrap_or_else(|e| tracing::warn!("Unable to initialize log logging: {e}"));
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         format!(
             "hyprshell={level},config_lib={level},core_lib={level},exec_lib={level},launcher_lib={level},windows_lib={level},hyprland_plugin={level},hyprshell_clipboard_lib={level},hyprshell_config_edit_lib={level},hyprshell_hyprland={level}"
@@ -113,7 +113,7 @@ fn main() -> anyhow::Result<()> {
                 );
             }
             cli::ConfigCommand::Explain {} => {
-                explain_config(&config_file, false);
+                explain_config(&config_file);
             }
             cli::ConfigCommand::Check {} => {
                 if let Err(err) = config_lib::load_and_migrate_config(&config_file, true) {
