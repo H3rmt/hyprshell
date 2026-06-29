@@ -1,7 +1,7 @@
 [package]
 name = "hyprshell"
 documentation = "https://docs.rs/hyprshell"
-version = "4.10.8"
+version = "4.11.0-alpha"
 description = "A modern GTK4-based window switcher and application launcher for Hyprland"
 readme = "./README.md"
 exclude = [".idea/*", ".github/*", ".githooks", "nix", "test-files"]
@@ -29,8 +29,8 @@ core-lib.workspace = true
 exec-lib.workspace = true
 launcher-lib.workspace = true
 #clipboard-lib = { path = "crates/clipboard-lib", package = "hyprshell-clipboard-lib", version = "=4.10.4" }
-windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.10.8" }
-config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.10.8", optional = true }
+windows-lib = { path = "crates/windows-lib", package = "hyprshell-windows-lib", version = "=4.11.0-alpha" }
+config-edit-lib = { path = "crates/config-edit-lib", package = "hyprshell-config-edit-lib", version = "=4.11.0-alpha", optional = true }
 
 [dev-dependencies]
 test-log.workspace = true
@@ -88,15 +88,15 @@ tracing-log = { version = "0.2.0" }
 clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6.5"
 
-relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.10.8" }
+relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.11.0-alpha" }
 #relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
-relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.10.8" }
+relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.11.0-alpha" }
 gtk4-layer-shell = { version = "0.8.0" }
 
-config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.10.8" }
-core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.10.8" }
-exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.10.8" }
-launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.10.8" }
+config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.11.0-alpha" }
+core-lib = { path = "crates/core-lib", package = "hyprshell-core-lib", version = "=4.11.0-alpha" }
+exec-lib = { path = "crates/exec-lib", package = "hyprshell-exec-lib", version = "=4.11.0-alpha" }
+launcher-lib = { path = "crates/launcher-lib", package = "hyprshell-launcher-lib", version = "=4.11.0-alpha" }
 
 # Test dependency
 test-log = { version = "0.2.19", default-features = false, features = ["trace", "unstable"] }
