@@ -33,7 +33,7 @@ autobenches = false
 description = "An idiomatic GUI library inspired by Elm and based on gtk4-rs"
 homepage = "https://relm4.org"
 documentation = "https://docs.rs/relm4/"
-readme = "README.md"
+readme = "./README.md"
 keywords = [
     "gui",
     "gtk",

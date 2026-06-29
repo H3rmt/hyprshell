@@ -22,6 +22,7 @@ pub struct WorkspaceClients {
 #[derive(Debug)]
 pub enum WorkspaceClientsInput {
     SetActive(bool),
+    #[cfg(feature = "live_windows")]
     UpdateThumbnail(gdk::Texture),
 }
 
@@ -30,7 +31,9 @@ pub struct WorkspaceClientsInit {
     pub data: ClientData,
     pub id: ClientId,
     pub scale: f64,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails: bool,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
 }
 
@@ -104,8 +107,14 @@ impl FactoryComponent for WorkspaceClients {
             id: init.id,
             scale: init.scale,
             paintable: None,
+            #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
+            #[cfg(not(feature = "live_windows"))]
+            live_thumbnails: false,
+            #[cfg(feature = "live_windows")]
             live_thumbnails_icons: init.live_thumbnails_icons,
+            #[cfg(not(feature = "live_windows"))]
+            live_thumbnails_icons: false,
         }
     }
 
@@ -133,6 +142,7 @@ impl FactoryComponent for WorkspaceClients {
             WorkspaceClientsInput::SetActive(active) => {
                 self.active = active;
             }
+            #[cfg(feature = "live_windows")]
             WorkspaceClientsInput::UpdateThumbnail(texture) => {
                 self.paintable = Some(texture.upcast());
             }

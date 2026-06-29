@@ -5,7 +5,6 @@ use core_lib::{ClientData, ClientId, MonitorData, WorkspaceData, WorkspaceId};
 use regex::Regex;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
-use relm4::gtk::gdk;
 use relm4::prelude::*;
 
 /// Workspace items component - displays a workspace with its clients positioned inside
@@ -24,7 +23,8 @@ pub struct Workspaces {
 pub enum WorkspacesInput {
     SetActive(bool),
     SetActiveClient(ClientId),
-    UpdateClientThumbnail(ClientId, gdk::Texture),
+    #[cfg(feature = "live_windows")]
+    UpdateClientThumbnail(ClientId, gtk::gdk::Texture),
 }
 
 #[derive(Debug)]
@@ -35,7 +35,9 @@ pub struct WorkspacesInit {
     pub remove_html: Regex,
     pub scale: f64,
     pub clients: Vec<(ClientId, ClientData)>,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails: bool,
+    #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
 }
 
@@ -107,7 +109,9 @@ impl FactoryComponent for Workspaces {
                         id: *id,
                         scale: init.scale,
                         data: client.clone(),
+                        #[cfg(feature = "live_windows")]
                         live_thumbnails: init.live_thumbnails,
+                        #[cfg(feature = "live_windows")]
                         live_thumbnails_icons: init.live_thumbnails_icons,
                     });
                 }
@@ -141,6 +145,7 @@ impl FactoryComponent for Workspaces {
                         .send(idx, WorkspaceClientsInput::SetActive(id == item.id));
                 }
             }
+            #[cfg(feature = "live_windows")]
             WorkspacesInput::UpdateClientThumbnail(client_id, texture) => {
                 for (idx, item) in self.clients.iter().enumerate() {
                     if item.id == client_id {

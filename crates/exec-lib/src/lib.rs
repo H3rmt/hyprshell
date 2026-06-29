@@ -2,6 +2,7 @@ pub mod collect;
 pub mod listener;
 pub mod switch;
 mod util;
+#[cfg(feature = "live_windows")]
 pub mod wayland_capture;
 
 pub mod binds;

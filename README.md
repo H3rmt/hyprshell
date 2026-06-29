@@ -125,7 +125,7 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 - `json5_config`✅: Adds support for a json5 config file.
 - `gui_settings_editor`✅✨: Adds the `hyprshell config edit` + `hyprshell config generate` command to open the settings editor.
 - `launcher_calc`✅: Adds support for the calc plugin in the launcher.
-- `debug_command`✅✨: Adds the `hyprshell debug` command to debug icons, desktop files, etc.
+- `live_windows`✅: Adds support for live window preview in the overview and switch windows.
 
 [//]: # (- `clipboard_compress_lz4`✅✨: Adds support for compressing clipboard content using lz4.)
 

@@ -26,5 +26,8 @@ launcher-lib.workspace = true
 [lints]
 workspace = true
 
+[features]
+live_windows = ["exec-lib/live_windows"]
+
 [dev-dependencies]
 test-log.workspace = true

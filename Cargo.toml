@@ -44,7 +44,7 @@ json5_config = ["config-lib/json5_config"]
 gui_settings_editor = ["dep:config-edit-lib"]
 launcher_calc = ["launcher-lib/calc", "config-lib/launcher_calc_plugin", "config-edit-lib?/launcher_calc_plugin"]
 # adds arround 40 dependencies
-live_windows = ["exec-lib/live_windows"]
+live_windows = ["exec-lib/live_windows", "windows-lib/live_windows"]
 ci_config_check = ["config-lib/ci_no_default_config_values"]
 #clipboard_compress_lz4 = ["clipboard-lib/compress_lz4"]
 #clipboard_compress_zstd = ["clipboard-lib/compress_zstd"]

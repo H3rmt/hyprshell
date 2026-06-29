@@ -6,21 +6,7 @@
   "draft": false,
   "packages": {
     ".": {
-      "release-type": "simple",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "packaging/pkgbuild/PKGBUILD"
-        },
-        {
-          "type": "generic",
-          "path": "packaging/pkgbuild/PKGBUILD-slim"
-        },
-        {
-          "type": "generic",
-          "path": "packaging/pkgbuild/PKGBUILD-bin"
-        }
-      ]
+      "release-type": "simple"
     }
   },
   "changelog-sections": [
