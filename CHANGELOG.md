@@ -1,5 +1,56 @@
 # Changelog
 
+## [4.11.0](https://github.com/H3rmt/hyprshell/compare/v4.10.8...v4.11.0) (2026-06-29)
+
+
+### Features
+
+* add live window thumbnails to Switch and Overview ([5bd2c1d](https://github.com/H3rmt/hyprshell/commit/5bd2c1d531547a176bc94e25c04ed82cf2f5ad72))
+* add secondary modifier for launch to open children ([cc4c02e](https://github.com/H3rmt/hyprshell/commit/cc4c02eb774be4288e10e0acd71f8764f7ad699c))
+* **capture:** add performance instrumentation traces ([5e2485d](https://github.com/H3rmt/hyprshell/commit/5e2485d63dbb8340973b6c31d25431a8551ed726))
+* **capture:** add static capture mode for thumbnail_refresh_ms=0 ([3fd4ea7](https://github.com/H3rmt/hyprshell/commit/3fd4ea77806f8c8a8aa916f93f96555954539652))
+* distribute all licenses to users ([ad6ff85](https://github.com/H3rmt/hyprshell/commit/ad6ff85ee32cf34a6b0603253d0a6be7c51f560f))
+* **exec-lib/wayland_capture:** debug logs ([a54c8a7](https://github.com/H3rmt/hyprshell/commit/a54c8a7802e7402e7997944b6efb890f63dcfe8c))
+* improve css customizations, added box shadow, added more themes ([c3ad9d7](https://github.com/H3rmt/hyprshell/commit/c3ad9d7cda89863771ab46bad1f15094360c3482))
+* **windows-lib/overview:** live thumbnails ([c51daae](https://github.com/H3rmt/hyprshell/commit/c51daae67f45e07b387f8eeaefe1371d586510bd))
+* **windows-lib:** enable client-picture CSS class on thumbnails ([4fdcb3c](https://github.com/H3rmt/hyprshell/commit/4fdcb3c4c4edc30cf5021a3ce2b1e79fad219383))
+
+
+### Bug Fixes
+
+* add option to limit math plugin to character ([712a863](https://github.com/H3rmt/hyprshell/commit/712a863d9c1a0d0d43aca03ef2b1f33a8e1f3cfa))
+* add top_offset and calc char to settings ui ([712a863](https://github.com/H3rmt/hyprshell/commit/712a863d9c1a0d0d43aca03ef2b1f33a8e1f3cfa))
+* **capture_utils:** handle errors and fix code quality ([75b9fbf](https://github.com/H3rmt/hyprshell/commit/75b9fbf58f259f59b4692d2363b64678299599da))
+* fix bundled logout action ([519c366](https://github.com/H3rmt/hyprshell/commit/519c366240679d3c541627b00e817cbf134d5019))
+* improve live image ui ([a32cd5d](https://github.com/H3rmt/hyprshell/commit/a32cd5d776f332bb4b1a75c455cfb4cc50739076))
+* **nix-flake:** update flake.lock ([ceaf4e0](https://github.com/H3rmt/hyprshell/commit/ceaf4e0f1feefaefd9aa6746905a283ceaaa11f0))
+* reduce external dependencies ([c8c4166](https://github.com/H3rmt/hyprshell/commit/c8c41664363e6a436bf5b677acaca2f54d460118))
+* remove nowadays fixed relm4 components workaround ([e17b6d6](https://github.com/H3rmt/hyprshell/commit/e17b6d68272935166f6ce09d17185e01ede21a91))
+* **switch,overview:** fix formatting and remove unwrap ([401c9df](https://github.com/H3rmt/hyprshell/commit/401c9dfe45062d5e6943e7c18ceff3cf775efd36))
+* **wayland_capture:** fix clippy warnings and error handling ([5244498](https://github.com/H3rmt/hyprshell/commit/5244498156948d8c002926b06545bd7a1c81afbd))
+* **windows-lib/root:** live thumbnails when switch_workspaces=true ([8ad7892](https://github.com/H3rmt/hyprshell/commit/8ad7892d2d91d67303a272b3bd88af8206fe08cd))
+* **windows-lib:** first capture appear quickly regardless of refresh time ([04ca06b](https://github.com/H3rmt/hyprshell/commit/04ca06bd3649b2d0d1b29e0480dea5a578c3288d))
+* **windows-lib:** fix clippy warnings in our code ([ff5a521](https://github.com/H3rmt/hyprshell/commit/ff5a5213ddc3950a37c8f6e8afb666a868555060))
+* **workspaces:** restore get_client_id and client_count ([d3821e2](https://github.com/H3rmt/hyprshell/commit/d3821e29f732840cf1bba0090a8b7d14ef051018))
+
+
+### Code Refactoring
+
+* **capture:** resolve remaining clippy warnings ([d843a6e](https://github.com/H3rmt/hyprshell/commit/d843a6eb08c70d5d966eb03e29dc59e53ab8ef38))
+* move live capture behind flag ([d2e179e](https://github.com/H3rmt/hyprshell/commit/d2e179e35e5a992e4d1cee23905b9b20d83f8619))
+* **overview/switch:** refresh thumbnail in private method ([f9224f6](https://github.com/H3rmt/hyprshell/commit/f9224f6244a3a917d8d59b63c9c9a95264b9bc10))
+* refactor live image capture options ([712a863](https://github.com/H3rmt/hyprshell/commit/712a863d9c1a0d0d43aca03ef2b1f33a8e1f3cfa))
+* **windows-lib:** refresh interval conf, expose new thumbnail_refresh_ms ([53645c6](https://github.com/H3rmt/hyprshell/commit/53645c6b3665019d5d990f463c2848b9c9bf7379))
+
+
+### Documentation
+
+* **capture_utils:** document create_texture function ([4c81ec8](https://github.com/H3rmt/hyprshell/commit/4c81ec88c7f3d98c8ea4d39fda6ff03c5f6625a4))
+* **capture:** document CaptureOutput and DmabufResult types ([cd7b8d1](https://github.com/H3rmt/hyprshell/commit/cd7b8d1db7191c84df7d1fa7947ab977d54b6850))
+* small docs updates ([8d71eaf](https://github.com/H3rmt/hyprshell/commit/8d71eaf15c87aa85cc681aae14bdbd43a42a8019))
+* update readme ([5e8b723](https://github.com/H3rmt/hyprshell/commit/5e8b72392ef28b8e04714020b3b816ed464a324e))
+* update readme ([38d4792](https://github.com/H3rmt/hyprshell/commit/38d4792c63a4ce2f38ff0c2c2b76f14c767451b9))
+
 ## [4.10.8](https://github.com/H3rmt/hyprshell/compare/v4.10.7...v4.10.8) (2026-06-10)
 
 
