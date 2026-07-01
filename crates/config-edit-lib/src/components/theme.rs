@@ -1,6 +1,5 @@
 use crate::util::{ScrollToPosition, SetCursor};
 use config_lib::style::Theme;
-use relm4::abstractions::Toaster;
 use relm4::adw::gtk::Orientation;
 use relm4::adw::prelude::*;
 use relm4::gtk::{Align, Justification, gio};
@@ -112,7 +111,6 @@ impl FactoryComponent for ThemeCarousel {
 pub struct Style {
     err: Option<String>,
     themes_list: FactoryVecDeque<ThemeCarousel>,
-    toaster: Toaster,
     system_data_dir: Box<Path>,
     css_file: Box<Path>,
     initial_position: Option<usize>,
@@ -132,6 +130,7 @@ pub struct StyleInit {
 #[derive(Debug)]
 pub enum StyleOutput {
     Apply((String, String)),
+    Toast((String, u32)),
 }
 
 #[allow(unused_assignments)]
@@ -155,29 +154,25 @@ impl SimpleComponent for Style {
                     None => "",
                 }
             },
-            #[local_ref]
-            toast_overlay -> adw::ToastOverlay {
-                set_vexpand: true,
-                gtk::Box {
-                    set_orientation: Orientation::Vertical,
-                    set_spacing: 10,
-                    #[local_ref]
-                    themes_carousel -> adw::Carousel {
-                        set_orientation: Orientation::Horizontal,
-                        set_spacing: 5,
-                        set_css_classes: &["theme-carousel"],
-                        set_vexpand: true,
-                        set_vexpand_set: true,
-                        connect_realize[refc = model.initial_position.clone()] => move |s| {
-                            if let Some(pos) = refc {
-                                debug!("Scroll to position: {:?}", pos);
-                                s.scroll_to_pos(pos, false);
-                            }
+            gtk::Box {
+                set_orientation: Orientation::Vertical,
+                set_spacing: 10,
+                #[local_ref]
+                themes_carousel -> adw::Carousel {
+                    set_orientation: Orientation::Horizontal,
+                    set_spacing: 5,
+                    set_css_classes: &["theme-carousel"],
+                    set_vexpand: true,
+                    set_vexpand_set: true,
+                    connect_realize[refc = model.initial_position.clone()] => move |s| {
+                        if let Some(pos) = refc {
+                            debug!("Scroll to position: {:?}", pos);
+                            s.scroll_to_pos(pos, false);
                         }
-                    },
-                    adw::CarouselIndicatorDots {
-                        set_carousel: Some(themes_carousel),
                     }
+                },
+                adw::CarouselIndicatorDots {
+                    set_carousel: Some(themes_carousel),
                 }
             }
         }
@@ -205,12 +200,10 @@ impl SimpleComponent for Style {
                     v.push_back(theme);
                 }
                 drop(v);
-                let toaster = Toaster::default();
                 for err in errors {
-                    toaster.add_toast(adw::Toast::builder().title(err).timeout(0).build());
+                    sender.output_sender().emit(StyleOutput::Toast((err, 0)));
                 }
                 Self {
-                    toaster,
                     err: None,
                     themes_list,
                     css_file: init.css_file,
@@ -221,7 +214,6 @@ impl SimpleComponent for Style {
             Err(err) => {
                 warn!("Failed to load themes: {err}");
                 Self {
-                    toaster: Toaster::default(),
                     err: Some(err),
                     themes_list,
                     css_file: init.css_file,
@@ -232,12 +224,11 @@ impl SimpleComponent for Style {
         };
 
         let themes_carousel = model.themes_list.widget();
-        let toast_overlay = model.toaster.overlay_widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         trace!("style::update: {message:?}");
         match message {
             StyleInput::Reload => match load_themes(&self.system_data_dir, &self.css_file) {
@@ -254,8 +245,7 @@ impl SimpleComponent for Style {
                     drop(v);
                     self.themes_list.widget().scroll_to_pos(index, false);
                     for err in errors {
-                        self.toaster
-                            .add_toast(adw::Toast::builder().title(err).timeout(0).build());
+                        sender.output_sender().emit(StyleOutput::Toast((err, 0)));
                     }
                 }
                 Err(err) => {

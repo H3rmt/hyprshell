@@ -17,6 +17,8 @@ use crate::components::windows::{Windows, WindowsInit, WindowsInput, WindowsOutp
 use crate::components::windows_overview::WindowsOverviewOutput;
 use crate::structs;
 use crate::util::default_config;
+use core_lib::binds::get_hyprshell_path;
+use core_lib::transfer::ExternalTransferType;
 use relm4::ComponentController;
 use relm4::abstractions::Toaster;
 use relm4::adw::gtk::{Align, SelectionMode};
@@ -26,6 +28,7 @@ use relm4::{Component, ComponentParts, ComponentSender, Controller, SimpleCompon
 use relm4::{adw, gtk};
 use relm4_components::alert::{Alert, AlertMsg, AlertResponse, AlertSettings};
 use std::path::Path;
+use std::process::Command;
 use tracing::{debug, error, info, trace, warn};
 
 #[derive(Debug)]
@@ -61,6 +64,7 @@ pub enum RootInput {
     Save(bool),
     Regenerate,
     AbortGenerate,
+    ReloadHyprshell,
 
     Reset,
     SetConfig(crate::Config),
@@ -71,6 +75,8 @@ pub enum RootInput {
     Style(StyleOutput),
     Changes(ChangesOutput),
     Generate(GenerateOutput),
+
+    Toast(adw::Toast),
 }
 
 #[derive(Debug)]
@@ -170,6 +176,7 @@ impl SimpleComponent for Root {
                 FooterOutput::Save => RootInput::Save(false),
                 FooterOutput::Reload => RootInput::Reload(false),
                 FooterOutput::Abort => RootInput::AbortGenerate,
+                FooterOutput::ReloadHyprshell => RootInput::ReloadHyprshell,
             });
 
         let changes_list = gtk::ListBox::builder()
@@ -349,6 +356,51 @@ impl SimpleComponent for Root {
                     sender.input(RootInput::Save(false));
                 }
             },
+            RootInput::ReloadHyprshell => {
+                let mut cmd = Command::new(get_hyprshell_path());
+                cmd.arg("socat").arg(core_lib::binds::generate_transfer(
+                    &ExternalTransferType::Reload,
+                ));
+                if let Ok(output) = cmd.output().inspect_err(|err| {
+                    sender.input_sender().emit(RootInput::Toast(
+                        adw::Toast::builder()
+                            .title(format!(r"Failed to reload hyprshell:{err:?}"))
+                            .timeout(0)
+                            .build(),
+                    ));
+                    error!("Failed to reload hyprshell: {err:#}");
+                }) && !output.status.success()
+                {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if stderr.is_empty() {
+                        sender.input_sender().emit(RootInput::Toast(
+                            adw::Toast::builder()
+                                .title(format!(
+                                    "Failed to reload hyprshell (exit code: {})",
+                                    output.status
+                                ))
+                                .timeout(0)
+                                .use_markup(true)
+                                .build(),
+                        ));
+                    } else {
+                        sender.input_sender().emit(RootInput::Toast(
+                            adw::Toast::builder()
+                                .title(r"Failed to reload hyprshell".to_string())
+                                .timeout(2)
+                                .build(),
+                        ));
+                        sender.input_sender().emit(RootInput::Toast(
+                            adw::Toast::builder()
+                                .title(format!(r"<small><tt>{stderr}</tt></small>"))
+                                .timeout(0)
+                                .use_markup(true)
+                                .build(),
+                        ));
+                    }
+                    error!("Failed to reload hyprshell: {output:?}");
+                }
+            }
             RootInput::Reload(initial) => {
                 if self.config_file.exists() {
                     match config_lib::load_and_migrate_config(&self.config_file, true) {
@@ -359,12 +411,12 @@ impl SimpleComponent for Root {
                         }
                         Err(err) => {
                             warn!("Failed to load config: {err:#}");
-                            self.toaster.add_toast(
+                            sender.input(RootInput::Toast(
                                 adw::Toast::builder()
                                     .title(err.to_string())
                                     .timeout(0)
                                     .build(),
-                            );
+                            ));
                         }
                     }
                 } else if initial {
@@ -381,7 +433,7 @@ impl SimpleComponent for Root {
                     button.connect_button_clicked(move |_| {
                         s.input(RootInput::Regenerate);
                     });
-                    self.toaster.add_toast(button);
+                    sender.input(RootInput::Toast(button));
 
                     let config = default_config();
                     let config = structs::Config::from(config);
@@ -432,21 +484,21 @@ impl SimpleComponent for Root {
                 match config_lib::write_config(&self.config_file, &config, true) {
                     Ok(()) => {
                         info!("Saved config to {}", self.config_file.display());
-                        self.toaster.add_toast(
+                        sender.input(RootInput::Toast(
                             adw::Toast::builder()
                                 .title("Saved".to_string())
                                 .timeout(2)
                                 .build(),
-                        );
+                        ));
                     }
                     Err(err) => {
                         error!("Failed to save config: {err:#}");
-                        self.toaster.add_toast(
+                        sender.input(RootInput::Toast(
                             adw::Toast::builder()
                                 .title(err.to_string())
                                 .timeout(0)
                                 .build(),
-                        );
+                        ));
                     }
                 }
 
@@ -468,30 +520,36 @@ impl SimpleComponent for Root {
                     self.footer.emit(FooterInput::ChangesExist(changes_exist));
                 }
             },
+            RootInput::Toast(toast) => {
+                self.toaster.add_toast(toast);
+            }
             RootInput::Style(msg) => match msg {
                 StyleOutput::Apply((name, content)) => {
                     match std::fs::write(&self.css_file, content) {
                         Ok(()) => {
                             info!("Saved css from {name} to {}", self.css_file.display());
-                            self.toaster.add_toast(
+                            sender.input(RootInput::Toast(
                                 adw::Toast::builder()
                                     .title("Saved".to_string())
                                     .timeout(2)
                                     .build(),
-                            );
+                            ));
                         }
                         Err(err) => {
                             error!("Failed to save css from {name}: {err:#}");
-                            self.toaster.add_toast(
+                            sender.input(RootInput::Toast(
                                 adw::Toast::builder()
                                     .title(err.to_string())
                                     .timeout(0)
                                     .build(),
-                            );
+                            ));
                         }
                     }
                     self.style.emit(StyleInput::Reload);
                 }
+                StyleOutput::Toast((msg, timeout)) => sender.input(RootInput::Toast(
+                    adw::Toast::builder().title(msg).timeout(timeout).build(),
+                )),
             },
             RootInput::Launcher(msg) => {
                 let r#ref = &mut self.config.windows.overview.launcher;

@@ -224,7 +224,7 @@ fn main() -> anyhow::Result<()> {
             #[cfg(debug_assertions)]
             core_lib::notify(&json, std::time::Duration::from_secs(2));
             core_lib::transfer::send_raw_to_socket(&json)
-                .context("Failed to send JSON to socket: is hyprshell running?")?;
+                .context("Failed to send JSON to socket")?;
         }
     }
     Ok(())

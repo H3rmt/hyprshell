@@ -61,6 +61,26 @@ bloat:
     echo "Checking for bloat in binary with cargo bloat..."
     cargo bloat --release
 
+[group('checks')]
+check:
+    cargo run --package hyprshell-xtask -q -- cmd check -v
+
+[group('dev')]
+fix:
+    cargo run --package hyprshell-xtask -q -- cmd fix -v
+
+[group('checks')]
+lint:
+    cargo run --package hyprshell-xtask -q -- cmd lint -v
+
+[group('checks')]
+test:
+    cargo run --package hyprshell-xtask -q -- cmd test -v
+
+[group('dev')]
+format:
+    cargo run --package hyprshell-xtask -q -- cmd format -v
+
 # [group('checks')]
 # check-default-nix-features:
 #     nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L

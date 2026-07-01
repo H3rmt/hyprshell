@@ -29,6 +29,7 @@ pub enum FooterOutput {
     Reset,
     Reload,
     Abort,
+    ReloadHyprshell,
 }
 
 #[relm4::component(pub)]
@@ -45,9 +46,20 @@ impl SimpleComponent for Footer {
                 set_hexpand: true,
                 set_css_classes: &["footer"],
                 set_orientation: Orientation::Horizontal,
-                gtk::LinkButton {
-                    set_label: &format!("Hyprshell v{}", env!("CARGO_PKG_VERSION")),
-                    set_uri: &format!("https://github.com/H3rmt/hyprshell/tree/v{}", env!("CARGO_PKG_VERSION")),
+                gtk::Box {
+                    set_spacing: 10,
+                    set_hexpand: true,
+                    set_halign: gtk::Align::Start,
+                    set_orientation: Orientation::Horizontal,
+                    gtk::LinkButton {
+                        set_label: &format!("Hyprshell v{}", env!("CARGO_PKG_VERSION")),
+                        set_uri: &format!("https://github.com/H3rmt/hyprshell/tree/v{}", env!("CARGO_PKG_VERSION")),
+                    },
+                    gtk::Button {
+                        set_label: "Force Reload Daemon",
+                        set_css_classes: &["destructive-action"],
+                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::ReloadHyprshell),
+                    },
                 },
                 gtk::Box {
                     set_spacing: 10,

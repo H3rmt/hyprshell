@@ -17,7 +17,7 @@ use relm4::gtk::gdk::Key;
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
 use std::time::Duration;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, warn};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
@@ -313,7 +313,14 @@ impl SwitchRoot {
             self.timer_handle = Some(glib::timeout_add_local(
                 Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
-                    sender.input(SwitchRootInput::RefreshThumbnails);
+                    if sender
+                        .input_sender()
+                        .send(SwitchRootInput::RefreshThumbnails)
+                        .is_err()
+                    {
+                        warn!("Failed to send refresh thumbnails");
+                        return ControlFlow::Break;
+                    }
                     ControlFlow::Continue
                 },
             ));
@@ -501,7 +508,7 @@ impl SwitchRoot {
                 // Defer execution to ensure window is hidden first
                 glib::idle_add_local(move || {
                     if let Err(e) = switch_client(id) {
-                        tracing::warn!("Failed to switch to client {id:?}: {e}");
+                        warn!("Failed to switch to client {id:?}: {e}");
                     }
                     ControlFlow::Break
                 });
@@ -659,7 +666,14 @@ impl SwitchRoot {
                 self.timer_handle = Some(glib::timeout_add_local(
                     Duration::from_millis(self.thumbnail_refresh_ms),
                     move || {
-                        sender.input(SwitchRootInput::RefreshThumbnails);
+                        if sender
+                            .input_sender()
+                            .send(SwitchRootInput::RefreshThumbnails)
+                            .is_err()
+                        {
+                            warn!("Failed to send refresh thumbnails");
+                            return ControlFlow::Break;
+                        }
                         ControlFlow::Continue
                     },
                 ));

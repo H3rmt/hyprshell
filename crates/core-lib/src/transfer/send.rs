@@ -23,5 +23,8 @@ pub fn send_raw_to_socket(data: &str) -> anyhow::Result<()> {
         .context("Can't read data from socket")?;
     let ret = String::from_utf8(buffer).context("Failed to convert buffer")?;
     debug!("Received data from socket: {ret}");
+    if ret != "OK\0" {
+        return Err(anyhow::anyhow!("Invalid response from daemon: {ret}"));
+    }
     Ok(())
 }

@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, warn};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
@@ -284,7 +284,14 @@ impl OverviewRoot {
             self.timer_handle = Some(glib::timeout_add_local(
                 Duration::from_millis(THUMBNAIL_BURST_MS),
                 move || {
-                    sender.input(OverviewRootInput::RefreshThumbnails);
+                    if sender
+                        .input_sender()
+                        .send(OverviewRootInput::RefreshThumbnails)
+                        .is_err()
+                    {
+                        warn!("Failed to send refresh thumbnails");
+                        return ControlFlow::Break;
+                    }
                     ControlFlow::Continue
                 },
             ));
@@ -486,7 +493,14 @@ impl OverviewRoot {
                 self.timer_handle = Some(glib::timeout_add_local(
                     Duration::from_millis(self.thumbnail_refresh_ms),
                     move || {
-                        sender.input(OverviewRootInput::RefreshThumbnails);
+                        if sender
+                            .input_sender()
+                            .send(OverviewRootInput::RefreshThumbnails)
+                            .is_err()
+                        {
+                            warn!("Failed to send refresh thumbnails");
+                            return ControlFlow::Break;
+                        }
                         ControlFlow::Continue
                     },
                 ));
