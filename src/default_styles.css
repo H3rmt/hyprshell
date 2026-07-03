@@ -1,86 +1,90 @@
 /* no opacity */
 * {
-    opacity: unset;
+  opacity: unset;
 }
 
 /* buttons need to be transparent as they wrap everything clickable */
 button {
-    background: none;
-    padding: 0;
-    margin: 0;
-    border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  border: none;
 }
 
 frame {
-    border: none;
+  border: none;
 }
 
 image {
-    border: none;
+  border: none;
 }
 
 /* no background and no hover effects by default */
 list {
-    background: transparent;
+  background: transparent;
 }
 
 /* no background and no hover effects by default */
 row {
-    background: transparent;
+  background: transparent;
 }
 
 entry {
-    background: transparent;
-    color: var(--text-color);
+  background: transparent;
+  color: var(--text-color);
 }
 
 label {
-    padding-top: 2px;
-    color: var(--text-color);
+  padding-top: 2px;
+  color: var(--text-color);
 }
 
 /* fix size for icons in launcher */
 .large-icons {
-    -gtk-icon-size: 32px;
+  -gtk-icon-size: 32px;
 }
 
 /* some fix for the workspaces? */
 flowboxchild {
-    padding: 2px;
+  padding: 2px;
 }
 
 flowboxchild:hover {
-    background: transparent;
+  background: transparent;
 }
 
 .monochrome {
-    filter: grayscale(100%);
+  filter: grayscale(100%);
 }
 
 .underline {
-    text-decoration-line: underline;
-    text-decoration-style: solid;
+  text-decoration-line: underline;
+  text-decoration-style: solid;
 }
 
 .text-grayed {
-    color: color-mix(in srgb, currentColor 40%, #464444 60%);
+  color: color-mix(in srgb, currentColor 40%, #464444 60%);
 }
 
 tooltip {
-    font-size: 1rem;
-    padding: 5px;
+  font-size: 1rem;
+  padding: 5px;
 
-    background: var(--bg-window-color);
+  background: var(--bg-window-color);
 
-    box-shadow: inset 0 0 12px 2px var(--box-shadow-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+  box-shadow: inset 0 0 12px 2px
+    var(
+      --box-shadow-color,
+      color-mix(in srgb, var(--border-color-active), transparent 80%)
+    );
 
-    border-radius: var(--border-radius);
-    border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  border: 2px solid var(--border-color);
 }
 
 /* window text color */
 .window {
-    color: var(--text-color);
-    /* padding for the window */
-    padding: 18px;
+  color: var(--text-color);
+  /* padding for the window */
+  padding: 18px;
 }

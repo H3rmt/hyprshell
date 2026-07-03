@@ -1,101 +1,118 @@
 .launcher {
-    padding: var(--window-padding);
+  padding: var(--window-padding);
 
-    box-shadow: 0 0 16px 5px var(--bg-window-color), inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+  box-shadow:
+    0 0 16px 5px var(--bg-window-color),
+    inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 2px
+      var(
+        --box-shadow-launcher-color,
+        color-mix(in srgb, var(--border-color-active), transparent 80%)
+      );
 
-    border-radius: var(--border-radius);
-    background: var(--bg-window-color);
-    border: var(--border-size) var(--border-style) var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-window-color);
+  border: var(--border-size) var(--border-style) var(--border-color);
 }
 
 .launcher-input {
-    font-size: 1.5rem;
-    margin: 6px;
-    padding: 4px 8px;
+  font-size: 1.5rem;
+  margin: 6px;
+  padding: 4px 8px;
 
-    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 3px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+  box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 8px) 3px
+    var(
+      --box-shadow-launcher-color,
+      color-mix(in srgb, var(--border-color-active), transparent 80%)
+    );
 
-    background: var(--bg-color);
+  background: var(--bg-color);
 }
 
 .launcher-results {
-    margin: 1px 4px;
+  margin: 1px 4px;
 }
 
 .launcher-item {
-    padding: 2px;
+  padding: 2px;
 
-    border-radius: calc(1.2 * var(--border-radius));
-    background: var(--bg-color);
+  border-radius: calc(1.2 * var(--border-radius));
+  background: var(--bg-color);
 }
 
 .launcher-item-inner {
-    padding: 0 8px;
-    font-size: 1.5rem;
+  padding: 0 8px;
+  font-size: 1.5rem;
 
-    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 6px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+  box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 6px) 2px
+    var(
+      --box-shadow-launcher-color,
+      color-mix(in srgb, var(--border-color-active), transparent 80%)
+    );
 
-    border-radius: var(--border-radius);
-    background: var(--bg-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-color);
 }
 
 .launcher-item-inner-color-probe-element {
-    color: color-mix(in srgb, currentColor 35%, var(--border-color-active) 65%);
+  color: color-mix(in srgb, currentColor 35%, var(--border-color-active) 65%);
 }
 
 .launcher-item-inner:hover {
-    background: var(--bg-color-hover);
+  background: var(--bg-color-hover);
 }
 
 .launcher-item-name {
-
 }
 
 .launcher-item-image {
-
 }
 
 .launcher-item-details {
-    font-size: 0.9rem;
-    font-family: monospace;
+  font-size: 0.9rem;
+  font-family: monospace;
 }
 
 .launcher-key {
-    font-size: 1.2rem;
-    font-family: monospace;
+  font-size: 1.2rem;
+  font-family: monospace;
 }
 
 .launcher-plugins {
-    padding: 4px 2px 2px;
+  padding: 4px 2px 2px;
 
-    border-top: calc(var(--border-size) / 1.5) var(--border-style) var(--border-color);
+  border-top: calc(var(--border-size) / 1.5) var(--border-style)
+    var(--border-color);
 }
 
 .launcher-plugin {
-    padding: 2px;
+  padding: 2px;
 
-    border-radius: calc(1.3 * var(--border-radius));
-    background: var(--bg-color);
+  border-radius: calc(1.3 * var(--border-radius));
+  background: var(--bg-color);
 }
 
 .launcher-plugin-inner {
-    padding: 6px 10px;
+  padding: 6px 10px;
 
-    box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 10px) 2px var(--box-shadow-launcher-color, color-mix(in srgb, var(--border-color-active), transparent 80%));
+  box-shadow: inset 0 0 calc(var(--box-shadow-launcher-multiplier, 1) * 10px)
+    2px
+    var(
+      --box-shadow-launcher-color,
+      color-mix(in srgb, var(--border-color-active), transparent 80%)
+    );
 
-    border-radius: calc(1.3 * var(--border-radius));
-    background: var(--bg-color);
+  border-radius: calc(1.3 * var(--border-radius));
+  background: var(--bg-color);
 }
 
 .launcher-plugin-image {
-
 }
 
 .launcher-plugin-key {
-    font-size: 0.9rem;
-    font-family: monospace;
+  font-size: 0.9rem;
+  font-family: monospace;
 }
 
 .launcher-plugin-inner:hover {
-    background: var(--bg-color-hover);
+  background: var(--bg-color-hover);
 }

@@ -189,7 +189,7 @@ fn setup_restart_listener(config_file: &Path, css_path: &Path, restart_tx: &Send
                     .expect("Failed to read inotify events");
                 for event in events {
                     trace!("Received events: {event:?}");
-                    let _ = tx.send_blocking("config");
+                    let _ = tx.send_blocking("css");
                 }
             }
         });
