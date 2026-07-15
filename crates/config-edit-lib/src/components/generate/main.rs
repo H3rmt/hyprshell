@@ -99,8 +99,8 @@ impl SimpleComponent for Generate {
                 set_expand: true,
                 set_spacing: 20,
                 set_margin_all: 20,
-                #[transition = "SlideUpDown"]
-                #[name="step0_stack"]
+                #[transition = "SlideLeftRight"]
+                #[name="step_stack"]
                 match model.step {
                     0 => *model.step0.widget(),
                     1 => *model.step1.widget(),
@@ -114,6 +114,7 @@ impl SimpleComponent for Generate {
                             set_spacing: 20,
                             #[local_ref]
                             explain_label -> gtk::Label {
+                                set_ellipsize: gtk::pango::EllipsizeMode::End,
                                 set_css_classes: &[],
                                 set_align: Align::Center,
                                 set_justify: Justification::Left,
@@ -129,6 +130,7 @@ impl SimpleComponent for Generate {
             gtk::Box {
                 set_spacing: 25,
                 set_halign: Align::Center,
+                set_margin_bottom: 10,
                 gtk::Button {
                     set_label: "Back",
                     set_css_classes: &["suggested-action", "pill"],
@@ -206,7 +208,7 @@ impl SimpleComponent for Generate {
         let explain_label = &model.explain_label;
         let widgets = view_output!();
 
-        widgets.step0_stack.set_transition_duration(500);
+        widgets.step_stack.set_transition_duration(300);
         ComponentParts { model, widgets }
     }
 

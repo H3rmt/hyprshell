@@ -32,7 +32,9 @@ pub enum HighlightElement {
     Name(HighlightedText),
     Keyword(HighlightedText),
     Details(HighlightedText),
-    DetailsLong(HighlightedText),
+    // removed because it caused to many false positives with very long paths in the execs,
+    // Frequently used apps where often listed at top because of this
+    // DetailsLong(HighlightedText),
     None,
 }
 
@@ -165,20 +167,6 @@ fn extract_action_args(text: &str, alias: &str) -> Option<(usize, Option<Box<str
     None
 }
 
-/// Get launcher items from a parent item.
-pub fn get_child_launch_items_from_parent(parent: &LaunchItem) -> Vec<LaunchItem> {
-    let mut items = Vec::with_capacity(parent.children.len() + 1);
-    items.push(launch_parent_to_item(parent));
-    items.extend(parent.children.clone());
-    items
-}
-
-pub fn launch_parent_to_item(parent: &LaunchItem) -> LaunchItem {
-    let mut item = parent.clone();
-    item.children = Box::from([]);
-    item
-}
-
 pub fn match_launch_item(item: LaunchItem, text: &str) -> Option<MatchedLaunchItem> {
     if text.is_empty() {
         return Some(MatchedLaunchItem {
@@ -223,7 +211,7 @@ fn score_launch_item(
     let mut name_indices = None;
     let mut keyword_indices = None;
     let mut details_indices = None;
-    let mut details_long_indices = None;
+    // let mut details_long_indices = None;
 
     if let Some((score, indices)) = score_text(&item.name, query)
         && score >= best_score
@@ -247,39 +235,17 @@ fn score_launch_item(
             best_score = details_score;
         }
     }
-    if let Some(dl) = item.details_long.as_ref()
-        && let Some((details_score, dt_indices)) = score_text(dl, query)
-    {
-        #[allow(clippy::cast_sign_loss, clippy::cast_precision_loss)]
-        let details_score = ((details_score as f64) * 0.7) as u64;
-        if details_score > best_score {
-            details_long_indices = Some(dt_indices);
-            best_score = details_score;
-        }
-    }
 
     (best_score > (MIN_SCORE_PER_CHAR * query.len()) as u64).then(|| MatchedLaunchItem {
-        highlight: match (
-            details_long_indices,
-            details_indices,
-            keyword_indices,
-            name_indices,
-        ) {
-            (Some(indices), _, _, _) => HighlightElement::DetailsLong(highlighted_text(
-                item.details_long
-                    .as_ref()
-                    .expect("must exist to match")
-                    .clone(),
-                &indices,
-            )),
-            (_, Some(indices), _, _) => {
+        highlight: match (details_indices, keyword_indices, name_indices) {
+            (Some(indices), _, _) => {
                 HighlightElement::Details(highlighted_text(item.details.clone(), &indices))
             }
-            (_, _, Some(indices), _) => HighlightElement::Keyword(highlighted_text(
+            (_, Some(indices), _) => HighlightElement::Keyword(highlighted_text(
                 keyword_name.expect("must be set"),
                 &indices,
             )),
-            (_, _, _, Some(indices)) => {
+            (_, _, Some(indices)) => {
                 HighlightElement::Name(highlighted_text(item.name.clone(), &indices))
             }
             _ => HighlightElement::None,

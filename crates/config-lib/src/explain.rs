@@ -38,7 +38,7 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
             let mut any_plugin = false;
             if let Some(_applications) = overview.launcher.plugins.applications.as_ref() {
                 any_plugin = true;
-                let _ = builder.write_str(&format!("\t- Start typing to search through applications (sorted by how often they were opened). Press {blue}return{reset} to launch the first app, use {blue}Ctrl{reset} + {blue}1{reset}/{blue}2{reset}/{blue}3{reset}/... to open the second, third, etc.\n"));
+                let _ = builder.write_str(&format!("\t- Start typing to search through applications (sorted by how often they were opened).\n\t\tPress {blue}return{reset} to launch the first app, use {blue}Ctrl{reset} + {blue}1{reset}/{blue}2{reset}/{blue}3{reset}/... to open the second, third, etc.\n"));
             }
             if overview.launcher.plugins.terminal.is_some() {
                 any_plugin = true;
@@ -127,12 +127,13 @@ mod tests {
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
     fn test_explain_with_overview_calc_0() {
-        const CONFIG: &str = r"Config is valid (/test/config.ron)
+        let out: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
 Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
 You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
 After opening the Overview the Launcher is available:
-	- Start typing to search through applications (sorted by how often they were opened). Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
+	- Start typing to search through applications (sorted by how often they were opened).
+		Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
 	- Press Ctrl + t to run the typed command in a terminal.
 	- Press Ctrl + <key> to search the typed text in any of the configured SearchEngines: Google, Wikipedia.
 	- Typing `=` followed by a mathematical expression will calculate it and display the result in the launcher.
@@ -153,18 +154,19 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
         });
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
-        assert_eq!(result, CONFIG);
+        assert_eq!(result, out);
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
     fn test_explain_with_overview_calc_1() {
-        const CONFIG: &str = r"Config is valid (/test/config.ron)
+        let out: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
 Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
 You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
 After opening the Overview the Launcher is available:
-	- Start typing to search through applications (sorted by how often they were opened). Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
+	- Start typing to search through applications (sorted by how often they were opened).
+		Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
 	- Press Ctrl + t to run the typed command in a terminal.
 	- Press Ctrl + <key> to search the typed text in any of the configured SearchEngines: Google, Wikipedia.
 	- Typing a mathematical expression will calculate it and display the result in the launcher.
@@ -183,13 +185,13 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             .calc = Some(CalcPluginConfig { prefix: None });
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
-        assert_eq!(result, CONFIG);
+        assert_eq!(result, out);
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
     fn test_explain_without_overview() {
-        const CONFIG: &str = r"Config is valid (/test/config.ron)
+        let out: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
 <Overview disabled>
 
@@ -203,18 +205,19 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             .overview = None;
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
-        assert_eq!(result, CONFIG);
+        assert_eq!(result, out);
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
     fn test_explain_without_switch() {
-        const CONFIG: &str = r"Config is valid (/test/config.ron)
+        let out: &str = r"Config is valid (/test/config.ron)
 Explanation (blue are keys, bold blue keys can be configured in config):
 Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
 You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
 After opening the Overview the Launcher is available:
-	- Start typing to search through applications (sorted by how often they were opened). Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
+	- Start typing to search through applications (sorted by how often they were opened).
+		Press return to launch the first app, use Ctrl + 1/2/3/... to open the second, third, etc.
 	- Press Ctrl + t to run the typed command in a terminal.
 	- Press Ctrl + <key> to search the typed text in any of the configured SearchEngines: Google, Wikipedia.
 	- Typing a mathematical expression will calculate it and display the result in the launcher.
@@ -231,13 +234,13 @@ After opening the Overview the Launcher is available:
             .switch = None;
         let path = PathBuf::from("/test/config.ron");
         let result = explain(&config, Some(&path), false);
-        assert_eq!(result, CONFIG);
+        assert_eq!(result, out);
     }
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
     fn test_explain_without_plugins() {
-        const CONFIG: &str = r"Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
+        let out: &str = r"Use Super + Super_L to open the Overview. Use tab and grave / shift + tab to select a different window, press return to switch
 You can also use the arrow keys or Ctrl + vim keys to navigate the workspaces. Use Esc to close the overview.
 After opening the Overview the Launcher is available:
 	<No plugins enabled in launcher>
@@ -263,6 +266,6 @@ Press Alt + tab and hold Alt to view recently used applications. Press tab and g
             actions: None,
         };
         let result = explain(&config, None, false);
-        assert_eq!(result, CONFIG);
+        assert_eq!(result, out);
     }
 }

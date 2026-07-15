@@ -1,8 +1,13 @@
-default:
-    @just --list --justfile {{ justfile() }}
+set default-list
+set minimum-version := "1.46.0"
 
+# Run all checks
 [group('security')]
-audit:
+all-checks: (check "1") (lint "0") (test "0") audit outdated shear bloat
+
+# Checking for vulnerabilities in dependencies with cargo audit.
+[group('security')]
+audit: (build "dev") # refresh Cargo.lock
     #!/usr/bin/env bash
     if ! command -v cargo-audit >/dev/null 2>&1; then
         echo "cargo-audit not found, installing..."
@@ -13,9 +18,10 @@ audit:
           cargo binstall cargo-outdated
         fi
     fi
-    echo "Checking for vulnerabilities with cargo audit..."
+    echo "Checking for vulnerabilities in dependencies with cargo audit..."
     cargo audit
 
+# Checking for outdated dependencies using cargo-outdated.
 [group('security')]
 outdated:
     #!/usr/bin/env bash
@@ -31,6 +37,7 @@ outdated:
     echo "Checking for outdated dependencies with cargo outdated..."
     cargo outdated
 
+# Checking for unused dependencies with cargo shear.
 [group('security')]
 shear:
     #!/usr/bin/env bash
@@ -46,6 +53,7 @@ shear:
     echo "Checking for unused dependencies with cargo shear..."
     cargo shear
 
+# Checking for bloat in binary with cargo bloat.
 [group('security')]
 bloat:
     #!/usr/bin/env bash
@@ -61,46 +69,57 @@ bloat:
     echo "Checking for bloat in binary with cargo bloat..."
     cargo bloat --release
 
-[group('checks')]
-check:
-    cargo run --package hyprshell-xtask -q -- cmd check -v
+_build-xtask:
+    cargo build --package hyprshell-xtask -q
 
+
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+xtask rebuild="0" *args="":
+    #!/usr/bin/env bash
+    if [ ! -x ./target/debug/hyprshell-xtask ] || [ "{{ rebuild }}" = "1" ]; then
+        cargo build --package hyprshell-xtask
+    fi
+    ./target/debug/hyprshell-xtask -v cmd {{ args }}
+
+# Run clippy on all workspace members, and optionally with --frozen.
+[group('checks')]
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+check rebuild="0": (xtask rebuild "check")
+
+# Run clippy with --fix on all workspace members, and optionally with --frozen. This will attempt to automatically fix any clippy warnings, but may not be able to fix all of them.
 [group('dev')]
-fix:
-    cargo run --package hyprshell-xtask -q -- cmd fix -v
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+fix rebuild="0": (xtask rebuild "fix")
 
+# Run formatting checks on all workspace members, and optionally with --frozen.
 [group('checks')]
-lint:
-    cargo run --package hyprshell-xtask -q -- cmd lint -v
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+lint rebuild="0": (xtask rebuild "lint")
 
+# Run tests on all workspace members, and optionally with --frozen. By default, tests are run with cargo nextest, but can be disabled with --no-nextest.
 [group('checks')]
-test:
-    cargo run --package hyprshell-xtask -q -- cmd test -v
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+test rebuild="0": (xtask rebuild "test")
 
+# Format all workspace members.
 [group('dev')]
-format:
-    cargo run --package hyprshell-xtask -q -- cmd format -v
+[group('xtask')]
+[arg("rebuild", long="rebuild", short = "r", value="1", help="Force rebuild of the xtask binary")]
+format rebuild="0": (xtask rebuild "format")
 
-# [group('checks')]
-# check-default-nix-features:
-#     nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L
+# Build the project with the specified profile.
+[group('dev')]
+[arg("profile", long="profile", short = "p", help="The rustc profile to use like 'dev' or 'release'")]
+build profile="dev" *args:
+    cargo build --profile {{ profile }} {{ args }}
 
-[group('run')]
-build profile="dev":
-    cargo build --profile {{ profile }}
-
-[group('run')]
-run profile="dev" *args="":
+# Run the hyprshell with the specified profile and pass any additional arguments. (just run -p release -- run -vv)
+[group('dev')]
+[arg("profile", long="profile", help="The rustc profile to use like 'dev' or 'release'")]
+run profile="dev" *args:
     cargo run --profile {{ profile }} -- {{ args }}
-
-[group('run')]
-run-run profile="dev" *args="-vv": (run profile "run" args)
-
-[group('run')]
-run-edit-config profile="dev" *args="-vv": (run profile "config edit" args)
-
-[group('run')]
-run-explain-config profile="dev" *args="-vv": (run profile "config explain" args)
-
-[group('run')]
-run-debug profile="dev" *args="": (run profile "debug" args)

@@ -4,8 +4,7 @@ use std::path::Path;
 use tracing::{debug, info, trace};
 
 use crate::WS;
-use crate::cmd::run_cargo_command;
-use crate::edit::edit_toml;
+use crate::cargo::run_cargo_command;
 use crate::load::{load_toml, write_toml};
 
 pub fn increment_versions(
@@ -15,8 +14,23 @@ pub fn increment_versions(
 ) -> anyhow::Result<()> {
     let path = member.path.join("Cargo.toml");
     info!("bumping version in {}", path.display());
-    edit_toml(&path, "package.version", &version.to_string(), dry_run)
-        .context(format!("Failed to edit {}", path.display()))?;
+    let mut main_cargo =
+        load_toml(&path).with_context(|| format!("Failed to load {}", path.display()))?;
+    main_cargo["package"]["version"] = version.to_string().into();
+    if dry_run {
+        info!(
+            "Dry run: would update package.version to {version} in {}. look at trace
+  logs for details",
+            path.display()
+        );
+        trace!(
+            "would write into {}: {}",
+            path.display(),
+            main_cargo.to_string()
+        );
+    } else {
+        write_toml(&path, &main_cargo).context(format!("Failed to write {}", path.display()))?;
+    }
     Ok(())
 }
 

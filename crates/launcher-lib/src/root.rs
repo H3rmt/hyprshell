@@ -1,4 +1,4 @@
-use crate::plugin::{LaunchItem, get_child_launch_items_from_parent, match_launch_item};
+use crate::plugin::{LaunchItem, match_launch_item};
 use crate::plugins;
 use crate::plugins_boxes::{
     LauncherPlugins, LauncherPluginsInit, LauncherPluginsInput, LauncherPluginsOutput,
@@ -332,9 +332,7 @@ impl LauncherRoot {
         let mut results = Vec::new();
         if !text.is_empty() || self.settings.show_when_empty {
             if let Some(parent) = self.data.active_parent.as_ref() {
-                for opt in get_child_launch_items_from_parent(parent) {
-                    results.push(opt);
-                }
+                results.extend(parent.children.clone());
             } else {
                 if !text.is_empty() {
                     for opt in plugins::get_input_driven_launch_items(&self.settings.plugins, text)

@@ -10,8 +10,7 @@ use tracing_subscriber::EnvFilter;
 use crate::load::load_toml;
 
 mod bundle;
-mod cmd;
-mod edit;
+mod cargo;
 mod licenses;
 mod load;
 mod pkgbuild;
@@ -301,8 +300,8 @@ fn main() -> anyhow::Result<()> {
                     args.push("--dry-run");
                 }
                 info!("Running cargo publish");
-                let out =
-                    cmd::run_cargo_command(&args, false).context("Failed to run cargo publish")?;
+                let out = cargo::run_cargo_command(&args, false)
+                    .context("Failed to run cargo publish")?;
                 if out != 0 {
                     anyhow::bail!("cargo publish failed with exit code {out}");
                 }
@@ -337,7 +336,7 @@ fn main() -> anyhow::Result<()> {
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 args.extend(["--", "--deny", "warnings"]);
                 info!("Running clippy");
-                let out = cmd::run_cargo_command(&args, false).context("Failed to run clippy")?;
+                let out = cargo::run_cargo_command(&args, false).context("Failed to run clippy")?;
                 info!("clippy finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("clippy failed with exit code {out}");
@@ -365,7 +364,7 @@ fn main() -> anyhow::Result<()> {
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running clippy fix");
                 let out =
-                    cmd::run_cargo_command(&args, false).context("Failed to run clippy fix")?;
+                    cargo::run_cargo_command(&args, false).context("Failed to run clippy fix")?;
                 info!("clippy fix finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("clippy fix failed with exit code {out}");
@@ -382,7 +381,7 @@ fn main() -> anyhow::Result<()> {
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 args.extend(["--", "--check"]);
                 info!("Running fmt check");
-                let out = cmd::run_cargo_command(&args, false).context("Failed to run fmt")?;
+                let out = cargo::run_cargo_command(&args, false).context("Failed to run fmt")?;
                 info!("fmt check finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("fmt failed with exit code {out}");
@@ -398,7 +397,7 @@ fn main() -> anyhow::Result<()> {
                 let mut args = vec!["fmt"];
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running fmt");
-                let out = cmd::run_cargo_command(&args, false).context("Failed to run fmt")?;
+                let out = cargo::run_cargo_command(&args, false).context("Failed to run fmt")?;
                 info!("fmt finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("fmt failed with exit code {out}");
@@ -428,7 +427,7 @@ fn main() -> anyhow::Result<()> {
                 args.extend(ws.iter().flat_map(|pkg| ["-p", pkg.name.as_str()]));
                 info!("Running test/nextest");
                 let out =
-                    cmd::run_cargo_command(&args, false).context("Failed to run test/nextest")?;
+                    cargo::run_cargo_command(&args, false).context("Failed to run test/nextest")?;
                 info!("test/nextest finished with exit code {out}");
                 if out != 0 {
                     anyhow::bail!("test/nextest failed with exit code {out}");

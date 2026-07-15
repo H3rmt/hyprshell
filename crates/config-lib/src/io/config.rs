@@ -36,7 +36,7 @@ pub struct Overview {
     pub launcher: Launcher,
     #[default = "Super_L"]
     pub key: Box<str>,
-    #[default = 430]
+    #[default = 410]
     pub top_offset: u16,
     #[default(Modifier::Super)]
     pub modifier: Modifier,

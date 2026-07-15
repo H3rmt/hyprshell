@@ -59,6 +59,9 @@ strip = "debuginfo"
 lto = true
 opt-level = 3
 
+[profile.dev]
+opt-level = 1
+
 [lints]
 workspace = true
 

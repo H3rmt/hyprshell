@@ -103,7 +103,7 @@ features = [
 default-features = false
 
 [dependencies.reqwest]
-version = "0.12.23"
+version = "0.13.4"
 optional = true
 
 [dependencies.tracker]

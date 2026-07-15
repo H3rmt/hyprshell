@@ -53,87 +53,91 @@ impl SimpleComponent for Step4 {
                 set_align: Align::Center,
                 set_justify: Justification::Center,
             },
-            #[local_ref]
-            list_box -> gtk::ListBox {
-                set_halign: Align::Center,
-                set_valign: Align::Start,
-                set_hexpand: true,
-                set_selection_mode: SelectionMode::Single,
-                set_css_classes: &["boxed-list", "generate-min-width"],
-                connect_row_activated[sender] => move |_, row| {
-                    if let Some(wdg) = row.downcast_ref::<adw::ActionRow>() {
-                        let title = wdg.title().to_string();
-                        trace!("press title: {title}");
-                        match &*title {
-                            "Disabled" => {
-                                sender.input(Step4Input::ISetData(None));
-                            }
-                            "Super" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Super, "Super_L".to_string()))));
-                            }
-                            "Super + Tab" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Super, "Tab".to_string()))));
-                            }
-                            "Ctrl" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Ctrl, "Ctrl_L".to_string()))));
-                            }
-                            "Ctrl + Tab" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Ctrl, "Tab".to_string()))));
-                            }
-                            "Alt" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Alt, "Alt_L".to_string()))));
-                            }
-                            "Alt + Tab" => {
-                                sender.input(Step4Input::ISetData(Some((ConfigModifier::Alt, "Tab".to_string()))));
-                            }
-                            _ => {}
-                        }
-                    }
-                },
-                adw::ActionRow {
-                    set_title: "Disabled",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Super",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Super + Tab",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Ctrl",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Ctrl + Tab",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Alt",
-                    set_activatable: true,
-                },
-                adw::ActionRow {
-                    set_title: "Alt + Tab",
-                    set_activatable: true,
-                },
-                #[local_ref]
-                button -> adw::ButtonRow {
-                    connect_activated[sender] => move |b| {
-                        trace!("Generate: step0_keyboard_button toggled");
-                        sender.input(Step4Input::OpenKeyboardShortcut(b.widget_ref().clone()));
-                    }
-                },
-            },
-            gtk::Picture {
-                set_file: Some(&gio::File::for_path(init.system_data_dir.join("04_switch.png"))),
-                set_css_classes: &["theme-image"],
-                set_vexpand: true,
-                set_hexpand: false,
-                set_valign: Align::Fill,
-                set_halign: Align::Center,
-            },
+            gtk::Box {
+              set_orientation: gtk::Orientation::Horizontal,
+              set_spacing: 20,
+              #[local_ref]
+              list_box -> gtk::ListBox {
+                  set_halign: Align::Center,
+                  set_valign: Align::Center,
+                  set_hexpand: true,
+                  set_selection_mode: SelectionMode::Single,
+                  set_css_classes: &["boxed-list", "generate-min-width"],
+                  connect_row_activated[sender] => move |_, row| {
+                      if let Some(wdg) = row.downcast_ref::<adw::ActionRow>() {
+                          let title = wdg.title().to_string();
+                          trace!("press title: {title}");
+                          match &*title {
+                              "Disabled" => {
+                                  sender.input(Step4Input::ISetData(None));
+                              }
+                              "Super" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Super, "Super_L".to_string()))));
+                              }
+                              "Super + Tab" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Super, "Tab".to_string()))));
+                              }
+                              "Ctrl" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Ctrl, "Ctrl_L".to_string()))));
+                              }
+                              "Ctrl + Tab" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Ctrl, "Tab".to_string()))));
+                              }
+                              "Alt" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Alt, "Alt_L".to_string()))));
+                              }
+                              "Alt + Tab" => {
+                                  sender.input(Step4Input::ISetData(Some((ConfigModifier::Alt, "Tab".to_string()))));
+                              }
+                              _ => {}
+                          }
+                      }
+                  },
+                  adw::ActionRow {
+                      set_title: "Disabled",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Super",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Super + Tab",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Ctrl",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Ctrl + Tab",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Alt",
+                      set_activatable: true,
+                  },
+                  adw::ActionRow {
+                      set_title: "Alt + Tab",
+                      set_activatable: true,
+                  },
+                  #[local_ref]
+                  button -> adw::ButtonRow {
+                      connect_activated[sender] => move |b| {
+                          trace!("Generate: step0_keyboard_button toggled");
+                          sender.input(Step4Input::OpenKeyboardShortcut(b.widget_ref().clone()));
+                      }
+                  },
+              },
+              gtk::Picture {
+                  set_file: Some(&gio::File::for_path(init.system_data_dir.join("04_switch.png"))),
+                  set_css_classes: &["theme-image"],
+                  set_vexpand: false,
+                  set_hexpand: false,
+                  set_valign: Align::Center,
+                  set_halign: Align::Fill,
+              },
+        },
             gtk::Label::new(Some("Shows windows in a list sorted by recently accessed. Navigate using tab.\nPlease use a different keyboard Shortcut than the Overview modifier")) {
                 set_css_classes: &["title-4"],
                 set_justify: Justification::Center,

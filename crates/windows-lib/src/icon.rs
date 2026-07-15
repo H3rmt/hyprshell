@@ -41,29 +41,43 @@ pub fn set_icon(class: &str, pid: i32, image: &Image) {
         warn!("Failed to read cmdline for PID {}", pid);
     }
 }
-
 // check if the icon is in theme and apply it
 fn load_icon_from_cache(name: &str, pic: &Image) -> Option<Box<Path>> {
     let name_lower = name.to_ascii_lowercase();
+    if let Some(workaround_name) = KNOWN_WORKAROUNDS
+        .iter()
+        .find(|(key, _)| *key == name_lower)
+        .map(|(_, value)| *value)
+    {
+        trace!("Found workaround for {name_lower}: {workaround_name}");
+        let icon_path = Path::new(workaround_name);
+        if icon_path.is_absolute() {
+            pic.set_from_file(Some(icon_path));
+        } else {
+            pic.set_icon_name(Some(workaround_name));
+        }
+        return Some(Box::from(icon_path));
+    }
 
-    if default::theme_has_icon_name(name) {
-        pic.set_icon_name(Some(name));
-        Some(Box::from(Path::new(name)))
-    } else if default::theme_has_icon_name(&name_lower) {
-        pic.set_icon_name(Some(&name_lower));
-        Some(Box::from(Path::new(&name_lower)))
+    // check if icon is in desktop file cache and apply it
+    if let Some((icon_path, path, source)) = get_icon_name_by_name_from_desktop_files(name) {
+        trace!(
+            "Found icon for {name} / {icon_path:?} in cache from source: {source:?} at {path:?}"
+        );
+        if icon_path.is_absolute() {
+            pic.set_from_file(Some(Path::new(&*icon_path)));
+        } else {
+            pic.set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));
+        }
+        Some(icon_path)
     } else {
-        // check if icon is in desktop file cache and apply it
-        if let Some((icon_path, path, source)) = get_icon_name_by_name_from_desktop_files(name) {
-            trace!(
-                "Found icon for {name} / {icon_path:?} in cache from source: {source:?} at {path:?}"
-            );
-            if icon_path.is_absolute() {
-                pic.set_from_file(Some(Path::new(&*icon_path)));
-            } else {
-                pic.set_icon_name(icon_path.file_name().and_then(|name| name.to_str()));
-            }
-            Some(icon_path)
+        trace!("Icon for {name} not found in desktop files, checking theme");
+        if default::theme_has_icon_name(name) {
+            pic.set_icon_name(Some(name));
+            Some(Box::from(Path::new(name)))
+        } else if default::theme_has_icon_name(&name_lower) {
+            pic.set_icon_name(Some(&name_lower));
+            Some(Box::from(Path::new(&name_lower)))
         } else {
             trace!("Icon for {name} not found in theme or cache, using `application-x-executable`");
             pic.set_icon_name(Some("application-x-executable"));
@@ -71,3 +85,9 @@ fn load_icon_from_cache(name: &str, pic: &Image) -> Option<Box<Path>> {
         }
     }
 }
+
+// If you encounter an app that doesn't get mapped properly, you can create a PR to add a workaround here.
+const KNOWN_WORKAROUNDS: &[(&str, &str)] = &[
+    // https://github.com/imputnet/helium-linux/pull/296
+    ("helium", "helium-browser"),
+];

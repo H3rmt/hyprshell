@@ -50,6 +50,7 @@ fn text_attributes(text: &HighlightedText, base: gtk::gdk::RGBA) -> gtk::pango::
 }
 
 #[allow(clippy::cast_sign_loss)]
+#[allow(unused)]
 fn markup_text(text: &HighlightedText, base: gtk::gdk::RGBA) -> String {
     let red = (base.red() * 255.0) as u8;
     let green = (base.green() * 255.0) as u8;
@@ -226,10 +227,10 @@ impl FactoryComponent for LauncherResults {
                 details_w.set_attributes(Some(&text_attributes(h, probe_w.color())));
                 details_s_w.set_attributes(Some(&text_attributes(h, probe_w.color())));
             }
-            HighlightElement::DetailsLong(ref h) => {
-                details_w.set_tooltip_markup(Some(&markup_text(h, probe_w.color())));
-                details_s_w.set_tooltip_markup(Some(&markup_text(h, probe_w.color())));
-            }
+            // HighlightElement::DetailsLong(ref h) => {
+            //     details_w.set_tooltip_markup(Some(&markup_text(h, probe_w.color())));
+            //     details_s_w.set_tooltip_markup(Some(&markup_text(h, probe_w.color())));
+            // }
             HighlightElement::None => {}
         }
 

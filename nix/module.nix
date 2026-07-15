@@ -80,7 +80,7 @@ in
         overview = {
           enable = lib.mkEnableOption "Enable overview";
           key = mkOpt "Key to open overview" str "Super_L";
-          top_offset = mkOpt "Top Offset" int 430;
+          top_offset = mkOpt "Top Offset" int 410;
           modifier = mkOpt "Modifier key" (enum [
             "alt"
             "ctrl"

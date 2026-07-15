@@ -590,6 +590,7 @@ mod tests {
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
+    #[allow(clippy::items_after_statements)]
     fn test_find_next_client_sequence() {
         fn current(idx: u64) -> Active {
             Active {
@@ -651,6 +652,7 @@ mod tests {
 
     #[test_log::test]
     #[test_log(default_log_filter = "trace")]
+    #[allow(clippy::items_after_statements)]
     fn test_find_next_client_grid() {
         fn current(idx: u64) -> Active {
             Active {
