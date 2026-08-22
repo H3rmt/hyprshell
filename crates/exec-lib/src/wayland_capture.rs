@@ -14,7 +14,7 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_buffer_params_v1;
 use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
 
-use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
 
 use core_lib::ClientId;
 use tracing::trace;
@@ -134,9 +134,9 @@ mod wl_impls {
     use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1;
     use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1::ExtImageCopyCaptureSessionV1;
     use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
-    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
-    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1;
-    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
+    use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+    use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1;
+    use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_window_mapping_handle_v1::HyprlandToplevelWindowMappingHandleV1;
 
     impl Dispatch<HyprlandToplevelWindowMappingHandleV1, ObjectId> for AppState {
         fn event(
@@ -157,7 +157,6 @@ mod wl_impls {
                     proxy.destroy();
                 }
                 hyprland_toplevel_window_mapping_handle_v1::Event::Failed => proxy.destroy(),
-                _ => {}
             }
         }
     }
@@ -843,8 +842,8 @@ mod empty_impls {
     use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_buffer_params_v1::ZwpLinuxBufferParamsV1;
     use wayland_protocols::wp::linux_dmabuf::zv1::client::zwp_linux_dmabuf_v1::ZwpLinuxDmabufV1;
     use wayland_protocols::wp::linux_dmabuf::zv1::client::{zwp_linux_buffer_params_v1, zwp_linux_dmabuf_v1};
-    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1;
-    use wayland_protocols_hyprland::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
+    use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1;
+    use crate::protocols::toplevel_mapping::v1::client::hyprland_toplevel_mapping_manager_v1::HyprlandToplevelMappingManagerV1;
 
     impl Dispatch<HyprlandToplevelMappingManagerV1, ()> for AppState {
         fn event(
