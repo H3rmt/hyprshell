@@ -1,5 +1,7 @@
 pub mod collect;
 pub mod listener;
+#[cfg(feature = "live_windows")]
+pub mod protocols;
 pub mod switch;
 mod util;
 #[cfg(feature = "live_windows")]
