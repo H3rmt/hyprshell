@@ -1,5 +1,5 @@
-use std::collections::{HashMap, VecDeque};
-use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
+use std::collections::HashMap;
+use std::os::fd::{AsFd, OwnedFd};
 
 pub use wayland_client::backend::ObjectId;
 use wayland_client::backend::WaylandError;
@@ -33,10 +33,10 @@ pub struct FrameStats {
 
 /// Result of a window capture via DMA-BUF.
 ///
-/// The file descriptor refers to a GBM buffer object and can be passed
-/// to `GdkDmabufTextureBuilder` for zero-copy GPU texture import.
-pub struct DmabufResult<'a> {
-    pub fd: BorrowedFd<'a>,
+/// The owned file descriptor is a duplicate of the GBM buffer fd and must be
+/// kept alive for as long as any texture imported from it is used.
+pub struct DmabufResult {
+    pub fd: OwnedFd,
     pub fourcc: u32,
     pub modifier: u64,
     pub width: u32,
@@ -51,9 +51,8 @@ pub struct WindowCapture {
     frame: Option<ExtImageCopyCaptureFrameV1>,
     buffer: WlBuffer,
     fd: OwnedFd,
-    dmabuf_bo: Option<gbm::BufferObject<()>>,
-    retired_bos: VecDeque<(gbm::BufferObject<()>, OwnedFd)>,
     fourcc: Option<u32>,
+    modifier: u64,
     width: u32,
     height: u32,
     stride: u32,
@@ -434,13 +433,12 @@ impl CaptureManager {
             .count()
     }
 
-    pub fn take_output(&self, index: &ObjectId) -> Result<DmabufResult<'_>> {
+    pub fn take_output(&self, index: &ObjectId) -> Result<DmabufResult> {
         let wc = &self.captures[index];
-        let bo = wc.dmabuf_bo.as_ref().ok_or("no dmabuf buffer object")?;
         Ok(DmabufResult {
-            fd: wc.fd.as_fd(),
+            fd: wc.fd.try_clone()?,
             fourcc: wc.fourcc.ok_or("no fourcc format")?,
-            modifier: bo.modifier().into(),
+            modifier: wc.modifier,
             width: wc.width,
             height: wc.height,
             stride: wc.stride,
@@ -699,15 +697,6 @@ impl CaptureManager {
             );
             let size = stride * height;
 
-            let (dmabuf_bo, fourcc, fd, buffer, stride, size) = (
-                Some(gbm_bo),
-                Some(*chosen_fmt),
-                dmabuf_fd,
-                buffer,
-                stride,
-                size,
-            );
-
             trace!("Capture allocated: {width}x{height}");
             window_captures.insert(
                 id,
@@ -715,10 +704,9 @@ impl CaptureManager {
                     session,
                     frame: None,
                     buffer,
-                    fd,
-                    dmabuf_bo,
-                    retired_bos: VecDeque::new(),
-                    fourcc,
+                    fd: dmabuf_fd,
+                    fourcc: Some(*chosen_fmt),
+                    modifier: mod_val,
                     width,
                     height,
                     stride,
@@ -810,17 +798,11 @@ impl CaptureManager {
             &self.event_queue.handle(),
             index.clone(),
         );
-        if let Some(old_bo) = wc.dmabuf_bo.take() {
-            let old_fd = std::mem::replace(&mut wc.fd, dmabuf_fd);
-            wc.retired_bos.push_back((old_bo, old_fd));
-            while wc.retired_bos.len() > 3 {
-                wc.retired_bos.pop_front();
-            }
-        }
 
-        wc.dmabuf_bo = Some(gbm_bo);
+        wc.fd = dmabuf_fd;
         wc.buffer = buffer;
         wc.fourcc = Some(*chosen_fmt);
+        wc.modifier = mod_val;
         wc.width = width;
         wc.height = height;
         wc.stride = stride;
