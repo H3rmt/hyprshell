@@ -16,11 +16,15 @@ use relm4::adw::glib::ControlFlow;
 use relm4::adw::prelude::*;
 use relm4::adw::{glib, gtk};
 use relm4::prelude::*;
+#[cfg(feature = "live_windows")]
+use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
-use tracing::{debug, error, trace, warn};
+#[cfg(feature = "live_windows")]
+use tracing::warn;
+use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
@@ -42,7 +46,11 @@ pub struct OverviewRoot {
     #[cfg(feature = "live_windows")]
     capture_manager: Option<CaptureManager>,
     #[cfg(feature = "live_windows")]
-    timer_handle: Option<glib::SourceId>,
+    timer_handle: Option<Rc<Cell<bool>>>,
+    #[cfg(feature = "live_windows")]
+    pending_hides: usize,
+    #[cfg(feature = "live_windows")]
+    pending_switch: Option<SwitchAction>,
     #[cfg(feature = "live_windows")]
     thumbnail_refresh_ms: u64,
     #[cfg(feature = "live_windows")]
@@ -62,6 +70,8 @@ pub enum OverviewRootInput {
     ReloadOverview,
     #[cfg(feature = "live_windows")]
     RefreshThumbnails,
+    #[cfg(feature = "live_windows")]
+    WindowHidden,
 }
 
 #[derive(Debug)]
@@ -129,6 +139,8 @@ impl SimpleComponent for OverviewRoot {
                         OverviewWindowOutput::ClickedC(cl) => {
                             OverviewRootInput::CloseOverviewClickC(cl)
                         }
+                        #[cfg(feature = "live_windows")]
+                        OverviewWindowOutput::Hidden => OverviewRootInput::WindowHidden,
                     });
                 windows.entry(monitor.id).insert_entry(overview_window);
             }
@@ -159,6 +171,10 @@ impl SimpleComponent for OverviewRoot {
             capture_manager: None,
             #[cfg(feature = "live_windows")]
             timer_handle: None,
+            #[cfg(feature = "live_windows")]
+            pending_hides: 0,
+            #[cfg(feature = "live_windows")]
+            pending_switch: None,
             #[cfg(feature = "live_windows")]
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
             #[cfg(feature = "live_windows")]
@@ -246,6 +262,13 @@ impl SimpleComponent for OverviewRoot {
             }
             #[cfg(feature = "live_windows")]
             OverviewRootInput::RefreshThumbnails => self.refresh_thumbnails(&sender),
+            #[cfg(feature = "live_windows")]
+            OverviewRootInput::WindowHidden => {
+                if self.pending_hides > 0 {
+                    self.pending_hides -= 1;
+                    self.check_pending_hides();
+                }
+            }
         }
     }
 }
@@ -270,6 +293,13 @@ impl OverviewRoot {
                 return;
             }
         };
+        // The overview is reopening: discard any still-pending deferred switch
+        // and reset the hide counter from the previous close.
+        #[cfg(feature = "live_windows")]
+        {
+            self.pending_hides = 0;
+            self.pending_switch = None;
+        }
         self.data = OverviewData {
             active,
             hypr_data: hypr_data.clone(),
@@ -281,20 +311,23 @@ impl OverviewRoot {
             self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
             let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(THUMBNAIL_BURST_MS),
-                move || {
-                    if sender
-                        .input_sender()
-                        .send(OverviewRootInput::RefreshThumbnails)
-                        .is_err()
-                    {
-                        warn!("Failed to send refresh thumbnails");
-                        return ControlFlow::Break;
-                    }
-                    ControlFlow::Continue
-                },
-            ));
+            let cancel = Rc::new(Cell::new(false));
+            self.timer_handle = Some(cancel.clone());
+            let _ = glib::timeout_add_local(Duration::from_millis(THUMBNAIL_BURST_MS), move || {
+                if cancel.get() {
+                    // overview was closed while the timer was pending
+                    return ControlFlow::Break;
+                }
+                if sender
+                    .input_sender()
+                    .send(OverviewRootInput::RefreshThumbnails)
+                    .is_err()
+                {
+                    warn!("Failed to send refresh thumbnails");
+                    return ControlFlow::Break;
+                }
+                ControlFlow::Continue
+            });
         }
     }
 
@@ -341,54 +374,129 @@ impl OverviewRoot {
         }
     }
 
+    /// Defer the client/workspace switch until after the overview windows have
+    /// been hidden. Without `live_windows` the windows are hidden synchronously
+    /// and an idle callback is enough.
+    #[cfg(not(feature = "live_windows"))]
+    #[allow(clippy::needless_pass_by_ref_mut, clippy::unused_self)]
+    fn defer_switch<F>(&mut self, f: F)
+    where
+        F: FnOnce() + 'static,
+    {
+        let mut f = Some(f);
+        let _ = glib::idle_add_local(move || {
+            if let Some(f) = f.take() {
+                f();
+            }
+            ControlFlow::Break
+        });
+    }
+
     fn close_overview(&mut self, do_switch: bool) {
         for window in self.windows.values() {
             window.emit(OverviewWindowInput::CloseOverview);
         }
 
-        if do_switch {
-            if let Some(id) = self.data.active.client {
-                debug!(
-                    "Switching to client {}",
-                    self.data
-                        .hypr_data
-                        .clients
-                        .iter()
-                        .find(|(cid, _)| *cid == id)
-                        .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
-                );
-                // Defer execution to ensure window is hidden first
-                glib::idle_add_local(move || {
-                    if let Err(e) = switch_client(id) {
-                        tracing::warn!("Failed to switch to client {id:?}: {e}");
-                    }
-                    ControlFlow::Break
-                });
+        #[cfg(feature = "live_windows")]
+        {
+            // Wait for every child window to report that it finished its
+            // after-paint hide before running the switch: the parent really
+            // waits for all windows instead of a fixed delay. If there are no
+            // windows the switch runs immediately.
+            self.pending_hides = self.windows.len();
+            self.pending_switch = if do_switch {
+                Some(self.resolve_switch_action())
             } else {
-                let id = self.data.active.workspace;
-                debug!(
-                    "Switching to workspace {}",
-                    self.data
-                        .hypr_data
-                        .workspaces
-                        .iter()
-                        .find(|(wid, _)| *wid == id)
-                        .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
-                );
-                glib::idle_add_local(move || {
-                    if let Err(e) = switch_workspace(id) {
-                        tracing::warn!("Failed to switch to workspace {id:?}: {e}");
-                    }
-                    ControlFlow::Break
-                });
+                None
+            };
+            self.check_pending_hides();
+        }
+        #[cfg(not(feature = "live_windows"))]
+        {
+            if do_switch {
+                if let Some(id) = self.data.active.client {
+                    debug!(
+                        "Switching to client {}",
+                        self.data
+                            .hypr_data
+                            .clients
+                            .iter()
+                            .find(|(cid, _)| *cid == id)
+                            .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
+                    );
+                    // Defer execution to ensure window is hidden first
+                    self.defer_switch(move || {
+                        if let Err(e) = switch_client(id) {
+                            tracing::warn!("Failed to switch to client {id:?}: {e}");
+                        }
+                    });
+                } else {
+                    let id = self.data.active.workspace;
+                    debug!(
+                        "Switching to workspace {}",
+                        self.data
+                            .hypr_data
+                            .workspaces
+                            .iter()
+                            .find(|(wid, _)| *wid == id)
+                            .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
+                    );
+                    self.defer_switch(move || {
+                        if let Err(e) = switch_workspace(id) {
+                            tracing::warn!("Failed to switch to workspace {id:?}: {e}");
+                        }
+                    });
+                }
             }
         }
         #[cfg(feature = "live_windows")]
         {
-            if let Some(handle) = self.timer_handle.take() {
-                handle.remove();
+            if let Some(cancel) = self.timer_handle.take() {
+                cancel.set(true);
             }
             self.capture_manager = None;
+        }
+    }
+
+    /// Resolve the client/workspace the switch action must activate.
+    #[cfg(feature = "live_windows")]
+    fn resolve_switch_action(&self) -> SwitchAction {
+        if let Some(id) = self.data.active.client {
+            debug!(
+                "Switching to client {}",
+                self.data
+                    .hypr_data
+                    .clients
+                    .iter()
+                    .find(|(cid, _)| *cid == id)
+                    .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
+            );
+            SwitchAction::Client(id)
+        } else {
+            let id = self.data.active.workspace;
+            debug!(
+                "Switching to workspace {}",
+                self.data
+                    .hypr_data
+                    .workspaces
+                    .iter()
+                    .find(|(wid, _)| *wid == id)
+                    .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
+            );
+            SwitchAction::Workspace(id)
+        }
+    }
+
+    /// Run the pending switch once every child window reported its hide. If
+    /// there are no windows to wait for, this runs immediately. Late
+    /// `WindowHidden` events arriving after a reopen are ignored because the
+    /// counter is reset to zero and the pending action to `None`.
+    #[cfg(feature = "live_windows")]
+    fn check_pending_hides(&mut self) {
+        if self.pending_hides == 0 {
+            if let Some(action) = self.pending_switch.take() {
+                action.run();
+            }
         }
     }
 
@@ -482,17 +590,23 @@ impl OverviewRoot {
         if self.thumbnail_burst && mgr.pending_count() == 0 {
             self.thumbnail_burst = false;
             // all initial thumbnails are loaded
-            // remove initial thumbnail burst timer
-            if let Some(h) = self.timer_handle.take() {
-                h.remove();
+            // cancel the initial thumbnail burst timer
+            if let Some(cancel) = self.timer_handle.take() {
+                cancel.set(true);
             }
             // start new slower timer if thumbnail_refresh_ms is set
             if self.thumbnail_refresh_ms != 0 {
                 trace!("Switching from thumbnail_burst refresh to slow refresh");
                 let sender = sender.clone();
-                self.timer_handle = Some(glib::timeout_add_local(
+                let cancel = Rc::new(Cell::new(false));
+                self.timer_handle = Some(cancel.clone());
+                let _ = glib::timeout_add_local(
                     Duration::from_millis(self.thumbnail_refresh_ms),
                     move || {
+                        if cancel.get() {
+                            // overview was closed while the timer was pending
+                            return ControlFlow::Break;
+                        }
                         if sender
                             .input_sender()
                             .send(OverviewRootInput::RefreshThumbnails)
@@ -503,7 +617,7 @@ impl OverviewRoot {
                         }
                         ControlFlow::Continue
                     },
-                ));
+                );
             } else {
                 trace!("All initial thumbnail captures loaded");
             }
@@ -535,6 +649,32 @@ impl Default for OverviewData {
                 monitor: -1,
             },
             hypr_data: HyprlandData::default(),
+        }
+    }
+}
+
+/// Switch to run once every overview window has finished its after-paint hide.
+#[cfg(feature = "live_windows")]
+#[derive(Debug)]
+enum SwitchAction {
+    Client(ClientId),
+    Workspace(WorkspaceId),
+}
+
+#[cfg(feature = "live_windows")]
+impl SwitchAction {
+    fn run(self) {
+        match self {
+            SwitchAction::Client(id) => {
+                if let Err(e) = switch_client(id) {
+                    tracing::warn!("Failed to switch to client {id:?}: {e}");
+                }
+            }
+            SwitchAction::Workspace(id) => {
+                if let Err(e) = switch_workspace(id) {
+                    tracing::warn!("Failed to switch to workspace {id:?}: {e}");
+                }
+            }
         }
     }
 }
