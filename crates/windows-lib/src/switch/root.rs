@@ -3,12 +3,14 @@ use crate::next::{find_next_client, find_next_workspace};
 #[cfg(feature = "live_windows")]
 use crate::shared::refresh_captures;
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
-use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
+use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, SWITCH_NAMESPACE, WorkspaceId};
 use exec_lib::switch::{switch_client, switch_workspace};
 #[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
 use regex::Regex;
+#[cfg(feature = "live_windows")]
+use relm4::adw::gdk;
 use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
@@ -16,6 +18,11 @@ use relm4::adw::prelude::*;
 use relm4::gtk::gdk::Key;
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
+#[cfg(feature = "live_windows")]
+use std::cell::Cell;
+use std::cell::RefCell;
+#[cfg(feature = "live_windows")]
+use std::rc::Rc;
 use std::time::Duration;
 use tracing::{debug, error, trace, warn};
 
@@ -47,7 +54,11 @@ pub struct SwitchRoot {
     #[cfg(feature = "live_windows")]
     capture_manager: Option<CaptureManager>,
     #[cfg(feature = "live_windows")]
-    timer_handle: Option<glib::SourceId>,
+    timer_handle: Option<Rc<Cell<bool>>>,
+    #[cfg(feature = "live_windows")]
+    after_paint_clock: Option<gdk::FrameClock>,
+    #[cfg(feature = "live_windows")]
+    after_paint_handler: Rc<RefCell<Option<glib::SignalHandlerId>>>,
     #[cfg(feature = "live_windows")]
     thumbnail_refresh_ms: u64,
     #[cfg(feature = "live_windows")]
@@ -152,6 +163,10 @@ impl SimpleComponent for SwitchRoot {
             capture_manager: None,
             #[cfg(feature = "live_windows")]
             timer_handle: None,
+            #[cfg(feature = "live_windows")]
+            after_paint_clock: None,
+            #[cfg(feature = "live_windows")]
+            after_paint_handler: Rc::new(RefCell::new(None)),
             #[cfg(feature = "live_windows")]
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
             #[cfg(feature = "live_windows")]
@@ -295,6 +310,13 @@ impl SwitchRoot {
             hypr_data: hypr_data.clone(),
         };
 
+        #[cfg(feature = "live_windows")]
+        if let Some(clock) = self.after_paint_clock.take() {
+            if let Some(id) = self.after_paint_handler.borrow_mut().take() {
+                clock.disconnect(id);
+            }
+        }
+
         trace!("Showing window {:?}", self.window.id());
         self.window.set_visible(true);
         self.window.grab_focus();
@@ -310,20 +332,23 @@ impl SwitchRoot {
             self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
             self.thumbnail_burst = true;
             let sender = sender.clone();
-            self.timer_handle = Some(glib::timeout_add_local(
-                Duration::from_millis(THUMBNAIL_BURST_MS),
-                move || {
-                    if sender
-                        .input_sender()
-                        .send(SwitchRootInput::RefreshThumbnails)
-                        .is_err()
-                    {
-                        warn!("Failed to send refresh thumbnails");
-                        return ControlFlow::Break;
-                    }
-                    ControlFlow::Continue
-                },
-            ));
+            let cancel = Rc::new(Cell::new(false));
+            self.timer_handle = Some(cancel.clone());
+            let _ = glib::timeout_add_local(Duration::from_millis(THUMBNAIL_BURST_MS), move || {
+                if cancel.get() {
+                    // switch was closed while the timer was pending
+                    return ControlFlow::Break;
+                }
+                if sender
+                    .input_sender()
+                    .send(SwitchRootInput::RefreshThumbnails)
+                    .is_err()
+                {
+                    warn!("Failed to send refresh thumbnails");
+                    return ControlFlow::Break;
+                }
+                ControlFlow::Continue
+            });
         }
     }
 
@@ -482,9 +507,9 @@ impl SwitchRoot {
 
     fn close_switch(&mut self, do_switch: bool) {
         trace!("Hiding window {:?}", self.window.id());
-        self.window.set_visible(false);
-
-        // Clear UI
+        // Clear UI first so the textures are released before the window is
+        // hidden, letting GSK render an empty frame and reclaim the GPU
+        // DMA-BUF images.
         {
             let mut lock = self.items.guard();
             lock.clear();
@@ -494,7 +519,11 @@ impl SwitchRoot {
             lock.clear();
         }
 
-        if do_switch {
+        // Resolve the switch target now, but only run it once the window is
+        // hidden so the still-visible layer surface doesn't steal focus. The
+        // target is stored in a `RefCell` because the after-paint handler
+        // takes `Fn` and must run the action at most once.
+        let switch_target = RefCell::new(if do_switch {
             if let Some(id) = self.data.active.client {
                 debug!(
                     "Switching to client {}",
@@ -505,13 +534,7 @@ impl SwitchRoot {
                         .find(|(cid, _)| *cid == id)
                         .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
                 );
-                // Defer execution to ensure window is hidden first
-                glib::idle_add_local(move || {
-                    if let Err(e) = switch_client(id) {
-                        warn!("Failed to switch to client {id:?}: {e}");
-                    }
-                    ControlFlow::Break
-                });
+                Some(SwitchAction::Client(id))
             } else {
                 let id = self.data.active.workspace;
                 debug!(
@@ -521,22 +544,62 @@ impl SwitchRoot {
                         .workspaces
                         .iter()
                         .find(|(wid, _)| *wid == id)
-                        .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
+                        .map_or_else(|| id.to_string(), |(_, w)| w.name.clone())
                 );
-                glib::idle_add_local(move || {
-                    if let Err(e) = switch_workspace(id) {
-                        tracing::warn!("Failed to switch to workspace {id:?}: {e}");
-                    }
-                    ControlFlow::Break
-                });
+                Some(SwitchAction::Workspace(id))
             }
-        }
+        } else {
+            None
+        });
+
         #[cfg(feature = "live_windows")]
         {
-            if let Some(handle) = self.timer_handle.take() {
-                handle.remove();
+            if let Some(cancel) = self.timer_handle.take() {
+                cancel.set(true);
             }
             self.capture_manager = None;
+
+            if let Some(clock) = self.window.frame_clock() {
+                // Keep the window visible until one empty frame has been
+                // rendered after the textures were cleared, then hide it and
+                // run the switch. The `after-paint` frame clock signal fires
+                // once the frame is drawn, so no fixed delay is needed.
+                self.after_paint_clock = Some(clock.clone());
+                let handler = self.after_paint_handler.clone();
+                let window = self.window.downgrade();
+                let id = clock.connect_after_paint(move |clock| {
+                    // Disconnect exactly once before hiding so the handler
+                    // never runs again.
+                    if let Some(id) = handler.borrow_mut().take() {
+                        clock.disconnect(id);
+                    }
+                    if let Some(window) = window.upgrade() {
+                        window.set_visible(false);
+                    }
+                    if let Some(action) = switch_target.borrow_mut().take() {
+                        action.run();
+                    }
+                });
+                *self.after_paint_handler.borrow_mut() = Some(id);
+                self.window.queue_draw();
+            } else {
+                // No frame clock available: hide directly instead of waiting.
+                self.window.set_visible(false);
+                if let Some(action) = switch_target.borrow_mut().take() {
+                    action.run();
+                }
+            }
+        }
+        #[cfg(not(feature = "live_windows"))]
+        {
+            self.window.set_visible(false);
+            // Defer execution to ensure window is hidden first
+            glib::idle_add_local(move || {
+                if let Some(action) = switch_target.borrow_mut().take() {
+                    action.run();
+                }
+                ControlFlow::Break
+            });
         }
     }
 
@@ -655,17 +718,23 @@ impl SwitchRoot {
         if self.thumbnail_burst && mgr.pending_count() == 0 {
             self.thumbnail_burst = false;
             // all initial thumbnails are loaded
-            // remove initial thumbnail burst timer
-            if let Some(h) = self.timer_handle.take() {
-                h.remove();
+            // cancel the initial thumbnail burst timer
+            if let Some(cancel) = self.timer_handle.take() {
+                cancel.set(true);
             }
             // start new slower timer if thumbnail_refresh_ms is set
             if self.thumbnail_refresh_ms != 0 {
                 trace!("Switching from thumbnail_burst refresh to slow refresh");
                 let sender = sender.clone();
-                self.timer_handle = Some(glib::timeout_add_local(
+                let cancel = Rc::new(Cell::new(false));
+                self.timer_handle = Some(cancel.clone());
+                let _ = glib::timeout_add_local(
                     Duration::from_millis(self.thumbnail_refresh_ms),
                     move || {
+                        if cancel.get() {
+                            // switch was closed while the timer was pending
+                            return ControlFlow::Break;
+                        }
                         if sender
                             .input_sender()
                             .send(SwitchRootInput::RefreshThumbnails)
@@ -676,7 +745,7 @@ impl SwitchRoot {
                         }
                         ControlFlow::Continue
                     },
-                ));
+                );
             } else {
                 trace!("All initial thumbnail captures loaded");
             }
@@ -698,6 +767,28 @@ impl SwitchRoot {
                         idx,
                         crate::switch::clients::ClientsInput::UpdateThumbnail(texture),
                     );
+                }
+            }
+        }
+    }
+}
+
+enum SwitchAction {
+    Client(ClientId),
+    Workspace(WorkspaceId),
+}
+
+impl SwitchAction {
+    fn run(self) {
+        match self {
+            SwitchAction::Client(id) => {
+                if let Err(e) = switch_client(id) {
+                    warn!("Failed to switch to client {id:?}: {e}");
+                }
+            }
+            SwitchAction::Workspace(id) => {
+                if let Err(e) = switch_workspace(id) {
+                    warn!("Failed to switch to workspace {id:?}: {e}");
                 }
             }
         }
