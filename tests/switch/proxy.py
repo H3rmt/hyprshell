@@ -14,6 +14,8 @@ class Proxy:
         self.stall = threading.Event()
         self.unsupported = threading.Event()
         self.malformed = threading.Event()
+        self.fail_data = threading.Event()
+        self.data_failed = threading.Event()
         self.queries = 0
         self.seen = threading.Event()
         self.stopped = threading.Event()
@@ -50,7 +52,11 @@ class Proxy:
         is_query = data.startswith(b"/repl ") and b"is_key_down" in data
         if is_query:
             self.queries += 1
-        if is_query and self.malformed.is_set():
+        if data.startswith(b"j/monitors") and self.fail_data.is_set():
+            self.fail_data.clear()
+            client.sendall(b"injected malformed monitor response")
+            self.data_failed.set()
+        elif is_query and self.malformed.is_set():
             client.sendall(b"ok")
         elif is_query and self.unsupported.is_set():
             client.sendall(b"unknown request")

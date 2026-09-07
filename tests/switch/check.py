@@ -202,6 +202,45 @@ def receipts(s):
     s.expect(order[1], "all issued navigation arrives before commit, even out of order")
 
 
+def data_failure(s):
+    side = SIDES[s.modifier][0]
+    original = s.active()
+    for failure in range(2):
+        s.proxy.data_failed.clear()
+        s.proxy.fail_data.set()
+        s.key(side, 1)
+        s.tap(s.keycode)
+        assert s.proxy.data_failed.wait(1), "No window-data request to fail"
+        wait(
+            lambda failure=failure: (
+                (s.output / "daemon.log").read_text().count("Failed to collect data")
+                == failure + 1
+            ),
+            "Failed open was not processed",
+        )
+        s.key(side, 0)
+        time.sleep(0.2)
+        assert not s.visible() and s.active() == original, (
+            "Failed open changed focus or left the overlay visible"
+        )
+        queries = s.proxy.queries
+        time.sleep(0.15)
+        assert s.proxy.queries == queries, "Failed open kept polling"
+    expected = s.order()[1]
+    s.key(side, 1)
+    s.key(s.keycode, 1)
+    time.sleep(0.01)
+    s.key(side, 0)
+    s.key(s.keycode, 0)
+    s.expect(expected, "quick chord after failed data reads selects recent window")
+    assert (
+        s.raw(
+            "repl", "return tostring(next(_G.__hyprshell_key_time.pending) == nil)"
+        ).strip()
+        == "true"
+    ), "Failed opens left unacknowledged receipts"
+
+
 def reload_selection(s):
     original = s.active()
     old_time = int(time.monotonic() * 1000) & 0xFFFFFFFF
@@ -330,6 +369,7 @@ if __name__ == "__main__":
             "timing",
             "faults",
             "receipts",
+            "data-failure",
             "reload",
             "all",
         ),
@@ -368,6 +408,8 @@ if __name__ == "__main__":
             ordering(s)
         if args.case in ("receipts", "all"):
             receipts(s)
+        if args.case in ("data-failure", "all"):
+            data_failure(s)
         if args.case in ("reload", "all"):
             reload_selection(s)
         if args.case in ("timing", "all"):

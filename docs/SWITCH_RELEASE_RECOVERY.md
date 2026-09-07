@@ -28,6 +28,11 @@ pending entries at or before its timestamp. A failed command delivery can leave
 an entry pending; Escape cancels it. We intentionally do not expire a pending
 navigation into a potentially wrong focus change.
 
+If an open arrives but collecting its initial window data fails, the selection
+closes without changing focus or polling. Its received IDs stay queued for
+acknowledgement by the next selection's query. A temporary data-read failure
+therefore cannot leave an orphan receipt that blocks later healthy chords.
+
 Escape records its original keyboard timestamp and cancels without focusing a
 selection. A timestamped open at or before that cancellation is stale, using
 wrapping 32-bit event-time comparison. A newer timestamped open is accepted,

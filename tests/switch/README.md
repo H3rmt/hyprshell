@@ -36,6 +36,11 @@ combination of `--modifier alt|ctrl|super` and `--workspaces` (omit for windows)
 `--key F6` exercises a configured switch key. Set `HYPRSHELL_EXPERIMENTAL=1` to
 exercise live thumbnails in a build with the `live_windows` feature.
 
+`--case data-failure` injects two failed initial window-data reads, then checks
+that the next quick chord selects the recent window and hides the overlay without
+Escape. It also checks that failed opens stop polling and that the successful
+retry acknowledges all delivered Lua open IDs. This case is included in `all`.
+
 `--legacy --case basic` requires a compositor which actually accepts legacy
 configuration files. The harness checks configuration errors before starting the
 daemon. A current Lua-only compositor cannot validate this path. Injecting an

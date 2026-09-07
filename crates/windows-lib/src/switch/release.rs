@@ -46,9 +46,10 @@ impl ReleaseState {
         self.release_event = self.open;
     }
 
-    pub fn close(&mut self) {
+    pub const fn close(&mut self) {
         self.open = false;
-        self.received.clear();
+        // A failed initial data read closes before querying. Retain its
+        // delivered receipts so the next selection can acknowledge them.
         self.release_event = false;
         self.invalidate();
     }
@@ -56,6 +57,7 @@ impl ReleaseState {
     pub fn cancel(&mut self, time: u32) {
         self.cancelled_at = Some(time);
         self.close();
+        self.received.clear();
     }
 
     pub const fn invalidate(&mut self) {
@@ -104,6 +106,7 @@ impl ReleaseState {
                 Outcome::Held
             }
             Ok(Some(_)) => {
+                self.received.clear();
                 self.error_reported = false;
                 self.close();
                 Outcome::Commit
@@ -233,6 +236,45 @@ mod tests {
                 }))
             ),
             Outcome::Commit
+        );
+    }
+
+    #[test]
+    fn failed_open_receipts_are_acknowledged_on_retry() {
+        let mut state = ReleaseState::default();
+        let mut pending = Vec::new();
+        // Delivered opens can fail to collect window data before any query.
+        for id in 1..=2 {
+            pending.push(id);
+            state.open(None);
+            state.received.push(id);
+            state.close();
+            assert!(
+                state.request(false).is_none(),
+                "no idle polling after failure"
+            );
+        }
+        pending.push(3);
+        state.open(None);
+        state.received.push(3);
+        let id = state.request(true).expect("healthy retry");
+        // The compositor removes only the receipts included in this query.
+        pending.retain(|id| !state.received.contains(id));
+        assert_eq!(
+            state.result(
+                id,
+                Ok(Some(ModifierState {
+                    pressed: false,
+                    pending_opens: !pending.is_empty(),
+                })),
+            ),
+            Outcome::Commit,
+            "failed opens must not keep a later healthy selection open"
+        );
+        assert!(!state.open);
+        assert!(
+            state.received.is_empty(),
+            "successful query acknowledged all receipts"
         );
     }
 
