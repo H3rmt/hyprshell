@@ -59,5 +59,7 @@ rec {
     }
   );
 
-  commonArgsFull = (commonArgs // { inherit postInstall cargoArtifacts; });
+  commonArgsFull = commonArgs // {
+    inherit postInstall cargoArtifacts;
+  };
 }

@@ -1,6 +1,7 @@
 /// Demostrats using hyprland-rs to listen for events
 /// Usage: cargo run --example events
 use hyprland::event_listener::EventListener;
+use hyprshell_hyprland as hyprland;
 
 fn main() -> hyprland::Result<()> {
     // Create a event listener

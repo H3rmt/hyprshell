@@ -113,7 +113,7 @@ in
               };
               calc = {
                 enable = mkOpt "Enable calculator" bool true;
-                prefix = mkOpt "Input Prefix" (nullOr (str)) null;
+                prefix = mkOpt "Input Prefix" (nullOr str) null;
               };
               shell = {
                 enable = mkOpt "Run in Shell" bool false;

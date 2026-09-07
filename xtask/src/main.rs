@@ -11,6 +11,7 @@ use crate::load::load_toml;
 
 mod bundle;
 mod cargo;
+#[cfg(feature = "licenses")]
 mod licenses;
 mod load;
 mod pkgbuild;
@@ -89,6 +90,7 @@ pub enum Release {
         email: Option<String>,
     },
 
+    #[cfg(feature = "licenses")]
     Licenses {
         /// List of allowed licenses [default: CC0-1.0, Apache-2.0, Apache-2.0 WITH LLVM-exception, MIT, ISC, BSD-3-Clause, Zlib, Unicode-3.0, MPL-2.0, LGPL-3.0-only, GPL-3.0-or-later]
         #[arg(
@@ -306,6 +308,7 @@ fn main() -> anyhow::Result<()> {
                     anyhow::bail!("cargo publish failed with exit code {out}");
                 }
             }
+            #[cfg(feature = "licenses")]
             Release::Licenses { licenses, out } => {
                 let gen_ =
                     licenses::gen_licenses(&licenses).context("Failed to generate licenses")?;

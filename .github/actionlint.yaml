@@ -1,0 +1,6 @@
+# GitHub's hosted Ubuntu 26.04 preview is not yet in actionlint 1.7.12's labels.
+# https://github.blog/changelog/2026-06-11-new-runner-images-in-public-preview/
+# actionlint uses this setting for additional accepted labels, including previews.
+self-hosted-runner:
+  labels:
+    - ubuntu-26.04

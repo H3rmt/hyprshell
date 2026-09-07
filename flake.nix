@@ -28,9 +28,7 @@
         {
           formatter = pkgs.nixfmt-tree;
           packages = rec {
-            hyprshell = craneLib.buildPackage (
-              buildLib.commonArgsFull
-            );
+            hyprshell = craneLib.buildPackage buildLib.commonArgsFull;
             hyprshell-nixpkgs = hyprshell;
             hyprshell-slim = craneLib.buildPackage (
               buildLib.commonArgsFull
@@ -42,8 +40,7 @@
             default = hyprshell;
           };
           devShells.default = craneLib.devShell {
-            checks = self'.checks;
-            stdenv = buildLib.stdenv;
+            inherit (self') checks;
             packages = [
               pkgs.rust-analyzer
             ];
