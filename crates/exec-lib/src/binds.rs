@@ -85,12 +85,28 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
         })
         .collect();
 
+    // The event bus runs before key bindings. Capture the original keyboard
+    // timestamp here, not in the independently scheduled IPC subprocess.
+    if bind.timestamped {
+        hyprland::EvalRaw::new(
+            r#"
+            if not _G.__hyprshell_key_time then
+                _G.__hyprshell_key_time = { time = 0, serial = 0, pending = {} }
+                hl.on("input.keyboard.key", function(_, time, _)
+                    _G.__hyprshell_key_time.time = time
+                end)
+            end
+        "#,
+        )
+        .eval()?;
+    }
     let binding = Binding {
         mods: binds,
         key: bind.key.to_string(),
         flags: if bind.release {
             vec![
                 Flag::Release,
+                Flag::IgnoreMods,
                 Flag::Transparent,
                 Flag::AutoConsuming,
                 Flag::Description(bind.desc.clone()),
@@ -102,7 +118,22 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
                 Flag::Description(bind.desc.clone()),
             ]
         },
-        dispatcher: Dispatch::ExecCmd(bind.exec.clone(), None),
+        dispatcher: if bind.timestamped {
+            Dispatch::Unimplemented(format!(
+                r"function()
+                    local state = _G.__hyprshell_key_time
+                    state.serial = (state.serial or 0) + 1
+                    state.pending = state.pending or {{}}
+                    if type(hl.is_key_down) == 'function' then
+                        state.pending[state.serial] = state.time
+                    end
+                    hl.exec_cmd({} .. ' --event-time ' .. tostring(state.time) .. ' --event-id ' .. tostring(state.serial))
+                end",
+                hyprland::format_string(&bind.exec),
+            ))
+        } else {
+            Dispatch::ExecCmd(bind.exec.clone(), None)
+        },
     };
     trace!("binding exec: {binding:?}");
     binding.unbind()?;
@@ -129,7 +160,7 @@ pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
         mods: mods.as_slice(),
         key: binds::Key::Key(&bind.key),
         flags: if bind.release {
-            &[binds::Flag::r, binds::Flag::t]
+            &[binds::Flag::r, binds::Flag::t, binds::Flag::i]
         } else {
             &[binds::Flag::e]
         },

@@ -255,3 +255,15 @@ fn deactivate_special_workspace_if_needed_legacy(name: &str) -> anyhow::Result<(
     )))?;
     Ok(())
 }
+
+pub use hyprland::ctl::ModifierState;
+
+/// Acknowledge received opens and check both modifier sides atomically.
+pub async fn switch_modifier_pressed(
+    left: &str,
+    right: &str,
+    received: &[u64],
+    cancelled_at: Option<u32>,
+) -> anyhow::Result<Option<ModifierState>> {
+    Ok(hyprland::ctl::modifier_is_down(left, right, received, cancelled_at).await?)
+}
