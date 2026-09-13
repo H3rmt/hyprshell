@@ -5,6 +5,86 @@ use crate::default_instance;
 use crate::instance::Instance;
 use crate::shared::*;
 
+/// Atomic modifier state and whether a Lua switch open is still in transit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModifierState {
+    /// Whether either physical modifier side is held.
+    pub pressed: bool,
+    /// A Lua binding issued an open that the component has not received yet.
+    pub pending_opens: bool,
+}
+
+/// Read both modifier keys in one nonblocking compositor request.
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
+pub async fn modifier_is_down(
+    left: &str,
+    right: &str,
+    received: &[u64],
+    cancelled_at: Option<u32>,
+) -> crate::Result<Option<ModifierState>> {
+    modifier_is_down_for(default_instance()?, left, right, received, cancelled_at).await
+}
+
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
+async fn modifier_is_down_for(
+    instance: &Instance,
+    left: &str,
+    right: &str,
+    received: &[u64],
+    cancelled_at: Option<u32>,
+) -> crate::Result<Option<ModifierState>> {
+    let received = received
+        .iter()
+        .map(u64::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+    let cancelled = cancelled_at.map_or_else(|| "nil".to_string(), |time| time.to_string());
+    let response = instance
+        .write_to_socket_async(command!(
+            Empty,
+            r#"repl if type(hl.is_key_down) ~= "function" then return "unsupported" end
+                local pending = (_G.__hyprshell_key_time or {{}}).pending or {{}}
+                for _, id in ipairs({{{received}}}) do pending[id] = nil end
+                local cancelled = {cancelled}
+                if cancelled then
+                    for id, time in pairs(pending) do
+                        local delta = (time - cancelled) % 4294967296
+                        if delta == 0 or delta >= 2147483648 then pending[id] = nil end
+                    end
+                end
+                local pressed = hl.is_key_down({left:?}) or hl.is_key_down({right:?})
+                return tostring(pressed) .. ";" .. tostring(next(pending) ~= nil)
+            "#
+        ))
+        .await?;
+    let text = response.trim();
+    if matches!(
+        text,
+        "unsupported" | "unknown request" | "eval is only supported with the lua config manager"
+    ) {
+        return Ok(None);
+    }
+    let parsed = text.split_once(';').and_then(|(pressed, pending)| {
+        let pressed = match pressed {
+            "true" => true,
+            "false" => false,
+            _ => return None,
+        };
+        let pending_opens = match pending {
+            "true" => true,
+            "false" => false,
+            _ => return None,
+        };
+        Some(ModifierState {
+            pressed,
+            pending_opens,
+        })
+    });
+    parsed
+        .map(Some)
+        .ok_or(crate::error::HyprError::NotOkDispatch(response))
+}
+
 /// Reload hyprland config
 pub mod reload {
     use super::*;
@@ -790,5 +870,78 @@ pub mod instance {
             pid,
             wl_socket,
         })
+    }
+}
+
+#[cfg(all(test, feature = "async-lite", not(feature = "tokio")))]
+mod modifier_tests {
+    use super::*;
+    use std::io::{Read, Write};
+    use std::os::unix::net::UnixListener;
+
+    #[test]
+    fn atomic_query_and_split_response_framing() {
+        let directory =
+            std::env::temp_dir().join(format!("hyprshell-modifier-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).expect("socket directory");
+        for (response, expected) in [
+            (
+                "true;true",
+                Some(Some(ModifierState {
+                    pressed: true,
+                    pending_opens: true,
+                })),
+            ),
+            (
+                "false;false\n",
+                Some(Some(ModifierState {
+                    pressed: false,
+                    pending_opens: false,
+                })),
+            ),
+            ("unsupported", Some(None)),
+            ("unknown request", Some(None)),
+            (
+                "eval is only supported with the lua config manager",
+                Some(None),
+            ),
+            ("ok", None),
+            ("false", None),
+            ("false;wat", None),
+            ("false;false;false", None),
+            ("false true", None),
+            ("", None),
+        ] {
+            let path = directory.join(".socket.sock");
+            let listener = UnixListener::bind(&path).expect("listener");
+            let server = std::thread::spawn(move || {
+                let (mut stream, _) = listener.accept().expect("client");
+                let mut bytes = [0; 4096];
+                let size = stream.read(&mut bytes).expect("request");
+                let request = std::str::from_utf8(&bytes[..size]).expect("UTF-8");
+                assert!(
+                    request.starts_with("/repl "),
+                    "eval acknowledgement is not state"
+                );
+                assert!(request.contains("hl.is_key_down(\"Alt_L\") or hl.is_key_down(\"Alt_R\")"));
+                assert!(request.contains("ipairs({1,3})"));
+                assert!(request.contains("local cancelled = 100"));
+                for byte in response.as_bytes() {
+                    stream.write_all(&[*byte]).expect("fragment");
+                }
+            });
+            let instance = Instance::from_base_socket_path(directory.clone()).expect("instance");
+            let result = futures_lite::future::block_on(modifier_is_down_for(
+                &instance,
+                "Alt_L",
+                "Alt_R",
+                &[1, 3],
+                Some(100),
+            ));
+            assert_eq!(result.ok(), expected);
+            server.join().expect("server");
+            std::fs::remove_file(path).expect("socket cleanup");
+        }
+        std::fs::remove_dir(directory).expect("directory cleanup");
     }
 }

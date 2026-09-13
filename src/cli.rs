@@ -77,6 +77,12 @@ pub enum Command {
     Socat {
         /// JSON to send to the socket
         json: String,
+        /// Timestamp supplied by the compositor before spawning this process.
+        #[arg(long)]
+        event_time: Option<u32>,
+        /// Identity supplied by the Lua binding for acknowledgement.
+        #[arg(long)]
+        event_id: Option<u64>,
     },
 
     /// Generate completions for shells
