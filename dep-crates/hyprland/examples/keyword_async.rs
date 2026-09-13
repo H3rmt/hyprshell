@@ -4,6 +4,7 @@
 /// Example: cargo run --example keyword_async decoration:rounding (prints value)
 /// Example: cargo run --example keyword_async decoration:rounding  15 (sets value)
 use hyprland::keyword::Keyword;
+use hyprshell_hyprland as hyprland;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {

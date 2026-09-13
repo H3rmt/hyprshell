@@ -75,7 +75,6 @@ fn main() -> anyhow::Result<()> {
         .global_opts
         .config_file
         .unwrap_or_else(get_default_config_file);
-    #[cfg(feature = "gui_settings_editor")]
     let system_data_dir = cli
         .global_opts
         .system_data_dir
