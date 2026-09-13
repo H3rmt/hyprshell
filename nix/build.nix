@@ -27,7 +27,7 @@ rec {
     ];
 
     buildInputs = [
-      pkgs.gkt
+      pkgs.gtk4
       pkgs.libadwaita
       pkgs.gtk4-layer-shell
       pkgs.libnotify
@@ -41,9 +41,10 @@ rec {
     # Icon
     install -Dm644 packaging/hyprshell-settings.png $out/share/pixmaps/hyprshell-settings.png
 
-    # Extract runtime data
+    # Copy runtime data
     mkdir -p $out/share/hyprshell
-    tar -xf packaging/usr-share.tar -C $out/share/hyprshell
+    cp -r packaging/share/. $out/share/hyprshell/
+
   '';
 
   cargoArtifacts = craneLib.buildDepsOnly (

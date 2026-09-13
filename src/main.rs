@@ -75,10 +75,6 @@ fn main() -> anyhow::Result<()> {
         .global_opts
         .config_file
         .unwrap_or_else(get_default_config_file);
-    let system_data_dir = cli
-        .global_opts
-        .system_data_dir
-        .unwrap_or_else(core_lib::path::get_default_system_data_dir);
 
     match cli.command {
         cli::Command::Run {} => {
@@ -189,13 +185,7 @@ fn main() -> anyhow::Result<()> {
                     }
                 },
                 cli::DebugCommand::Info {} => {
-                    debug::info(
-                        &data_dir,
-                        &cache_dir,
-                        &css_file,
-                        &config_file,
-                        &system_data_dir,
-                    );
+                    debug::info(&data_dir, &cache_dir, &css_file, &config_file);
                 }
             }
         }

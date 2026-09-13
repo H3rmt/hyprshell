@@ -92,6 +92,7 @@
     kitty
     nautilus
     tmux
+    adwaita-icon-theme  # without this there are icons missing
   ];
 
   nix.settings.download-buffer-size = 5368709120;
