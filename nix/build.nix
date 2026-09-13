@@ -3,6 +3,15 @@
   pkgs,
 }:
 rec {
+  # Vendored wayland protocol XML files must be kept in the cargo source
+  # tree since they are read at build time by wayland-scanner.
+  src = pkgs.lib.cleanSourceWith {
+    src = ../.;
+    filter = path: type:
+      (craneLib.filterCargoSources path type)
+      || (type == "regular" && pkgs.lib.hasSuffix ".xml" path);
+  };
+
   commonArgs = {
     pname = "hyprshell";
     src = ../.;
@@ -50,7 +59,7 @@ rec {
   cargoArtifacts = craneLib.buildDepsOnly (
     commonArgs
     // {
-      src = craneLib.cleanCargoSource ../.;
+      inherit src;
     }
   );
 
