@@ -44,6 +44,7 @@ pub struct GlobalOpts {
     #[arg(long, global = true)]
     pub cache_dir: Option<PathBuf>,
 
+    /// TODO no longer used, replaced by XDG_DATA_DIRS
     /// Path to system data directory [default: `/usr/share/hyprshell`]
     #[arg(long, global = true)]
     pub system_data_dir: Option<PathBuf>,

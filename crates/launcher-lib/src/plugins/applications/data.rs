@@ -3,6 +3,7 @@ use chrono::{DateTime, Datelike, Utc};
 use serde_json::from_reader;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use tracing::{debug, trace, warn};
 
@@ -36,7 +37,8 @@ pub fn save_run(desktop_file: &Path, data_dir: &Path) -> anyhow::Result<()> {
         .truncate(true)
         .open(&file)
         .context("Failed to open data file for writing")?;
-    serde_json::to_writer_pretty(file, &data).context("Failed to write to data file")?;
+    serde_json::to_writer_pretty(&file, &data).context("Failed to write to data file")?;
+    write!(&file, "\n").context("Failed to write to data file")?;
     Ok(())
 }
 
@@ -61,7 +63,7 @@ fn get_name_from_timestamp(week: u8) -> Box<Path> {
     let timestamp = Utc::now().timestamp() - (i64::from(week) * 7 * 24 * 60 * 60);
     let datetime = DateTime::from_timestamp(timestamp, 0).expect("Invalid timestamp");
     Box::from(Path::new(&format!(
-        "{}_{}.json",
+        "{}_{:02}.json",
         datetime.year(),
         datetime.iso_week().week()
     )))

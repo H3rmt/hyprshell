@@ -231,15 +231,20 @@ impl Root {
     }
 
     fn load_config(&self, sender: &ComponentSender<Self>) {
+        info!("Loading config from {}", self.config_file.display());
         let config = match config_lib::load_and_migrate_config(&self.config_file, true) {
             Ok(config) => config,
             Err(err) => {
                 notify_warn(&format!(
-                    "Failed to load config: {err:?}, retrying on change"
+                    "Failed to load config, retrying on change: {err:?}"
                 ));
                 if let Err(err) = hyprshell_config_block(&self.config_file) {
-                    error!("Failed to block config: {err:?}");
-                    notify_warn(&format!("Failed wait for config change: {err:?}"));
+                    error!("Failed to block config: {err:?}!! Exiting Application");
+                    notify_warn(&format!(
+                        "Failed wait for config change: {err:?}!! Exiting Application"
+                    ));
+                    relm4::main_application().quit();
+                    return;
                 }
                 info!("Trying to reload config after config change");
                 sender.input_sender().emit(RootInput::Reload);
@@ -253,8 +258,12 @@ impl Root {
         {
             notify_warn("Nothing is enabled in the config, retrying on change");
             if let Err(err) = hyprshell_config_block(&self.config_file) {
-                error!("Failed to block config: {err:?}");
-                notify_warn(&format!("Failed wait for config change: {err:?}"));
+                error!("Failed to block config: {err:?}!! Exiting Application");
+                notify_warn(&format!(
+                    "Failed wait for config change: {err:?}!! Exiting Application"
+                ));
+                relm4::main_application().quit();
+                return;
             }
             info!("Trying to reload config after config change");
             sender.input_sender().emit(RootInput::Reload);

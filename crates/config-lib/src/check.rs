@@ -134,6 +134,12 @@ mod tests {
             .expect("config option missing")
             .launcher;
         if let Some(ws) = launcher.plugins.websearch.as_mut() {
+            ws.engines.clear();
+            ws.engines.push(SearchEngine {
+                key: 'g',
+                name: Box::from("Google"),
+                url: Box::from("https://google1.com"),
+            });
             ws.engines.push(SearchEngine {
                 key: 'g',
                 name: Box::from("Google2"),
@@ -156,7 +162,9 @@ mod tests {
             .expect("config option missing")
             .launcher;
         if let Some(ws) = launcher.plugins.websearch.as_mut() {
-            ws.engines[0].url = Box::from("");
+            if let Some(ws) = ws.engines.get_mut(0) {
+                ws.url = Box::from("");
+            }
         }
         assert!(check(&config).is_err());
     }
@@ -174,7 +182,9 @@ mod tests {
             .expect("config option missing")
             .launcher;
         if let Some(ws) = launcher.plugins.websearch.as_mut() {
-            ws.engines[0].name = Box::from("");
+            if let Some(engine) = ws.engines.get_mut(0) {
+                engine.name = Box::from("");
+            }
         }
         assert!(check(&config).is_err());
     }

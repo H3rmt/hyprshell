@@ -96,6 +96,7 @@ pub fn start(
         css_path,
         cache_dir,
     });
+    debug!("Application exited");
 
     Ok(())
 }

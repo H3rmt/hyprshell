@@ -1,5 +1,5 @@
 use crate::migrate::m2t3::{NEXT_CONFIG_VERSION, old_structs};
-use crate::migrate::m3t4;
+use crate::migrate::{m3t4, m4t5};
 
 impl From<old_structs::Config> for m3t4::Config {
     fn from(value: old_structs::Config) -> Self {
@@ -35,7 +35,7 @@ impl From<old_structs::Overview> for m3t4::Overview {
     }
 }
 
-impl From<old_structs::Launcher> for crate::io::Launcher {
+impl From<old_structs::Launcher> for m4t5::Launcher {
     fn from(value: old_structs::Launcher) -> Self {
         Self {
             default_terminal: value.default_terminal,
@@ -48,16 +48,16 @@ impl From<old_structs::Launcher> for crate::io::Launcher {
     }
 }
 
-impl From<old_structs::Plugins> for crate::io::Plugins {
+impl From<old_structs::Plugins> for m4t5::Plugins {
     fn from(value: old_structs::Plugins) -> Self {
         Self {
             applications: value.applications,
             terminal: value.terminal,
             shell: value.shell,
             websearch: value.websearch,
-            calc: value.calc.map(|_| crate::io::CalcPluginConfig::default()),
+            calc: value.calc.map(|_| m4t5::CalcPluginConfig::default()),
             path: value.path,
-            actions: Some(crate::io::ActionsPluginConfig::default()),
+            actions: Some(m4t5::ActionsPluginConfig::default()),
         }
     }
 }

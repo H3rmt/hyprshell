@@ -2,7 +2,6 @@ use crate::structs::ConfigModifier;
 use relm4::gtk::gdk::{Cursor, Key, ModifierType};
 use relm4::gtk::prelude::{Cast, EditableExt, WidgetExt};
 use relm4::{adw, gtk};
-// use relm4::tokio::time::sleep;
 use tracing::{instrument, warn};
 
 pub trait SetTextIfDifferent {

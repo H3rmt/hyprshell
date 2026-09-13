@@ -1,14 +1,76 @@
-use crate::Modifier;
-use serde::{Deserialize, Serialize};
+use crate::{Modifier, edit_sync::sync_document};
+use anyhow::Context;
+use serde::{Deserialize, Serialize, de::IntoDeserializer};
 use smart_default::SmartDefault;
 use std::path::Path;
+
+#[derive(Debug)]
+pub struct ConfigFile {
+    backing_document: toml_edit::DocumentMut,
+    config: Config,
+}
+
+impl TryFrom<toml_edit::DocumentMut> for ConfigFile {
+    type Error = anyhow::Error;
+    fn try_from(doc: toml_edit::DocumentMut) -> Result<Self, Self::Error> {
+        let config = Config::deserialize(doc.clone().into_deserializer())
+            .context("Failed to deserialize Config from TOML document");
+        Ok(Self {
+            backing_document: doc,
+            config: config?,
+        })
+    }
+}
+
+impl ConfigFile {
+    pub fn new_without_file(config: Config) -> Self {
+        Self {
+            backing_document: toml_edit::DocumentMut::new(),
+            config,
+        }
+    }
+
+    pub fn to_string_pretty(&mut self) -> anyhow::Result<String> {
+        self.sync_config_to_document()
+            .context("failed to sync config in document")?;
+        Ok(self.backing_document.to_string())
+    }
+
+    fn sync_config_to_document(&mut self) -> anyhow::Result<()> {
+        let generated =
+            toml_edit::ser::to_document(&self.config).expect("config should always serialize");
+
+        sync_document(&mut self.backing_document, &generated);
+        // TODO add sync back in for all
+
+        // sync_array(
+        //     self.backing_document
+        //         .get_mut("class_to_icon")
+        //         .expect("class_to_icon exists in struct"),
+        //     generated
+        //         .get("class_to_icon")
+        //         .expect("class_to_icon exists in struct"),
+        //     |i| i.get("class").map(|i| i.to_string()),
+        // )
+        // .context("failed to sync config into original toml config")?;
+        Ok(())
+    }
+}
+
+impl TryInto<crate::Config> for ConfigFile {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<crate::Config, Self::Error> {
+        self.config.try_into()
+    }
+}
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     #[default(crate::CURRENT_CONFIG_VERSION)]
-    pub version: u16,
+    pub version: u64,
     #[default(None)]
     pub windows: Option<Windows>,
 }
@@ -21,6 +83,8 @@ pub struct Windows {
     pub scale: f64,
     #[default = 5]
     pub items_per_row: u8,
+    #[default = 300]
+    pub live_preview_refresh_rate: u16,
     #[default(None)]
     pub overview: Option<Overview>,
     #[default(None)]
@@ -44,6 +108,8 @@ pub struct Overview {
     pub filter_by: Vec<FilterBy>,
     #[default = "special:.*"]
     pub exclude_workspaces: Box<str>,
+    #[default = true]
+    pub live_preview: bool,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -89,6 +155,14 @@ pub struct Plugins {
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
+pub struct ApplicationsPluginConfig {
+    #[default = 8]
+    pub run_cache_weeks: u8,
+}
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
+#[serde(deny_unknown_fields)]
 pub struct EmptyConfig {}
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -104,80 +178,89 @@ pub struct CalcPluginConfig {
 #[serde(deny_unknown_fields)]
 pub struct ActionsPluginConfig {
     #[default(vec![
-        ActionsPluginAction::LockScreen,
-        ActionsPluginAction::Hibernate,
-        ActionsPluginAction::Logout,
-        ActionsPluginAction::Reboot,
-        ActionsPluginAction::Shutdown,
-        ActionsPluginAction::Suspend,
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::LockScreen),
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::Hibernate),
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::Logout),
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::Reboot),
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::Shutdown),
+        ActionsPluginAction::Preset(ActionsPluginActionPreset::Suspend),
         ActionsPluginAction::Custom(ActionsPluginActionCustom {
-            names: vec!["Kill".into(), "Stop".into()],
-            details: "Kill or stop a process by name".into(),
+            name: "Kill".into(),
+            details: "Kill a process by name".into(),
             command: "pkill \"{}\" && notify-send hyprshell \"stopped {}\"".into(),
-            icon: Box::from(Path::new("remove")),
+            icon: Some(Box::from(Path::new("remove"))),
         }),
         ActionsPluginAction::Custom(ActionsPluginActionCustom {
-            names: vec!["Reload Hyprshell".into()],
+            name: "Reload Hyprshell".into(),
             details: "Reload Hyprshell".into(),
-            command: "sleep 1; hyprshell socat '\"Restart\"'".into(),
-            icon: Box::from(Path::new("system-restart")),
+            command: "sleep 1; hyprshell socat '\"Restart\"' && notify-send \"Reloaded hyprshell\"".into(),
+            icon: Some(Box::from(Path::new("system-restart"))),
         }),
     ])]
     pub actions: Vec<ActionsPluginAction>,
 }
 
-#[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
-#[serde(deny_unknown_fields)]
-pub struct ApplicationsPluginConfig {
-    #[default = 8]
-    pub run_cache_weeks: u8,
-    #[default = true]
-    pub show_execs: bool,
-    #[default = true]
-    pub show_actions_submenu: bool,
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ActionsPluginAction {
+    Preset(ActionsPluginActionPreset),
+    Custom(ActionsPluginActionCustom),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ActionsPluginAction {
+pub enum ActionsPluginActionPreset {
     LockScreen,
     Hibernate,
     Logout,
     Reboot,
     Shutdown,
     Suspend,
-    Custom(ActionsPluginActionCustom),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ActionsPluginActionCustom {
-    pub names: Vec<Box<str>>,
+    pub name: Box<str>,
     pub details: Box<str>,
     pub command: Box<str>,
-    pub icon: Box<Path>,
+    pub icon: Option<Box<Path>>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
 pub struct WebSearchConfig {
-    #[default(vec![SearchEngine {
-        url: "https://www.google.com/search?q={}".into(),
-        name: "Google".into(),
-        key: 'g',
-    }, SearchEngine {
-        url: "https://en.wikipedia.org/wiki/Special:Search?search={}".into(),
-        name: "Wikipedia".into(),
-        key: 'w',
-    }])]
-    pub engines: Vec<SearchEngine>,
+    #[default(vec![
+        WebSearch::Preset(WebSearchPreset::Google),
+        WebSearch::Preset(WebSearchPreset::Wikipedia)
+    ])]
+    pub engines: Vec<WebSearch>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum WebSearch {
+    Preset(WebSearchPreset),
+    Custom(WebSearchCustom),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WebSearchPreset {
+    Google,
+    Wikipedia,
+    Reddit,
+    Startpage,
+    DuckDuckGo,
+    Bing,
+    YouTube,
+    ChatGpt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct SearchEngine {
+pub struct WebSearchCustom {
     pub url: Box<str>,
     pub name: Box<str>,
     pub key: char,
@@ -199,6 +282,8 @@ pub struct Switch {
     pub exclude_workspaces: Box<str>,
     #[default = 'q']
     pub kill_key: char,
+    #[default = true]
+    pub live_preview: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

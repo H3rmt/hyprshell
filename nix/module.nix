@@ -267,13 +267,19 @@ in
       };
       Service = {
         Type = "simple";
+        ExecStartPre = "/bin/sh -c '[ \"$XDG_CURRENT_DESKTOP\" = \"Hyprland\" ] || exit 0'";
         ExecStart = "${lib.getExe cfg.package} run ${cfg.systemd.args}";
         Restart = "on-failure";
+        RestartSec = "20";
       };
       Install.WantedBy = [ cfg.systemd.target ];
     };
 
-    xdg.configFile."hyprshell/config.json" =
+    # TODO Check
+    xdg.configFile."hyprshell/config.toml" =
+      let
+        tomlFormat = pkgs.formats.toml { };
+      in
       if (lib.isPath cfg.configFile || lib.isStorePath cfg.configFile) then
         {
           source = cfg.configFile;
@@ -284,7 +290,9 @@ in
         }
       else
         {
-          text = builtins.toJSON ((customLib.filterDisabledAndDropEnable cfg.settings) // { version = 4; });
+          source = tomlFormat.generate "config.toml" (
+            (customLib.filterDisabledAndDropEnable cfg.settings) // { version = 5; }
+          );
         };
 
     xdg.configFile."hyprshell/styles.css" =

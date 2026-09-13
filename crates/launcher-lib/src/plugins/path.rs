@@ -95,11 +95,13 @@ pub(super) fn get_file_manager_info() -> FilemanagerData {
     })
     .flatten()
     .unwrap_or_else(|| {
-        warn!("No default browser found! (using firefox and gdbus to open)");
+        warn!("No default file manager found! (using nautilus and gdbus to open)");
         FilemanagerData {
-            exec: Box::from(r"nautilus --new-window %U"),
+            exec: Box::from(
+                r#"gdbus call --session --dest="org.freedesktop.FileManager1" --object-path=/org/freedesktop/FileManager1 --method=org.freedesktop.FileManager1.ShowFolders "['file://%u']" ''"#,
+            ),
             icon: Some(Box::from(Path::new("org.gnome.Nautilus"))),
-            name: Box::from(r"Nautilus"),
+            name: Box::from(r"Dbus"),
         }
     })
 }

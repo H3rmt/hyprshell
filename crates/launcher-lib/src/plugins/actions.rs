@@ -1,6 +1,9 @@
 use crate::plugin::{LaunchItem, PluginReturn};
-use config_lib::ActionsPluginConfig;
-use core_lib::WarnWithDetails;
+use config_lib::{ActionsPluginAction, ActionsPluginConfig};
+use core_lib::{
+    WarnWithDetails,
+    transfer::{Identifier, PluginName},
+};
 use tracing::{error, info, trace};
 
 pub fn get_launch_items(config: &ActionsPluginConfig) -> Vec<LaunchItem> {
@@ -10,6 +13,22 @@ pub fn get_launch_items(config: &ActionsPluginConfig) -> Vec<LaunchItem> {
         .cloned()
         .map(LaunchItem::from)
         .collect::<Vec<LaunchItem>>()
+}
+
+impl From<ActionsPluginAction> for LaunchItem {
+    fn from(value: ActionsPluginAction) -> Self {
+        Self {
+            name: value.name,
+            keywords: value.keywords,
+            icon: value.icon,
+            details: value.command.clone(),
+            details_long: value.details_long,
+            bonus_score: 0,
+            takes_args: value.command.contains("{}"),
+            iden: Identifier::data(PluginName::Actions, value.command),
+            children: value.children.into_iter().map(LaunchItem::from).collect(),
+        }
+    }
 }
 
 pub fn run_action(

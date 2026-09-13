@@ -1,11 +1,12 @@
 use serde::Deserialize;
 use smart_default::SmartDefault;
 
+use crate::migrate::m4t5;
+
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
-    #[default(crate::CURRENT_CONFIG_VERSION)]
-    pub version: u16,
+    pub version: u64,
     #[default(None)]
     pub windows: Option<Windows>,
 }
@@ -28,7 +29,7 @@ pub struct Windows {
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Overview {
-    pub launcher: crate::io::Launcher,
+    pub launcher: m4t5::Launcher,
     #[default = "Super_L"]
     pub key: Box<str>,
     #[default(crate::Modifier::Super)]

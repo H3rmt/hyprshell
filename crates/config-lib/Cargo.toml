@@ -22,10 +22,9 @@ serde_json.workspace = true
 smart-default = { version = "0.7.1" }
 ron = { version = "0.12.1" }
 toml = "1.1.3"
-serde_json5 = { version = "0.2.1", optional = true }
+toml_edit = { version = "0.25.12", features = ["serde"] }
 
 [features]
-json5_config = ["dep:serde_json5"]
 ci_no_default_config_values = []
 launcher_calc_plugin = []
 disable_migrations = []

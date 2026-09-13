@@ -2,8 +2,8 @@
 
 use crate::util;
 use anyhow::Context;
-use core_lib::default;
 use core_lib::ini::IniFile;
+use core_lib::{default, path::get_system_data_dirs};
 use std::fs;
 use std::path::Path;
 use tracing::{debug, warn};
@@ -101,25 +101,28 @@ pub fn search(text: &str, all: bool, config_file: &Path, data_dir: &Path) {
     launcher_lib::debug::get_matches(&plugins, text, all, max_items, data_dir);
 }
 
-pub fn info(
-    data_dir: &Path,
-    cache_dir: &Path,
-    css_file: &Path,
-    config_file: &Path,
-    system_data_dir: &Path,
-) {
+pub fn info(data_dir: &Path, cache_dir: &Path, css_file: &Path, config_file: &Path) {
+    let sdirs = get_system_data_dirs();
+
     println!("config version: {}", config_lib::CURRENT_CONFIG_VERSION);
+    println!(
+        "workarround version: {}",
+        config_lib::CURRENT_WORKARROUND_VERSION
+    );
     println!("css_file: {}", css_file.display());
     println!("config_file: {}", config_file.display());
     println!("data_dir: {}", data_dir.display());
     println!("cache_dir: {}", cache_dir.display());
-    println!("system_data_dir: {}", system_data_dir.display());
 
-    let dirs = [
-        ("data_dir", data_dir),
-        ("cache_dir", cache_dir),
-        ("system_data_dir", system_data_dir),
-    ];
+    println!(
+        "system_data_dirs: {:?}",
+        sdirs.iter().map(|p| p.display()).collect::<Vec<_>>()
+    );
+
+    let mut dirs = vec![("data_dir", data_dir), ("cache_dir", cache_dir)];
+    for dir in sdirs.iter() {
+        dirs.push(("system_data_dir", dir))
+    }
 
     for (name, path) in dirs {
         if path.exists() && path.is_dir() {

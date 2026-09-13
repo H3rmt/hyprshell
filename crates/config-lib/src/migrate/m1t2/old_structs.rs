@@ -1,4 +1,4 @@
-use crate::migrate::m2t3;
+use crate::migrate::{m2t3, m4t5};
 use serde::Deserialize;
 use smart_default::SmartDefault;
 use std::fmt::Display;
@@ -13,7 +13,7 @@ pub struct Config {
     #[default(None)]
     pub(super) windows: Option<Windows>,
     #[allow(dead_code)]
-    pub(super) version: u16,
+    pub(super) version: u64,
 }
 
 #[derive(SmartDefault, Debug, Clone, Deserialize)]
@@ -74,10 +74,10 @@ pub(super) struct Launcher {
     #[default = 400]
     pub(super) animate_launch_ms: u64,
     #[default(m2t3::Plugins{
-        applications: Some(crate::io::ApplicationsPluginConfig::default()),
+        applications: Some(m4t5::ApplicationsPluginConfig::default()),
         terminal: Some(crate::io::EmptyConfig::default()),
         shell: None,
-        websearch: Some(crate::io::WebSearchConfig::default()),
+        websearch: Some(m4t5::WebSearchConfig::default()),
         calc: Some(crate::io::EmptyConfig::default()),
         path: Some(crate::io::EmptyConfig::default()),
     })]

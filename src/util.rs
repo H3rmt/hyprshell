@@ -119,7 +119,7 @@ pub fn check_new_version(cache_dir: &Path) -> anyhow::Result<(Ordering, Vec<Stri
         "Cached version: {cached_version:?}, current version: {current_version:?}: {:?}",
         cached_version.cmp(&current_version)
     );
-    write(&version_file, current_version.to_string().as_bytes())
+    write(&version_file, format!("{current_version}\n"))
         .context("Failed to write current version to file")?;
     let mut versions =
         filter_version_messages(NEW_VERSION_INFOS, &current_version, &cached_version);

@@ -4,11 +4,9 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     home-manager.url = "github:nix-community/home-manager";
-    hyprland.url = "github:hyprwm/Hyprland";
+    # hyprland.url = "github:hyprwm/Hyprland";
     # hyprland.url = "github:hyprwm/Hyprland?ref=v0.50.1";
-    # hyprshell.url = "github:H3rmt/hyprshell";
-    hyprshell.url = "github:H3rmt/hyprshell?ref=hyprshell-config-editor";
-    hyprshell.inputs.hyprland.follows = "hyprland";
+    hyprshell.url = "github:H3rmt/hyprshell";
   };
 
   outputs =
@@ -16,7 +14,6 @@
       self,
       nixpkgs,
       home-manager,
-      hyprland,
       hyprshell,
     }@inputs:
     {
