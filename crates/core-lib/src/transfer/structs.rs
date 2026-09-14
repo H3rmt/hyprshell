@@ -15,6 +15,11 @@ pub enum ExternalTransferType {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
     pub reverse: bool,
+    /// which of the two configured switchers to open: `false` is `windows.switch`,
+    /// `true` is `windows.switch_2`. Defaults so that an `OpenSwitch` sent by an
+    /// older client, or by hand over the socket, still opens the primary switcher.
+    #[serde(default)]
+    pub second: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
