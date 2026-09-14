@@ -25,6 +25,7 @@ use windows_lib::switch::{SwitchRoot, SwitchRootInput};
 pub struct Root {
     config: Box<config_lib::Config>,
     switch_root: Option<Controller<SwitchRoot>>,
+    switch_2_root: Option<Controller<SwitchRoot>>,
     overview_root: Option<Controller<OverviewRoot>>,
     data_dir: Rc<PathBuf>,
     config_file: Rc<PathBuf>,
@@ -35,7 +36,8 @@ pub struct Root {
 
 #[derive(Debug)]
 pub enum RootInput {
-    OpenSwitch(core_lib::Direction),
+    /// direction, and which switcher: `false` is `switch`, `true` is `switch_2`
+    OpenSwitch(core_lib::Direction, bool),
     CloseSwitch(bool),
     OpenOverview,
     SetConfig(Box<config_lib::Config>),
@@ -75,6 +77,7 @@ impl SimpleComponent for Root {
         let model = Self {
             config: Box::from(config_lib::Config::default()),
             switch_root: None,
+            switch_2_root: None,
             overview_root: None,
             data_dir: init.data_dir,
             config_file: init.config_file,
@@ -102,15 +105,26 @@ impl SimpleComponent for Root {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            RootInput::OpenSwitch(dir) => {
-                trace!("Opening switch, dir: {:?}", dir);
-                if let Some(switch) = &self.switch_root {
+            RootInput::OpenSwitch(dir, second) => {
+                trace!("Opening switch {}, dir: {:?}", u8::from(second) + 1, dir);
+                let switch = if second {
+                    &self.switch_2_root
+                } else {
+                    &self.switch_root
+                };
+                if let Some(switch) = switch {
                     switch.emit(SwitchRootInput::OpenSwitch(dir));
                 }
             }
             RootInput::CloseSwitch(do_switch) => {
                 trace!("Closing switch: {:?}", do_switch);
-                if let Some(switch) = &self.switch_root {
+                // The close binds are registered per modifier rather than per
+                // switcher, so this has to reach whichever one is open. The
+                // other ignores it -- SwitchRoot guards on `self.open`.
+                for switch in [&self.switch_root, &self.switch_2_root]
+                    .into_iter()
+                    .flatten()
+                {
                     switch.emit(SwitchRootInput::CloseSwitch(do_switch));
                 }
             }
@@ -134,6 +148,7 @@ impl SimpleComponent for Root {
                 // force rebuild of windows
                 let _ = self.overview_root.take();
                 let _ = self.switch_root.take();
+                let _ = self.switch_2_root.take();
                 self.update_switch();
                 self.update_overview();
             }
@@ -149,13 +164,14 @@ fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
             gtk::gio::spawn_blocking(util::reload_desktop_data);
         }
         ExternalTransferType::OpenSwitch(cfg) => {
-            sender
-                .input_sender()
-                .emit(RootInput::OpenSwitch(if cfg.reverse {
+            sender.input_sender().emit(RootInput::OpenSwitch(
+                if cfg.reverse {
                     core_lib::Direction::Left
                 } else {
                     core_lib::Direction::Right
-                }));
+                },
+                cfg.second,
+            ));
         }
         ExternalTransferType::CloseSwitch(cfg) => {
             sender
@@ -200,34 +216,60 @@ impl Root {
         }
     }
 
-    fn update_switch(&mut self) {
-        if let Some(windows) = &self.config.windows {
-            if let Some(switch) = &windows.switch {
-                if let Some(sw_root) = &self.switch_root {
-                    sw_root.emit(SwitchRootInput::CloseSwitch(false));
-                    sw_root.emit(SwitchRootInput::SetGeneral(windows.general.clone()));
-                    sw_root.emit(SwitchRootInput::SetSwitch(switch.clone()));
-                } else {
-                    let app = relm4::main_application();
+    /// Bring one switcher window in line with its config: build it, update it in
+    /// place, or drop it when that switcher is not configured.
+    ///
+    /// Free-standing rather than a method so that the caller can hold a borrow
+    /// of `self.config` while handing out `&mut` to one of the switcher slots.
+    fn sync_switch(
+        slot: &mut Option<Controller<SwitchRoot>>,
+        general: &config_lib::WindowsGeneral,
+        switch: Option<&config_lib::Switch>,
+    ) {
+        let Some(switch) = switch else {
+            let _ = slot.take();
+            return;
+        };
 
-                    let switch_root = SwitchRoot::builder();
-                    let window = &switch_root.root;
-                    app.add_window(window);
-                    let switch_root = switch_root
-                        .launch(windows_lib::switch::SwitchRootInit {
-                            general: windows.general.clone(),
-                            switch: switch.clone(),
-                            thumbnail_refresh_ms: 500,
-                        })
-                        .detach();
-                    self.switch_root = Some(switch_root);
-                }
-            } else {
-                let _ = self.switch_root.take();
-            }
+        if let Some(sw_root) = slot {
+            sw_root.emit(SwitchRootInput::CloseSwitch(false));
+            sw_root.emit(SwitchRootInput::SetGeneral(general.clone()));
+            sw_root.emit(SwitchRootInput::SetSwitch(switch.clone()));
         } else {
-            let _ = self.switch_root.take();
+            let app = relm4::main_application();
+
+            let switch_root = SwitchRoot::builder();
+            let window = &switch_root.root;
+            app.add_window(window);
+            *slot = Some(
+                switch_root
+                    .launch(windows_lib::switch::SwitchRootInit {
+                        general: general.clone(),
+                        switch: switch.clone(),
+                        thumbnail_refresh_ms: 500,
+                    })
+                    .detach(),
+            );
         }
+    }
+
+    fn update_switch(&mut self) {
+        let Some(windows) = &self.config.windows else {
+            let _ = self.switch_root.take();
+            let _ = self.switch_2_root.take();
+            return;
+        };
+
+        Self::sync_switch(
+            &mut self.switch_root,
+            &windows.general,
+            windows.switch.as_ref(),
+        );
+        Self::sync_switch(
+            &mut self.switch_2_root,
+            &windows.general,
+            windows.switch_2.as_ref(),
+        );
     }
 
     fn load_config(&self, sender: &ComponentSender<Self>) {
@@ -249,7 +291,7 @@ impl Root {
 
         // TODO remove in future if more is available
         if config.windows.is_none()
-            || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none())
+            || matches!(&config.windows, Some(windows) if windows.overview.is_none() && windows.switch.is_none() && windows.switch_2.is_none())
         {
             notify_warn("Nothing is enabled in the config, retrying on change");
             if let Err(err) = hyprshell_config_block(&self.config_file) {
