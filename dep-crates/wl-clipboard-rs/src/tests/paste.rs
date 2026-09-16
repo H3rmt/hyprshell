@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::sync::mpsc::{channel, Receiver};
 use std::time::Duration;
 
-use os_pipe::PipeReader;
 use proptest::prelude::*;
 use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_manager_v1::ZwlrDataControlManagerV1;
 
@@ -25,17 +23,26 @@ fn get_mime_types_test() {
             "seat0".into(),
             SeatInfo {
                 offer: Some(OfferInfo::Buffered {
-                    data: vec![
+                    data: HashMap::from([
                         ("first".into(), vec![]),
                         ("second".into(), vec![]),
                         ("third".into(), vec![]),
-                    ],
+                    ]),
                 }),
                 ..Default::default()
             },
         )]),
         ..Default::default()
     };
+    // The fixture advertises its HashMap iteration order, which must be preserved.
+    let expected: Vec<_> = state.seats["seat0"]
+        .offer
+        .as_ref()
+        .unwrap()
+        .data()
+        .keys()
+        .cloned()
+        .collect();
     state.create_seats(&server);
 
     let socket_name = server.socket_name().to_owned();
@@ -45,7 +52,6 @@ fn get_mime_types_test() {
         get_mime_types_internal(ClipboardType::Regular, Seat::Unspecified, Some(socket_name))
             .unwrap();
 
-    let expected = Vec::from(["first", "second", "third"].map(String::from));
     assert_eq!(mime_types, expected);
 }
 
@@ -175,11 +181,11 @@ fn get_mime_types_specific_seat() {
                 "yay".into(),
                 SeatInfo {
                     offer: Some(OfferInfo::Buffered {
-                        data: vec![
+                        data: HashMap::from([
                             ("first".into(), vec![]),
                             ("second".into(), vec![]),
                             ("third".into(), vec![]),
-                        ],
+                        ]),
                     }),
                     ..Default::default()
                 },
@@ -187,6 +193,15 @@ fn get_mime_types_specific_seat() {
         ]),
         ..Default::default()
     };
+    // The fixture advertises its HashMap iteration order, which must be preserved.
+    let expected: Vec<_> = state.seats["yay"]
+        .offer
+        .as_ref()
+        .unwrap()
+        .data()
+        .keys()
+        .cloned()
+        .collect();
     state.create_seats(&server);
 
     let socket_name = server.socket_name().to_owned();
@@ -199,7 +214,6 @@ fn get_mime_types_specific_seat() {
     )
     .unwrap();
 
-    let expected = Vec::from(["first", "second", "third"].map(String::from));
     assert_eq!(mime_types, expected);
 }
 
@@ -216,17 +230,26 @@ fn get_mime_types_primary() {
             "seat0".into(),
             SeatInfo {
                 primary_offer: Some(OfferInfo::Buffered {
-                    data: vec![
+                    data: HashMap::from([
                         ("first".into(), vec![]),
                         ("second".into(), vec![]),
                         ("third".into(), vec![]),
-                    ],
+                    ]),
                 }),
                 ..Default::default()
             },
         )]),
         ..Default::default()
     };
+    // The fixture advertises its HashMap iteration order, which must be preserved.
+    let expected: Vec<_> = state.seats["seat0"]
+        .primary_offer
+        .as_ref()
+        .unwrap()
+        .data()
+        .keys()
+        .cloned()
+        .collect();
     state.create_seats(&server);
 
     let socket_name = server.socket_name().to_owned();
@@ -236,7 +259,6 @@ fn get_mime_types_primary() {
         get_mime_types_internal(ClipboardType::Primary, Seat::Unspecified, Some(socket_name))
             .unwrap();
 
-    let expected = Vec::from(["first", "second", "third"].map(String::from));
     assert_eq!(mime_types, expected);
 }
 
@@ -253,7 +275,7 @@ fn get_contents_test() {
             "seat0".into(),
             SeatInfo {
                 offer: Some(OfferInfo::Buffered {
-                    data: vec![("application/octet-stream".into(), vec![1, 3, 3, 7])],
+                    data: HashMap::from([("application/octet-stream".into(), vec![1, 3, 3, 7])]),
                 }),
                 ..Default::default()
             },
@@ -293,7 +315,7 @@ fn get_contents_wrong_mime_type() {
             "seat0".into(),
             SeatInfo {
                 offer: Some(OfferInfo::Buffered {
-                    data: vec![("application/octet-stream".into(), vec![1, 3, 3, 7])],
+                    data: HashMap::from([("application/octet-stream".into(), vec![1, 3, 3, 7])]),
                 }),
                 ..Default::default()
             },
@@ -367,15 +389,8 @@ fn get_contents_channel_test_multiple() {
         .handle()
         .create_global::<State, ZwlrDataControlManagerV1, ()>(2, ());
 
-    let (tx2, rx2) = channel();
     let state = State {
-        seats: HashMap::from([(
-            "seat0".into(),
-            SeatInfo {
-                ..Default::default()
-            },
-        )]),
-        selection_updated_sender: Some(tx2),
+        seats: HashMap::from([("seat0".into(), SeatInfo::default())]),
         ..Default::default()
     };
     state.create_seats(&server);
@@ -383,61 +398,39 @@ fn get_contents_channel_test_multiple() {
     let socket_name = server.socket_name().to_owned();
     server.run(state);
 
-    let tx: Receiver<Result<(PipeReader, String), Error>> =
+    let receiver =
         get_contents_channel_internal(Seat::Unspecified, MimeType::Any, Some(socket_name.clone()))
             .expect("unable to create channel");
 
-    let sn = socket_name.clone();
-    std::thread::spawn(move || {
-        let sources = vec![MimeSource {
-            source: crate::copy::Source::Bytes([1, 3, 3, 7, 8][..].into()),
-            mime_type: crate::copy::MimeType::Specific("application/octet-stream".into()),
-        }];
-        crate::copy::copy_internal(
-            Options::new().foreground(true).clone(),
-            sources,
-            Some(sn.clone()),
-        )
-        .expect("unable to copy");
-        // let _ = rx2.recv().unwrap().unwrap();
-    });
+    for expected in [[1, 3, 3, 7, 8], [1, 6, 3, 7, 8]] {
+        let socket_name = socket_name.clone();
+        let producer = std::thread::spawn(move || {
+            let sources = vec![MimeSource {
+                source: crate::copy::Source::Bytes(expected[..].into()),
+                mime_type: crate::copy::MimeType::Specific("application/octet-stream".into()),
+            }];
+            crate::copy::copy_internal(
+                Options::new()
+                    .foreground(true)
+                    .serve_requests(crate::copy::ServeRequests::Only(1))
+                    .clone(),
+                sources,
+                Some(socket_name),
+            )
+            .expect("unable to copy");
+        });
 
-    let mut result = tx
-        .recv_timeout(Duration::from_millis(1000))
-        .expect("failed to receive")
-        .expect("no data");
-    assert_eq!(result.1, "application/octet-stream");
+        let (mut pipe, mime_type) = receiver
+            .recv_timeout(Duration::from_secs(2))
+            .expect("failed to receive clipboard update")
+            .expect("no data");
+        assert_eq!(mime_type, "application/octet-stream");
 
-    let mut contents = vec![];
-    result.0.read_to_end(&mut contents).unwrap();
-    assert_eq!(contents, [1, 3, 3, 7, 8]);
-
-    let sn = socket_name.clone();
-    std::thread::spawn(move || {
-        let sources2 = vec![MimeSource {
-            source: crate::copy::Source::Bytes([1, 6, 3, 7, 8][..].into()),
-            mime_type: crate::copy::MimeType::Specific("application/octet-stream".into()),
-        }];
-        crate::copy::copy_internal(
-            Options::new().foreground(true).clone(),
-            sources2,
-            Some(sn.clone()),
-        )
-        .expect("unable to copy");
-        // let _ = rx2.recv().unwrap().unwrap();
-    });
-
-    let mut result = tx
-        .recv_timeout(Duration::from_millis(100))
-        .expect("failed to receive")
-        .expect("no data");
-    assert_eq!(result.1, "application/octet-stream");
-
-    let mut contents = vec![];
-    result.0.read_to_end(&mut contents).unwrap();
-    assert_eq!(contents, [1, 6, 3, 7, 8]);
-
-    panic!("TODO")
+        let mut contents = vec![];
+        pipe.read_to_end(&mut contents).unwrap();
+        assert_eq!(contents, expected);
+        producer.join().unwrap();
+    }
 }
 
 #[test]
@@ -607,7 +600,7 @@ proptest! {
             };
             match expected_offer {
                 None => prop_assert!(matches!(result, Err(Error::ClipboardEmpty))),
-                Some(offer) => prop_assert_eq!(result.unwrap(), offer.data().iter().map(|(k, _)| k.clone()).collect::<Vec<String>>()),
+                Some(offer) => prop_assert_eq!(result.unwrap(), offer.data().keys().cloned().collect::<Vec<String>>()),
             }
         }
     }
@@ -647,7 +640,7 @@ proptest! {
             let mime_type = match expected_offer {
                 Some(offer) if !offer.data().is_empty() => {
                     let mime_index = mime_index.index(offer.data().len());
-                    Some(offer.data().iter().map(|(k, _)| k).nth(mime_index).unwrap())
+                    Some(offer.data().keys().nth(mime_index).unwrap())
                 }
                 _ => None,
             };
@@ -674,7 +667,7 @@ proptest! {
 
                         let mut contents = vec![];
                         read.read_to_end(&mut contents).unwrap();
-                        prop_assert_eq!(&contents, offer.data().iter().find(|(k, _)| k == mime_type).map(|(_, v)| &v[..]).unwrap());
+                        prop_assert_eq!(&contents, offer.data().get(mime_type).unwrap());
                     }
                 },
             }

@@ -1,10 +1,12 @@
+use super::release::{Outcome, ReleaseState};
+use super::sources::Sources;
 use crate::data::{SortConfig, collect_data};
 use crate::next::{find_next_client, find_next_workspace};
 #[cfg(feature = "live_windows")]
 use crate::shared::refresh_captures;
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
 use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
-use exec_lib::switch::{switch_client, switch_workspace};
+use exec_lib::switch::{ModifierState, switch_client, switch_modifier_pressed, switch_workspace};
 #[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
 use gtk4_layer_shell::{KeyboardMode, Layer, LayerShell};
@@ -19,6 +21,9 @@ use relm4::prelude::*;
 use std::time::Duration;
 use tracing::{debug, error, trace, warn};
 
+const MODIFIER_QUERY_TIMEOUT: Duration = Duration::from_millis(150);
+const MODIFIER_CHECK_INTERVAL: Duration = Duration::from_millis(80);
+
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
 const THUMBNAIL_BURST_MS: u64 = 8;
@@ -27,7 +32,8 @@ const THUMBNAIL_BURST_MS: u64 = 8;
 pub struct SwitchRoot {
     general: config_lib::WindowsGeneral,
     switch: config_lib::Switch,
-    open: bool,
+    release: ReleaseState,
+    sources: Sources,
     data: SwitchData,
     // gtk
     window: gtk::ApplicationWindow,
@@ -58,9 +64,13 @@ pub struct SwitchRoot {
 pub enum SwitchRootInput {
     SetSwitch(config_lib::Switch),
     SetGeneral(config_lib::WindowsGeneral),
-    OpenSwitch(Direction),
+    OpenSwitch(Direction, Option<u32>, Option<u64>),
     Switch(Direction),
     CloseSwitch(bool),
+    CheckModifier,
+    ModifierState(u64, Result<Option<ModifierState>, String>),
+    LegacyModifierRelease(u64),
+    CancelSwitch(u32),
     CloseCurrentItem,
     ReloadSwitch,
     #[cfg(feature = "live_windows")]
@@ -136,7 +146,8 @@ impl SimpleComponent for SwitchRoot {
         let model = Self {
             general: init.general,
             switch: init.switch,
-            open: false,
+            release: ReleaseState::default(),
+            sources: Sources::default(),
             window: root.clone(),
             controller: None,
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
@@ -177,40 +188,81 @@ impl SimpleComponent for SwitchRoot {
         trace!("switch::root::update: {message:?}");
         match message {
             SwitchRootInput::SetSwitch(switch) => {
+                self.cancel_switch((glib::monotonic_time() / 1000).cast_unsigned() as u32);
+                self.release.unsupported = false;
                 self.switch = switch;
                 self.setup_keyboard_controller(&sender);
             }
             SwitchRootInput::SetGeneral(general) => {
+                self.cancel_switch((glib::monotonic_time() / 1000).cast_unsigned() as u32);
                 self.general = general;
                 self.setup_keyboard_controller(&sender);
             }
-            SwitchRootInput::OpenSwitch(direction) => {
-                if self.open {
-                    sender
-                        .input_sender()
-                        .emit(SwitchRootInput::Switch(direction));
+            SwitchRootInput::OpenSwitch(direction, event_time, event_id) => {
+                let was_open = self.release.open;
+                if !self.release.open(event_time) {
+                    return;
+                }
+                if let Some(id) = event_id
+                    && !self.release.unsupported
+                {
+                    self.release.received.push(id);
+                }
+                self.cancel_pending_commit();
+                if was_open {
+                    self.navigate(direction);
                 } else {
-                    self.open = true;
                     self.open_switch(direction, &sender);
+                    if self.release.open {
+                        self.start_modifier_check(&sender);
+                    }
+                }
+                // IPC opens and releases may arrive out of order. Always
+                // request a fresh snapshot without blocking GTK dispatch.
+                self.request_modifier_check(&sender, true);
+            }
+            SwitchRootInput::CheckModifier => {
+                self.request_modifier_check(&sender, false);
+            }
+            SwitchRootInput::ModifierState(request_id, result) => {
+                if !self.release.is_current(request_id) {
+                    return;
+                }
+                self.sources.request.take();
+                match self.release.result(request_id, result) {
+                    Outcome::Commit => self.close_switch(true),
+                    Outcome::Unsupported => {
+                        self.stop_modifier_check();
+                        self.request_modifier_check(&sender, false);
+                    }
+                    Outcome::Warn(error) => warn!("Could not read switch modifier state: {error}"),
+                    Outcome::Held | Outcome::Ignore => {}
                 }
             }
             SwitchRootInput::Switch(direction) => {
-                if self.open {
+                if self.release.open {
+                    self.release.navigation();
                     self.navigate(direction);
+                    self.request_modifier_check(&sender, true);
                 } else {
                     trace!("not open");
                 }
             }
-            SwitchRootInput::CloseSwitch(do_switch) => {
-                if self.open {
-                    self.open = false;
-                    self.close_switch(do_switch);
-                } else {
-                    trace!("not open");
+            SwitchRootInput::CloseSwitch(false) => {
+                self.cancel_switch((glib::monotonic_time() / 1000).cast_unsigned() as u32);
+            }
+            SwitchRootInput::CancelSwitch(event_time) => self.cancel_switch(event_time),
+            SwitchRootInput::CloseSwitch(true) => {
+                if self.release.open {
+                    self.release.release();
+                    self.request_modifier_check(&sender, true);
                 }
+            }
+            SwitchRootInput::LegacyModifierRelease(request_id) => {
+                self.check_legacy_modifier(request_id);
             }
             SwitchRootInput::CloseCurrentItem => {
-                if self.open {
+                if self.release.open {
                     self.close_item();
                 } else {
                     trace!("not open");
@@ -218,7 +270,7 @@ impl SimpleComponent for SwitchRoot {
                 sender.input_sender().emit(SwitchRootInput::ReloadSwitch);
             }
             SwitchRootInput::ReloadSwitch => {
-                if self.open {
+                if self.release.open {
                     self.reload_switch();
                 } else {
                     trace!("not open");
@@ -230,20 +282,150 @@ impl SimpleComponent for SwitchRoot {
     }
 }
 
+impl Drop for SwitchRoot {
+    fn drop(&mut self) {
+        self.stop_modifier_check();
+        self.cancel_pending_commit();
+        #[cfg(feature = "live_windows")]
+        if let Some(timer) = self.timer_handle.take() {
+            timer.remove();
+        }
+    }
+}
+
 impl SwitchRoot {
+    fn check_legacy_modifier(&mut self, request_id: u64) {
+        if !self.release.is_current(request_id) {
+            return;
+        }
+        self.sources.request.take();
+        let mask = match self.switch.modifier {
+            config_lib::Modifier::Alt => gtk::gdk::ModifierType::ALT_MASK,
+            config_lib::Modifier::Ctrl => gtk::gdk::ModifierType::CONTROL_MASK,
+            config_lib::Modifier::Super => gtk::gdk::ModifierType::SUPER_MASK,
+            config_lib::Modifier::None => gtk::gdk::ModifierType::empty(),
+        };
+        let held = self
+            .window
+            .is_active()
+            .then(|| {
+                WidgetExt::display(&self.window)
+                    .default_seat()
+                    .and_then(|seat| seat.keyboard())
+                    .map(|keyboard| keyboard.modifier_state().contains(mask))
+            })
+            .flatten();
+        if self.release.event_result(request_id, held) == Outcome::Commit {
+            self.close_switch(true);
+        }
+    }
+
+    fn cancel_pending_commit(&mut self) {
+        self.sources.cancel_commit();
+    }
+
+    fn cancel_switch(&mut self, event_time: u32) {
+        self.release.cancel(event_time);
+        self.cancel_pending_commit();
+        self.close_switch(false);
+    }
+
+    fn start_modifier_check(&mut self, sender: &ComponentSender<Self>) {
+        self.stop_modifier_check();
+        if self.release.unsupported {
+            return;
+        }
+        let sender = sender.input_sender().clone();
+        // A release between the initial key-state query and Wayland keyboard
+        // focus can miss both the compositor binding and the GTK controller.
+        // Reconcile while open so that losing an event cannot strand the UI.
+        self.sources.check = Some(glib::timeout_add_local(
+            MODIFIER_CHECK_INTERVAL,
+            move || {
+                sender.emit(SwitchRootInput::CheckModifier);
+                ControlFlow::Continue
+            },
+        ));
+    }
+
+    fn stop_modifier_check(&mut self) {
+        self.release.invalidate();
+        self.sources.stop_check();
+    }
+
+    fn request_modifier_check(&mut self, sender: &ComponentSender<Self>, refresh: bool) {
+        if !self.release.open || (self.sources.request.is_some() && !refresh) {
+            return;
+        }
+        self.sources.cancel_request();
+        if self.release.unsupported {
+            if let Some(request_id) = self.release.event_request() {
+                let sender = sender.input_sender().clone();
+                self.sources.request = Some(glib::spawn_future_local(async move {
+                    // Let queued Wayland modifier updates run before reading
+                    // the seat mask, including overlapping physical sides.
+                    glib::timeout_future(Duration::ZERO).await;
+                    sender.emit(SwitchRootInput::LegacyModifierRelease(request_id));
+                }));
+            }
+            return;
+        }
+        let Some(request_id) = self.release.request(refresh) else {
+            return;
+        };
+        let left = self.switch.modifier.to_keysym_l();
+        let right = self.switch.modifier.to_keysym_r();
+        let received = self.release.received.clone();
+        let cancelled_at = self.release.cancelled_at;
+        let sender = sender.input_sender().clone();
+        self.sources.request = Some(glib::spawn_future_local(async move {
+            let result = glib::future_with_timeout(
+                MODIFIER_QUERY_TIMEOUT,
+                switch_modifier_pressed(left, right, &received, cancelled_at),
+            )
+            .await
+            .map_or_else(
+                |_| Err("modifier query timed out after 150 ms".to_string()),
+                |result| result.map_err(|error| error.to_string()),
+            );
+            sender.emit(SwitchRootInput::ModifierState(request_id, result));
+        }));
+    }
+
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
         // TODO add a check in config check so these always succeed
         if let Some(k) = Key::from_name(self.switch.key.to_string()) {
             if let Some(kk) = Key::from_name(self.switch.kill_key.to_string()) {
                 let key_controller = EventControllerKey::new();
                 let sender_2 = sender.clone();
-                key_controller.connect_key_pressed(move |_, key, _, _| {
+                key_controller.connect_key_pressed(move |controller, key, _, modifiers| {
                     trace!("Key pressed: {:?}", key);
-                    handle_key(key, k, kk, &sender_2.clone())
+                    handle_key(
+                        key,
+                        k,
+                        kk,
+                        modifiers,
+                        controller.current_event_time(),
+                        &sender_2,
+                    )
+                });
+                // Once the overlay owns keyboard focus, handle modifier
+                // release directly. Hyprland's release bind may not fire when
+                // Tab is still held, although Wayland delivers the release.
+                let modifier_left = Key::from_name(self.switch.modifier.to_keysym_l());
+                let modifier_right = Key::from_name(self.switch.modifier.to_keysym_r());
+                let release_sender = sender.clone();
+                key_controller.connect_key_released(move |_, key, _, _| {
+                    if Some(key) == modifier_left || Some(key) == modifier_right {
+                        release_sender
+                            .input_sender()
+                            .emit(SwitchRootInput::CloseSwitch(true));
+                    }
                 });
                 if let Some(controller) = self.controller.take() {
                     self.window.remove_controller(&controller);
                 }
+                self.controller = Some(key_controller.clone().upcast());
                 self.window.add_controller(key_controller);
             } else {
                 error!("Invalid kill key name: {}", self.switch.kill_key);
@@ -269,6 +451,7 @@ impl SwitchRoot {
             Ok(data) => data,
             Err(e) => {
                 error!("Failed to collect data: {}", e);
+                self.release.close();
                 return;
             }
         };
@@ -481,6 +664,9 @@ impl SwitchRoot {
     }
 
     fn close_switch(&mut self, do_switch: bool) {
+        self.release.close();
+        self.stop_modifier_check();
+        self.cancel_pending_commit();
         trace!("Hiding window {:?}", self.window.id());
         self.window.set_visible(false);
 
@@ -506,12 +692,12 @@ impl SwitchRoot {
                         .map_or_else(|| "<Unknown>".to_string(), |(_, c)| c.title.clone())
                 );
                 // Defer execution to ensure window is hidden first
-                glib::idle_add_local(move || {
+                self.sources.commit = Some(glib::spawn_future_local(async move {
+                    glib::timeout_future(Duration::ZERO).await;
                     if let Err(e) = switch_client(id) {
                         warn!("Failed to switch to client {id:?}: {e}");
                     }
-                    ControlFlow::Break
-                });
+                }));
             } else {
                 let id = self.data.active.workspace;
                 debug!(
@@ -523,12 +709,12 @@ impl SwitchRoot {
                         .find(|(wid, _)| *wid == id)
                         .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
                 );
-                glib::idle_add_local(move || {
+                self.sources.commit = Some(glib::spawn_future_local(async move {
+                    glib::timeout_future(Duration::ZERO).await;
                     if let Err(e) = switch_workspace(id) {
                         tracing::warn!("Failed to switch to workspace {id:?}: {e}");
                     }
-                    ControlFlow::Break
-                });
+                }));
             }
         }
         #[cfg(feature = "live_windows")]
@@ -708,16 +894,29 @@ fn handle_key(
     key: Key,
     s_key: Key,
     kill_key: Key,
+    modifiers: gtk::gdk::ModifierType,
+    event_time: u32,
     event_sender: &ComponentSender<SwitchRoot>,
 ) -> glib::Propagation {
     match key {
         Key::Escape => {
             event_sender
                 .input_sender()
-                .emit(SwitchRootInput::CloseSwitch(false));
+                .emit(SwitchRootInput::CancelSwitch(event_time));
             glib::Propagation::Stop
         }
-        k if k == s_key || k == Key::l || k == Key::Right => {
+        k if k == s_key => {
+            let direction = if modifiers.contains(gtk::gdk::ModifierType::SHIFT_MASK) {
+                Direction::Left
+            } else {
+                Direction::Right
+            };
+            event_sender
+                .input_sender()
+                .emit(SwitchRootInput::Switch(direction));
+            glib::Propagation::Stop
+        }
+        Key::l | Key::Right => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(Direction::Right));

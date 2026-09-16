@@ -7,15 +7,15 @@ rec {
   # tree since they are read at build time by wayland-scanner.
   src = pkgs.lib.cleanSourceWith {
     src = ../.;
-    filter = path: type:
-      (craneLib.filterCargoSources path type)
-      || (type == "regular" && pkgs.lib.hasSuffix ".xml" path);
+    filter =
+      path: type:
+      (craneLib.filterCargoSources path type) || (type == "regular" && pkgs.lib.hasSuffix ".xml" path);
   };
 
   commonArgs = {
     pname = "hyprshell";
     inherit src;
-    version = (pkgs.lib.trivial.importTOML ../Cargo.toml).workspace.package.version;
+    version = (pkgs.lib.trivial.importTOML ../Cargo.toml).package.version;
 
     meta = {
       mainProgram = "hyprshell";
@@ -59,5 +59,7 @@ rec {
     }
   );
 
-  commonArgsFull = (commonArgs // { inherit postInstall cargoArtifacts; });
+  commonArgsFull = commonArgs // {
+    inherit postInstall cargoArtifacts;
+  };
 }

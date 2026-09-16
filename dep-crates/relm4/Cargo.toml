@@ -19,6 +19,7 @@ build = false
 include = [
     "src/",
     "examples/",
+    "assets/Relm_logo.png",
     "benches/",
     "tests/",
     "README.md",
@@ -360,6 +361,10 @@ default-features = false
 
 [dev-dependencies.rand]
 version = "0.9.2"
+
+[dev-dependencies.relm4-components]
+package = "hyprshell-relm4-components"
+path = "../relm4-components"
 
 [dev-dependencies.reqwest]
 version = "0.12.23"

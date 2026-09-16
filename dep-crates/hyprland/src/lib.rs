@@ -69,7 +69,7 @@ mod lua;
 pub mod window_rule;
 
 #[cfg(feature = "lua")]
-pub use lua::EvalRaw;
+pub use lua::{EvalRaw, format_string};
 
 /// The prelude module, this is to import all traits
 pub mod prelude {
