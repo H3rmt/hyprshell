@@ -1,48 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cargoBuildLog=$(mktemp cargoBuildLogXXXX.json)
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-# Function to build with a specific combination of features
+# Match the maintained packages checked by xtask, including libraries whose
+# feature-gated code would otherwise be treated as an unchecked dependency.
+packages=(hyprshell hyprshell-core-lib hyprshell-config-lib hyprshell-exec-lib
+  hyprshell-windows-lib hyprshell-launcher-lib hyprshell-config-edit-lib
+  hyprshell-clipboard-lib hyprshell-xtask)
+package_args=()
+for package in "${packages[@]}"; do
+  package_args+=(-p "$package")
+done
+
 build_with_features() {
   local feature_combination="$1"
   local iteration="$2"
-  local start_time=$(date +%s.%N)
-
-  if [[ -z "$feature_combination" ]]; then
-    echo "[$iteration] Running clippy without any features..."
-    cargo clippy --profile dev --locked --no-default-features --message-format json-render-diagnostics > "$cargoBuildLog"
-  else
-    echo "[$iteration] Building with features: $feature_combination"
-    cargo clippy --profile dev --locked --no-default-features --features "$feature_combination" --message-format json-render-diagnostics > "$cargoBuildLog"
+  local start_time=$SECONDS
+  local feature_args=()
+  if [[ -n "$feature_combination" ]]; then
+    feature_args+=(--features "$feature_combination")
   fi
-
-  local duration=$(awk "BEGIN {print $(date +%s.%N) - $start_time}")
-  printf "  took %.2f seconds\n" "$duration"
+  echo "[$iteration] Checking features: ${feature_combination:-none}"
+  cargo clippy --profile dev --locked --all-targets --no-deps \
+    "${package_args[@]}" --no-default-features "${feature_args[@]}" -- -D warnings
+  printf '  took %s seconds\n' "$((SECONDS - start_time))"
 }
 
-
 test_feature_combinations() {
-  local -n features_ref=$1
-  local num_features=${#features_ref[@]}
-  echo "num_features: $num_features, iterations: $((1 << num_features))"
+  local features=("$@")
+  local num_features=${#features[@]}
+  local i j
+  local combination=()
   for ((i = 0; i < (1 << num_features); i++)); do
     combination=()
-    for ((j = num_features - 1; j >= 0; j--)); do
+    for ((j = 0; j < num_features; j++)); do
       if ((i & (1 << j))); then
-        combination+=("${features_ref[j]}")
+        combination+=("${features[j]}")
       fi
     done
     build_with_features "$(IFS=,; printf '%s' "${combination[*]}")" "$i"
   done
-  echo "all features tested"
 }
 
-build_with_features "default" default
-build_with_features "slim" slim
-
-declare -a features=("gui_settings_editor" "ci_config_check" "launcher_calc" "debug_command" "json5_config")
-test_feature_combinations features
-
-#declare -a crypt_features=("clipboard_encrypt_chacha20poly1305" "clipboard_encrypt_aes_gcm" "clipboard_compress_zstd" "clipboard_compress_brotli" "clipboard_compress_lz4")
-#test_feature_combinations crypt_features
+build_with_features default default
+build_with_features slim slim
+# Independent features from Cargo.toml; default and slim are aliases above.
+test_feature_combinations gui_settings_editor ci_config_check launcher_calc json5_config live_windows dev
+echo "All feature combinations passed"

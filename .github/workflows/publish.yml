@@ -17,10 +17,10 @@ jobs:
         run: |
           commit_msg=$(git log -1 --pretty=%B)
           if [[ $commit_msg =~ ^chore\(hyprshell.*\):\ release ]]; then
-            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "Error: Commit message must start with 'chore(hyprshell): release'"
-            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
           fi
 
   publish:
@@ -40,7 +40,7 @@ jobs:
         run: ./scripts/ci/install-gtk4-layer-shell.sh
       - name: Install cargo-workspaces
         run: |
-          mkdir -p $HOME/.cargo/bin
+          mkdir -p "$HOME/.cargo/bin"
           cargo install cargo-workspaces
           cargo ws --version
       - name: Publish to crates.io
@@ -67,7 +67,7 @@ jobs:
           git push --delete origin ${{ github.ref_name }}
           
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
-          cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
+          cargo ws publish custom "$version" -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
           
           # push current branch to hyprshell branch (for development)
           git fetch origin hyprshell
@@ -142,8 +142,8 @@ jobs:
       - name: Run Nix Flake Build
         run: |
           nix build '.#packages.x86_64-linux.hyprshell' -L
-          echo "$(readlink ./result)" | cachix push hyprshell
+          readlink ./result | cachix push hyprshell
           rm result
           nix build '.#packages.x86_64-linux.hyprshell-slim' -L
-          echo "$(readlink ./result)" | cachix push hyprshell
+          readlink ./result | cachix push hyprshell
           rm result
