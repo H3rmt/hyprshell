@@ -135,17 +135,13 @@ fn switch_special_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
 }
 
 fn switch_special_workspace_legacy(workspace_id: WorkspaceId) -> anyhow::Result<()> {
-    let special = Monitors::get()?
-        .into_iter()
-        .find(|m| m.special_workspace.id == workspace_id);
-    if let Some(special) = special {
-        trace!("Special workspace already toggled: {special:?}");
-        return Ok(());
-    }
     let ws = Workspaces::get()?
         .into_iter()
         .find(|w| w.id == workspace_id)
         .context("workspace not found")?;
+    if special_workspace_active(&ws)? {
+        return Ok(());
+    }
 
     Dispatch::call(DispatchType::ToggleSpecialWorkspace(Some(
         ws.name.trim_start_matches("special:").to_string(),
@@ -155,17 +151,13 @@ fn switch_special_workspace_legacy(workspace_id: WorkspaceId) -> anyhow::Result<
 }
 
 fn switch_special_workspace_lua(workspace_id: WorkspaceId) -> anyhow::Result<()> {
-    let special = Monitors::get()?
-        .into_iter()
-        .find(|m| m.special_workspace.id == workspace_id);
-    if let Some(special) = special {
-        trace!("Special workspace already toggled: {special:?}");
-        return Ok(());
-    }
     let ws = Workspaces::get()?
         .into_iter()
         .find(|w| w.id == workspace_id)
         .context("workspace not found")?;
+    if special_workspace_active(&ws)? {
+        return Ok(());
+    }
 
     let disp = hyprland::dispatch_new::Dispatch::FocusWorkspace(
         hyprland::dispatch_new::WorkspaceIdentifier::Special(Some(
@@ -175,6 +167,13 @@ fn switch_special_workspace_lua(workspace_id: WorkspaceId) -> anyhow::Result<()>
     );
     disp.apply().context("failed to execute dispatch")?;
     Ok(())
+}
+
+fn special_workspace_active(workspace: &Workspace) -> anyhow::Result<bool> {
+    Ok(Monitors::get()?.into_iter().any(|monitor| {
+        monitor.special_workspace.id == Some(workspace.id)
+            || monitor.special_workspace.name == workspace.name
+    }))
 }
 
 #[instrument(level = "debug", ret(level = "trace"))]

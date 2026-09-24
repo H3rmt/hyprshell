@@ -38,8 +38,9 @@ pub(crate) enum DataCommands {
 /// This struct holds a basic identifier for a workspace often used in other structs
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
-    /// The workspace Id
-    pub id: WorkspaceId,
+    /// The workspace ID, absent for unnamed or special monitor workspace entries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<WorkspaceId>,
     /// The workspace's name
     pub name: String,
 }
@@ -738,3 +739,45 @@ create_data_struct!(
     holding_type: WorkspaceRuleset,
     doc: "This struct holds a vector of workspace rules per workspace"
 );
+
+#[cfg(test)]
+mod workspace_basic_tests {
+    use super::{Monitor, WorkspaceBasic};
+
+    #[test]
+    fn parses_old_and_current_workspace_identifiers() {
+        for (input, expected_id, expected_name) in [
+            (r#"{"id":2,"name":"2"}"#, Some(2), "2"),
+            (
+                r#"{"address":"0x1234","id":2,"name":"2","type":"regular"}"#,
+                Some(2),
+                "2",
+            ),
+            (
+                r#"{"address":"0x5678","name":"special:scratchpad","type":"special"}"#,
+                None,
+                "special:scratchpad",
+            ),
+            (r#"{"address":"","name":"","type":""}"#, None, ""),
+        ] {
+            let workspace: WorkspaceBasic = serde_json::from_str(input).unwrap();
+            assert_eq!(workspace.id, expected_id);
+            assert_eq!(workspace.name, expected_name);
+        }
+    }
+
+    #[test]
+    fn parses_monitor_with_empty_special_workspace() {
+        let monitor = serde_json::json!({
+            "id": 0, "name": "DP-1", "description": "Display", "width": 1920,
+            "height": 1080, "refreshRate": 60.0, "x": 0, "y": 0,
+            "activeWorkspace": {"address": "0x1234", "id": 2, "name": "2", "type": "regular"},
+            "specialWorkspace": {"address": "", "name": "", "type": ""},
+            "reserved": [0, 0, 0, 0], "scale": 1.0, "transform": 0,
+            "focused": true, "dpmsStatus": true, "vrr": false, "disabled": false
+        });
+        let monitor: Monitor = serde_json::from_value(monitor).unwrap();
+        assert_eq!(monitor.active_workspace.id, Some(2));
+        assert_eq!(monitor.special_workspace.id, None);
+    }
+}

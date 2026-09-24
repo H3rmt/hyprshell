@@ -23,7 +23,7 @@ fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)
     let clients = Clients::get()
         .context("clients failed")?
         .into_iter()
-        .filter(|c| c.workspace.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
+        .filter(|c| c.workspace.id.is_some_and(|id| id != -1))
         .collect::<Vec<_>>();
 
     Ok((monitors, workspaces, clients))
@@ -98,7 +98,9 @@ pub fn collect_hypr_data(
             let Some(monitor) = client.monitor else {
                 continue;
             };
-            if workspace_data.find_by_first(&client.workspace.id).is_some() {
+            if let Some(workspace_id) = client.workspace.id
+                && workspace_data.find_by_first(&workspace_id).is_some()
+            {
                 cd.push((
                     to_client_id(&client.address),
                     ClientData {
@@ -107,7 +109,7 @@ pub fn collect_hypr_data(
                         width: client.size.0,
                         height: client.size.1,
                         class: client.class.clone(),
-                        workspace: client.workspace.id,
+                        workspace: workspace_id,
                         monitor,
                         focus_history_id: client.focus_history_id,
                         title: client.title.clone(),
@@ -150,7 +152,8 @@ pub fn collect_hypr_data(
         .context("active workspace failed")?;
     let active_ws = Client::get_active()
         .context("active client failed")?
-        .map_or(active_ws, |a| a.workspace.id);
+        .and_then(|a| a.workspace.id)
+        .unwrap_or(active_ws);
     let active_monitor = Monitor::get_active().context("active monitor failed")?.id;
     let active_client = Client::get_active()
         .context("active client failed")?
