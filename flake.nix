@@ -41,6 +41,7 @@
           };
           devShells.default = craneLib.devShell {
             inherit (self') checks;
+            inputsFrom = [ self'.packages.hyprshell ];
             packages = [
               pkgs.rust-analyzer
             ];
