@@ -3,13 +3,22 @@
   pkgs,
 }:
 rec {
-  # Vendored wayland protocol XML files must be kept in the cargo source
-  # tree since they are read at build time by wayland-scanner.
+  # Keep build-time includes and installed assets alongside Cargo sources.
   src = pkgs.lib.cleanSourceWith {
     src = ../.;
-    filter = path: type:
+    filter =
+      path: type:
       (craneLib.filterCargoSources path type)
-      || (type == "regular" && pkgs.lib.hasSuffix ".xml" path);
+      || (
+        type == "regular"
+        && (
+          pkgs.lib.hasSuffix ".xml" path
+          || pkgs.lib.hasSuffix ".css" path
+          || pkgs.lib.hasSuffix "/dep-crates/hyprland/README.md" path
+          || pkgs.lib.hasSuffix "/dep-crates/hyprland/hyprland-macros/README.md" path
+          || pkgs.lib.hasInfix "/packaging/" path
+        )
+      );
   };
 
   commonArgs = {
@@ -27,7 +36,7 @@ rec {
 
     strictDeps = true;
     doCheck = false;
-    cargoBuildCommand = "cargo build --release --locked";
+    cargoBuildCommand = "cargo build --release";
 
     nativeBuildInputs = [
       pkgs.pkg-config
@@ -35,6 +44,9 @@ rec {
     ];
 
     buildInputs = [
+      pkgs.dbus
+      pkgs.wayland
+      pkgs.libgbm
       pkgs.libadwaita
       pkgs.gtk4-layer-shell
     ];
@@ -47,9 +59,9 @@ rec {
     # Icon
     install -Dm644 packaging/hyprshell-settings.png $out/share/pixmaps/hyprshell-settings.png
 
-    # Extract runtime data
+    # Install the runtime data directly from the checked-in source tree.
     mkdir -p $out/share/hyprshell
-    tar -xf packaging/usr-share.tar -C $out/share/hyprshell
+    cp -r packaging/share/. $out/share/hyprshell/
   '';
 
   cargoArtifacts = craneLib.buildDepsOnly (
