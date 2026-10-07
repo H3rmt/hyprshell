@@ -2,7 +2,6 @@ use crate::root::{Root, RootInit};
 use crate::socket::socket_handler;
 use crate::util;
 use crate::util::check_new_version;
-use crate::wm::configure_wm_initial;
 use anyhow::Context;
 use async_channel::Sender;
 use core_lib::listener::{hyprshell_config_listener, hyprshell_css_listener};
@@ -70,7 +69,6 @@ pub fn start(
     thread::spawn(move || {
         socket_handler(&external_event_sender);
     });
-    configure_wm_initial();
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()
