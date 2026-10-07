@@ -17,6 +17,14 @@ pub struct Switch {
     prev_config: crate::Switch,
     name: &'static str,
     keyboard_shortcut: Controller<KeyboardShortcut>,
+    recording: Recording,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Recording {
+    Primary,
+    Forward,
+    Reverse,
 }
 
 #[derive(Debug)]
@@ -25,6 +33,8 @@ pub enum SwitchInput {
     SetPrevSwitch(crate::Switch),
     ResetSwitch,
     OpenKeyboardShortcut,
+    AddShortcut(Recording),
+    RecordedShortcut(ConfigModifier, String),
 }
 
 #[derive(Debug)]
@@ -37,6 +47,8 @@ pub struct SwitchInit {
 pub enum SwitchOutput {
     Enabled(bool),
     Key(String),
+    Keys(Vec<String>),
+    ReverseKeys(Vec<String>),
     Modifier(ConfigModifier),
     FilterSameClass(bool),
     FilterWorkspace(bool),
@@ -57,20 +69,18 @@ impl SimpleComponent for Switch {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let outs = sender.output_sender().clone();
         let ins = sender.input_sender().clone();
         let keyboard_shortcut = KeyboardShortcut::builder()
             .launch(KeyboardShortcutInit {
                 label: None,
                 icon: Some("keyboard-layout".to_string()),
-                init: Some((init.config.modifier, init.config.key.clone())),
+                init: Some((init.config.modifier, init.config.primary_key().to_string())),
             })
             .connect_receiver(move |_, out| {
                 #[allow(clippy::match_wildcard_for_single_variants)]
                 match out {
                     KeyboardShortcutOutput::SetKey(r#mod, key) => {
-                        outs.emit(SwitchOutput::Key(key));
-                        outs.emit(SwitchOutput::Modifier(r#mod));
+                        ins.emit(SwitchInput::RecordedShortcut(r#mod, key));
                     }
                     KeyboardShortcutOutput::OpenRequest => {
                         ins.emit(SwitchInput::OpenKeyboardShortcut);
@@ -84,12 +94,13 @@ impl SimpleComponent for Switch {
             config: init.config.clone(),
             prev_config: init.config,
             keyboard_shortcut,
+            recording: Recording::Primary,
         };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         trace!("switch::update: {message:?}");
         match message {
             SwitchInput::SetSwitch(config) => {
@@ -102,11 +113,37 @@ impl SimpleComponent for Switch {
                 self.config = self.prev_config.clone();
             }
             SwitchInput::OpenKeyboardShortcut => {
+                self.recording = Recording::Primary;
                 self.keyboard_shortcut
                     .emit(KeyboardShortcutInput::ShowKeyboardShortcutDialog(
-                        Some((self.config.modifier, self.config.key.clone())),
+                        Some((self.config.modifier, self.config.primary_key().to_string())),
                         None,
                     ));
+            }
+            SwitchInput::AddShortcut(recording) => {
+                self.recording = recording;
+                self.keyboard_shortcut
+                    .emit(KeyboardShortcutInput::ShowKeyboardShortcutDialog(
+                        None, None,
+                    ));
+            }
+            SwitchInput::RecordedShortcut(modifier, key) => {
+                match self.recording {
+                    Recording::Primary => sender.output_sender().emit(SwitchOutput::Key(key)),
+                    Recording::Forward => {
+                        let mut keys = self.config.forward_keys().to_vec();
+                        keys.push(key);
+                        sender.output_sender().emit(SwitchOutput::Keys(keys));
+                    }
+                    Recording::Reverse => {
+                        let mut keys = self.config.reverse_keys.clone();
+                        keys.push(key);
+                        sender.output_sender().emit(SwitchOutput::ReverseKeys(keys));
+                    }
+                }
+                sender
+                    .output_sender()
+                    .emit(SwitchOutput::Modifier(modifier));
             }
         }
     }
@@ -130,12 +167,12 @@ impl SimpleComponent for Switch {
                     #[watch]
                     set_sensitive: model.config.enabled,
                 },
-                _adw::ShortcutLabel::new(&mod_key_to_accelerator(model.config.modifier, &model.config.key)) {
+                _adw::ShortcutLabel::new(&mod_key_to_accelerator(model.config.modifier, model.config.primary_key())) {
                     #[watch]
-                    set_accelerator: &mod_key_to_accelerator(model.config.modifier, &model.config.key),
+                    set_accelerator: &mod_key_to_accelerator(model.config.modifier, model.config.primary_key()),
                     #[watch]
                     set_css_classes: if model.config.enabled {
-                        if mod_key_to_accelerator(model.config.modifier, &model.config.key) == mod_key_to_accelerator(model.prev_config.modifier, &model.prev_config.key)
+                        if mod_key_to_accelerator(model.config.modifier, model.config.primary_key()) == mod_key_to_accelerator(model.prev_config.modifier, model.prev_config.primary_key())
                             { &[] }
                         else
                             { &["blue-label"] }
@@ -150,6 +187,55 @@ impl SimpleComponent for Switch {
             connect_enable_expansion_notify[sender] => move |e| {sender.output_sender().emit(SwitchOutput::Enabled(e.enables_expansion()));} @h,
             #[watch]
             set_expanded: model.config.enabled,
+            add_row = &gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_css_classes: &["frame-row"],
+                set_spacing: 10,
+                gtk::Label {
+                    set_label: "All shortcuts share the modifier above. Shift + any forward key also switches backward.",
+                    set_wrap: true,
+                },
+                gtk::Box {
+                    set_spacing: 10,
+                    gtk::Label { set_label: "Forward keys" },
+                    gtk::Entry {
+                        set_hexpand: true,
+                        set_placeholder_text: Some("Tab, F6"),
+                        set_tooltip_text: Some("Comma-separated XKB key names. Overrides the legacy key setting."),
+                        #[watch]
+                        #[block_signal(forward_changed)]
+                        set_text_if_different: &model.config.forward_keys().join(", "),
+                        connect_changed[sender] => move |entry| {
+                            sender.output_sender().emit(SwitchOutput::Keys(parse_keys(&entry.text())));
+                        } @forward_changed,
+                    },
+                    gtk::Button {
+                        set_icon_name: "list-add-symbolic",
+                        set_tooltip_text: Some("Record another forward shortcut (updates the shared modifier)"),
+                        connect_clicked[sender] => move |_| { sender.input(SwitchInput::AddShortcut(Recording::Forward)); },
+                    },
+                },
+                gtk::Box {
+                    set_spacing: 10,
+                    gtk::Label { set_label: "Reverse keys" },
+                    gtk::Entry {
+                        set_hexpand: true,
+                        set_placeholder_text: Some("Empty disables dedicated reverse shortcuts"),
+                        set_tooltip_text: Some("Comma-separated XKB key names. Clear this to free the backtick shortcut; Shift + forward keys remains available."),
+                        #[watch]
+                        #[block_signal(reverse_changed)]
+                        set_text_if_different: &model.config.reverse_keys.join(", "),
+                        connect_changed[sender] => move |entry| {
+                            sender.output_sender().emit(SwitchOutput::ReverseKeys(parse_keys(&entry.text())));
+                        } @reverse_changed,
+                    },
+                    gtk::Button {
+                        set_icon_name: "list-add-symbolic",
+                        set_tooltip_text: Some("Record another reverse shortcut (updates the shared modifier)"),
+                        connect_clicked[sender] => move |_| { sender.input(SwitchInput::AddShortcut(Recording::Reverse)); },
+                    },
+                },
+            },
             add_row = &gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_css_classes: &["frame-row"],
@@ -270,5 +356,25 @@ impl SimpleComponent for Switch {
                 },
             }
         }
+    }
+}
+
+fn parse_keys(text: &str) -> Vec<String> {
+    if text.trim().is_empty() {
+        Vec::new()
+    } else {
+        text.split(',').map(|key| key.trim().to_string()).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_keys;
+
+    #[test]
+    fn empty_list_and_invalid_empty_entries_are_distinct() {
+        assert!(parse_keys("  ").is_empty());
+        assert_eq!(parse_keys("Tab, F6"), ["Tab", "F6"]);
+        assert_eq!(parse_keys("Tab,,F6"), ["Tab", "", "F6"]);
     }
 }

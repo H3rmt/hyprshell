@@ -11,6 +11,7 @@ pub fn configure_wm_initial() {
 }
 
 pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
+    config_lib::check(config)?;
     apply_layerrules().warn_details("Failed to apply layerrules");
     debug!("applied layerrules");
     apply_binds(config).context("Failed to apply binds")?;

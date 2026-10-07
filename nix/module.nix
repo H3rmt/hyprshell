@@ -221,6 +221,8 @@ in
         switch = {
           enable = mkOpt "Enable recent window switcher" bool true;
           key = mkOpt "Key to open switch" str "Tab";
+          keys = mkOpt "Forward keys (overrides key when set)" (nullOr (listOf str)) null;
+          reverse_keys = mkOpt "Dedicated reverse keys (empty disables the grave shortcut)" (listOf str) [ "grave" ];
           modifier = mkOpt "Modifier key" (enum [
             "alt"
             "ctrl"
@@ -238,6 +240,8 @@ in
         switch_2 = {
           enable = mkOpt "Enable recent window switcher" bool false;
           key = mkOpt "Key to open switch" str "Tab";
+          keys = mkOpt "Forward keys (overrides key when set)" (nullOr (listOf str)) null;
+          reverse_keys = mkOpt "Dedicated reverse keys (empty disables the grave shortcut)" (listOf str) [ "grave" ];
           modifier = mkOpt "Modifier key" (enum [
             "alt"
             "ctrl"
