@@ -2,6 +2,7 @@ pub mod binds;
 mod r#const;
 mod data;
 pub mod default;
+pub mod env_dirs;
 pub mod ini;
 pub mod ini_owned;
 pub mod listener;
