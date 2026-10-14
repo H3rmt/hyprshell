@@ -1,4 +1,7 @@
-use crate::{Modifier, edit_sync::sync_document};
+use crate::{
+    Modifier,
+    edit_sync::{sync_document, to_pretty_document},
+};
 use anyhow::Context;
 use serde::{Deserialize, Serialize, de::IntoDeserializer};
 use smart_default::SmartDefault;
@@ -7,7 +10,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub struct ConfigFile {
     backing_document: toml_edit::DocumentMut,
-    config: Config,
+    pub(crate) config: Config,
 }
 
 impl TryFrom<toml_edit::DocumentMut> for ConfigFile {
@@ -24,8 +27,13 @@ impl TryFrom<toml_edit::DocumentMut> for ConfigFile {
 
 impl ConfigFile {
     pub fn new_without_file(config: Config) -> Self {
+        let backing_document = toml_edit::ser::to_string_pretty(&config)
+            .ok()
+            .and_then(|conf| conf.parse::<toml_edit::DocumentMut>().ok())
+            .unwrap_or_else(toml_edit::DocumentMut::new);
+
         Self {
-            backing_document: toml_edit::DocumentMut::new(),
+            backing_document,
             config,
         }
     }
@@ -37,9 +45,7 @@ impl ConfigFile {
     }
 
     fn sync_config_to_document(&mut self) -> anyhow::Result<()> {
-        let generated =
-            toml_edit::ser::to_document(&self.config).expect("config should always serialize");
-
+        let generated = to_pretty_document(&self.config);
         sync_document(&mut self.backing_document, &generated);
         // TODO add sync back in for all
 
@@ -62,6 +68,15 @@ impl TryInto<crate::Config> for ConfigFile {
 
     fn try_into(self) -> Result<crate::Config, Self::Error> {
         self.config.try_into()
+    }
+}
+
+impl Default for ConfigFile {
+    fn default() -> Self {
+        Self {
+            backing_document: toml_edit::DocumentMut::new(),
+            config: Default::default(),
+        }
     }
 }
 

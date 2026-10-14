@@ -145,6 +145,7 @@ impl TryFrom<io::WebSearchConfig> for crate::WebSearchConfig {
 
     fn try_from(value: io::WebSearchConfig) -> Result<Self, Self::Error> {
         Ok(Self {
+            // check if any keys are equal
             engines: value
                 .engines
                 .into_iter()

@@ -28,6 +28,7 @@ toml_edit = { version = "0.25.12", features = ["serde"] }
 ci_no_default_config_values = []
 launcher_calc_plugin = []
 disable_migrations = []
+expose_raw_io = []
 
 [lints]
 workspace = true

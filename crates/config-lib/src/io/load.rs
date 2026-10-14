@@ -6,10 +6,10 @@ use tracing::instrument;
 use crate::io::ConfigFile;
 
 #[instrument(level = "debug", skip(allow_migrate))]
-pub fn load_and_migrate_config(
+pub fn load_and_migrate_io_config(
     config_file: &Path,
     allow_migrate: bool,
-) -> anyhow::Result<crate::Config> {
+) -> anyhow::Result<crate::io::ConfigFile> {
     if !config_file.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
@@ -33,11 +33,8 @@ pub fn load_and_migrate_config(
             match migrated {
                 Ok(config) => {
                     tracing::info!("Config migrated successfully");
-                    let config: crate::Config = config
-                        .try_into()
-                        .context("Failed to convert config to internal format")?;
-                    // TODO move the check into the try from io config to exposed config
-                    crate::check(&config)?;
+                    let config = ConfigFile::try_from(config)
+                        .context("Failed to convert TOML config to Config struct")?;
                     return Ok(config);
                 }
                 Err(err) => {
@@ -72,10 +69,20 @@ pub fn load_and_migrate_config(
         ConfigFile::try_from(document).context("Failed to convert TOML config to Config struct")?;
 
     tracing::debug!("Loaded config");
+    Ok(config)
+}
+
+pub fn load_and_migrate_config(
+    config_file: &Path,
+    allow_migrate: bool,
+) -> anyhow::Result<crate::Config> {
+    let config = load_and_migrate_io_config(config_file, allow_migrate)?;
+
     let config: crate::Config = config
         .try_into()
         .context("Failed to convert config to internal format")?;
 
+    // TODO move the check into the try from io config to exposed config
     crate::check(&config)?;
 
     Ok(config)
