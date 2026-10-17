@@ -110,10 +110,8 @@ criterion_main!(benches);
 
 fn benchmark(c: &mut Criterion) {
     c.bench_function("stress_test", move |b| {
-        let application = gtk::Application::new(
-            Some("relm4.bench.stress_test"),
-            ApplicationFlags::FLAGS_NONE,
-        );
+        let application =
+            gtk::Application::new(Some("relm4.bench.stress_test"), ApplicationFlags::empty());
 
         b.iter(move || {
             let app = RelmApp::from_app(application.clone());
