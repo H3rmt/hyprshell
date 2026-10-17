@@ -15,6 +15,12 @@ pub enum ExternalTransferType {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OpenSwitch {
     pub reverse: bool,
+    /// Compositor keyboard event time, before the IPC process is scheduled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_time: Option<u32>,
+    /// Identity of a Lua open awaiting receipt by the switch component.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

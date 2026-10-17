@@ -4,6 +4,7 @@ use crate::instance::Instance;
 use crate::{command, default_instance};
 use std::fmt::Display;
 
+/// Format a Lua string literal, escaping quotes and control characters.
 pub fn format_string<T: Display>(value: &T) -> String {
     // return format!("\"{}\"", value.to_string().escape_default());
     let mut f = String::with_capacity(value.to_string().len() + 2);
