@@ -38,8 +38,16 @@ pub(crate) enum DataCommands {
 /// This struct holds a basic identifier for a workspace often used in other structs
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
-    /// The workspace Id
-    pub id: WorkspaceId,
+    /// Canonical compositor workspace address, absent in older IPC schemas.
+    #[serde(default)]
+    pub address: String,
+    /// Compositor workspace kind, absent in older IPC schemas.
+    #[serde(default, rename = "type")]
+    pub workspace_type: String,
+
+    /// The workspace ID, absent for named, special, or empty monitor workspace entries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<i64>,
     /// The workspace's name
     pub name: String,
 }
@@ -153,8 +161,15 @@ create_data_struct!(
 /// This struct holds information for a workspace
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Workspace {
-    /// The workspace Id
-    pub id: WorkspaceId,
+    /// Canonical compositor workspace address, absent in older IPC schemas.
+    #[serde(default)]
+    pub address: String,
+    /// Compositor workspace kind, absent in older IPC schemas.
+    #[serde(default, rename = "type")]
+    pub workspace_type: String,
+    /// The workspace ID, absent for named and special workspaces.
+    #[serde(default)]
+    pub id: Option<i64>,
     /// The workspace's name
     pub name: String,
     /// The monitor the workspace is on
@@ -738,3 +753,121 @@ create_data_struct!(
     holding_type: WorkspaceRuleset,
     doc: "This struct holds a vector of workspace rules per workspace"
 );
+
+#[cfg(test)]
+mod workspace_basic_tests {
+    use super::{Monitor, WorkspaceBasic};
+
+    #[test]
+    fn parses_old_and_current_workspace_identifiers() {
+        for (input, expected_id, expected_name) in [
+            (r#"{"id":2,"name":"2"}"#, Some(2), "2"),
+            (
+                r#"{"address":"2","id":2,"name":"2","type":"numbered"}"#,
+                Some(2),
+                "2",
+            ),
+            (
+                r#"{"address":"special:scratchpad","name":"special:scratchpad","type":"special"}"#,
+                None,
+                "special:scratchpad",
+            ),
+            (r#"{"address":"","name":"","type":""}"#, None, ""),
+        ] {
+            let workspace: WorkspaceBasic = serde_json::from_str(input).unwrap();
+            assert_eq!(workspace.id, expected_id);
+            assert_eq!(workspace.name, expected_name);
+        }
+    }
+
+    #[test]
+    fn parses_monitor_with_empty_special_workspace() {
+        let monitor = serde_json::json!({
+            "id": 0, "name": "DP-1", "description": "Display", "width": 1920,
+            "height": 1080, "refreshRate": 60.0, "x": 0, "y": 0,
+            "activeWorkspace": {"address": "2", "id": 2, "name": "2", "type": "numbered"},
+            "specialWorkspace": {"address": "", "name": "", "type": ""},
+            "reserved": [0, 0, 0, 0], "scale": 1.0, "transform": 0,
+            "focused": true, "dpmsStatus": true, "vrr": false, "disabled": false
+        });
+        let monitor: Monitor = serde_json::from_value(monitor).unwrap();
+        assert_eq!(monitor.active_workspace.id, Some(2));
+        assert_eq!(monitor.special_workspace.id, None);
+    }
+}
+
+#[cfg(test)]
+mod current_workspace_schema_tests {
+    use super::{Client, Monitor, Workspace};
+    use serde_json::json;
+
+    // Workspace addresses and display names are independent since:
+    // https://github.com/hyprwm/Hyprland/pull/16140
+    fn workspace(address: &str, kind: &str, name: &str) -> serde_json::Value {
+        json!({"address": address, "type": kind, "name": name,
+            "monitor": "DP-1", "monitorID": 0, "windows": 1,
+            "hasfullscreen": false, "lastwindow": "0x1234",
+            "lastwindowtitle": "fixture", "ispersistent": false,
+            "tiledLayout": "dwindle"})
+    }
+
+    #[test]
+    fn actual_full_workspace_schema_accepts_numeric_named_and_special_identities() {
+        for (address, kind, id) in [
+            ("5", "normal", Some(5_i64)),
+            ("work", "named", None),
+            ("special:scratchpad", "special", None),
+            ("special:special", "special", None),
+            ("4294967295", "normal", Some(i64::from(u32::MAX))),
+        ] {
+            let mut value = workspace(address, kind, address);
+            if let Some(id) = id {
+                value["id"] = json!(id);
+            }
+            let parsed: Workspace = serde_json::from_value(value).unwrap();
+            assert_eq!(parsed.id, id);
+            assert_eq!(parsed.address, address);
+            assert_eq!(parsed.workspace_type, kind);
+        }
+        let mut legacy = workspace("", "", "old-name");
+        legacy.as_object_mut().unwrap().remove("address");
+        legacy.as_object_mut().unwrap().remove("type");
+        legacy["id"] = json!(-99);
+        let legacy: Workspace = serde_json::from_value(legacy).unwrap();
+        assert_eq!(legacy.id, Some(-99));
+    }
+
+    #[test]
+    fn real_client_and_monitor_preserve_the_same_address_only_workspace() {
+        for (address, kind) in [("work", "normal"), ("special:scratchpad", "special")] {
+            let identity = json!({"address": address, "type": kind, "name": address});
+            let client: Client = serde_json::from_value(json!({
+                "address": "0x1234", "mapped": true, "at": [0,0], "size": [200,200],
+                "workspace": identity, "floating": false, "monitor": 0,
+                "class": "fixture", "title": "fixture", "initialClass": "fixture",
+                "initialTitle": "fixture", "pid": 1, "xwayland": false,
+                "pinned": false, "fullscreen": 0, "fullscreenClient": 0,
+                "grouped": [], "swallowing": null, "focusHistoryID": 0
+            }))
+            .unwrap();
+            let monitor: Monitor = serde_json::from_value(json!({
+                "id":0,"name":"DP-1","description":"fixture","width":1920,
+                "height":1080,"refreshRate":60.0,"x":0,"y":0,
+                "activeWorkspace": identity, "specialWorkspace": if kind == "special" { identity.clone() } else { json!({"address":"", "type":"", "name":""}) },
+                "reserved":[0,0,0,0],"scale":1.0,"transform":0,
+                "focused":true,"dpmsStatus":true,"vrr":false,"disabled":false
+            }))
+            .unwrap();
+            assert_eq!(client.workspace.id, None);
+            assert_eq!(client.workspace.address, address);
+            assert_eq!(client.workspace, monitor.active_workspace);
+            if kind == "special" {
+                assert_eq!(client.workspace, monitor.special_workspace);
+            }
+            let full: Workspace =
+                serde_json::from_value(workspace(address, kind, address)).unwrap();
+            assert_eq!(full.address, client.workspace.address);
+            assert_eq!(full.workspace_type, client.workspace.workspace_type);
+        }
+    }
+}

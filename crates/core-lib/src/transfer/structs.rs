@@ -1,4 +1,4 @@
-use crate::{ClientId, WorkspaceId};
+use crate::ClientId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -97,7 +97,8 @@ impl Identifier {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WindowsOverride {
     ClientId(ClientId),
-    WorkspaceID(WorkspaceId),
+    // Keep the existing external IPC numeric contract separate from private UI keys.
+    WorkspaceID(i32),
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -106,4 +107,24 @@ pub enum Direction {
     Left,
     Up,
     Down,
+}
+
+#[cfg(test)]
+mod workspace_wire_contract_tests {
+    use super::WindowsOverride;
+
+    #[test]
+    fn external_workspace_override_keeps_the_existing_i32_contract() {
+        let original = WindowsOverride::WorkspaceID(5);
+        assert_eq!(
+            serde_json::to_string(&original).expect("valid test fixture"),
+            r#"{"WorkspaceID":5}"#
+        );
+        assert_eq!(
+            serde_json::from_str::<WindowsOverride>(r#"{"WorkspaceID":5}"#)
+                .expect("valid test fixture"),
+            original
+        );
+        assert!(serde_json::from_str::<WindowsOverride>(r#"{"WorkspaceID":4294967296}"#).is_err());
+    }
 }

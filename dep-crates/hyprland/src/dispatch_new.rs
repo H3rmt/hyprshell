@@ -69,8 +69,10 @@ pub enum MonitorIdentifier {
 /// This enum is for identifying workspaces that also includes the special workspace
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum WorkspaceIdentifier {
-    /// The workspace Id
+    /// The legacy signed workspace ID.
     Id(WorkspaceId),
+    /// A numbered workspace in the current unsigned IPC range.
+    Number(u32),
     /// The workspace relative to the current workspace
     #[display("{}", format_relative(*_0))]
     Relative(i32),

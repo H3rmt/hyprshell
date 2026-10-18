@@ -110,9 +110,9 @@ fn internal_get_initial_active() -> anyhow::Result<Active> {
         .ok()
         .flatten()
         .map(|c| to_client_id(&c.address));
-    let active_ws = Workspace::get_active()
-        .context("unable to get initial workspace")?
-        .id;
+    let active_ws = crate::workspace_identity::full_key(
+        &Workspace::get_active().context("unable to get initial workspace")?,
+    )?;
     let active_monitor = Monitor::get_active()
         .context("unable to get initial monitor")?
         .id;

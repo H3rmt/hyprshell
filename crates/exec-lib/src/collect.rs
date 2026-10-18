@@ -1,4 +1,5 @@
 use crate::util::to_client_id;
+use crate::workspace_identity::{basic_key, full_key};
 use anyhow::Context;
 use core_lib::{ByFirst, ClientData, ClientId, MonitorData, MonitorId, WorkspaceData, WorkspaceId};
 use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
@@ -6,7 +7,9 @@ use hyprland::prelude::*;
 use regex::Regex;
 use tracing::{debug_span, instrument, trace, warn};
 
-fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
+type HyprlandSnapshot = (Vec<Monitor>, Vec<(WorkspaceId, Workspace)>, Vec<Client>);
+
+fn get_hypr_data() -> anyhow::Result<HyprlandSnapshot> {
     let _span = debug_span!("get_hypr_data").entered();
     let monitors = Monitors::get().context("monitors failed")?.to_vec();
     // sort and filter all workspaces sorted by ID
@@ -14,16 +17,22 @@ fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)
         let mut workspaces = Workspaces::get()
             .context("workspaces failed")?
             .into_iter()
-            .filter(|w| w.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
-            .collect::<Vec<_>>();
+            .filter(|w| w.id != Some(-1)) // TODO: check if still needed: ignore clients on invalid workspaces
+            .map(|w| Ok((full_key(&w)?, w)))
+            .collect::<anyhow::Result<Vec<_>>>()?;
 
-        workspaces.sort_by_key(|a| a.id);
+        workspaces.sort_by_key(|a| a.0);
         workspaces
     };
     let clients = Clients::get()
         .context("clients failed")?
         .into_iter()
-        .filter(|c| c.workspace.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
+        .filter(|c| {
+            c.workspace.id != Some(-1)
+                && !(c.workspace.id.is_none()
+                    && c.workspace.address.is_empty()
+                    && c.workspace.name.is_empty())
+        })
         .collect::<Vec<_>>();
 
     Ok((monitors, workspaces, clients))
@@ -74,10 +83,10 @@ pub fn collect_hypr_data(
         for (monitor_id, monitor_data) in &monitor_data {
             workspaces
                 .iter()
-                .filter(|ws| ws.monitor_id == Some(*monitor_id))
-                .for_each(|workspace| {
+                .filter(|(_, ws)| ws.monitor_id == Some(*monitor_id))
+                .for_each(|(workspace_id, workspace)| {
                     wd.push((
-                        workspace.id,
+                        *workspace_id,
                         WorkspaceData {
                             name: workspace.name.clone(),
                             monitor: *monitor_id,
@@ -98,7 +107,8 @@ pub fn collect_hypr_data(
             let Some(monitor) = client.monitor else {
                 continue;
             };
-            if workspace_data.find_by_first(&client.workspace.id).is_some() {
+            let workspace_id = basic_key(&client.workspace)?;
+            if workspace_data.find_by_first(&workspace_id).is_some() {
                 cd.push((
                     to_client_id(&client.address),
                     ClientData {
@@ -107,7 +117,7 @@ pub fn collect_hypr_data(
                         width: client.size.0,
                         height: client.size.1,
                         class: client.class.clone(),
-                        workspace: client.workspace.id,
+                        workspace: workspace_id,
                         monitor,
                         focus_history_id: client.focus_history_id,
                         title: client.title.clone(),
@@ -145,12 +155,12 @@ pub fn collect_hypr_data(
 
     // is broken, reports the "normal" workspace as active when a client in special workspace is selected
     // let active_ws = Workspace::get_active()?.id;
-    let active_ws = Workspace::get_active()
-        .map(|w| w.id)
-        .context("active workspace failed")?;
+    let active_ws = full_key(&Workspace::get_active().context("active workspace failed")?)?;
     let active_ws = Client::get_active()
         .context("active client failed")?
-        .map_or(active_ws, |a| a.workspace.id);
+        .map(|a| basic_key(&a.workspace))
+        .transpose()?
+        .unwrap_or(active_ws);
     let active_monitor = Monitor::get_active().context("active monitor failed")?.id;
     let active_client = Client::get_active()
         .context("active client failed")?
