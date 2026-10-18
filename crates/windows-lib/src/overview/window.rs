@@ -4,11 +4,17 @@ use core_lib::{
 };
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
+#[cfg(feature = "live_windows")]
+use relm4::adw::gtk::glib;
 use relm4::adw::prelude::*;
 use relm4::adw::{gdk, gtk};
 use relm4::factory::FactoryVecDeque;
 use relm4::gtk::{Orientation, SelectionMode};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent};
+#[cfg(feature = "live_windows")]
+use std::cell::RefCell;
+#[cfg(feature = "live_windows")]
+use std::rc::Rc;
 use tracing::trace;
 
 #[derive(Debug)]
@@ -25,6 +31,10 @@ pub struct OverviewWindow {
     live_thumbnails: bool,
     #[cfg(feature = "live_windows")]
     live_thumbnails_icons: bool,
+    #[cfg(feature = "live_windows")]
+    after_paint_clock: Option<gdk::FrameClock>,
+    #[cfg(feature = "live_windows")]
+    after_paint_handler: Rc<RefCell<Option<glib::SignalHandlerId>>>,
 }
 
 #[derive(Debug)]
@@ -52,6 +62,8 @@ pub struct OverviewWindowInit {
 pub enum OverviewWindowOutput {
     Clicked(WorkspaceId),
     ClickedC(ClientId),
+    #[cfg(feature = "live_windows")]
+    Hidden,
 }
 
 #[relm4::component(pub)]
@@ -102,6 +114,10 @@ impl SimpleComponent for OverviewWindow {
             live_thumbnails: init.live_thumbnails,
             #[cfg(feature = "live_windows")]
             live_thumbnails_icons: init.live_thumbnails_icons,
+            #[cfg(feature = "live_windows")]
+            after_paint_clock: None,
+            #[cfg(feature = "live_windows")]
+            after_paint_handler: Rc::new(RefCell::new(None)),
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -118,7 +134,7 @@ impl SimpleComponent for OverviewWindow {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         trace!("overview::root::window::update: {message:?}");
         match message {
             OverviewWindowInput::SetGeneral(general) => {
@@ -143,14 +159,14 @@ impl SimpleComponent for OverviewWindow {
             OverviewWindowInput::CloseOverview => {
                 if self.open {
                     self.open = false;
-                    self.close_overview();
+                    self.close_overview(&sender);
                 } else {
                     trace!("not open");
                 }
             }
             OverviewWindowInput::ReloadOverview(data) => {
                 if self.open {
-                    self.reload_overview(&data);
+                    self.reload_overview(&data, &sender);
                 } else {
                     trace!("not open");
                 }
@@ -170,6 +186,15 @@ impl SimpleComponent for OverviewWindow {
 
 impl OverviewWindow {
     fn open_overview(&mut self, data: &OverviewWindowData) {
+        // Cancel any still-pending after-paint hide from a previous close
+        // before showing the window again: the old handler must not hide it.
+        #[cfg(feature = "live_windows")]
+        if let Some(clock) = self.after_paint_clock.take() {
+            if let Some(id) = self.after_paint_handler.borrow_mut().take() {
+                clock.disconnect(id);
+            }
+        }
+
         trace!("Showing window {:?}", self.window.id());
         self.window.set_visible(true);
         self.window.grab_focus();
@@ -241,20 +266,56 @@ impl OverviewWindow {
         }
     }
 
-    fn close_overview(&mut self) {
+    #[allow(unused_variables)]
+    fn close_overview(&mut self, sender: &ComponentSender<Self>) {
         trace!("Hiding window {:?}", self.window.id());
-        self.window.set_visible(false);
-
-        // Clear UI
+        // Clear UI first so the textures are released before the window is
+        // hidden, letting GSK render an empty frame and reclaim the GPU
+        // DMA-BUF images.
         {
             let mut lock = self.items.guard();
             lock.clear();
         }
+
+        #[cfg(feature = "live_windows")]
+        {
+            if let Some(clock) = self.window.frame_clock() {
+                // Keep the window visible until one empty frame has been
+                // rendered after the textures were cleared, then hide it. The
+                // `after-paint` frame clock signal fires once the frame is
+                // drawn, so no fixed delay is needed.
+                self.after_paint_clock = Some(clock.clone());
+                let handler = self.after_paint_handler.clone();
+                let window = self.window.downgrade();
+                let output = sender.output_sender().clone();
+                let id = clock.connect_after_paint(move |clock| {
+                    // Disconnect exactly once before hiding so the handler
+                    // never runs again, then tell the parent we are hidden.
+                    if let Some(id) = handler.borrow_mut().take() {
+                        clock.disconnect(id);
+                    }
+                    if let Some(window) = window.upgrade() {
+                        window.set_visible(false);
+                    }
+                    let _ = output.send(OverviewWindowOutput::Hidden);
+                });
+                *self.after_paint_handler.borrow_mut() = Some(id);
+                self.window.queue_draw();
+            } else {
+                // No frame clock available: hide directly instead of waiting.
+                self.window.set_visible(false);
+                let _ = sender.output_sender().send(OverviewWindowOutput::Hidden);
+            }
+        }
+        #[cfg(not(feature = "live_windows"))]
+        {
+            self.window.set_visible(false);
+        }
     }
 
-    fn reload_overview(&mut self, data: &OverviewWindowData) {
+    fn reload_overview(&mut self, data: &OverviewWindowData, sender: &ComponentSender<Self>) {
         if data.clients.is_empty() {
-            self.close_overview();
+            self.close_overview(sender);
             return;
         }
         self.populate_workspace_mode(data, self.general.scale);
