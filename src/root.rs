@@ -29,7 +29,6 @@ pub struct Root {
     data_dir: Rc<PathBuf>,
     config_file: Rc<PathBuf>,
     css_path: Rc<PathBuf>,
-    #[allow(unused)]
     cache_dir: Rc<PathBuf>,
 }
 
@@ -261,7 +260,7 @@ impl Root {
             return;
         }
 
-        if let Err(err) = configure_wm(&config) {
+        if let Err(err) = configure_wm(&config, &self.cache_dir) {
             notify_warn(&format!(
                 "Failed to configure wm: {err:?}, could not load config"
             ));
