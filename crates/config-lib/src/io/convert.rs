@@ -93,6 +93,8 @@ impl TryFrom<Switch> for crate::Switch {
         Ok(Self {
             modifier: value.modifier,
             key: value.key,
+            keys: value.keys,
+            reverse_keys: value.reverse_keys,
             filter_by_same_class: value.filter_by.contains(&FilterBy::SameClass),
             filter_by_current_workspace: value.filter_by.contains(&FilterBy::CurrentWorkspace),
             filter_by_current_monitor: value.filter_by.contains(&FilterBy::CurrentMonitor),
@@ -118,6 +120,8 @@ impl From<crate::Switch> for Switch {
         Self {
             modifier: value.modifier,
             key: value.key,
+            keys: value.keys,
+            reverse_keys: value.reverse_keys,
             filter_by: filter,
             switch_workspaces: value.switch_workspaces,
             exclude_workspaces: value.exclude_workspaces,

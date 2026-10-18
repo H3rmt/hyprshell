@@ -51,6 +51,7 @@ impl From<old_structs::Switch> for crate::io::Switch {
                 format!("special:{}", value.exclude_special_workspaces).into_boxed_str()
             },
             kill_key: 'q',
+            ..Default::default()
         }
     }
 }
