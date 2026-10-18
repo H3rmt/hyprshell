@@ -13,6 +13,7 @@ use std::time::Duration;
 fn reference(schema: &str) -> Value {
     match schema {
         "legacy" => json!({"id": 2, "name": "renamed"}),
+        "legacy-named" => json!({"id": -1337, "name": "work"}),
         "numbered" => json!({"address": "2", "type": "numbered", "name": "renamed"}),
         "special" => json!({"address": "special:work", "type": "special", "name": "renamed"}),
         kind => json!({"address": "work", "type": kind, "name": "renamed"}),
@@ -30,7 +31,7 @@ fn workspace(reference: &Value) -> Value {
 }
 
 fn monitor(schema: &str) -> Value {
-    let active = if schema == "legacy" {
+    let active = if schema.starts_with("legacy") {
         json!({"id": 1, "name": "1"})
     } else {
         json!({"address": "1", "id": 1, "type": "numbered", "name": "1"})
@@ -53,7 +54,14 @@ fn client(reference: &Value) -> Value {
 
 #[test]
 fn workspace_collection_and_dispatch_use_stable_addresses() {
-    for schema in ["legacy", "numbered", "named", "normal", "special"] {
+    for schema in [
+        "legacy",
+        "legacy-named",
+        "numbered",
+        "named",
+        "normal",
+        "special",
+    ] {
         for legacy in [false, true] {
             let root = std::env::temp_dir().join(format!(
                 "hyprshell-ws-{}-{schema}-{legacy}",
@@ -195,7 +203,11 @@ fn workspace_fixture_child() {
             .find_by_first(&key)
             .expect("valid test fixture")
             .name,
-        "renamed"
+        if schema == "legacy-named" {
+            "work"
+        } else {
+            "renamed"
+        }
     );
     switch_workspace(key).expect("valid test fixture");
     if schema == "special" {

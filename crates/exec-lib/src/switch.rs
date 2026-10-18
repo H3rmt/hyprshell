@@ -99,7 +99,7 @@ fn switch_client_by_initial_class_legacy(class: &str) -> anyhow::Result<()> {
 pub fn switch_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     // Validate the normal selector before any compositor IPC or fallback.
     // Negative legacy/special keys retain the existing special-workspace path.
-    let target = resolve(workspace_id)?;
+    let target = normal_target(workspace_id)?;
     if workspace_id >= 0 {
         normal_workspace_dispatch(target.clone())?;
     }
@@ -218,7 +218,9 @@ fn special_name(key: WorkspaceId, workspace: &Workspace) -> anyhow::Result<Strin
             .strip_prefix("special:")
             .unwrap_or(&workspace.name)
             .to_owned()),
-        WorkspaceTarget::Named(_) => anyhow::bail!("normal workspace passed to special dispatch"),
+        WorkspaceTarget::Named(_) | WorkspaceTarget::LegacyNamed(_) => {
+            anyhow::bail!("normal workspace passed to special dispatch")
+        }
     }
 }
 
@@ -247,13 +249,20 @@ fn switch_normal_workspace(workspace_id: WorkspaceId) -> anyhow::Result<()> {
 
 fn switch_normal_workspace_lua(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     debug!("execute switch to workspace {workspace_id}");
-    let target = resolve(workspace_id)?;
+    let target = normal_target(workspace_id)?;
     if matches!(&target, WorkspaceTarget::Named(_)) {
         workspace_by_key(workspace_id)?;
     }
     let disp = normal_workspace_dispatch(target)?;
     disp.apply().context("failed to execute dispatch")?;
     Ok(())
+}
+
+fn normal_target(key: WorkspaceId) -> anyhow::Result<WorkspaceTarget> {
+    match resolve(key)? {
+        WorkspaceTarget::LegacyNamed(_) => Ok(WorkspaceTarget::Named(workspace_by_key(key)?.name)),
+        target => Ok(target),
+    }
 }
 
 fn normal_workspace_dispatch(
@@ -287,14 +296,16 @@ fn normal_workspace_dispatch(
             // while workspace.name is only the mutable display label.
             WorkspaceIdentifier::Name(address)
         }
-        WorkspaceTarget::Special(_) => anyhow::bail!("special workspace passed to normal dispatch"),
+        WorkspaceTarget::Special(_) | WorkspaceTarget::LegacyNamed(_) => {
+            anyhow::bail!("unresolved workspace passed to normal dispatch")
+        }
     };
     Ok(Dispatch::FocusWorkspace(workspace, false))
 }
 
 fn switch_normal_workspace_legacy(workspace_id: WorkspaceId) -> anyhow::Result<()> {
     debug!("execute switch to workspace {workspace_id}");
-    let target = resolve(workspace_id)?;
+    let target = normal_target(workspace_id)?;
     if let WorkspaceTarget::Number(number) = &target {
         return Dispatch::call(DispatchType::Custom("workspace", &number.to_string()))
             .context("failed to execute numeric workspace dispatch");
@@ -305,7 +316,9 @@ fn switch_normal_workspace_legacy(workspace_id: WorkspaceId) -> anyhow::Result<(
             workspace_by_key(workspace_id)?;
             WorkspaceIdentifierWithSpecial::Name(address)
         }
-        WorkspaceTarget::Special(_) => anyhow::bail!("special workspace passed to normal dispatch"),
+        WorkspaceTarget::Special(_) | WorkspaceTarget::LegacyNamed(_) => {
+            anyhow::bail!("unresolved workspace passed to normal dispatch")
+        }
     };
     Dispatch::call(DispatchType::Workspace(dispatch)).context("failed to execute dispatch")?;
     Ok(())

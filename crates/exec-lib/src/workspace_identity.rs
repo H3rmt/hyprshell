@@ -10,6 +10,8 @@ use std::sync::{Mutex, OnceLock};
 pub enum WorkspaceTarget {
     Number(i64),
     Named(String),
+    // Legacy named IDs are stable across renames; resolve their current name only at dispatch.
+    LegacyNamed(i64),
     Special(String),
 }
 
@@ -17,6 +19,11 @@ fn target(id: Option<i64>, address: &str, kind: &str) -> anyhow::Result<Workspac
     if let Some(id) = id {
         if id < i64::from(i32::MIN) || id > i64::from(u32::MAX) {
             bail!("workspace numeric ID outside legacy i32/current u32 range");
+        }
+        // Hyprland <=0.56.2 reserves -99..=-2 for special workspaces and
+        // allocates named workspaces from -1337 downward.
+        if id < -99 && address.is_empty() && kind.is_empty() {
+            return Ok(WorkspaceTarget::LegacyNamed(id));
         }
         return Ok(WorkspaceTarget::Number(id));
     }
@@ -39,7 +46,7 @@ fn target(id: Option<i64>, address: &str, kind: &str) -> anyhow::Result<Workspac
     }
 }
 
-// Never recycle a key for a different address: open UI selections can outlive
+// Never recycle a key for a different identity: open UI selections can outlive
 // one collection snapshot. The daemon's lifetime owns this small registry.
 #[derive(Default)]
 struct Identities {
@@ -58,7 +65,7 @@ impl Identities {
             return Ok(*key);
         }
         let key = match &target {
-            WorkspaceTarget::Named(_) => {
+            WorkspaceTarget::Named(_) | WorkspaceTarget::LegacyNamed(_) => {
                 self.named_count = self
                     .named_count
                     .checked_add(1)
@@ -166,15 +173,7 @@ mod workspace_identity_tests {
     #[test]
     fn native_numeric_ids_and_signs_are_preserved_without_collisions() {
         let mut ids = Identities::default();
-        for value in [
-            i64::from(i32::MIN),
-            -99,
-            -1,
-            0,
-            1,
-            i64::from(i32::MAX),
-            i64::from(u32::MAX),
-        ] {
+        for value in [-99, -1, 0, 1, i64::from(i32::MAX), i64::from(u32::MAX)] {
             let key = ids
                 .intern(target(Some(value), "", "").expect("valid test fixture"))
                 .expect("valid test fixture");
@@ -199,6 +198,23 @@ mod workspace_identity_tests {
         assert_eq!(
             ids.resolve(default_special).expect("valid test fixture"),
             WorkspaceTarget::Special("special".to_owned())
+        );
+    }
+
+    #[test]
+    fn legacy_named_ids_are_normal_and_remain_stable() {
+        let mut ids = Identities::default();
+        for id in [-1337, -1338, i64::from(i32::MIN)] {
+            let identity = target(Some(id), "", "").expect("legacy named ID");
+            assert_eq!(identity, WorkspaceTarget::LegacyNamed(id));
+            let key = ids.intern(identity.clone()).expect("legacy named key");
+            assert!(key > i64::from(u32::MAX));
+            assert_eq!(ids.resolve(key).expect("existing identity"), identity);
+            assert_eq!(ids.intern(identity).expect("stable identity"), key);
+        }
+        assert_eq!(
+            target(Some(-99), "", "").expect("legacy special ID"),
+            WorkspaceTarget::Number(-99)
         );
     }
 
