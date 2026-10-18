@@ -620,677 +620,6 @@ arr7 = [
 }
 
 #[allow(clippy::needless_raw_string_hashes)]
-// #[cfg(test)]
-mod tests {
-    use super::*;
-    use toml_edit::DocumentMut;
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_2() {
-        let mut dst: DocumentMut =
-            "# test comment\n\nkey1 = \"value1\"\nkey2 = \"value2\"\n#test comment"
-                .parse()
-                .unwrap();
-        let src = "\nkey1 = \"new_value\"\nkey2 = \"value3\"\n[section]\nkey = \"test\"\n"
-            .parse::<DocumentMut>()
-            .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            "# test comment\n\nkey1 = \"new_value\"\nkey2 = \"value3\"\n[section]\nkey = \"test\"\n#test comment"
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_3() {
-        let mut dst: DocumentMut = r#"
-# test comment
-
-key1 = "value1"
-key2 = "value2"
-
-[section]
-test = 123
-test2 = "value_2"
-# test comment
-
-[section_2]
-test = 546
-# test2 = "value_4"
-"#
-        .parse()
-        .unwrap();
-        #[derive(serde::Serialize)]
-        struct Section {
-            test: u16,
-            test2: Option<String>,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            key1: String,
-            key2: String,
-            section: Section,
-            section_2: Section,
-        }
-        let src = to_pretty_document(&Config {
-            key1: "new_value".to_string(),
-            key2: "value3".to_string(),
-            section: Section {
-                test: 345,
-                test2: None,
-            },
-            section_2: Section {
-                test: 161,
-                test2: Some("value_2".to_string()),
-            },
-        });
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# test comment
-
-key1 = "new_value"
-key2 = "value3"
-
-[section]
-test = 345
-test2 = "value_2"
-# test comment
-
-[section_2]
-test = 161
-test2 = "value_2"
-# test2 = "value_4"
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_0() {
-        let mut dst: DocumentMut = r#"
-[[sections]]
-test = 123
-[[sections]]
-test = 546
-test2 = "value_4""#
-            .parse()
-            .unwrap();
-        dst.as_table_mut()
-            .get_mut("sections")
-            .unwrap()
-            .as_array_of_tables_mut()
-            .unwrap()
-            .get_mut(0)
-            .unwrap()
-            .insert("test", toml_edit::value(345));
-        assert_eq!(
-            dst.to_string(),
-            r#"
-[[sections]]
-test = 345
-[[sections]]
-test = 546
-test2 = "value_4"
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_1() {
-        let mut dst: DocumentMut = r#"
-# Comment
-[[sections]]
-test = 123
-test3 = "value_2"
-[[sections]]
-test = 546
-test2 = "value_4"
-test3 = "value_8"
-[[sections]]
-test = 122
-# Comment
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-[[sections]]
-test = 123
-test2 = "value_1"
-[[sections]]
-test = 546
-test3 = "value_5"
-"#
-        .parse()
-        .unwrap();
-        sync_array(
-            dst.get_mut("sections").unwrap(),
-            src.get("sections").unwrap(),
-            |a| a.get("test").unwrap().as_integer().unwrap(),
-        )
-        .unwrap();
-
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-[[sections]]
-test = 123
-test3 = "value_2"
-test2 = "value_1"
-[[sections]]
-test = 546
-test2 = "value_4"
-test3 = "value_5"
-# Comment
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_2() {
-        let mut dst: DocumentMut = r#"
-test = 12
-
-[[sections]]
-id = 123
-[[sections]]
-id = 546
-test2 = "value_4"
-[[sections]]
-id = 122
-test2 = "value_8"
-"#
-        .parse()
-        .unwrap();
-        #[derive(serde::Serialize)]
-        struct Section {
-            id: u16,
-            test2: Option<String>,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            test: u16,
-            sections: Vec<Section>,
-        }
-        let src = toml_edit::ser::to_document(&Config {
-            test: 1,
-            sections: vec![
-                Section {
-                    id: 123,
-                    test2: None,
-                },
-                Section {
-                    id: 122,
-                    test2: Some("value_2".to_string()),
-                },
-            ],
-        })
-        .expect("must succeed");
-        sync_document(&mut dst, &src);
-        sync_array(
-            dst.get_mut("sections").unwrap(),
-            src.get("sections").unwrap(),
-            |a| a.get("id").unwrap().as_integer().unwrap(),
-        )
-        .unwrap();
-        assert_eq!(
-            dst.to_string(),
-            r#"
-test = 1
-
-[[sections]]
-id = 123
-[[sections]]
-id = 122
-test2 = "value_2"
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_2_pretty() {
-        let mut dst: DocumentMut = r#"
-test = 12
-
-[[sections]]
-id = 123
-[[sections]]
-id = 546
-test2 = "value_4"
-[[sections]]
-id = 122
-test2 = "value_8"
-"#
-        .parse()
-        .unwrap();
-        #[derive(serde::Serialize)]
-        struct Section {
-            id: u16,
-            test2: Option<String>,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            test: u16,
-            sections: Vec<Section>,
-        }
-        let src = to_pretty_document(&Config {
-            test: 1,
-            sections: vec![
-                Section {
-                    id: 123,
-                    test2: None,
-                },
-                Section {
-                    id: 122,
-                    test2: Some("value_2".to_string()),
-                },
-            ],
-        });
-        sync_document(&mut dst, &src);
-        sync_array(
-            dst.get_mut("sections").unwrap(),
-            src.get("sections").unwrap(),
-            |a| a.get("id").unwrap().as_integer().unwrap(),
-        )
-        .unwrap();
-        assert_eq!(
-            dst.to_string(),
-            r#"
-test = 1
-
-[[sections]]
-id = 123
-[[sections]]
-id = 122
-test2 = "value_2"
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_3() {
-        let mut dst: DocumentMut = r#"
-# Comment
-test = "test" # test value
-sections = [ { test = 123, test3 = "value_2",    }, { test = 546, test2 = "value_4", test3= "value_8"   }, { test = 122 } ]
-# Comment
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-[[sections]]
-test = 123
-test2 = "value_1"
-[[sections]]
-test = 546
-test3 = "value_5"
-"#
-        .parse()
-        .unwrap();
-        sync_array(
-            dst.get_mut("sections").unwrap(),
-            src.get("sections").unwrap(),
-            |a| a.get("test").unwrap().as_integer().unwrap(),
-        )
-        .unwrap();
-
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-test = "test" # test value
-sections = [ { test = 123, test3 = "value_2", test2 = "value_1",    }, { test = 546, test2 = "value_4", test3= "value_5"}]
-# Comment
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_array_4() {
-        let mut dst: DocumentMut = r#"
-# Comment
-test = "test" # test value
-sections = [ { test = 123, test3 = "value_2",    }, { test = 546, test2 = "value_4", test3= "value_8"   }, { test = 122 } ]
-# Comment
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sections = [ { test = 123, test2 = "value_1" }, { test = 546, test3= "value_5" } ]
-"#
-        .parse()
-        .unwrap();
-        sync_array(
-            dst.get_mut("sections").unwrap(),
-            src.get("sections").unwrap(),
-            |a| a.get("test").unwrap().as_integer().unwrap(),
-        )
-        .unwrap();
-
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-test = "test" # test value
-sections = [ { test = 123, test3 = "value_2", test2 = "value_1" ,    }, { test = 546, test2 = "value_4", test3= "value_5" }]
-# Comment
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_0() {
-        let mut dst: DocumentMut = r#"
-sources = { old = { name = "old", kind = "basic", extra = "remove" } }
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sources = { new = { name = "new", kind = "simple" } }
-"#
-        .parse()
-        .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-sources = { new = { name = "new", kind = "simple" } }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_1() {
-        let mut dst: DocumentMut = r#"
-# Comment
-sources = { alpha = { name = "alpha", kind = "old" } }
-# sources = { alpha = { name = "alpha", kind = "old" } }
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sources = { beta = { name = "beta", kind = "updated", extra = "added" } }
-"#
-        .parse()
-        .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-sources = { beta = { name = "beta", kind = "updated", extra = "added" } }
-# sources = { alpha = { name = "alpha", kind = "old" } }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_2() {
-        let mut dst: DocumentMut = r#"
-sources = { old_1 =    { name = "old_1", kind = "basic" },old_2 = { name =    "old_2", kind = "basic", extra = "remove" } }
-# comment
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sources = { new_1 = { name = "new_1", kind = "simple" }, new_2 = { name = "new_2", kind = "simple", extra = "added" } }
-"#
-        .parse()
-        .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-sources = { new_1 = { name = "new_1", kind = "simple" }, new_2 = { name = "new_2", kind = "simple", extra = "added" } }
-# comment
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_3() {
-        let mut dst: DocumentMut = r#"
-# Comment
-sources = { first = { name = "first", kind = "old" }, second = { name = "second", kind = "old", extra = "remove" } }
-# sources = { first = { name = "OLD", kind = "old" }, second = { name = "second", kind = "old", extra = "remove" } }
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sources = { }
-"#
-        .parse()
-        .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-sources = {}
-# sources = { first = { name = "OLD", kind = "old" }, second = { name = "second", kind = "old", extra = "remove" } }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_4() {
-        let mut dst: DocumentMut = r#"
-sources = { }
-"#
-        .parse()
-        .unwrap();
-        let src: DocumentMut = r#"
-sources = { one = { name = "one", kind = "updated" }, two = { name = "two", kind = "updated", extra = "added" } }
-"#
-        .parse()
-        .unwrap();
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-sources = { one = { name = "one", kind = "updated" }, two = { name = "two", kind = "updated", extra = "added" }  }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_5() {
-        let mut dst: DocumentMut = r#"
-    sources = { }"#
-            .parse()
-            .unwrap();
-        #[derive(serde::Serialize)]
-        struct SourceItem {
-            name: String,
-            kind: String,
-            extra: Option<String>,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            sources: std::collections::HashMap<String, SourceItem>,
-        }
-        let src = toml_edit::ser::to_document(&Config {
-            sources: [
-                (
-                    "one".to_string(),
-                    SourceItem {
-                        name: "one ".to_string(),
-                        kind: "updated".to_string(),
-                        extra: None,
-                    },
-                ),
-                (
-                    "two".to_string(),
-                    SourceItem {
-                        name: "two".to_string(),
-                        kind: "updated".to_string(),
-                        extra: Some("added  ".to_string()),
-                    },
-                ),
-            ]
-            .into_iter()
-            .collect(),
-        })
-        .expect("must not fail");
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-    sources = { one = { name = "one ", kind = "updated" }, two = { name = "two", kind = "updated", extra = "added  " }  }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_map_5_pretty() {
-        let mut dst: DocumentMut = r#"
-   sources = { }"#
-            .parse()
-            .unwrap();
-        #[derive(serde::Serialize)]
-        struct SourceItem {
-            name: String,
-            kind: String,
-            extra: Option<String>,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            sources: std::collections::HashMap<String, SourceItem>,
-        }
-        let src = to_pretty_document(&Config {
-            sources: [
-                (
-                    "one".to_string(),
-                    SourceItem {
-                        name: "one ".to_string(),
-                        kind: "updated".to_string(),
-                        extra: None,
-                    },
-                ),
-                (
-                    "two".to_string(),
-                    SourceItem {
-                        name: "two".to_string(),
-                        kind: "updated".to_string(),
-                        extra: Some("added  ".to_string()),
-                    },
-                ),
-            ]
-            .into_iter()
-            .collect(),
-        });
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-   sources = {one.name = "one ",one.kind = "updated",two.name = "two",two.kind = "updated",two.extra = "added  " }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_option_map_0() {
-        let mut dst: DocumentMut = r#"
-sources1 = {
-  value1 = 1,
-  value2 = 11
-}
-"#
-        .parse()
-        .unwrap();
-        #[derive(serde::Serialize)]
-        struct Item {
-            value1: u8,
-            value2: u8,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            sources1: Option<Item>,
-            sources2: Option<Item>,
-            sources3: Option<Item>,
-        }
-
-        let src = toml_edit::ser::to_document(&Config {
-            sources1: None,
-            sources2: Some(Item {
-                value1: 2,
-                value2: 12,
-            }),
-            sources3: None,
-        })
-        .expect("config should always serialize");
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"sources2 = { value1 = 2, value2 = 12 }
-"#
-        );
-    }
-
-    // #[test_log::test]
-    // #[test_log(default_log_filter = "trace")]
-    fn test_sync_document_option_map_1_pretty() {
-        let mut dst: DocumentMut = r#"
-# Comment
-sources1 = {
-  value1 = 1,
-  value2 = 11
-}
-"#
-        .parse()
-        .unwrap();
-        #[derive(serde::Serialize)]
-        struct Item {
-            value1: u8,
-            value2: u8,
-        }
-        #[derive(serde::Serialize)]
-        struct Config {
-            sources1: Option<Item>,
-            sources2: Option<Item>,
-            sources3: Option<Item>,
-        }
-
-        let src = to_pretty_document(&Config {
-            sources1: None,
-            sources2: Some(Item {
-                value1: 2,
-                value2: 12,
-            }),
-            sources3: None,
-        });
-        sync_document(&mut dst, &src);
-        assert_eq!(
-            dst.to_string(),
-            r#"
-# Comment
-sources2 = {
-  value1 = 2,
-  value2 = 12
-}
-"#
-        );
-    }
-}
-
-#[allow(clippy::needless_raw_string_hashes)]
 #[cfg(test)]
 mod toml_edit_to_pretty {
     use std::{
@@ -1324,6 +653,7 @@ mod toml_edit_to_pretty {
             }),
             sources3: None,
         });
+        println!("{}", doc.to_string());
         assert_eq!(
             doc.to_string(),
             r#"[sources2]
@@ -1761,5 +1091,333 @@ Eight = "Another"
             .count();
         assert_eq!(matching, deserialized.list.len());
         assert_eq!(matching, l.len());
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_map() {
+        let mut dst: DocumentMut = r#"
+    sources = { }"#
+            .parse()
+            .unwrap();
+        #[derive(serde::Serialize)]
+        struct SourceItem {
+            name: String,
+            kind: String,
+            extra: Option<String>,
+        }
+        #[derive(serde::Serialize)]
+        struct Config {
+            sources: std::collections::HashMap<String, SourceItem>,
+        }
+        let doc = to_pretty_document(&Config {
+            sources: [
+                (
+                    "one".to_string(),
+                    SourceItem {
+                        name: "one ".to_string(),
+                        kind: "updated".to_string(),
+                        extra: None,
+                    },
+                ),
+                (
+                    "two".to_string(),
+                    SourceItem {
+                        name: "two".to_string(),
+                        kind: "updated".to_string(),
+                        extra: Some("added  ".to_string()),
+                    },
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        });
+        sync_document(&mut dst, &doc);
+        assert_eq!(
+            dst.to_string(),
+            r#"
+    sources = {one.name = "one ",one.kind = "updated",two.name = "two",two.kind = "updated",two.extra = "added  " }
+"#
+        );
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_map_2() {
+        let mut dst: DocumentMut = r#"
+sources = { }
+"#
+        .parse()
+        .unwrap();
+        let src: DocumentMut = r#"
+sources = { one = { name = "one", kind = "updated" }, two = { name = "two", kind = "updated", extra = "added" } }
+"#
+        .parse()
+        .unwrap();
+        sync_document(&mut dst, &src);
+        assert_eq!(
+            dst.to_string(),
+            r#"
+sources = { one = { name = "one", kind = "updated" }, two = { name = "two", kind = "updated", extra = "added" }  }
+"#
+        );
+    }
+}
+
+#[allow(clippy::needless_raw_string_hashes)]
+#[cfg(test)]
+mod sync_array_of_tables {
+    use super::*;
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_sync_document_array_1() {
+        let mut doc: DocumentMut = r#"
+# Comment
+[[sections]]
+test = 123
+test3 = "value_2"
+[[sections]]
+test = 546
+test2 = "value_4"
+test3 = "value_8"
+[[sections]]
+test = 122
+# Comment
+"#
+        .parse()
+        .unwrap();
+        let src: DocumentMut = r#"
+[[sections]]
+test = 123
+test2 = "value_1"
+[[sections]]
+test = 546
+test3 = "value_5"
+"#
+        .parse()
+        .unwrap();
+        sync_array(
+            doc.get_mut("sections").unwrap(),
+            src.get("sections").unwrap(),
+            |a| a.get("test").unwrap().as_integer().unwrap(),
+        )
+        .unwrap();
+
+        println!("{}", doc.to_string());
+        assert_eq!(
+            doc.to_string(),
+            r#"
+# Comment
+[[sections]]
+test = 123
+test2 = "value_1"
+[[sections]]
+test = 546
+test3 = "value_5"
+# Comment
+"#
+        );
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_sync_document_array_2() {
+        let mut doc: DocumentMut = r#"
+test = 12
+
+[[sections]]
+id = 123
+[[sections]]
+id = 546
+test2 = "value_4"
+[[sections]]
+id = 122
+test2 = "value_8"
+"#
+        .parse()
+        .unwrap();
+        #[derive(serde::Serialize)]
+        struct Section {
+            id: u16,
+            test2: Option<String>,
+        }
+        #[derive(serde::Serialize)]
+        struct Config {
+            test: u16,
+            sections: Vec<Section>,
+        }
+        let src = to_pretty_document(&Config {
+            test: 1,
+            sections: vec![
+                Section {
+                    id: 123,
+                    test2: None,
+                },
+                Section {
+                    id: 122,
+                    test2: Some("value_2".to_string()),
+                },
+            ],
+        });
+        sync_document(&mut doc, &src);
+        sync_array(
+            doc.get_mut("sections").unwrap(),
+            src.get("sections").unwrap(),
+            |a| a.get("id").unwrap().as_integer().unwrap(),
+        )
+        .unwrap();
+
+        println!("{}", doc.to_string());
+        assert_eq!(
+            doc.to_string(),
+            r#"
+test = 1
+
+[[sections]]
+id = 123
+[[sections]]
+id = 122
+test2 = "value_2"
+"#
+        );
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_sync_document_array_2_pretty() {
+        let mut doc: DocumentMut = r#"
+test = 12
+
+[[sections]]
+id = 123
+[[sections]]
+id = 546
+test2 = "value_4"
+[[sections]]
+id = 122
+test2 = "value_8"
+"#
+        .parse()
+        .unwrap();
+        #[derive(serde::Serialize)]
+        struct Section {
+            id: u16,
+            test2: Option<String>,
+        }
+        #[derive(serde::Serialize)]
+        struct Config {
+            test: u16,
+            sections: Vec<Section>,
+        }
+        let src = to_pretty_document(&Config {
+            test: 1,
+            sections: vec![
+                Section {
+                    id: 123,
+                    test2: None,
+                },
+                Section {
+                    id: 122,
+                    test2: Some("value_2".to_string()),
+                },
+            ],
+        });
+        sync_document(&mut doc, &src);
+        sync_array(
+            doc.get_mut("sections").unwrap(),
+            src.get("sections").unwrap(),
+            |a| a.get("id").unwrap().as_integer().unwrap(),
+        )
+        .unwrap();
+
+        println!("{}", doc.to_string());
+        assert_eq!(
+            doc.to_string(),
+            r#"
+test = 1
+
+[[sections]]
+id = 123
+[[sections]]
+id = 122
+test2 = "value_2"
+"#
+        );
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_sync_document_array_3() {
+        let mut dst: DocumentMut = r#"
+# Comment
+test = "test" # test value
+sections = [ { test = 123, test3 = "value_2",    }, { test = 546, test2 = "value_4", test3= "value_8"   }, { test = 122 } ]
+# Comment
+"#
+      .parse()
+      .unwrap();
+        let src: DocumentMut = r#"
+[[sections]]
+test = 123
+test2 = "value_1"
+[[sections]]
+test = 546
+test3 = "value_5"
+"#
+        .parse()
+        .unwrap();
+        sync_array(
+            dst.get_mut("sections").unwrap(),
+            src.get("sections").unwrap(),
+            |a| a.get("test").unwrap().as_integer().unwrap(),
+        )
+        .unwrap();
+
+        println!("{}", dst.to_string());
+        assert_eq!(
+            dst.to_string(),
+            r#"
+# Comment
+test = "test" # test value
+sections = [ { test = 123, test2 = "value_1",    }, { test = 546, test3= "value_5"   }]
+# Comment
+"#
+        );
+    }
+
+    #[test_log::test]
+    #[test_log(default_log_filter = "trace")]
+    fn test_sync_document_array_4() {
+        let mut dst: DocumentMut = r#"
+# Comment
+test = "test" # test value
+sections = [ { test = 123, test3 = "value_2",    }, { test = 546, test2 = "value_4", test3= "value_8"   }, { test = 122 } ]
+# Comment
+"#
+      .parse()
+      .unwrap();
+        let src: DocumentMut = r#"
+sections = [ { test = 123, test2 = "value_1" }, { test = 546, test3= "value_5" } ]
+"#
+        .parse()
+        .unwrap();
+        sync_array(
+            dst.get_mut("sections").unwrap(),
+            src.get("sections").unwrap(),
+            |a| a.get("test").unwrap().as_integer().unwrap(),
+        )
+        .unwrap();
+
+        println!("{}", dst.to_string());
+        assert_eq!(
+            dst.to_string(),
+            r#"
+# Comment
+test = "test" # test value
+sections = [ { test = 123, test2 = "value_1",    }, { test = 546, test3= "value_5"   }]
+# Comment
+"#
+        );
     }
 }
