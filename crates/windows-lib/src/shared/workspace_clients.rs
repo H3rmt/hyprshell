@@ -1,9 +1,10 @@
 use crate::icon::set_icon;
+use crate::label::client_label;
 use core_lib::{ClientData, ClientId};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::Position;
-use relm4::gtk::{Align, gdk, pango};
+use relm4::gtk::{Align, gdk};
 use relm4::prelude::*;
 
 /// Workspace clients component for Fixed parent (workspace mode)
@@ -70,21 +71,11 @@ impl FactoryComponent for WorkspaceClients {
                     set_paintable: self.paintable.as_ref(),
                     set_css_classes: if self.data.enabled { &["client-picture"] } else { &["client-picture", "monochrome"] },
                 },
+                #[name(frame)]
                 add_overlay = &gtk::Frame {
                     set_label_align: 0.5,
                     set_halign: Align::Center,
                     set_valign: Align::Fill,
-                    #[wrap(Some)]
-                    set_label_widget = &gtk::Label {
-                        set_overflow: gtk::Overflow::Visible,
-                        set_margin_start: 6,
-                        set_ellipsize: pango::EllipsizeMode::End,
-                        set_label: if self.data.title.trim().is_empty() {
-                            &self.data.class
-                        } else {
-                            &self.data.title
-                        },
-                    },
                     #[name(image)]
                     gtk::Image {
                         set_css_classes: if self.live_thumbnails && self.live_thumbnails_icons {
@@ -126,6 +117,9 @@ impl FactoryComponent for WorkspaceClients {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
+        widgets
+            .frame
+            .set_label_widget(Some(&client_label(&self.data)));
         if !self.live_thumbnails || self.live_thumbnails_icons {
             // Set the icon for this client (only if large enough to show)
             let client_h_w =

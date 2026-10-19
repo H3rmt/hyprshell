@@ -1,9 +1,9 @@
 use crate::icon::set_icon;
+use crate::label::client_label;
 use core_lib::{ClientData, ClientId, MonitorData};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::gtk::gdk;
-use relm4::gtk::pango;
 use relm4::prelude::*;
 
 /// Clients component for `FlowBox` parent (non-workspace mode)
@@ -55,18 +55,8 @@ impl FactoryComponent for Clients {
                 set_cursor_from_name: Some("pointer"),
                 set_width_request: scale(self.monitor_data.width, self.scale),
                 set_height_request: scale(self.monitor_data.height, self.scale),
+                #[name(frame)]
                 gtk::Frame {
-                    #[wrap(Some)]
-                    set_label_widget = &gtk::Label {
-                        set_overflow: gtk::Overflow::Visible,
-                        set_margin_start: 6,
-                        set_ellipsize: pango::EllipsizeMode::End,
-                        set_label: if self.data.title.trim().is_empty() {
-                            &self.data.class
-                        } else {
-                            &self.data.title
-                        },
-                    },
                     set_label_align: 0.5,
                     if self.live_thumbnails {
                         #[name(picture)]
@@ -112,6 +102,9 @@ impl FactoryComponent for Clients {
         _sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
+        widgets
+            .frame
+            .set_label_widget(Some(&client_label(&self.data)));
 
         if !self.live_thumbnails {
             // Set the icon for this client
