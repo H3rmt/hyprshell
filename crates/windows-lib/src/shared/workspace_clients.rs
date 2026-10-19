@@ -36,6 +36,9 @@ pub struct WorkspaceClientsInit {
     pub live_thumbnails: bool,
     #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
+    /// Previous thumbnail of this client, shown until a fresh capture arrives
+    #[cfg(feature = "live_windows")]
+    pub thumbnail: Option<gdk::Texture>,
 }
 
 #[derive(Debug)]
@@ -92,12 +95,16 @@ impl FactoryComponent for WorkspaceClients {
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         // trace!("self {}x{}", init.data.width, init.data.height);
+        #[cfg(feature = "live_windows")]
+        let paintable: Option<gdk::Paintable> = init.thumbnail.map(Cast::upcast);
+        #[cfg(not(feature = "live_windows"))]
+        let paintable = None;
         Self {
             active: false,
             data: init.data,
             id: init.id,
             scale: init.scale,
-            paintable: None,
+            paintable,
             #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
             #[cfg(not(feature = "live_windows"))]
