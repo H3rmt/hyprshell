@@ -1,52 +1,84 @@
-use crate::components::switch::{Switch, SwitchInit, SwitchInput, SwitchOutput};
-use crate::components::windows_overview::{
-    WindowsOverview, WindowsOverviewInit, WindowsOverviewInput, WindowsOverviewOutput,
-};
+use crate::components::switch::*;
+
 use crate::util::SetCursor;
-use relm4::ComponentController;
+use config_lib::io;
 use relm4::adw::prelude::*;
-use relm4::{
-    Component, ComponentParts, ComponentSender, Controller, RelmWidgetExt, SimpleComponent,
-};
-use relm4::{adw, gtk};
-use tracing::trace;
+use relm4::prelude::*;
 
 #[derive(Debug)]
 pub struct Windows {
-    pub overview: Controller<WindowsOverview>,
-    pub config: crate::Windows,
-    pub prev_config: crate::Windows,
-    pub switch: Controller<Switch>,
-    pub switch_2: Controller<Switch>,
+    enabled: bool,
+    config: io::Windows,
+    prev_enabled: bool,
+    prev_config: io::Windows,
+
+    // overview: Controller<WindowsOverview>,
+    switch: Controller<Switch>,
+    switch_2: Controller<Switch>,
 }
 
 #[derive(Debug)]
 pub enum WindowsInput {
-    Set(crate::Windows),
-    SetPrev(crate::Windows),
+    Set(Option<io::Windows>),
+    SetPrev(Option<io::Windows>),
     Reset,
+    _Enabled(bool),
 }
 
 #[derive(Debug)]
 pub enum WindowsOutput {
-    Enabled(bool),
+    Enabled(Option<io::Windows>),
     Scale(f64),
     ItemsPerRow(u8),
-    Overview(WindowsOverviewOutput),
+
+    // Overview(WindowsOverviewOutput),
     Switch(SwitchOutput),
     Switch2(SwitchOutput),
 }
 
 #[derive(Debug)]
-pub struct WindowsInit {
-    pub config: crate::Windows,
-}
+pub struct WindowsInit {}
 
 #[relm4::component(pub)]
 impl SimpleComponent for Windows {
     type Init = WindowsInit;
     type Input = WindowsInput;
     type Output = WindowsOutput;
+
+    #[allow(clippy::cast_sign_loss)]
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        // let windows_overview = WindowsOverview::builder()
+        //     .launch(WindowsOverviewInit {
+        //         config: init.config.overview.clone(),
+        //     })
+        //     .forward(sender.output_sender(), WindowsOutput::Overview);
+        let switch = Switch::builder()
+            .launch(SwitchInit { name: "Switch" })
+            .forward(sender.output_sender(), WindowsOutput::Switch);
+        let switch_2 = Switch::builder()
+            .launch(SwitchInit {
+                name: "Switch 2 (TODO)",
+            })
+            .forward(sender.output_sender(), WindowsOutput::Switch2);
+
+        let model = Self {
+            enabled: false,
+            prev_enabled: false,
+            config: Default::default(),
+            prev_config: Default::default(),
+
+            // overview: windows_overview,
+            switch,
+            switch_2,
+        };
+
+        let widgets = view_output!();
+        ComponentParts { model, widgets }
+    }
 
     view! {
         #[root]
@@ -57,14 +89,14 @@ impl SimpleComponent for Windows {
                 set_title_selectable: true,
                 set_show_enable_switch: true,
                 set_hexpand: true,
-                set_css_classes: &["enable-frame"],
+                set_css_classes: &[""],
                 set_title: "Windows (Overview and Switch)",
                 #[watch]
                 #[block_signal(h)]
-                set_enable_expansion: model.config.enabled,
-                connect_enable_expansion_notify[sender] => move |e| {sender.output_sender().emit(WindowsOutput::Enabled(e.enables_expansion())); } @h,
+                set_enable_expansion: model.enabled,
+                connect_enable_expansion_notify[sender] => move |e| {sender.input_sender().emit(WindowsInput::_Enabled(e.enables_expansion())); } @h,
                 #[watch]
-                set_expanded: model.config.enabled,
+                set_expanded: model.enabled,
                 add_row = &gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_css_classes: &["frame-row"],
@@ -114,76 +146,62 @@ impl SimpleComponent for Windows {
                         }
                     }
                 },
-                add_row = model.overview.widget(),
+                // add_row = model.overview.widget(),
                 add_row = model.switch.widget(),
                 add_row = model.switch_2.widget(),
             }
         }
     }
 
-    #[allow(clippy::cast_sign_loss)]
-    fn init(
-        init: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let windows_overview = WindowsOverview::builder()
-            .launch(WindowsOverviewInit {
-                config: init.config.overview.clone(),
-            })
-            .forward(sender.output_sender(), WindowsOutput::Overview);
-        let switch = Switch::builder()
-            .launch(SwitchInit {
-                config: init.config.switch.clone(),
-                name: "Switch",
-            })
-            .forward(sender.output_sender(), WindowsOutput::Switch);
-        let switch_2 = Switch::builder()
-            .launch(SwitchInit {
-                config: init.config.switch_2.clone(),
-                name: "Switch 2 (TODO)",
-            })
-            .forward(sender.output_sender(), WindowsOutput::Switch2);
-
-        let model = Self {
-            overview: windows_overview,
-            switch,
-            switch_2,
-            config: init.config.clone(),
-            prev_config: init.config,
-        };
-
-        let widgets = view_output!();
-        ComponentParts { model, widgets }
-    }
-
-    fn update(&mut self, message: WindowsInput, _sender: ComponentSender<Self>) {
-        trace!("windows::update: {message:?}");
+    fn update(&mut self, message: WindowsInput, sender: ComponentSender<Self>) {
+        tracing::trace!("windows::update: {message:?}");
         match message {
+            WindowsInput::_Enabled(enabled) => match enabled {
+                true => sender
+                    .output_sender()
+                    .emit(WindowsOutput::Enabled(Some(self.config.clone()))),
+                false => sender.output_sender().emit(WindowsOutput::Enabled(None)),
+            },
             WindowsInput::Set(config) => {
-                self.config = config;
-                self.overview.emit(WindowsOverviewInput::SetOverview(
-                    self.config.overview.clone(),
-                ));
+                match config {
+                    Some(config) => {
+                        self.config = config;
+                        self.enabled = true;
+                    }
+                    None => {
+                        self.enabled = false;
+                    }
+                };
+                // self.overview.emit(WindowsOverviewInput::SetOverview(
+                //     self.config.overview.clone(),
+                // ));
                 self.switch
-                    .emit(SwitchInput::SetSwitch(self.config.switch.clone()));
+                    .emit(SwitchInput::Set(self.config.switch.clone()));
                 self.switch_2
-                    .emit(SwitchInput::SetSwitch(self.config.switch_2.clone()));
+                    .emit(SwitchInput::Set(self.config.switch_2.clone()));
             }
             WindowsInput::SetPrev(config) => {
-                self.prev_config = config;
-                self.overview.emit(WindowsOverviewInput::SetPrevOverview(
-                    self.prev_config.overview.clone(),
-                ));
+                match config {
+                    Some(config) => {
+                        self.prev_config = config;
+                        self.prev_enabled = true;
+                    }
+                    None => {
+                        self.prev_enabled = false;
+                    }
+                };
+                // self.overview.emit(WindowsOverviewInput::SetPrevOverview(
+                //     self.prev_config.overview.clone(),
+                // ));
                 self.switch
-                    .emit(SwitchInput::SetPrevSwitch(self.prev_config.switch.clone()));
-                self.switch_2.emit(SwitchInput::SetPrevSwitch(
-                    self.prev_config.switch_2.clone(),
-                ));
+                    .emit(SwitchInput::SetPrev(self.prev_config.switch.clone()));
+                self.switch_2
+                    .emit(SwitchInput::SetPrev(self.prev_config.switch_2.clone()));
             }
             WindowsInput::Reset => {
                 self.config = self.prev_config.clone();
-                self.overview.emit(WindowsOverviewInput::ResetOverview);
+                self.enabled = self.prev_enabled;
+                // self.overview.emit(WindowsOverviewInput::ResetOverview);
                 self.switch.emit(SwitchInput::ResetSwitch);
                 self.switch_2.emit(SwitchInput::ResetSwitch);
             }

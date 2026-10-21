@@ -1,8 +1,7 @@
-use crate::structs::ConfigModifier;
+use config_lib::Modifier;
 use relm4::gtk::gdk::{Cursor, Key, ModifierType};
-use relm4::gtk::prelude::{Cast, EditableExt, WidgetExt};
+use relm4::gtk::prelude::*;
 use relm4::{adw, gtk};
-use tracing::{instrument, warn};
 
 pub trait SetTextIfDifferent {
     fn set_text_if_different(&self, text: &str);
@@ -80,28 +79,31 @@ impl SelectRow for gtk::ListBox {
             if let Some(row) = self.row_at_index(index) {
                 self.select_row(Some(&row));
             } else {
-                warn!("select_row_index: row not found ({index})");
+                tracing::warn!("select_row_index: row not found ({index})");
             }
         }
     }
 }
 
-pub fn handle_key(val: Key, state: ModifierType) -> Option<(String, ConfigModifier, String)> {
+pub fn handle_key_and_modifier(
+    val: Key,
+    state: ModifierType,
+) -> Option<(String, Modifier, String)> {
     let key_name = val.name()?;
     let modifier = match val {
-        Key::Alt_L | Key::Alt_R => ConfigModifier::Alt,
-        Key::Control_L | Key::Control_R => ConfigModifier::Ctrl,
-        Key::Super_L | Key::Super_R => ConfigModifier::Super,
+        Key::Alt_L | Key::Alt_R => Modifier::Alt,
+        Key::Control_L | Key::Control_R => Modifier::Ctrl,
+        Key::Super_L | Key::Super_R => Modifier::Super,
         _ => match state {
-            ModifierType::NO_MODIFIER_MASK => ConfigModifier::None,
-            ModifierType::ALT_MASK => ConfigModifier::Alt,
-            ModifierType::CONTROL_MASK => ConfigModifier::Ctrl,
-            ModifierType::SUPER_MASK => ConfigModifier::Super,
+            ModifierType::NO_MODIFIER_MASK => Modifier::None,
+            ModifierType::ALT_MASK => Modifier::Alt,
+            ModifierType::CONTROL_MASK => Modifier::Ctrl,
+            ModifierType::SUPER_MASK => Modifier::Super,
             _ => return None,
         },
     };
 
-    let label = if modifier == ConfigModifier::None {
+    let label = if modifier == Modifier::None {
         key_name.to_string()
     } else {
         format!("{modifier} + {key_name}")
@@ -110,14 +112,8 @@ pub fn handle_key(val: Key, state: ModifierType) -> Option<(String, ConfigModifi
     Some((key_name.to_string(), modifier, label))
 }
 
-pub fn default_config() -> config_lib::Config {
-    config_lib::Config {
-        windows: Some(config_lib::Windows::default()),
-    }
-}
-
-#[instrument(level = "trace", ret(level = "trace"))]
-pub fn mod_key_to_accelerator(modifier: ConfigModifier, key: &str) -> String {
+#[tracing::instrument(level = "trace", ret(level = "trace"))]
+pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
     // correct some keys that can sometimes have wrong capitalization
     let key = match &*key.to_lowercase() {
         "super_l" => "Super_L",
@@ -129,16 +125,16 @@ pub fn mod_key_to_accelerator(modifier: ConfigModifier, key: &str) -> String {
         _ => key,
     };
 
-    if modifier == ConfigModifier::None {
+    if modifier == Modifier::None {
         key.to_string()
     } else {
         format!("<{modifier}>{key}")
     }
 }
 
-#[instrument(level = "trace", ret(level = "trace"))]
-pub fn mod_key_to_string(modifier: ConfigModifier, key: &str) -> String {
-    if modifier == ConfigModifier::None {
+#[tracing::instrument(level = "trace", ret(level = "trace"))]
+pub fn mod_key_to_string(modifier: Modifier, key: &str) -> String {
+    if modifier == Modifier::None {
         key.to_string()
     } else {
         format!("{modifier} + {key}")

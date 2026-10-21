@@ -71,15 +71,6 @@ impl TryInto<crate::Config> for ConfigFile {
     }
 }
 
-impl Default for ConfigFile {
-    fn default() -> Self {
-        Self {
-            backing_document: toml_edit::DocumentMut::new(),
-            config: Default::default(),
-        }
-    }
-}
-
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
 #[serde(deny_unknown_fields)]
