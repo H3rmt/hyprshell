@@ -21,6 +21,7 @@ prepare() {
 build() {
     export RUSTUP_TOOLCHAIN=stable
     export CARGO_TARGET_DIR=target
+    export RUSTFLAGS="-C target-cpu=native"
     cd "hyprshell-$pkgver"
     echo "Building..."
     cargo build --frozen --release --no-default-features --features=slim
@@ -39,8 +40,8 @@ package() {
     install -Dm644 "hyprshell-$pkgver/packaging/hyprshell-settings.png"     "$pkgdir/usr/share/pixmaps/hyprshell.png"
     install -Dm644 "hyprshell-$pkgver/packaging/hyprshell-settings.desktop" "$pkgdir/usr/share/applications/hyprshell-settings.desktop"
 
-    mkdir "$pkgdir/usr/share/hyprshell"
-    tar -xvf "hyprshell-$pkgver/packaging/usr-share.tar" -C "$pkgdir/usr/share/hyprshell" | tee >(wc -l | xargs -I {} echo "Extracted {} files to $pkgdir/usr/share/hyprshell") > /dev/null
+    mkdir -p "$pkgdir/usr/share/hyprshell"
+    cp -r "hyprshell-$pkgver/share/." "$pkgdir/usr/share/hyprshell/"
 
     "$pkgdir/usr/bin/hyprshell" completions bash -p  "$pkgdir/usr/share/bash-completion/completions"
     "$pkgdir/usr/bin/hyprshell" completions fish -p  "$pkgdir/usr/share/fish/vendor_completions.d"

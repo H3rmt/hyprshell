@@ -7,7 +7,7 @@ use core_lib::{
 };
 use exec_lib::collect::collect_hypr_data;
 use regex::Regex;
-use tracing::{debug, debug_span, trace, warn};
+use tracing::{debug_span, trace, warn};
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Default)]
@@ -24,7 +24,7 @@ pub fn collect_data(config: &SortConfig) -> anyhow::Result<(HyprlandData, Active
 
     let exclude_workspaces = config.exclude_workspaces.as_ref().and_then(|reg| {
         let reg = Regex::new(reg).warn_details("invalid regex");
-        debug!("filtering special workspaces with regex: {reg:?}");
+        trace!("filtering special workspaces with regex: {reg:?}");
         reg
     });
 

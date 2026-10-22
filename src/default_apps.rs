@@ -3,8 +3,8 @@
 use crate::util;
 use anyhow::{Context, bail};
 use core_lib::default::get_all_mime_files;
+use core_lib::env_dirs::get_config_home;
 use core_lib::ini::IniFile;
-use core_lib::path::get_config_home;
 use std::collections::HashMap;
 use std::fs::{read_to_string, write};
 use tracing::{debug, warn};

@@ -18,7 +18,7 @@ This is the easy way to use/configure hyprshell.
 
 `./user.nix`:
 
-All the settings are optional and can be found in the [config](CONFIGURE.md)
+All the settings are optional and can be found in the [config](CONFIGURE.md) or in the `Hyprshell Settings Editor`
 
 This config enables overview and switch, but is not type-save like the flake home-manager config.
 
@@ -57,8 +57,9 @@ A full example nixos config can be found in `test-files/nixos`
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    hyprland.url = "github:hyprwm/Hyprland";
     hyprshell.url = "github:H3rmt/hyprshell";
+    # If you use hyprland with home manager 
+    hyprland.url = "github:hyprwm/Hyprland";
   };
 
   outputs = { nixpkgs, hyprshell }@inputs: {
@@ -121,15 +122,19 @@ Everything is disabled by default, so you need to enable it (even settings.windo
     };
   };
 
+  # If you use hyprland with home manager 
   wayland.windowManager.hyprland = {
     enable = true;
     package = inputs.hyprland.packages.x86_64-linux.hyprland;
     portalPackage = inputs.hyprland.packages.x86_64-linux.xdg-desktop-portal-hyprland;
   };
+
+  # If you use hyprland without home manager
+  programs.hyprland.enable = true;
 }
 ```
 
-### No Home-manager with hyprland from flake
+### No Home-manager
 
 **[Cachix Cache](https://app.cachix.org/cache/hyprshell#pull) should be added with `cachix use hyprshell`**
 

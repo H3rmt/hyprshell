@@ -2,11 +2,12 @@ use relm4::adw::prelude::*;
 use relm4::gtk::Orientation;
 use relm4::{ComponentParts, ComponentSender, SimpleComponent, gtk};
 use std::path::Path;
+use std::rc::Rc;
 use tracing::trace;
 
 #[derive(Debug)]
 pub struct Footer {
-    config_file: Box<Path>,
+    config_file: Rc<Path>,
     changes: bool,
     generate: bool,
 }
@@ -19,7 +20,7 @@ pub enum FooterInput {
 
 #[derive(Debug)]
 pub struct FooterInit {
-    pub config_file: Box<Path>,
+    pub config_file: Rc<Path>,
 }
 
 #[derive(Debug)]
@@ -27,9 +28,6 @@ pub enum FooterOutput {
     Close,
     Save,
     Reset,
-    Reload,
-    Abort,
-    ReloadHyprshell,
 }
 
 #[relm4::component(pub)]
@@ -44,67 +42,39 @@ impl SimpleComponent for Footer {
             set_center_widget = &gtk::Box {
                 set_spacing: 20,
                 set_hexpand: true,
+                set_halign: gtk::Align::End,
                 set_css_classes: &["footer"],
                 set_orientation: Orientation::Horizontal,
-                gtk::Box {
-                    set_spacing: 10,
-                    set_hexpand: true,
-                    set_halign: gtk::Align::Start,
-                    set_orientation: Orientation::Horizontal,
-                    gtk::LinkButton {
-                        set_label: &format!("Hyprshell v{}", env!("CARGO_PKG_VERSION")),
-                        set_uri: &format!("https://github.com/H3rmt/hyprshell/tree/v{}", env!("CARGO_PKG_VERSION")),
-                    },
-                    gtk::Button {
-                        set_label: "Force Reload Daemon",
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::ReloadHyprshell),
-                    },
+                gtk::Button {
+                    set_label: "Reset",
+                    #[watch]
+                    set_visible: !model.generate,
+                    #[watch]
+                    set_sensitive: model.changes,
+                    set_css_classes: &["destructive-action"],
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reset),
                 },
-                gtk::Box {
-                    set_spacing: 10,
-                    set_hexpand: true,
-                    set_halign: gtk::Align::End,
-                    set_orientation: Orientation::Horizontal,
-                    gtk::Button {
-                        set_label: "Reload from Disk",
-                        #[watch]
-                        set_visible: !model.generate,
-                        set_sensitive: true,
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reload),
-                    },
-                    gtk::Button {
-                        set_label: "Reset",
-                        #[watch]
-                        set_visible: !model.generate,
-                        #[watch]
-                        set_sensitive: model.changes,
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reset),
-                    },
-                    gtk::Button {
-                        set_label: "Save Changes",
-                        #[watch]
-                        set_visible: !model.generate,
-                        #[watch]
-                        set_sensitive: model.changes,
-                        set_css_classes: &["suggested-action"],
-                        set_tooltip_text: Some(&format!("Config file: {}", model.config_file.display())),
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Save),
-                    },
-                    gtk::Button {
-                        set_label: "Abort Generate",
-                        #[watch]
-                        set_visible: model.generate,
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Abort),
-                    },
-                    gtk::Button {
-                        set_label: "Close",
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Close),
-                    }
+                gtk::Button {
+                    set_label: "Save Changes",
+                    #[watch]
+                    set_visible: !model.generate,
+                    #[watch]
+                    set_sensitive: model.changes,
+                    set_css_classes: &["suggested-action"],
+                    set_tooltip_text: Some(&format!("Config file: {}", model.config_file.display())),
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Save),
+                },
+                // gtk::Button {
+                //     set_label: "Abort Generate",
+                //     #[watch]
+                //     set_visible: model.generate,
+                //     set_css_classes: &["destructive-action"],
+                //     connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Abort),
+                // },
+                gtk::Button {
+                    set_label: "Close",
+                    set_css_classes: &["destructive-action"],
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Close),
                 }
             }
         }

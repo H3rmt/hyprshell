@@ -1,4 +1,4 @@
-use crate::path::{get_config_dirs, get_config_home, get_data_dirs, get_data_home};
+use crate::env_dirs::{get_config_dirs, get_config_home, get_data_dirs, get_data_home};
 use std::fs::DirEntry;
 use tracing::{trace, warn};
 

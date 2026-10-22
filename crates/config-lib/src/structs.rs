@@ -34,6 +34,7 @@ impl Default for Windows {
 pub struct WindowsGeneral {
     pub scale: f64,
     pub items_per_row: u8,
+    pub live_preview_refresh_rate: u16,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -46,6 +47,7 @@ pub struct Overview {
     pub filter_by_current_workspace: bool,
     pub filter_by_current_monitor: bool,
     pub exclude_workspaces: Box<str>,
+    pub live_preview: bool,
 }
 
 impl Default for Overview {
@@ -86,11 +88,6 @@ pub struct Plugins {
     pub actions: Option<ActionsPluginConfig>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ActionsPluginConfig {
-    pub actions: Vec<ActionsPluginAction>,
-}
-
 impl Default for ActionsPluginConfig {
     fn default() -> Self {
         crate::io::ActionsPluginConfig::default()
@@ -102,8 +99,6 @@ impl Default for ActionsPluginConfig {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ApplicationsPluginConfig {
     pub run_cache_weeks: u8,
-    pub show_execs: bool,
-    pub show_actions_submenu: bool,
 }
 
 impl Default for ApplicationsPluginConfig {
@@ -115,22 +110,18 @@ impl Default for ApplicationsPluginConfig {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ActionsPluginAction {
-    LockScreen,
-    Logout,
-    Hibernate,
-    Reboot,
-    Shutdown,
-    Suspend,
-    Custom(ActionsPluginActionCustom),
+pub struct ActionsPluginConfig {
+    pub actions: Vec<ActionsPluginAction>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ActionsPluginActionCustom {
-    pub names: Vec<Box<str>>,
-    pub details: Box<str>,
+pub struct ActionsPluginAction {
+    pub name: Box<str>,
+    pub keywords: Box<[Box<str>]>,
+    pub details_long: Option<Box<str>>,
     pub command: Box<str>,
-    pub icon: Box<Path>,
+    pub icon: Option<Box<Path>>,
+    pub children: Box<[Self]>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -176,6 +167,7 @@ pub struct Switch {
     pub switch_workspaces: bool,
     pub exclude_workspaces: Box<str>,
     pub kill_key: char,
+    pub live_preview: bool,
 }
 
 impl Default for Switch {

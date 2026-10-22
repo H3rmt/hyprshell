@@ -1,127 +1,150 @@
 /* border around full expander row + items */
 .enable-frame > box {
-    padding: 4px;
-    border-radius: 18px;
-    border: 2px solid var(--border-color);
+  padding: 4px;
+  border-radius: 18px;
+  border: 2px solid var(--border-color);
 }
 
 /* make hover for row rounded */
 .enable-frame > box > list > .activatable:hover {
-    border-radius: 18px;
+  border-radius: 18px;
 }
 
 /* remove background for row, increase font for title */
 .enable-frame > box > list {
-    background: transparent;
-    border-radius: 12px;
-    font-size: 1.4rem;
-    font-weight: 600;
+  background: transparent;
+  border-radius: 12px;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 /* remove background that interferes with rounden borders */
 .enable-frame > box > revealer > list {
-    background: unset;
+  background: unset;
 }
 
 /* disable hover effect on expanded row */
 .enable-frame > box > revealer > list > .activatable:hover {
-    background: unset;
+  background: unset;
 }
 
 /* some padding around the grid */
 .frame-row {
-    padding: 0.7rem;
+  padding: 0.7rem;
 }
 
 /* set background color for the expander to bg color */
 .item-expander > box > revealer {
-    border-radius: 8px;
-    background-color: var(--popover-bg-color);
+  border-radius: 8px;
+  background-color: var(--popover-bg-color);
 }
 
 /* make it look like a button */
 .item-expander > box > list > .header {
-    border-radius: 8px;
-    /* yoinked from https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_buttons.scss */
-    /* adjusts bg color the the same as the buttons */
-    background-color: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 8px;
+  /* yoinked from https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_buttons.scss */
+  /* adjusts bg color the the same as the buttons */
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
+.popover-action-row label {
+  font-weight: 400;
+}
+.popover-action-label.red-label {
+  font-weight: 600;
+}
+.popover-action-row:hover,
+.popover-action-row:focus {
+  background-color: alpha(currentColor, 0.08);
+}
+.popover-action-row:focus {
+  outline-style: none;
+  outline-width: 0;
+  box-shadow: none;
+}
 
 .footer {
-    padding: 6px 2px;
+  padding: 6px 2px;
 }
 
 /* same style as `.enable-frame > box` to make row with switch look like expander */
 .bordered {
-    padding: 18px;
-    border-radius: 18px;
-    border: 2px solid var(--border-color);
+  padding: 18px;
+  border-radius: 18px;
+  border: 2px solid var(--border-color);
 
-    font-size: 1.4rem;
-    font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 /* disabled style if calc plugin in not available */
 .disabled {
-    opacity: 0.5;
-    background: unset;
+  opacity: 0.5;
+  background: unset;
 }
 
 .items-list {
-    padding: 8px;
-    border-radius: 12px;
+  padding: 8px;
+  border-radius: 12px;
 }
 
 .items-list > row {
-    padding: 6px;
+  padding: 6px;
 }
 
 .changes-text {
-    padding: 16px;
-    border-radius: 12px;
-    border: 2px solid var(--border-color);
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
 }
 
 .theme-carousel {
-    /*border: 2px solid var(--border-color);*/
-    border-radius: 24px;
+  /*border: 2px solid var(--border-color);*/
+  border-radius: 24px;
 }
 
 .theme {
-    padding: 26px;
+  padding: 26px;
 
-    border-radius: 18px;
-    border: 2px solid var(--border-color);
+  border-radius: 18px;
+  border: 2px solid var(--border-color);
 
-    margin: 0 80px;
+  margin: 0 80px;
 }
 
 .theme-image {
-    border-radius: 18px;
-    border: 2px solid var(--border-color);
-    min-height: 400px;
-    min-width: 400px;
+  border-radius: 18px;
+  border: 2px solid var(--border-color);
+  min-height: 400px;
+  min-width: 400px;
 }
 
 .blue-label {
-    color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
+  color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
 }
 
 .gray-label {
-    color: color-mix(in srgb, currentColor 40%, #464444 60%);
+  color: color-mix(in srgb, currentColor 40%, #464444 60%);
+}
+
+.red-label {
+  color: color-mix(in srgb, currentColor 40%, #f00 60%);
 }
 
 .generate-min-width {
-    min-width: 270px;
+  min-width: 270px;
 }
 
 button.active {
-    border: 2px solid #62a600;
-    box-shadow: inset 0 0 12px #62a600;
+  border: 2px solid #62a600;
+  box-shadow: inset 0 0 12px #62a600;
 }
 
 button.not-active {
-    border: 2px solid transparent;
-    box-shadow: none;
+  border: 2px solid transparent;
+  box-shadow: none;
+}
+
+.test-colored {
+  background-color: #f0f;
 }
