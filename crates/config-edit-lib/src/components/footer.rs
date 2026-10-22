@@ -28,9 +28,6 @@ pub enum FooterOutput {
     Close,
     Save,
     Reset,
-    Abort,
-    ReloadHyprshell,
-    ReloadConfig,
 }
 
 #[relm4::component(pub)]
@@ -45,44 +42,39 @@ impl SimpleComponent for Footer {
             set_center_widget = &gtk::Box {
                 set_spacing: 20,
                 set_hexpand: true,
+                set_halign: gtk::Align::End,
                 set_css_classes: &["footer"],
                 set_orientation: Orientation::Horizontal,
-                gtk::Box {
-                    set_spacing: 10,
-                    set_hexpand: true,
-                    set_halign: gtk::Align::End,
-                    set_orientation: Orientation::Horizontal,
-                    gtk::Button {
-                        set_label: "Reset",
-                        #[watch]
-                        set_visible: !model.generate,
-                        #[watch]
-                        set_sensitive: model.changes,
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reset),
-                    },
-                    gtk::Button {
-                        set_label: "Save Changes",
-                        #[watch]
-                        set_visible: !model.generate,
-                        #[watch]
-                        set_sensitive: model.changes,
-                        set_css_classes: &["suggested-action"],
-                        set_tooltip_text: Some(&format!("Config file: {}", model.config_file.display())),
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Save),
-                    },
-                    gtk::Button {
-                        set_label: "Abort Generate",
-                        #[watch]
-                        set_visible: model.generate,
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Abort),
-                    },
-                    gtk::Button {
-                        set_label: "Close",
-                        set_css_classes: &["destructive-action"],
-                        connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Close),
-                    }
+                gtk::Button {
+                    set_label: "Reset",
+                    #[watch]
+                    set_visible: !model.generate,
+                    #[watch]
+                    set_sensitive: model.changes,
+                    set_css_classes: &["destructive-action"],
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reset),
+                },
+                gtk::Button {
+                    set_label: "Save Changes",
+                    #[watch]
+                    set_visible: !model.generate,
+                    #[watch]
+                    set_sensitive: model.changes,
+                    set_css_classes: &["suggested-action"],
+                    set_tooltip_text: Some(&format!("Config file: {}", model.config_file.display())),
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Save),
+                },
+                // gtk::Button {
+                //     set_label: "Abort Generate",
+                //     #[watch]
+                //     set_visible: model.generate,
+                //     set_css_classes: &["destructive-action"],
+                //     connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Abort),
+                // },
+                gtk::Button {
+                    set_label: "Close",
+                    set_css_classes: &["destructive-action"],
+                    connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Close),
                 }
             }
         }

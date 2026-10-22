@@ -8,7 +8,6 @@ use relm4::actions::AccelsPlus;
 use relm4::actions::ActionName;
 use relm4::actions::RelmAction;
 use relm4::actions::RelmActionGroup;
-use relm4::menu;
 use relm4::new_action_group;
 use relm4::new_stateless_action;
 use relm4::prelude::*;
@@ -19,6 +18,11 @@ use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
 use tracing::{debug, error, info, trace, warn};
+
+const HELP_URL: &str = concat!(
+    "https://github.com/H3rmt/hyprshell/tree/v",
+    env!("CARGO_PKG_VERSION"),
+);
 
 #[derive(Debug)]
 pub struct Root {
@@ -42,6 +46,7 @@ pub struct Root {
     view_stack: adw::ViewStack,
     alert_dialog_changes_list: gtk::ListBox,
     toaster: Toaster,
+    menu: FactoryVecDeque<MenuItem>,
 }
 
 #[derive(Debug)]
@@ -56,6 +61,8 @@ pub enum RootInput {
     Regenerate,
     AbortGenerate,
     ReloadHyprshell,
+    OpenAbout,
+    ClosePopover,
 
     Reset,
     SetConfig(io::ConfigFile),
@@ -68,6 +75,8 @@ pub enum RootInput {
     // Style(StyleOutput),
     // Changes(ChangesOutput),
     // Generate(GenerateOutput),
+
+    // TODO dont use this
     Toast(adw::Toast),
 }
 
@@ -95,10 +104,46 @@ impl SimpleComponent for Root {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let url = format!(
-            "https://github.com/H3rmt/hyprshell/tree/v{}",
-            env!("CARGO_PKG_VERSION")
-        );
+        let group = setup_keybinds_and_actions(&sender);
+        group.register_for_widget(&root);
+
+        let mut menu: FactoryVecDeque<MenuItem> = FactoryVecDeque::builder()
+            .launch(gtk::Box::default())
+            .detach();
+        // .forward(sender.input_sender(), |msg| match msg {
+        //     MenuItemOutput::Close => RootInput::ClosePopover,
+        // });
+
+        let mut l = menu.guard();
+        for conf in vec![
+            MenuItemInit {
+                action: Some(ReloadHyprshell::action_name()),
+                red: true,
+                icon_name: Some("view-refresh-symbolic"),
+                text: "Force Reload Daemon",
+            },
+            MenuItemInit {
+                action: Some(ReloadConfig::action_name()),
+                icon_name: Some("view-refresh-symbolic"),
+                red: true,
+                text: "Force Reload from Disk",
+            },
+            MenuItemInit {
+                action: Some(OpenHelp::action_name()),
+                icon_name: Some("info-outline-symbolic"),
+                red: false,
+                text: "Open Help (GitHub)",
+            },
+            MenuItemInit {
+                action: Some(OpenAbout::action_name()),
+                icon_name: Some("help-about"),
+                red: false,
+                text: "About Hyprshell Settings Editor",
+            },
+        ] {
+            l.push_back(conf);
+        }
+        drop(l);
 
         let footer: Controller<Footer> = Footer::builder()
             .launch(FooterInit {
@@ -108,9 +153,9 @@ impl SimpleComponent for Root {
                 FooterOutput::Reset => RootInput::Reset,
                 FooterOutput::Close => RootInput::CloseRequest,
                 FooterOutput::Save => RootInput::Save(false),
-                FooterOutput::ReloadConfig => RootInput::Reload(false),
-                FooterOutput::Abort => RootInput::AbortGenerate,
-                FooterOutput::ReloadHyprshell => RootInput::ReloadHyprshell,
+                // FooterOutput::ReloadConfig => RootInput::Reload(false),
+                // FooterOutput::Abort => RootInput::AbortGenerate,
+                // FooterOutput::ReloadHyprshell => RootInput::ReloadHyprshell,
             });
 
         let changes_list = gtk::ListBox::builder()
@@ -166,98 +211,6 @@ impl SimpleComponent for Root {
         //     .forward(sender.input_sender(), RootInput::Generate);
 
         let config = io::Config::default();
-
-        let popover = gtk::Popover::new();
-        let list = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        list.set_valign(gtk::Align::Center);
-        popover.set_child(Some(&list));
-
-        // Helper to create a styled menu button
-        fn make_action_row(
-            popover: &gtk::Popover,
-            action: &str,
-            text: &str,
-            accel: &str,
-            start_icon_name: Option<&str>,
-            red: bool,
-        ) -> gtk::Button {
-            let content = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-            content.set_hexpand(true);
-            if let Some(icon_name) = start_icon_name {
-                content.append(&gtk::Image::from_icon_name(icon_name));
-            }
-            let label = gtk::Label::new(Some(text));
-            label.set_halign(gtk::Align::Start);
-            label.set_hexpand(true);
-            label.add_css_class("popover-action-label");
-            if red {
-                label.add_css_class("red-label");
-            }
-            let accel_label = gtk::Label::new(Some(accel));
-            accel_label.add_css_class("dim-label");
-            content.append(&label);
-            content.append(&accel_label);
-            let button = gtk::Button::new();
-            button.set_child(Some(&content));
-            button.set_action_name(Some(action));
-            let popover = popover.downgrade();
-            button.connect_clicked(move |_| {
-                if let Some(popover) = popover.upgrade() {
-                    popover.popdown();
-                }
-            });
-            button.set_hexpand(true);
-            button.set_halign(gtk::Align::Fill);
-            button.add_css_class("flat");
-            button.add_css_class("popover-action-row");
-            button
-        }
-
-        list.append(&make_action_row(
-            &popover,
-            &ReloadHyprshell::action_name(),
-            "Force Reload Daemon",
-            "Ctrl+Shift+R",
-            Some("view-refresh-symbolic"),
-            true,
-        ));
-        list.append(&make_action_row(
-            &popover,
-            &ReloadConfig::action_name(),
-            "Force Reload from Disk",
-            "Ctrl+R",
-            Some("view-refresh-symbolic"),
-            true,
-        ));
-        list.append(&make_action_row(
-            &popover,
-            &OpenHelp::action_name(),
-            "Open Help (GitHub)",
-            "F1",
-            Some("info-outline-symbolic"),
-            false,
-        ));
-        list.append(&make_action_row(
-            &popover,
-            &OpenAbout::action_name(),
-            "About Hyprshell Settings Editor",
-            "",
-            Some("help-about"),
-            false,
-        ));
-        //         new_entry.vbox.append(&menu_btn(
-        //             "Force Reload Daemon",
-        //             &["menu-item", "red-label"],
-        //             "win.reload-hyprshell",
-        //         ));
-        //
-        //         vbox.append(&menu_btn(
-        //             "Force Reload from Disk",
-        //             &["menu-item"],
-        //             "win.reload-config",
-        //         ));
-        //         vbox.append(&menu_btn("Open Help", &["menu-item"], "win.open-help"));
-
         let view_stack = adw::ViewStack::builder().build();
         let toaster = Toaster::default();
         let model = Self {
@@ -278,61 +231,14 @@ impl SimpleComponent for Root {
             toaster,
             alert_dialog_changes_list: changes_list,
             view_stack,
+            menu,
         };
         let toast_overlay = model.toaster.overlay_widget();
         let footer = model.footer.widget();
+        let menu = model.menu.widget();
+        let popover = gtk::Popover::new();
         let view_stack = &model.view_stack;
         let widgets = view_output!();
-
-        let app = relm4::main_application();
-        app.set_accelerators_for_action::<OpenHelp>(&["F1"]);
-        app.set_accelerators_for_action::<SaveConfig>(&["<primary>S"]);
-        app.set_accelerators_for_action::<ReloadConfig>(&["<primary>R"]);
-        app.set_accelerators_for_action::<ReloadHyprshell>(&["<primary><SHIFT>R"]);
-
-        let mut group = RelmActionGroup::<WindowActionGroup>::new();
-        let roo = root.clone();
-        let u = url.clone();
-        group.add_action(RelmAction::<OpenAbout>::new_stateless(move |_| {
-            adw::AboutDialog::builder()
-                .application_icon("hyprshell-settings")
-                .application_name("Hyprshell Settings Editor")
-                .developer_name("H3rmt")
-                .issue_url("https://github.com/H3rmt/hyprshell/issues")
-                .license(include_str!("../../../../LICENSE"))
-                .release_notes("<p>RELEASE NOTES</p>\n<ul><li>a</li><li>b</li></ul><p><code>let test = 23;</code></p>")
-                // .release_notes_version(env!("CARGO_PKG_VERSION"))
-                .version(env!("CARGO_PKG_VERSION"))
-                .website(&u)
-                .build()
-                .present(Some(&roo));
-        }));
-        group.add_action(RelmAction::<OpenHelp>::new_stateless(move |_| {
-            let u = url.clone();
-            tracing::debug!("opened help: {u}");
-            gtk::UriLauncher::new(&u).launch(
-                None::<&gtk::Window>,
-                None::<&gtk::gio::Cancellable>,
-                move |result| {
-                    if let Err(e) = result {
-                        tracing::warn!("Failed to open URL({u}): {e}");
-                    }
-                },
-            );
-        }));
-        let send = sender.clone();
-        group.add_action(RelmAction::<SaveConfig>::new_stateless(move |_| {
-            send.input_sender().emit(RootInput::Save(true));
-        }));
-        let send = sender.clone();
-        group.add_action(RelmAction::<ReloadConfig>::new_stateless(move |_| {
-            send.input_sender().emit(RootInput::Reload(false));
-        }));
-        let send = sender.clone();
-        group.add_action(RelmAction::<ReloadHyprshell>::new_stateless(move |_| {
-            send.input_sender().emit(RootInput::ReloadHyprshell);
-        }));
-        group.register_for_widget(root);
 
         // model.view_stack.add_titled_with_icon(
         //     model.style.widget(),
@@ -456,13 +362,22 @@ impl SimpleComponent for Root {
                               set_valign: gtk::Align::End,
                               set_margin_bottom: 5,
                               set_margin_start: 5,
-                              set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", url, env!("CARGO_PKG_VERSION")),
+                              set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", HELP_URL, env!("CARGO_PKG_VERSION")),
                             },
                             gtk::MenuButton {
                               set_hexpand: true,
                               set_halign: gtk::Align::End,
                               set_icon_name: "open-menu-symbolic",
-                              set_popover: Some(&popover),
+                              #[wrap(Some)]
+                              #[local_ref]
+                              set_popover = &popover -> gtk::Popover {
+                                #[local_ref]
+                                menu -> gtk::Box {
+                                  set_orientation: gtk::Orientation::Vertical,
+                                  set_spacing: 0,
+                                  set_valign: gtk::Align::Center,
+                                }
+                              },
                             }
                           },
                       },
@@ -481,6 +396,23 @@ impl SimpleComponent for Root {
         trace!("root::update: {message:?}");
         match message {
             RootInput::Ignore => (),
+            RootInput::ClosePopover => (),
+            RootInput::OpenAbout => {
+                // hacky way to get root window
+                let u = self.alert_dialog.widget();
+                adw::AboutDialog::builder()
+                  .application_icon("hyprshell-settings")
+                  .application_name("Hyprshell Settings Editor")
+                  .developer_name("H3rmt")
+                  .issue_url("https://github.com/H3rmt/hyprshell/issues")
+                  .license(include_str!("../../../../LICENSE"))
+                  .release_notes("<p>RELEASE NOTES</p>\n<ul><li>a</li><li>b</li></ul><p><code>let test = 23;</code></p>")
+                  // .release_notes_version(env!("CARGO_PKG_VERSION"))
+                  .version(env!("CARGO_PKG_VERSION"))
+                  .website(HELP_URL)
+                  .build()
+                  .present(Some(u));
+            }
             RootInput::CloseRequest => {
                 debug!("close request");
                 // let changes = generate_items(
@@ -1055,9 +987,152 @@ impl SimpleComponent for Root {
     }
 }
 
+fn setup_keybinds_and_actions(
+    sender: &ComponentSender<Root>,
+) -> RelmActionGroup<WindowActionGroup> {
+    let mut group = RelmActionGroup::<WindowActionGroup>::new();
+    let app = relm4::main_application();
+
+    app.set_accelerators_for_action::<OpenHelp>(&["F1"]);
+    group.add_action(RelmAction::<OpenHelp>::new_stateless(move |_| {
+        tracing::debug!("opened help: {HELP_URL}");
+        gtk::UriLauncher::new(HELP_URL).launch(
+            None::<&gtk::Window>,
+            None::<&gtk::gio::Cancellable>,
+            move |result| {
+                if let Err(e) = result {
+                    tracing::warn!("Failed to open URL({HELP_URL}): {e}");
+                }
+            },
+        );
+    }));
+
+    app.set_accelerators_for_action::<SaveConfig>(&["<Control>S"]);
+    let send = sender.clone();
+    group.add_action(RelmAction::<SaveConfig>::new_stateless(move |_| {
+        send.input_sender().emit(RootInput::Save(true));
+    }));
+
+    app.set_accelerators_for_action::<ReloadConfig>(&["<Control>R"]);
+    let send = sender.clone();
+    group.add_action(RelmAction::<ReloadConfig>::new_stateless(move |_| {
+        send.input_sender().emit(RootInput::Reload(false));
+    }));
+
+    app.set_accelerators_for_action::<ReloadHyprshell>(&["<Control><SHIFT>R"]);
+    let send = sender.clone();
+    group.add_action(RelmAction::<ReloadHyprshell>::new_stateless(move |_| {
+        send.input_sender().emit(RootInput::ReloadHyprshell);
+    }));
+
+    let send = sender.clone();
+    group.add_action(RelmAction::<OpenAbout>::new_stateless(move |_| {
+        send.input_sender().emit(RootInput::OpenAbout);
+    }));
+    group
+}
+
 new_action_group!(WindowActionGroup, "win");
 new_stateless_action!(ReloadHyprshell, WindowActionGroup, "reload-hyprshell");
 new_stateless_action!(ReloadConfig, WindowActionGroup, "reload-config");
 new_stateless_action!(SaveConfig, WindowActionGroup, "save-config");
 new_stateless_action!(OpenHelp, WindowActionGroup, "open-help");
 new_stateless_action!(OpenAbout, WindowActionGroup, "open-about");
+
+#[derive(Debug)]
+pub struct MenuItem {
+    action: Option<String>,
+    text: &'static str,
+    accel: String,
+    start_icon_name: Option<&'static str>,
+    red: bool,
+}
+
+impl MenuItem {
+    fn accelerator_label(action: Option<&str>) -> String {
+        action
+            .and_then(|action| {
+                relm4::main_application()
+                    .accels_for_action(action)
+                    .first()
+                    .and_then(|accel| gtk::accelerator_parse(accel.as_str()))
+                    .map(|(key, modifiers)| gtk::accelerator_get_label(key, modifiers).to_string())
+            })
+            .unwrap_or_default()
+    }
+}
+
+#[derive(Debug)]
+pub enum MenuItemInput {}
+
+#[derive(Debug)]
+pub struct MenuItemInit {
+    action: Option<String>,
+    text: &'static str,
+    icon_name: Option<&'static str>,
+    red: bool,
+}
+
+#[derive(Debug)]
+pub enum MenuItemOutput {
+    Close,
+}
+
+#[relm4::factory(pub)]
+impl FactoryComponent for MenuItem {
+    type Init = MenuItemInit;
+    type Input = MenuItemInput;
+    type Output = MenuItemOutput;
+    type CommandOutput = ();
+    type ParentWidget = gtk::Box;
+
+    fn init_model(init: Self::Init, _index: &Self::Index, _sender: FactorySender<Self>) -> Self {
+        let accel = Self::accelerator_label(init.action.as_deref());
+        Self {
+            action: init.action,
+            text: init.text,
+            accel,
+            start_icon_name: init.icon_name,
+            red: init.red,
+        }
+    }
+
+    view! {
+      #[root]
+      gtk::Button {
+        set_action_name: self.action.as_deref(),
+        set_hexpand: true,
+        set_halign: gtk::Align::Fill,
+        set_css_classes: &["flat", "popover-action-row"],
+        connect_clicked[sender] => move |_| sender.output_sender().emit(MenuItemOutput::Close),
+        gtk::Box {
+          set_orientation: gtk::Orientation::Horizontal,
+          set_spacing: 12,
+          set_hexpand: true,
+          match &self.start_icon_name {
+            Some(start_icon_name) => {
+              gtk::Image {
+                #[watch]
+                set_icon_name: Some(start_icon_name)
+              }
+            }
+            None => {
+              gtk::Image {
+                set_icon_name: None
+              }
+            },
+          },
+          gtk::Label::new(Some(&self.text)) {
+            set_halign: gtk::Align::Start,
+            set_hexpand: true,
+            set_css_classes: if self.red { &["red-label", "popover-action-label"] } else { &["popover-action-label"] },
+          },
+          gtk::Label::new(Some(&self.accel)) {
+            set_halign: gtk::Align::End,
+            set_hexpand: true,
+            set_css_classes: &["dim-label"],
+          }
+        }
+      }
+    }
+}
