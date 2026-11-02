@@ -1,4 +1,6 @@
-pub type WorkspaceId = i32;
+// Native numeric IDs remain unchanged; address-only workspaces use private keys
+// outside the legacy i32/current u32 range. These keys are never sent to the compositor.
+pub type WorkspaceId = i64;
 pub type MonitorId = i128;
 pub type ClientId = u64;
 

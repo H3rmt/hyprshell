@@ -32,3 +32,6 @@ live_windows = ["dep:wayland-backend", "dep:wayland-client", "dep:wayland-protoc
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

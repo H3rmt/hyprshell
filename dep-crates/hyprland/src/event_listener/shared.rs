@@ -254,8 +254,8 @@ pub struct ScreencastEventData {
 pub struct WindowMoveEvent {
     /// Window address
     pub window_address: Address,
-    /// the workspace id
-    pub workspace_id: WorkspaceId,
+    /// Workspace address, or a legacy numeric workspace ID as text.
+    pub workspace_address: String,
     /// The workspace name
     pub workspace_name: WorkspaceType,
 }
@@ -417,8 +417,8 @@ pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
 pub struct WorkspaceEventData {
     /// The workspace name
     pub name: WorkspaceType,
-    /// The window id
-    pub id: WorkspaceId,
+    /// Workspace address, or a legacy numeric workspace ID as text.
+    pub address: String,
 }
 
 /// This struct holds workspace event data
@@ -427,8 +427,8 @@ pub struct WorkspaceEventData {
 pub struct NonSpecialWorkspaceEventData {
     /// The workspace name
     pub name: String,
-    /// The window id
-    pub id: WorkspaceId,
+    /// Workspace address, or a legacy numeric workspace ID as text.
+    pub address: String,
 }
 
 /// This struct holds workspace moved event data
@@ -436,8 +436,8 @@ pub struct NonSpecialWorkspaceEventData {
 pub struct WorkspaceMovedEventData {
     /// The workspace name
     pub name: WorkspaceType,
-    /// The window id
-    pub id: WorkspaceId,
+    /// Workspace address, or a legacy numeric workspace ID as text.
+    pub address: String,
     /// The monitor name
     pub monitor: String,
 }
@@ -771,18 +771,11 @@ fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEven
 }
 
 macro_rules! parse_int {
-    ($int:expr, event: $event:literal) => {
-        parse_int!($int, event: $event => WorkspaceId)
-    };
     ($int:expr, event: $event:literal => $int_type:ty) => {
-        ($int
-            .parse::<$int_type>()
-            .map_err(|e|
-                HyprError::Internal(format!(concat!($event, ": invalid integer error: {}"), e))
-             )?
-        )
+        ($int.parse::<$int_type>().map_err(|e| {
+            HyprError::Internal(format!(concat!($event, ": invalid integer error: {}"), e))
+        })?)
     };
-
 }
 
 macro_rules! get {
@@ -815,30 +808,30 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
         Ok(Either::Left((event_type, args))) => match event_type {
             ParsedEventType::WorkspaceChangedV2 => {
                 Ok(Event::WorkspaceChanged(WorkspaceEventData {
-                    id: parse_int!(get![ref args;0], event: "WorkspaceChangedV2"),
+                    address: get![args;0],
                     name: parse_string_as_work(get![args;1]),
                 }))
             }
             ParsedEventType::WorkspaceDeletedV2 => {
                 Ok(Event::WorkspaceDeleted(WorkspaceEventData {
-                    id: parse_int!(get![ref args;0], event: "WorkspaceDeletedV2"),
+                    address: get![args;0],
                     name: parse_string_as_work(get![args;1]),
                 }))
             }
             ParsedEventType::WorkspaceAddedV2 => Ok(Event::WorkspaceAdded(WorkspaceEventData {
-                id: parse_int!(get![ref args;0], event: "WorkspaceAddedV2"),
+                address: get![args;0],
                 name: parse_string_as_work(get![args;1]),
             })),
             ParsedEventType::WorkspaceMovedV2 => {
                 Ok(Event::WorkspaceMoved(WorkspaceMovedEventData {
-                    id: parse_int!(get![ref args;0], event: "WorkspaceMovedV2"),
+                    address: get![args;0],
                     name: parse_string_as_work(get![args;1]),
                     monitor: get![args;2],
                 }))
             }
             ParsedEventType::WorkspaceRename => {
                 Ok(Event::WorkspaceRenamed(NonSpecialWorkspaceEventData {
-                    id: parse_int!(get![args;0], event: "WorkspaceRenamed"),
+                    address: get![args;0],
                     name: get![args;1],
                 }))
             }
@@ -890,7 +883,7 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
             ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::new(get![args;0]))),
             ParsedEventType::WindowMovedV2 => Ok(Event::WindowMoved(WindowMoveEvent {
                 window_address: Address::fmt_new(get![ref args;0]),
-                workspace_id: parse_int!(get![ref args;1], event: "WindowMoved"),
+                workspace_address: get![args;1],
                 workspace_name: parse_string_as_work(get![args;2]),
             })),
             ParsedEventType::ActiveSpecial => {
@@ -967,4 +960,32 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
     }
 
     Ok(events)
+}
+
+#[cfg(test)]
+mod workspace_address_tests {
+    use super::*;
+
+    #[test]
+    fn workspace_event_addresses_do_not_terminate_the_event_stream() {
+        for address in ["2", "4294967295", "work", "special:scratchpad", "-1337"] {
+            let events = event_parser(&format!(
+                "workspacev2>>{address},renamed\ncreateworkspacev2>>{address},renamed\ndestroyworkspacev2>>{address},renamed\nmoveworkspacev2>>{address},renamed,HEADLESS-1\nrenameworkspace>>{address},renamed\nmovewindowv2>>1234,{address},renamed\nconfigreloaded>>"
+            )).expect("workspace addresses must not interrupt unrelated notifications");
+            assert_eq!(events.len(), 7);
+            for event in &events[..6] {
+                let actual = match event {
+                    Event::WorkspaceChanged(data)
+                    | Event::WorkspaceAdded(data)
+                    | Event::WorkspaceDeleted(data) => &data.address,
+                    Event::WorkspaceMoved(data) => &data.address,
+                    Event::WorkspaceRenamed(data) => &data.address,
+                    Event::WindowMoved(data) => &data.workspace_address,
+                    _ => panic!("expected a workspace event"),
+                };
+                assert_eq!(actual, address);
+            }
+            assert!(matches!(events[6], Event::ConfigReloaded));
+        }
+    }
 }
