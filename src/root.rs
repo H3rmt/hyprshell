@@ -35,7 +35,7 @@ pub struct Root {
 
 #[derive(Debug)]
 pub enum RootInput {
-    OpenSwitch(core_lib::Direction),
+    OpenSwitch(core_lib::Direction, Option<u32>, Option<u64>),
     CloseSwitch(bool),
     OpenOverview,
     SetConfig(Box<config_lib::Config>),
@@ -102,10 +102,10 @@ impl SimpleComponent for Root {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            RootInput::OpenSwitch(dir) => {
+            RootInput::OpenSwitch(dir, event_time, event_id) => {
                 trace!("Opening switch, dir: {:?}", dir);
                 if let Some(switch) = &self.switch_root {
-                    switch.emit(SwitchRootInput::OpenSwitch(dir));
+                    switch.emit(SwitchRootInput::OpenSwitch(dir, event_time, event_id));
                 }
             }
             RootInput::CloseSwitch(do_switch) => {
@@ -149,13 +149,15 @@ fn handle_external(msg: ExternalTransferType, sender: &ComponentSender<Root>) {
             gtk::gio::spawn_blocking(util::reload_desktop_data);
         }
         ExternalTransferType::OpenSwitch(cfg) => {
-            sender
-                .input_sender()
-                .emit(RootInput::OpenSwitch(if cfg.reverse {
+            sender.input_sender().emit(RootInput::OpenSwitch(
+                if cfg.reverse {
                     core_lib::Direction::Left
                 } else {
                     core_lib::Direction::Right
-                }));
+                },
+                cfg.event_time,
+                cfg.event_id,
+            ));
         }
         ExternalTransferType::CloseSwitch(cfg) => {
             sender

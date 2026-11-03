@@ -220,7 +220,21 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        cli::Command::Socat { json } => {
+        cli::Command::Socat {
+            json,
+            event_time,
+            event_id,
+        } => {
+            let json = if let Some(time) = event_time {
+                let mut transfer = core_lib::transfer::receive_from_buffer(json.into_bytes())?;
+                if let core_lib::transfer::ExternalTransferType::OpenSwitch(open) = &mut transfer {
+                    open.event_time = Some(time);
+                    open.event_id = event_id;
+                }
+                core_lib::binds::generate_transfer(&transfer)
+            } else {
+                json
+            };
             #[cfg(debug_assertions)]
             core_lib::notify(&json, std::time::Duration::from_secs(2));
             core_lib::transfer::send_raw_to_socket(&json)
