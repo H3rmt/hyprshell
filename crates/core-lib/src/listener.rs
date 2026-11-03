@@ -47,7 +47,7 @@ pub fn hyprshell_config_block(file_path: &Path) -> anyhow::Result<()> {
     loop {
         match inotify.read_events_blocking(&mut buffer) {
             Ok(events) => {
-                trace!("Received events: {events:?}");
+                trace!("Received fs events");
                 for event in events {
                     if event.mask.contains(inotify::EventMask::MODIFY) {
                         trace!("Event: {event:?}");

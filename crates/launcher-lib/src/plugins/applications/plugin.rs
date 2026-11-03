@@ -10,12 +10,7 @@ use tracing::{trace, warn};
 
 impl LaunchItem {
     #[allow(clippy::cast_precision_loss, clippy::cast_sign_loss)]
-    fn from_desktop_entry(
-        entry: &DesktopEntry,
-        runs: &HashMap<Box<Path>, u64>,
-        _show_execs: bool,
-        _show_actions_submenu: bool,
-    ) -> Self {
+    fn from_desktop_entry(entry: &DesktopEntry, runs: &HashMap<Box<Path>, u64>) -> Self {
         // format as curve. formula: ln(x-2) / 0.025
         let runs = runs.get(&entry.source).unwrap_or(&0);
         let runs = ((*runs as f64) - 2.0).ln() / 0.025;
@@ -61,23 +56,13 @@ impl LaunchItem {
     }
 }
 
-pub fn get_launch_items(
-    run_cache_weeks: u8,
-    show_execs: bool,
-    show_actions_submenu: bool,
-    data_dir: &Path,
-) -> Vec<LaunchItem> {
+pub fn get_launch_items(run_cache_weeks: u8, data_dir: &Path) -> Vec<LaunchItem> {
     let entries = get_all_desktop_entries();
     let runs = get_stored_runs(run_cache_weeks, data_dir);
 
     let mut matches = Vec::new();
     for entry in entries.iter() {
-        matches.push(LaunchItem::from_desktop_entry(
-            entry,
-            &runs,
-            show_execs,
-            show_actions_submenu,
-        ));
+        matches.push(LaunchItem::from_desktop_entry(entry, &runs));
     }
     drop(entries);
     matches.sort_by_key(|b| std::cmp::Reverse(b.bonus_score));

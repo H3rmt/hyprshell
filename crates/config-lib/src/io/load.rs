@@ -1,15 +1,15 @@
 use anyhow::{Context, bail};
-use ron::Options;
-use ron::extensions::Extensions;
-use serde::de::DeserializeOwned;
-use std::ffi::OsStr;
+use std::io::Read;
 use std::path::Path;
+use tracing::instrument;
 
-pub fn load_and_migrate_config(
+use crate::io::ConfigFile;
+
+#[instrument(level = "debug", skip(allow_migrate))]
+pub fn load_and_migrate_io_config(
     config_file: &Path,
     allow_migrate: bool,
-) -> anyhow::Result<crate::Config> {
-    let _span = tracing::debug_span!("load_config", path =? config_file).entered();
+) -> anyhow::Result<crate::io::ConfigFile> {
     if !config_file.exists() {
         bail!("Config file does not exist, create it using `hyprshell config generate`");
     }
@@ -19,7 +19,9 @@ pub fn load_and_migrate_config(
 
     #[cfg(not(feature = "disable_migrations"))]
     {
-        if crate::migrate::check_migration_needed(config_file)
+        use crate::migrate;
+
+        if migrate::check_migration_needed(config_file)
             .inspect_err(|e| tracing::warn!("Failed to check if migration is needed: {e:?}"))
             .unwrap_or(false)
         {
@@ -31,10 +33,8 @@ pub fn load_and_migrate_config(
             match migrated {
                 Ok(config) => {
                     tracing::info!("Config migrated successfully");
-                    let config: crate::Config = config
-                        .try_into()
-                        .context("Failed to convert config to internal format")?;
-                    crate::check(&config)?;
+                    let config = ConfigFile::try_from(config)
+                        .context("Failed to convert TOML config to Config struct")?;
                     return Ok(config);
                 }
                 Err(err) => {
@@ -49,65 +49,41 @@ pub fn load_and_migrate_config(
         _ = allow_migrate;
     }
 
-    let config: crate::io::Config = load_config_file(config_file).with_context(|| {
+    let mut file = std::fs::File::open(config_file).with_context(|| {
         format!(
-            "Failed to load config from file ({})",
+            "Failed to open TOML workarrounds at ({})",
             config_file.display()
         )
     })?;
+    let mut content = String::new();
+    file.read_to_string(&mut content).with_context(|| {
+        format!(
+            "Failed to read TOML workarrounds at ({})",
+            config_file.display()
+        )
+    })?;
+    let document = (&content)
+        .parse::<toml_edit::DocumentMut>()
+        .context("Failed to parse TOML config")?;
+    let config =
+        ConfigFile::try_from(document).context("Failed to convert TOML config to Config struct")?;
+
     tracing::debug!("Loaded config");
+    Ok(config)
+}
+
+pub fn load_and_migrate_config(
+    config_file: &Path,
+    allow_migrate: bool,
+) -> anyhow::Result<crate::Config> {
+    let config = load_and_migrate_io_config(config_file, allow_migrate)?;
+
     let config: crate::Config = config
         .try_into()
         .context("Failed to convert config to internal format")?;
 
+    // TODO move the check into the try from io config to exposed config
     crate::check(&config)?;
 
     Ok(config)
-}
-
-pub fn load_config_file<T: DeserializeOwned>(config_file: &Path) -> anyhow::Result<T> {
-    let config_file_display = config_file.display();
-    match config_file.extension().and_then(OsStr::to_str) {
-        None | Some("ron") => {
-            let options = Options::default()
-                .with_default_extension(Extensions::IMPLICIT_SOME)
-                .with_default_extension(Extensions::UNWRAP_NEWTYPES)
-                .with_default_extension(Extensions::UNWRAP_VARIANT_NEWTYPES);
-            let file = std::fs::File::open(config_file)
-                .with_context(|| format!("Failed to open RON config at ({config_file_display})"))?;
-            options
-                .from_reader(file)
-                .with_context(|| format!("Failed to read RON config at ({config_file_display})"))
-        }
-        #[cfg(not(feature = "json5_config"))]
-        Some("json") => {
-            let file = std::fs::File::open(config_file).with_context(|| {
-                format!("Failed to open JSON5 config at ({config_file_display})")
-            })?;
-            serde_json::from_reader(file)
-                .with_context(|| format!("Failed to read JSON5 config at ({config_file_display})"))
-        }
-        #[cfg(feature = "json5_config")]
-        Some("json5" | "json") => {
-            let file = std::fs::File::open(config_file).with_context(|| {
-                format!("Failed to open JSON5 config at ({config_file_display})")
-            })?;
-            serde_json5::from_reader(file)
-                .with_context(|| format!("Failed to read JSON5 config at ({config_file_display})"))
-        }
-        Some("toml") => {
-            use std::io::Read;
-            let mut file = std::fs::File::open(config_file).with_context(|| {
-                format!("Failed to open TOML config at ({config_file_display})")
-            })?;
-            let mut content = String::new();
-            file.read_to_string(&mut content).with_context(|| {
-                format!("Failed to read TOML config at ({config_file_display})")
-            })?;
-            toml::from_str(&content).context("Failed to parse TOML config")
-        }
-        Some(ext) => bail!(
-            "Invalid config file extension: {ext} (run with -vv and check `FEATURES: ` debug log to see enabled extensions)"
-        ),
-    }
 }

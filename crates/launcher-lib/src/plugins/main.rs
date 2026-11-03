@@ -1,5 +1,5 @@
 use crate::plugin::{LaunchItem, MatchedLaunchItem, PluginItem, PluginReturn};
-use crate::plugins::{actions, applications, path, search, shell, terminal};
+use crate::plugins::{actions, applications, path, shell, terminal, web};
 use config_lib::Plugins;
 use core_lib::transfer::{Identifier, PluginName};
 use relm4::adw::gtk::gdk::Key;
@@ -22,8 +22,6 @@ pub fn get_static_items(plugins: &Plugins, data_dir: &Path) -> Vec<LaunchItem> {
         debug_span!("applications").in_scope(|| {
             items.extend(applications::get_launch_items(
                 config.run_cache_weeks,
-                config.show_execs,
-                config.show_actions_submenu,
                 data_dir,
             ));
         });
@@ -47,8 +45,7 @@ pub fn get_static_plugins(plugins: &Plugins, default_terminal: Option<&str>) -> 
         });
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
-        debug_span!("search")
-            .in_scope(|| items.extend(search::get_static_options(&websearch.engines)));
+        debug_span!("search").in_scope(|| items.extend(web::get_static_options(websearch)));
     }
 
     items
@@ -98,7 +95,7 @@ pub fn launch(
             debug_span!("terminal").in_scope(|| terminal::launch_option(text, default_terminal))
         }
         PluginName::WebSearch => {
-            debug_span!("search").in_scope(|| search::launch_option(iden.data.as_deref(), text))
+            debug_span!("search").in_scope(|| web::launch_option(iden.data.as_deref(), text))
         }
         PluginName::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
         PluginName::Calc => {
@@ -131,7 +128,7 @@ pub fn get_static_options_chars(plugins: &Plugins) -> Vec<Key> {
         chars.extend(terminal::get_chars());
     }
     if let Some(websearch) = plugins.websearch.as_ref() {
-        chars.extend(search::get_chars(&websearch.engines));
+        chars.extend(web::get_chars(websearch));
     }
     chars
 }

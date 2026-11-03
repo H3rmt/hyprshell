@@ -1,5 +1,5 @@
 use crate::plugin::{PluginItem, PluginReturn};
-use config_lib::SearchEngine;
+use config_lib::{SearchEngine, WebSearchConfig};
 use core_lib::WarnWithDetails;
 use core_lib::default::get_default_desktop_file;
 use core_lib::transfer::{Identifier, PluginName};
@@ -9,27 +9,33 @@ use relm4::adw::gtk::gdk::Key;
 use std::path::Path;
 use tracing::{debug, trace, warn};
 
-pub fn get_static_options(config: &[SearchEngine]) -> Vec<PluginItem> {
+pub fn get_static_options(config: &WebSearchConfig) -> Vec<PluginItem> {
     let browser = get_browser_info();
     let icon = browser.icon.clone();
     drop(browser);
 
-    let mut matches = Vec::new();
-    for engine in config {
-        if engine.key.is_whitespace() {
-            warn!("Plugin {} has no valid key set", engine.name);
-        } else {
-            matches.push(PluginItem {
-                text: engine.name.clone(),
-                details: format!("Search with {}", engine.name).into_boxed_str(),
-                icon: icon.clone(),
-                key: engine.key,
-                iden: Identifier::data(PluginName::WebSearch, engine.url.clone()),
-            });
+    config
+        .engines
+        .iter()
+        .cloned()
+        .map(PluginItem::from)
+        .map(|mut i| {
+            i.icon = icon.clone();
+            i
+        })
+        .collect::<Vec<PluginItem>>()
+}
+
+impl From<SearchEngine> for PluginItem {
+    fn from(value: SearchEngine) -> Self {
+        Self {
+            icon: None, // gets updated later
+            iden: Identifier::data(PluginName::WebSearch, value.url),
+            key: value.key,
+            text: value.name.clone(),
+            details: format!("Search with {}", value.name).into_boxed_str(),
         }
     }
-    trace!("Added {} static web search options", matches.len());
-    matches
 }
 
 pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {
@@ -71,11 +77,14 @@ pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {
     }
 }
 
-pub fn get_chars(config: &[SearchEngine]) -> Vec<Key> {
+pub fn get_chars(config: &WebSearchConfig) -> Vec<Key> {
     config
+        .engines
         .iter()
+        .cloned()
+        .map(PluginItem::from)
         .filter_map(|engine| convert_to_key(engine.key))
-        .collect()
+        .collect::<Vec<_>>()
 }
 
 pub struct BrowserData {
@@ -111,7 +120,7 @@ pub(super) fn get_browser_info() -> BrowserData {
                 r#"gdbus call --session --dest="org.freedesktop.portal.Desktop" --object-path=/org/freedesktop/portal/desktop --method=org.freedesktop.portal.OpenURI.OpenURI '' '%u' '{}'"#,
             ),
             startup_wm_class: Some(Box::from("firefox")),
-            icon: Some(Box::from(Path::new("firefox"))),
+            icon: Some(Box::from(Path::new("Dbus"))),
         }
     })
 }

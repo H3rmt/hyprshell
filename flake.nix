@@ -28,9 +28,7 @@
         {
           formatter = pkgs.nixfmt-tree;
           packages = rec {
-            hyprshell = craneLib.buildPackage (
-              buildLib.commonArgsFull
-            );
+            hyprshell = craneLib.buildPackage (buildLib.commonArgsFull);
             hyprshell-nixpkgs = hyprshell;
             hyprshell-slim = craneLib.buildPackage (
               buildLib.commonArgsFull

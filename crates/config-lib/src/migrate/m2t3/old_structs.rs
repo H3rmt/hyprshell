@@ -1,4 +1,4 @@
-use crate::migrate::m3t4;
+use crate::migrate::{m3t4, m4t5};
 use serde::Deserialize;
 use smart_default::SmartDefault;
 
@@ -12,7 +12,7 @@ pub struct Config {
     #[default(None)]
     pub windows: Option<Windows>,
     #[allow(dead_code)]
-    pub version: Option<u16>,
+    pub version: Option<u64>,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize)]
@@ -56,10 +56,10 @@ pub struct Launcher {
     #[default = true]
     pub show_when_empty: bool,
     #[default(Plugins{
-        applications: Some(crate::io::ApplicationsPluginConfig::default()),
+        applications: Some(m4t5::ApplicationsPluginConfig::default()),
         terminal: Some(crate::io::EmptyConfig::default()),
         shell: None,
-        websearch: Some(crate::io::WebSearchConfig::default()),
+        websearch: Some(m4t5::WebSearchConfig::default()),
         calc: Some(crate::io::EmptyConfig::default()),
         path: Some(crate::io::EmptyConfig::default()),
     })]
@@ -69,10 +69,10 @@ pub struct Launcher {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plugins {
-    pub applications: Option<crate::io::ApplicationsPluginConfig>,
+    pub applications: Option<m4t5::ApplicationsPluginConfig>,
     pub terminal: Option<crate::io::EmptyConfig>,
     pub shell: Option<crate::io::EmptyConfig>,
-    pub websearch: Option<crate::io::WebSearchConfig>,
+    pub websearch: Option<m4t5::WebSearchConfig>,
     pub calc: Option<crate::io::EmptyConfig>,
     pub path: Option<crate::io::EmptyConfig>,
 }

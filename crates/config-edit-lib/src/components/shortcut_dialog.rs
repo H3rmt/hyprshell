@@ -1,47 +1,39 @@
-use crate::structs::ConfigModifier;
-use crate::util::{handle_key, mod_key_to_string};
 use relm4::adw::prelude::*;
-use relm4::gtk;
-use relm4::gtk::{EventControllerKey, Label};
-use relm4::{
-    Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmWidgetExt,
-    SimpleComponent,
-};
+use relm4::prelude::*;
 use relm4_components::alert::{Alert, AlertMsg, AlertResponse, AlertSettings};
-use tracing::{debug, trace, warn};
 
 #[derive(Debug)]
 pub struct KeyboardShortcut {
     key: Option<String>,
-    modifier: Option<ConfigModifier>,
+    modifier: Option<config_lib::Modifier>,
     is_visible: bool,
     dialog: Controller<Alert>,
-    entry: Label,
+    entry: gtk::Label,
     label: Option<String>,
 }
 
 #[derive(Debug)]
 pub enum KeyboardShortcutInput {
-    UpdateKey(String),
-    UpdateModifier(ConfigModifier),
-    HideKeyboardShortcut(bool),
-    ShowKeyboardShortcutDialog(Option<(ConfigModifier, String)>, Option<gtk::Widget>),
-    #[allow(dead_code)]
-    SetLabelText(Option<String>),
+    ShowKeyboardShortcutDialog(Option<(config_lib::Modifier, String)>, Option<gtk::Widget>),
+
+    _HideKeyboardShortcut(bool),
+    _UpdateKey(String),
+    _UpdateModifier(config_lib::Modifier),
+}
+#[derive(Debug)]
+pub enum KeyboardShortcutOutput {
+    SetKey(config_lib::Modifier, String),
+    Abort,
+
+    // send out instead of opening because
+    // this allows parent to set current config
+    OpenRequest,
 }
 
 #[derive(Debug)]
 pub struct KeyboardShortcutInit {
     pub label: Option<String>,
     pub icon: Option<String>,
-    pub init: Option<(ConfigModifier, String)>,
-}
-
-#[derive(Debug)]
-pub enum KeyboardShortcutOutput {
-    SetKey(ConfigModifier, String),
-    Abort,
-    OpenRequest,
 }
 
 #[relm4::component(pub)]
@@ -50,18 +42,6 @@ impl SimpleComponent for KeyboardShortcut {
     type Input = KeyboardShortcutInput;
     type Output = KeyboardShortcutOutput;
 
-    view! {
-        #[root]
-        gtk::Button {
-            set_icon_name?: &init.icon,
-            #[watch]
-            set_label?: &model.label,
-            #[watch]
-            set_css_classes: if model.is_visible { &["active"] } else { &["not-active"] },
-            connect_clicked[sender] => move |_b| { sender.output_sender().emit(KeyboardShortcutOutput::OpenRequest); },
-        },
-    }
-
     fn init(
         init: Self::Init,
         root: Self::Root,
@@ -69,7 +49,7 @@ impl SimpleComponent for KeyboardShortcut {
     ) -> ComponentParts<Self> {
         use relm4::ComponentController;
 
-        let entry = Label::new(None);
+        let entry = gtk::Label::new(None);
         let dialog = Alert::builder()
             .transient_for(&root)
             .launch(AlertSettings {
@@ -83,23 +63,23 @@ impl SimpleComponent for KeyboardShortcut {
                 extra_child: Some(entry.clone().into()),
             })
             .forward(sender.input_sender(), |res| match res {
-                AlertResponse::Confirm => KeyboardShortcutInput::HideKeyboardShortcut(true),
-                AlertResponse::Cancel => KeyboardShortcutInput::HideKeyboardShortcut(false),
+                AlertResponse::Confirm => KeyboardShortcutInput::_HideKeyboardShortcut(true),
+                AlertResponse::Cancel => KeyboardShortcutInput::_HideKeyboardShortcut(false),
                 AlertResponse::Option => unreachable!("no option button in alert dialog"),
             });
 
         // Attach an EventControllerKey to the alert dialog's window to print raw key events.
-        let key_controller = EventControllerKey::new();
+        let key_controller = gtk::EventControllerKey::new();
         let entry_2 = entry.clone();
         let window = dialog.widgets().gtk_window_12.clone();
         let send = sender.clone();
         key_controller.connect_key_pressed(move |_, val, _, state| {
-            debug!("Raw key event - val: {}, state: {:?}", val, state);
-            match handle_key(val, state) {
+            tracing::debug!("Raw key event - val: {}, state: {:?}", val, state);
+            match crate::util::handle_key_and_modifier(val, state) {
                 Some((key, r#mod, label)) => {
                     entry.set_text(&label);
-                    send.input(KeyboardShortcutInput::UpdateKey(key));
-                    send.input(KeyboardShortcutInput::UpdateModifier(r#mod));
+                    send.input(KeyboardShortcutInput::_UpdateKey(key));
+                    send.input(KeyboardShortcutInput::_UpdateModifier(r#mod));
                 }
                 None => {
                     entry.set_text("---");
@@ -110,9 +90,10 @@ impl SimpleComponent for KeyboardShortcut {
         window.add_controller(key_controller);
 
         let model = Self {
-            key: init.init.as_ref().map(|(_, key)| key.clone()),
-            modifier: init.init.map(|(r#mod, _)| r#mod),
+            key: None,
+            modifier: None,
             is_visible: false,
+
             entry: entry_2,
             dialog,
             label: init.label.clone(),
@@ -122,16 +103,28 @@ impl SimpleComponent for KeyboardShortcut {
         ComponentParts { model, widgets }
     }
 
+    view! {
+        #[root]
+        gtk::Button {
+            set_icon_name?: &init.icon,
+            #[watch]
+            set_label?: &model.label,
+            #[watch]
+            set_css_classes: if model.is_visible { &["active"] } else { &["not-active"] },
+            connect_clicked[sender] => move |_b| { sender.output_sender().emit(KeyboardShortcutOutput::OpenRequest); },
+        },
+    }
+
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
-        trace!("shortcut_dialog::update: {message:?}");
+        tracing::trace!("shortcut_dialog::update: {message:?}");
         match message {
-            KeyboardShortcutInput::UpdateKey(key) => {
+            KeyboardShortcutInput::_UpdateKey(key) => {
                 self.key = Some(key);
             }
-            KeyboardShortcutInput::UpdateModifier(modifier) => {
+            KeyboardShortcutInput::_UpdateModifier(modifier) => {
                 self.modifier = Some(modifier);
             }
-            KeyboardShortcutInput::HideKeyboardShortcut(confirm) => {
+            KeyboardShortcutInput::_HideKeyboardShortcut(confirm) => {
                 self.is_visible = false;
                 if confirm {
                     if let (Some(key), Some(r#mod)) = (&self.key, &self.modifier) {
@@ -139,7 +132,9 @@ impl SimpleComponent for KeyboardShortcut {
                             .output_sender()
                             .emit(KeyboardShortcutOutput::SetKey(*r#mod, key.clone()));
                     } else {
-                        warn!("Tried to hide keyboard shortcut dialog without key or modifier");
+                        tracing::warn!(
+                            "Tried to hide keyboard shortcut dialog without key or modifier"
+                        );
                         sender.output_sender().emit(KeyboardShortcutOutput::Abort);
                     }
                 } else {
@@ -156,14 +151,12 @@ impl SimpleComponent for KeyboardShortcut {
                 self.key = initial.as_ref().map(|(_, key)| key.clone());
                 self.modifier = initial.map(|(r#mod, _)| r#mod);
                 if let (Some(r#mod), Some(key)) = (&self.modifier, &self.key) {
-                    self.entry.set_text(&mod_key_to_string(*r#mod, key));
+                    self.entry
+                        .set_text(&crate::util::mod_key_to_string(*r#mod, key));
                 } else {
                     self.entry.set_text("");
                 }
                 self.dialog.emit(AlertMsg::Show);
-            }
-            KeyboardShortcutInput::SetLabelText(text) => {
-                self.label = text;
             }
         }
     }

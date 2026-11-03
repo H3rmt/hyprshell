@@ -52,10 +52,9 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
                     "\t- Press {blue}Ctrl{reset} + {blue}r{reset} to run the typed command in the background.\n",
                 ));
             }
-            if let Some(engines) = &overview.launcher.plugins.websearch {
+            if let Some(_) = &overview.launcher.plugins.websearch {
                 any_plugin = true;
-                let _ = builder.write_str(&format!("\t- Press {blue}Ctrl{reset} + {bold}{blue}<key>{reset} to search the typed text in any of the configured SearchEngines: {}.\n",
-                                                   engines.engines.iter().map(|e| e.name.to_string()).collect::<Vec<_>>().join(", ")));
+                let _ = builder.write_str(&format!("\t- Press {blue}Ctrl{reset} + {bold}{blue}<key>{reset} to search the typed text in any of the configured SearchEngines.\n"));
             }
             if let Some(calc) = &overview.launcher.plugins.calc {
                 any_plugin = true;
@@ -77,6 +76,7 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
             }
             if overview.launcher.plugins.actions.is_some() {
                 any_plugin = true;
+                // TODO  Type `actions` ...
                 let _ = builder.write_str(
                     "\t- Type Reboot/Shutdown/etc. to run corresponding commands. Type `actions` to see all available ones.\n",
                 );

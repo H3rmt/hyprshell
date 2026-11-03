@@ -1,25 +1,28 @@
 use crate::style::ThemeData;
 use crate::style::structs::Theme;
-use anyhow::{Context, bail};
 use core_lib::ini::IniFile;
 use std::fs;
 use std::path::Path;
 use tracing::{debug, instrument, warn};
 
 #[instrument(level = "debug")]
-pub fn load_themes(
-    path: &Path,
-    current_css: &str,
-) -> anyhow::Result<(Vec<Theme>, Vec<anyhow::Error>)> {
+pub fn load_themes(path: &Path, current_css: &str) -> (Vec<Theme>, Vec<anyhow::Error>) {
     let mut themes = Vec::new();
-    if !path.exists() {
-        bail!("Themes directory does not exist: {}", path.display());
-    }
-
     let mut errors = Vec::new();
-    for entry in fs::read_dir(path)
-        .with_context(|| format!("Failed to read themes directory ({})", path.display()))?
-    {
+
+    let iter = match fs::read_dir(path) {
+        Ok(a) => a,
+        Err(err) => {
+            let err = Into::<anyhow::Error>::into(err);
+            errors.push(err.context(format!(
+                "Failed to read themes directory ({})",
+                path.display()
+            )));
+            return (themes, errors);
+        }
+    };
+
+    for entry in iter {
         let entry = match entry {
             Ok(entry) => entry,
             Err(err) => {
@@ -99,7 +102,7 @@ pub fn load_themes(
     }
 
     themes.sort_by(|a, b| a.name.cmp(&b.name));
-    Ok((themes, errors))
+    (themes, errors)
 }
 
 fn parse_data(data: &str, name: &str) -> ThemeData {
