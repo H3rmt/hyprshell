@@ -84,3 +84,15 @@
   margin-top: 1px;
   margin-bottom: 1px;
 }
+
+.client-label-icon.monochrome {
+    opacity: 0.4;
+}
+
+.client-app-name {
+    font-weight: bold;
+}
+
+.client-title {
+    opacity: 0.75;
+}

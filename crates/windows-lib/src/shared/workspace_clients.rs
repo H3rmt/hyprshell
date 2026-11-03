@@ -1,9 +1,10 @@
 use crate::icon::set_icon;
+use crate::label::client_label;
 use core_lib::{ClientData, ClientId};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::factory::Position;
-use relm4::gtk::{Align, gdk, pango};
+use relm4::gtk::{Align, gdk};
 use relm4::prelude::*;
 
 /// Workspace clients component for Fixed parent (workspace mode)
@@ -35,6 +36,9 @@ pub struct WorkspaceClientsInit {
     pub live_thumbnails: bool,
     #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
+    /// Previous thumbnail of this client, shown until a fresh capture arrives
+    #[cfg(feature = "live_windows")]
+    pub thumbnail: Option<gdk::Texture>,
 }
 
 #[derive(Debug)]
@@ -70,21 +74,11 @@ impl FactoryComponent for WorkspaceClients {
                     set_paintable: self.paintable.as_ref(),
                     set_css_classes: if self.data.enabled { &["client-picture"] } else { &["client-picture", "monochrome"] },
                 },
+                #[name(frame)]
                 add_overlay = &gtk::Frame {
                     set_label_align: 0.5,
                     set_halign: Align::Center,
                     set_valign: Align::Fill,
-                    #[wrap(Some)]
-                    set_label_widget = &gtk::Label {
-                        set_overflow: gtk::Overflow::Visible,
-                        set_margin_start: 6,
-                        set_ellipsize: pango::EllipsizeMode::End,
-                        set_label: if self.data.title.trim().is_empty() {
-                            &self.data.class
-                        } else {
-                            &self.data.title
-                        },
-                    },
                     #[name(image)]
                     gtk::Image {
                         set_css_classes: if self.live_thumbnails && self.live_thumbnails_icons {
@@ -101,12 +95,16 @@ impl FactoryComponent for WorkspaceClients {
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         // trace!("self {}x{}", init.data.width, init.data.height);
+        #[cfg(feature = "live_windows")]
+        let paintable: Option<gdk::Paintable> = init.thumbnail.map(Cast::upcast);
+        #[cfg(not(feature = "live_windows"))]
+        let paintable = None;
         Self {
             active: false,
             data: init.data,
             id: init.id,
             scale: init.scale,
-            paintable: None,
+            paintable,
             #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
             #[cfg(not(feature = "live_windows"))]
@@ -126,6 +124,9 @@ impl FactoryComponent for WorkspaceClients {
         sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
+        widgets
+            .frame
+            .set_label_widget(Some(&client_label(&self.data)));
         if !self.live_thumbnails || self.live_thumbnails_icons {
             // Set the icon for this client (only if large enough to show)
             let client_h_w =

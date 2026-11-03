@@ -3,6 +3,7 @@ mod data;
 mod desktop_map;
 mod icon;
 mod keybinds;
+mod label;
 mod next;
 pub mod overview;
 mod shared;

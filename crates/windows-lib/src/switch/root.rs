@@ -52,6 +52,9 @@ pub struct SwitchRoot {
     thumbnail_refresh_ms: u64,
     #[cfg(feature = "live_windows")]
     thumbnail_burst: bool,
+    /// Last captured thumbnail per client, kept across openings so the cards don't start out empty
+    #[cfg(feature = "live_windows")]
+    last_thumbnails: std::collections::HashMap<core_lib::ClientId, gtk::gdk::Texture>,
 }
 
 #[derive(Debug)]
@@ -156,6 +159,8 @@ impl SimpleComponent for SwitchRoot {
             thumbnail_refresh_ms: init.thumbnail_refresh_ms,
             #[cfg(feature = "live_windows")]
             thumbnail_burst: false,
+            #[cfg(feature = "live_windows")]
+            last_thumbnails: std::collections::HashMap::new(),
         };
 
         let itemsw: gtk::FlowBox = model.items.widget().clone();
@@ -295,6 +300,10 @@ impl SwitchRoot {
             hypr_data: hypr_data.clone(),
         };
 
+        #[cfg(feature = "live_windows")]
+        self.last_thumbnails
+            .retain(|id, _| hypr_data.clients.iter().any(|(cid, _)| cid == id));
+
         trace!("Showing window {:?}", self.window.id());
         self.window.set_visible(true);
         self.window.grab_focus();
@@ -362,6 +371,8 @@ impl SwitchRoot {
                 live_thumbnails: self.live_thumbnails,
                 #[cfg(feature = "live_windows")]
                 live_thumbnails_icons: self.live_thumbnails_icons,
+                #[cfg(feature = "live_windows")]
+                thumbnails: self.last_thumbnails.clone(),
             });
         }
         drop(lock);
@@ -394,6 +405,8 @@ impl SwitchRoot {
                 data: client.clone(),
                 #[cfg(feature = "live_windows")]
                 live_thumbnails: self.live_thumbnails,
+                #[cfg(feature = "live_windows")]
+                thumbnail: self.last_thumbnails.get(id).cloned(),
             });
         }
         drop(lock);
@@ -652,6 +665,8 @@ impl SwitchRoot {
             return;
         };
         let mut captures = refresh_captures(mgr, &display, !self.thumbnail_burst);
+        self.last_thumbnails
+            .extend(captures.iter().map(|(id, texture)| (*id, texture.clone())));
         if self.thumbnail_burst && mgr.pending_count() == 0 {
             self.thumbnail_burst = false;
             // all initial thumbnails are loaded

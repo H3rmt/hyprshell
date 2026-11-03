@@ -13,9 +13,16 @@ pub enum Source {
     ByPidExec,
 }
 type IconPathMap = HashMap<(Box<str>, Source), (Box<Path>, Box<Path>)>;
+/// Display `Name` of the desktop file, keyed like [`IconPathMap`]
+type AppNameMap = HashMap<(Box<str>, Source), Box<str>>;
 
 fn get_icon_path_map() -> &'static RwLock<IconPathMap> {
     static MAP_LOCK: OnceLock<RwLock<IconPathMap>> = OnceLock::new();
+    MAP_LOCK.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+fn get_app_name_map() -> &'static RwLock<AppNameMap> {
+    static MAP_LOCK: OnceLock<RwLock<AppNameMap>> = OnceLock::new();
     MAP_LOCK.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
@@ -24,6 +31,9 @@ pub fn reload_class_to_icon_map() -> anyhow::Result<()> {
     let mut map = get_icon_path_map()
         .write()
         .map_err(|_| anyhow::anyhow!("Failed to lock icon path map"))?;
+    let mut names = get_app_name_map()
+        .write()
+        .map_err(|_| anyhow::anyhow!("Failed to lock app name map"))?;
 
     for (entry, ini) in get_all_desktop_files()
         .context("unable to get desktop files")?
@@ -34,6 +44,31 @@ pub fn reload_class_to_icon_map() -> anyhow::Result<()> {
             let icon = section.get_first_as_path("Icon");
             let startup_wm_class = section.get_first("StartupWMClass");
             let exec_name = section.get_first("Exec").and_then(extract_exec_name);
+            // names don't depend on the icon, so a missing icon doesn't hide the app name
+            if let Some(name) = &name {
+                names.insert(
+                    (Box::from(name.to_lowercase()), Source::DesktopFileName),
+                    Box::from(&**name),
+                );
+                if let Some(wm_class) = &startup_wm_class {
+                    names.insert(
+                        (
+                            Box::from(wm_class.to_lowercase()),
+                            Source::DesktopFileStartupWmClass,
+                        ),
+                        Box::from(&**name),
+                    );
+                }
+                if let Some(exec_name) = &exec_name {
+                    names.insert(
+                        (
+                            Box::from(exec_name.to_lowercase()),
+                            Source::DesktopFileExecName,
+                        ),
+                        Box::from(&**name),
+                    );
+                }
+            }
             if let (Some(name), Some(icon)) = (name, icon.clone()) {
                 map.insert(
                     (Box::from(name.to_lowercase()), Source::DesktopFileName),
@@ -66,6 +101,7 @@ pub fn reload_class_to_icon_map() -> anyhow::Result<()> {
         }
     }
     drop(map);
+    drop(names);
     trace!("filled class to icon map");
     Ok(())
 }
@@ -134,4 +170,20 @@ pub fn get_icon_name_by_name_from_desktop_files(
             ))
             .map(|s| (s.0.clone(), s.1.clone(), Source::DesktopFileExecName))
         })
+}
+
+/// The `Name` of the desktop file that belongs to a window class, if there is one.
+pub fn get_app_name_by_class(class: &str) -> Option<Box<str>> {
+    let Ok(map) = get_app_name_map().read() else {
+        warn!("Failed to lock app name map");
+        return None;
+    };
+    let key: Box<str> = Box::from(class.to_ascii_lowercase());
+    [
+        Source::DesktopFileName,
+        Source::DesktopFileStartupWmClass,
+        Source::DesktopFileExecName,
+    ]
+    .into_iter()
+    .find_map(|source| map.get(&(key.clone(), source)).cloned())
 }
