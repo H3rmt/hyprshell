@@ -187,14 +187,10 @@ mod wl_impls {
                 }
                 ext_image_copy_capture_session_v1::Event::DmabufFormat { format, modifiers } => {
                     let mods: Vec<u64> = modifiers
-                        .chunks_exact(8)
-                        .map(|chunk| {
-                            u64::from_ne_bytes(
-                                chunk
-                                    .try_into()
-                                    .expect("chunks_exact(8) guarantees 8 bytes"),
-                            )
-                        })
+                        .as_chunks::<8>()
+                        .0
+                        .iter()
+                        .map(|chunk| u64::from_ne_bytes(*chunk))
                         .collect();
                     cs.dmabuf_formats.push((format, mods));
                 }
@@ -552,7 +548,7 @@ impl CaptureManager {
     }
 
     pub fn drain_closed(&mut self) -> Vec<ObjectId> {
-        let ids: Vec<ObjectId> = self.state.closed_ids.drain(..).collect();
+        let ids = std::mem::take(&mut self.state.closed_ids);
         for id in &ids {
             if let Some(wc) = self.captures.remove(id) {
                 wc.session.destroy();

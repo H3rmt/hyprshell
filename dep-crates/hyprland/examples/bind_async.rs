@@ -2,6 +2,7 @@ use hyprland::dispatch::DispatchType;
 use hyprland::instance::Instance;
 use hyprland::keyword::Keyword;
 use hyprland::{default_instance_panic, dispatch};
+use hyprshell_hyprland as hyprland;
 /// Demonstates the use of Hyprland-rs for asyncronous creation key bindings
 /// and using submaps
 ///

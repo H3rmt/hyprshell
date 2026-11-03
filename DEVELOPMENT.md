@@ -61,3 +61,45 @@ Useful environment variables for development:
 
 - `HYPRSHELL_EXPERIMENTAL=1`: Enables experimental features.
 - `HYPRSHELL_LOG_MODULE_PATH=1`: Adds module path to logs (use with `-vv`).
+
+## Checking changes
+
+Run `just check lint test` before submitting a change. The `cargo xtask` alias
+runs the same check commands used by CI. Clippy checks all targets of the
+application and maintained crates, including xtask; vendored dependencies retain
+their own lint policies. These Rust checks also perform type checking.
+
+CI also compiles and checks vendored tests and examples with:
+
+```sh
+cargo clippy --locked --workspace --all-targets --no-deps -- -D warnings
+```
+
+This needs OpenSSL development headers for the vendored example dependencies.
+
+For changes involving optional features, run:
+
+```sh
+bash scripts/check-all-feature-combinations.sh
+```
+
+This checks default and slim builds, then every combination of the independent
+features in `Cargo.toml`. It checks the maintained libraries explicitly and treats
+warnings as errors, so disabled-feature warnings cannot hide in dependencies.
+
+Additional checks for the files they cover:
+
+```sh
+# Shell scripts and GitHub Actions, using ShellCheck and actionlint.
+shellcheck scripts/*.sh scripts/ci/*.sh
+actionlint
+
+# Nix formatting, static checks, and evaluation of both supported architectures.
+nixfmt --check flake.nix nix/*.nix
+statix check flake.nix
+statix check nix
+deadnix --fail flake.nix nix
+nix flake check --all-systems --no-build --no-write-lock-file
+```
+
+The Nix evaluation command does not build packages or activate a configuration.

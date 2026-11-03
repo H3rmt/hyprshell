@@ -393,7 +393,7 @@ proptest! {
         match &mime_type {
             MimeType::Autodetect => unreachable!(),
             MimeType::Text => assert_eq!(mime_types, ["text/plain"]),
-            MimeType::Specific(mime) => assert_eq!(mime_types, [mime.clone()]),
+            MimeType::Specific(mime) => assert_eq!(mime_types, std::slice::from_ref(mime)),
         }
 
         let paste_mime_type = match mime_type {

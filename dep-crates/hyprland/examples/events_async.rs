@@ -3,6 +3,7 @@ use hyprland::event_listener::AsyncEventListener;
 ///
 /// Usage: cargo run --example events
 use hyprland::prelude::*;
+use hyprshell_hyprland as hyprland;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
