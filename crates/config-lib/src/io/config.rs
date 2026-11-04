@@ -191,6 +191,11 @@ pub struct Switch {
     pub modifier: Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
+    #[default(None)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keys: Option<Vec<Box<str>>>,
+    #[default(vec![Box::from("grave")])]
+    pub reverse_keys: Vec<Box<str>>,
     #[default(vec![FilterBy::CurrentMonitor])]
     pub filter_by: Vec<FilterBy>,
     #[default = false]

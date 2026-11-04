@@ -87,12 +87,72 @@ pub struct Switch {
     pub enabled: bool,
     pub modifier: ConfigModifier,
     pub key: String,
+    pub keys: Option<Vec<String>>,
+    pub reverse_keys: Vec<String>,
     pub same_class: bool,
     pub current_workspace: bool,
     pub current_monitor: bool,
     pub switch_workspaces: bool,
     pub exclude_workspaces: String,
     pub kill_key: char,
+}
+
+impl Switch {
+    pub fn forward_keys(&self) -> &[String] {
+        self.keys
+            .as_deref()
+            .unwrap_or_else(|| std::slice::from_ref(&self.key))
+    }
+
+    pub fn primary_key(&self) -> &str {
+        self.forward_keys().first().map_or("", String::as_str)
+    }
+
+    pub fn set_primary_key(&mut self, key: String) {
+        self.key.clone_from(&key);
+        if let Some(keys) = &mut self.keys {
+            if let Some(first) = keys.first_mut() {
+                *first = key;
+            } else {
+                keys.push(key);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod shortcut_tests {
+    use super::*;
+
+    #[test]
+    fn editor_round_trip_and_reset_keep_both_lists() {
+        for keys in [None, Some(vec!["Tab".into(), "F6".into()])] {
+            for reverse_keys in [Vec::new(), vec!["grave".into(), "F7".into()]] {
+                let runtime = config_lib::Switch {
+                    key: "F8".into(),
+                    keys: keys.clone(),
+                    reverse_keys,
+                    ..Default::default()
+                };
+                let editor = Switch::from(Some(runtime.clone()));
+                let reset = editor.clone();
+                let round_trip: Option<config_lib::Switch> = reset.into();
+                assert_eq!(round_trip, Some(runtime));
+            }
+        }
+    }
+
+    #[test]
+    fn primary_shortcut_recording_preserves_additional_keys() {
+        let mut editor = Switch::from(Some(config_lib::Switch {
+            keys: Some(vec!["Tab".into(), "F6".into()]),
+            reverse_keys: Vec::new(),
+            ..Default::default()
+        }));
+        editor.set_primary_key("F8".into());
+        assert_eq!(editor.forward_keys(), ["F8", "F6"]);
+        assert!(editor.reverse_keys.is_empty());
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -227,6 +287,10 @@ impl From<Option<config_lib::Switch>> for Switch {
             enabled,
             modifier: v.modifier.into(),
             key: v.key.to_string(),
+            keys: v
+                .keys
+                .map(|keys| keys.into_iter().map(String::from).collect()),
+            reverse_keys: v.reverse_keys.into_iter().map(String::from).collect(),
             same_class: v.filter_by_same_class,
             current_workspace: v.filter_by_current_workspace,
             current_monitor: v.filter_by_current_monitor,
@@ -243,6 +307,10 @@ impl From<Switch> for Option<config_lib::Switch> {
             Some(config_lib::Switch {
                 modifier: value.modifier.into(),
                 key: Box::from(value.key),
+                keys: value
+                    .keys
+                    .map(|keys| keys.into_iter().map(Box::from).collect()),
+                reverse_keys: value.reverse_keys.into_iter().map(Box::from).collect(),
                 filter_by_same_class: value.same_class,
                 filter_by_current_workspace: value.current_workspace,
                 filter_by_current_monitor: value.current_monitor,

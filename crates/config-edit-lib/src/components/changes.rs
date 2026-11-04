@@ -319,6 +319,30 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                         add_info(changes, "Enabled Switch view");
                     }
 
+                    if prev_config.windows.switch.keys != config.windows.switch.keys {
+                        add_info_subtitle(
+                            changes,
+                            "Changed forward keys",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch.forward_keys().join(", "),
+                                config.windows.switch.forward_keys().join(", ")
+                            ),
+                        );
+                    }
+                    if prev_config.windows.switch.reverse_keys != config.windows.switch.reverse_keys
+                    {
+                        add_info_subtitle(
+                            changes,
+                            "Changed reverse keys",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch.reverse_keys.join(", "),
+                                config.windows.switch.reverse_keys.join(", ")
+                            ),
+                        );
+                    }
+
                     if prev_config.windows.switch.key != config.windows.switch.key {
                         add_info_subtitle(
                             changes,
@@ -414,6 +438,31 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                 (_, true) => {
                     if !prev_config.windows.switch_2.enabled {
                         add_info(changes, "Enabled Switch 2 view");
+                    }
+
+                    if prev_config.windows.switch_2.keys != config.windows.switch_2.keys {
+                        add_info_subtitle(
+                            changes,
+                            "Changed switch 2 forward keys",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch_2.forward_keys().join(", "),
+                                config.windows.switch_2.forward_keys().join(", ")
+                            ),
+                        );
+                    }
+                    if prev_config.windows.switch_2.reverse_keys
+                        != config.windows.switch_2.reverse_keys
+                    {
+                        add_info_subtitle(
+                            changes,
+                            "Changed switch 2 reverse keys",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch_2.reverse_keys.join(", "),
+                                config.windows.switch_2.reverse_keys.join(", ")
+                            ),
+                        );
                     }
 
                     if prev_config.windows.switch_2.key != config.windows.switch_2.key {

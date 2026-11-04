@@ -7,7 +7,7 @@ mod modifier;
 mod structs;
 pub mod style;
 
-pub use check::check;
+pub use check::{check, check_switch_keys};
 pub use explain::explain;
 pub use io::load_and_migrate_config;
 pub use io::save::write_config;

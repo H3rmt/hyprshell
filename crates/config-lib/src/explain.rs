@@ -92,8 +92,14 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
         builder.push('\n');
 
         if let Some(switch) = &windows.switch {
+            let forward = key_names(switch.forward_keys());
+            let reverse = if switch.reverse_keys.is_empty() {
+                String::new()
+            } else {
+                format!("{} / ", key_names(&switch.reverse_keys))
+            };
             let _ = builder.write_str(&format!(
-                "Press {bold}{blue}{}{reset} + {blue}tab{reset} and hold {bold}{blue}{}{reset} to view recently used applications. Press {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
+                "Press {bold}{blue}{}{reset} + {blue}{forward}{reset} and hold {bold}{blue}{}{reset} to view recently used applications. Press {blue}{forward}{reset} and {blue}{reverse}{reset}{blue}shift{reset} + {blue}{forward}{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
                 switch.modifier,
                 switch.modifier,
                 switch.modifier,
@@ -106,6 +112,13 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
     }
 
     builder
+}
+
+fn key_names(keys: &[Box<str>]) -> String {
+    keys.iter()
+        .map(|key| key.to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join(" / ")
 }
 
 #[cfg(test)]

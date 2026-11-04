@@ -10,7 +10,7 @@ use crate::components::launcher_plugins::applications::ApplicationsOutput;
 use crate::components::launcher_plugins::calc::CalcPluginOutput;
 use crate::components::launcher_plugins::simple::SimplePluginOutput;
 use crate::components::launcher_plugins::websearch::WebSearchOutput;
-use crate::components::nix_preview::{NixPreview, NixPreviewInit};
+use crate::components::nix_preview::{NixPreview, NixPreviewInit, NixPreviewInput};
 use crate::components::switch::SwitchOutput;
 use crate::components::theme::{Style, StyleInit, StyleInput, StyleOutput};
 use crate::components::windows::{Windows, WindowsInit, WindowsInput, WindowsOutput};
@@ -443,6 +443,8 @@ impl SimpleComponent for Root {
             }
             RootInput::SetConfig(config) => {
                 self.config = config;
+                self.nix_preview
+                    .emit(NixPreviewInput::SetConfig(self.config.clone()));
 
                 if self.config.windows.overview.enabled {
                     trace!("Adding launcher tab");
@@ -481,7 +483,9 @@ impl SimpleComponent for Root {
             }
             RootInput::Save(close) => {
                 let config: config_lib::Config = self.config.clone().into();
-                match config_lib::write_config(&self.config_file, &config, true) {
+                match config_lib::check(&config)
+                    .and_then(|()| config_lib::write_config(&self.config_file, &config, true))
+                {
                     Ok(()) => {
                         info!("Saved config to {}", self.config_file.display());
                         sender.input(RootInput::Toast(
@@ -678,7 +682,9 @@ impl SimpleComponent for Root {
                         SwitchOutput::Enabled(enabled) => {
                             r#ref.switch.enabled = enabled;
                         }
-                        SwitchOutput::Key(key) => r#ref.switch.key = key,
+                        SwitchOutput::Key(key) => r#ref.switch.set_primary_key(key),
+                        SwitchOutput::Keys(keys) => r#ref.switch.keys = Some(keys),
+                        SwitchOutput::ReverseKeys(keys) => r#ref.switch.reverse_keys = keys,
                         SwitchOutput::Modifier(modifier) => {
                             r#ref.switch.modifier = modifier;
                         }
@@ -713,7 +719,9 @@ impl SimpleComponent for Root {
                         SwitchOutput::Enabled(enabled) => {
                             r#ref.switch_2.enabled = enabled;
                         }
-                        SwitchOutput::Key(key) => r#ref.switch_2.key = key,
+                        SwitchOutput::Key(key) => r#ref.switch_2.set_primary_key(key),
+                        SwitchOutput::Keys(keys) => r#ref.switch_2.keys = Some(keys),
+                        SwitchOutput::ReverseKeys(keys) => r#ref.switch_2.reverse_keys = keys,
                         SwitchOutput::Modifier(modifier) => {
                             r#ref.switch_2.modifier = modifier;
                         }
