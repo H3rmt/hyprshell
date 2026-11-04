@@ -511,6 +511,14 @@ create_data_struct!(
     doc: "This struct holds a vector of binds"
 );
 
+impl Binds {
+    #[doc = "Returns the complete binding records, retaining opaque Lua references and unknown flags."]
+    pub fn get_raw() -> crate::Result<Vec<serde_json::Value>> {
+        let response = default_instance()?.write_to_socket(crate::command!(JSON, "binds"))?;
+        Ok(serde_json::from_str(&response)?)
+    }
+}
+
 /// Animation styles
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AnimationStyle {

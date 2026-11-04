@@ -9,6 +9,9 @@ use hyprland::keyword::Keyword;
 use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
 use tracing::{trace, warn};
 
+mod reconcile;
+pub use reconcile::reconcile_exec_binds;
+
 pub fn apply_layerrules() -> anyhow::Result<()> {
     if let Err(e) = apply_layerrules_lua() {
         warn!("Failed to apply layerrules: {}, trying legacy syntax", e);
@@ -61,15 +64,7 @@ pub fn apply_layerrules_legacy() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
-    if let Err(e) = apply_exec_bind_lua(bind) {
-        warn!("Failed to apply keybinds: {}, trying legacy syntax", e);
-        return apply_exec_bind_legacy(bind);
-    }
-    Ok(())
-}
-
-pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
+fn lua_binding(bind: &ExecBind) -> Binding {
     let binds: Vec<_> = bind
         .mods
         .iter()
@@ -85,7 +80,7 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
         })
         .collect();
 
-    let binding = Binding {
+    Binding {
         mods: binds,
         key: bind.key.to_string(),
         flags: if bind.release {
@@ -103,14 +98,10 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
             ]
         },
         dispatcher: Dispatch::ExecCmd(bind.exec.clone(), None),
-    };
-    trace!("binding exec: {binding:?}");
-    binding.unbind()?;
-    binding.bind()?;
-    Ok(())
+    }
 }
 
-pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
+fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
     let mods = bind
         .mods
         .iter()
