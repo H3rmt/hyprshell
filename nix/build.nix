@@ -27,7 +27,7 @@ rec {
 
     strictDeps = true;
     doCheck = false;
-    cargoBuildCommand = "cargo build --release --locked";
+    cargoBuildCommand = "cargo build --release";
 
     nativeBuildInputs = [
       pkgs.desktop-file-utils
@@ -40,6 +40,7 @@ rec {
       pkgs.libadwaita
       pkgs.gtk4-layer-shell
       pkgs.libnotify
+      pkgs.dbus
     ];
   };
 
