@@ -44,6 +44,7 @@ pub enum SwitchOutput {
     SwitchWorkspaces(bool),
     ExcludeWorkspaces(String),
     KillKey(char),
+    ShowOnAllMonitors(bool),
 }
 
 #[relm4::component(pub)]
@@ -214,6 +215,26 @@ impl SimpleComponent for Switch {
                         #[block_signal(h_5)]
                         set_active: model.config.switch_workspaces,
                         connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::SwitchWorkspaces(e.is_active())); } @h_5,
+                        set_valign: Align::Center,
+                    },
+                },
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: 10,
+                    gtk::Label {
+                        set_label: "Show on all monitors",
+                        #[watch]
+                        set_css_classes: if model.config.show_on_all_monitors == model.prev_config.show_on_all_monitors { &[] } else { &["blue-label"] },
+                    },
+                    gtk::Image::from_icon_name("dialog-information-symbolic") {
+                        set_cursor_by_name: "help",
+                        set_tooltip_text: Some("Show a copy of the switch on every monitor instead of only the focused one")
+                    },
+                    gtk::Switch {
+                        #[watch]
+                        #[block_signal(h_8)]
+                        set_active: model.config.show_on_all_monitors,
+                        connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::ShowOnAllMonitors(e.is_active())); } @h_8,
                         set_valign: Align::Center,
                     },
                 },

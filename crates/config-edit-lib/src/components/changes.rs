@@ -391,6 +391,19 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                             ),
                         );
                     }
+                    if prev_config.windows.switch.show_on_all_monitors
+                        != config.windows.switch.show_on_all_monitors
+                    {
+                        add_info_subtitle(
+                            changes,
+                            "Changed switch show on all monitors",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch.show_on_all_monitors,
+                                config.windows.switch.show_on_all_monitors
+                            ),
+                        );
+                    }
                     if prev_config.windows.switch.kill_key != config.windows.switch.kill_key {
                         add_info_subtitle(
                             changes,
@@ -486,6 +499,19 @@ pub fn generate_items(changes: &gtk::ListBox, config: &Config, prev_config: &Con
                                 "{} -> {}",
                                 prev_config.windows.switch_2.exclude_workspaces,
                                 config.windows.switch_2.exclude_workspaces
+                            ),
+                        );
+                    }
+                    if prev_config.windows.switch_2.show_on_all_monitors
+                        != config.windows.switch_2.show_on_all_monitors
+                    {
+                        add_info_subtitle(
+                            changes,
+                            "Changed switch 2 show on all monitors",
+                            format!(
+                                "{} -> {}",
+                                prev_config.windows.switch_2.show_on_all_monitors,
+                                config.windows.switch_2.show_on_all_monitors
                             ),
                         );
                     }

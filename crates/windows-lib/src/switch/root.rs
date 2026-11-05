@@ -3,7 +3,7 @@ use crate::next::{find_next_client, find_next_workspace};
 #[cfg(feature = "live_windows")]
 use crate::shared::refresh_captures;
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput};
-use core_lib::{Active, ByFirst, Direction, HyprlandData, SWITCH_NAMESPACE};
+use core_lib::{Active, ByFirst, Direction, HyprlandData, MonitorId, SWITCH_NAMESPACE};
 use exec_lib::switch::{switch_client, switch_workspace};
 #[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
@@ -13,6 +13,7 @@ use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
 use relm4::adw::prelude::*;
+use relm4::gtk::gdk;
 use relm4::gtk::gdk::Key;
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
@@ -31,6 +32,8 @@ pub struct SwitchRoot {
     data: SwitchData,
     // gtk
     window: gtk::ApplicationWindow,
+    /// Read-only copies of `window` on the other monitors (`show_on_all_monitors`)
+    mirrors: Vec<gtk::Window>,
     controller: Option<gtk::EventController>,
     /// Regex for removing HTML tags from strings
     remove_html: Regex,
@@ -138,6 +141,7 @@ impl SimpleComponent for SwitchRoot {
             switch: init.switch,
             open: false,
             window: root.clone(),
+            mirrors: Vec::new(),
             controller: None,
             remove_html: Regex::new(r"<[^>]*>").expect("invalid regex"),
             data: SwitchData::default(),
@@ -305,6 +309,10 @@ impl SwitchRoot {
             self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
         }
 
+        if self.switch.show_on_all_monitors {
+            self.open_mirrors(&hypr_data, active_prev.monitor);
+        }
+
         #[cfg(feature = "live_windows")]
         if self.live_thumbnails {
             self.capture_manager = CaptureManager::new().map_err(|e| error!("{e}")).ok();
@@ -324,6 +332,52 @@ impl SwitchRoot {
                     ControlFlow::Continue
                 },
             ));
+        }
+    }
+
+    /// Shows a copy of the switch on every monitor except the focused one.
+    ///
+    /// Each copy paints the main window's content through a `WidgetPaintable`,
+    /// so selection changes, reloads and thumbnails show up without extra state.
+    /// Only the main window takes keyboard input.
+    fn open_mirrors(&mut self, hypr_data: &HyprlandData, focused: MonitorId) {
+        let Some(content) = self.window.child() else {
+            return;
+        };
+        let Some(display) = gdk::Display::default() else {
+            return;
+        };
+        let focused = hypr_data
+            .monitors
+            .find_by_first(&focused)
+            .map(|m| m.connector.clone());
+        let monitors = display.monitors();
+        for monitor in
+            (0..monitors.n_items()).filter_map(|i| monitors.item(i).and_downcast::<gdk::Monitor>())
+        {
+            if monitor.connector().as_deref() == focused.as_deref() {
+                continue;
+            }
+            trace!("Showing switch mirror on {:?}", monitor.connector());
+            let picture = gtk::Picture::for_paintable(&gtk::WidgetPaintable::new(Some(&content)));
+            picture.set_can_shrink(false);
+            let mirror = gtk::Window::builder()
+                .css_classes(["window"])
+                .child(&picture)
+                .build();
+            mirror.init_layer_shell();
+            mirror.set_namespace(Some(SWITCH_NAMESPACE));
+            mirror.set_layer(Layer::Overlay);
+            mirror.set_keyboard_mode(KeyboardMode::None);
+            mirror.set_monitor(Some(&monitor));
+            mirror.set_visible(true);
+            self.mirrors.push(mirror);
+        }
+    }
+
+    fn close_mirrors(&mut self) {
+        for mirror in self.mirrors.drain(..) {
+            mirror.destroy();
         }
     }
 
@@ -483,6 +537,7 @@ impl SwitchRoot {
     fn close_switch(&mut self, do_switch: bool) {
         trace!("Hiding window {:?}", self.window.id());
         self.window.set_visible(false);
+        self.close_mirrors();
 
         // Clear UI
         {

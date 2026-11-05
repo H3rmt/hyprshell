@@ -176,6 +176,7 @@ pub struct Switch {
     pub switch_workspaces: bool,
     pub exclude_workspaces: Box<str>,
     pub kill_key: char,
+    pub show_on_all_monitors: bool,
 }
 
 impl Default for Switch {

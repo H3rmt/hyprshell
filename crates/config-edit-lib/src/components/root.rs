@@ -708,6 +708,9 @@ impl SimpleComponent for Root {
                         SwitchOutput::KillKey(key) => {
                             r#ref.switch.kill_key = key;
                         }
+                        SwitchOutput::ShowOnAllMonitors(enabled) => {
+                            r#ref.switch.show_on_all_monitors = enabled;
+                        }
                     },
                     WindowsOutput::Switch2(msg) => match msg {
                         SwitchOutput::Enabled(enabled) => {
@@ -742,6 +745,9 @@ impl SimpleComponent for Root {
                         }
                         SwitchOutput::KillKey(key) => {
                             r#ref.switch_2.kill_key = key;
+                        }
+                        SwitchOutput::ShowOnAllMonitors(enabled) => {
+                            r#ref.switch_2.show_on_all_monitors = enabled;
                         }
                     },
                 }
