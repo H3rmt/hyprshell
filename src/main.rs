@@ -4,6 +4,7 @@ use clap::Parser;
 use core_lib::WarnWithDetails;
 use core_lib::path::{
     get_default_cache_dir, get_default_config_file, get_default_css_file, get_default_data_dir,
+    get_system_data_dirs,
 };
 use core_lib::util::daemon_running;
 use std::{env, fs};
@@ -76,6 +77,8 @@ fn main() -> anyhow::Result<()> {
         .config_file
         .unwrap_or_else(get_default_config_file);
 
+    let system_data_dirs = get_system_data_dirs();
+
     match cli.command {
         cli::Command::Run {} => {
             exec_lib::check_version()
@@ -93,7 +96,7 @@ fn main() -> anyhow::Result<()> {
         cli::Command::Config { command } => match command {
             cli::ConfigCommand::Edit {} => {
                 #[cfg(feature = "gui_settings_editor")]
-                config_edit_lib::start(config_file, css_file, system_data_dir, false);
+                config_edit_lib::start(config_file, css_file, system_data_dirs, false);
                 #[cfg(not(feature = "gui_settings_editor"))]
                 core_lib::notify_warn(
                     "GUI settings editor not available, compile with `gui_settings_editor` feature",
@@ -101,7 +104,7 @@ fn main() -> anyhow::Result<()> {
             }
             cli::ConfigCommand::Generate {} => {
                 #[cfg(feature = "gui_settings_editor")]
-                config_edit_lib::start(config_file, css_file, system_data_dir, true);
+                config_edit_lib::start(config_file, css_file, system_data_dirs, true);
                 #[cfg(not(feature = "gui_settings_editor"))]
                 core_lib::notify_warn(
                     "GUI settings editor not available, compile with `gui_settings_editor` feature",

@@ -145,6 +145,6 @@ button.not-active {
   box-shadow: none;
 }
 
-.test-colored {
-  background-color: #f0f;
+.rounded {
+  border-radius: 9999px;
 }

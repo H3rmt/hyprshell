@@ -33,7 +33,7 @@ pub fn start(
     .with_args(vec![]);
 
     let provider_app = CssProvider::new();
-    provider_app.load_from_string(include_str!("styles.css"));
+    provider_app.load_from_string(include_str!("styles-new.css"));
     style_context_add_provider_for_display(
         &Display::default().expect("Could not connect to a display."),
         &provider_app,

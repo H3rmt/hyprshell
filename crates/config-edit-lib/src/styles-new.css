@@ -1,0 +1,45 @@
+/* Popover in sidebar (for custom actions) */
+.popover-action-row label {
+  font-weight: 400;
+}
+.popover-action-label.red-label {
+  font-weight: 600;
+}
+.popover-action-row:hover,
+.popover-action-row:focus {
+  background-color: alpha(currentColor, 0.08);
+}
+.popover-action-row:focus {
+  outline-style: none;
+  outline-width: 0;
+  box-shadow: none;
+}
+
+/* Add more padding on global footer */
+.footer {
+  padding: 6px 2px;
+}
+
+/* disabled style if calc plugin in not available */
+.disabled {
+  opacity: 0.5;
+  background: unset;
+}
+
+/* Label Colors to see changes and invalid */
+.blue-label {
+  color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
+}
+
+.gray-label {
+  color: color-mix(in srgb, currentColor 40%, #464444 60%);
+}
+
+.red-label {
+  color: color-mix(in srgb, currentColor 40%, #f00 60%);
+}
+
+/* rounded buttons */
+.rounded {
+  border-radius: 9999px;
+}

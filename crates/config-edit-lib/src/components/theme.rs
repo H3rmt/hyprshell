@@ -8,6 +8,7 @@ use relm4::{ComponentParts, ComponentSender, RelmWidgetExt, SimpleComponent};
 use relm4::{adw, gtk};
 use std::fs;
 use std::path::Path;
+use std::rc::Rc;
 use tracing::{debug, trace, warn};
 
 #[derive(Debug)]
@@ -111,8 +112,8 @@ impl FactoryComponent for ThemeCarousel {
 pub struct Style {
     err: Option<String>,
     themes_list: FactoryVecDeque<ThemeCarousel>,
-    system_data_dir: Box<Path>,
-    css_file: Box<Path>,
+    system_data_dirs: Rc<[Path]>,
+    css_file: Rc<Path>,
     initial_position: Option<usize>,
 }
 
@@ -123,8 +124,8 @@ pub enum StyleInput {
 
 #[derive(Debug)]
 pub struct StyleInit {
-    pub system_data_dir: Box<Path>,
-    pub css_file: Box<Path>,
+    pub css_path: Rc<Path>,
+    pub system_data_dirs: Rc<[Box<Path>]>,
 }
 
 #[derive(Debug)]
@@ -189,7 +190,7 @@ impl SimpleComponent for Style {
                 ThemeCarouselOutput::Apply(content) => StyleOutput::Apply(content),
             });
 
-        let model = match load_themes(&init.system_data_dir, &init.css_file) {
+        let model = match load_themes(&init.system_data_dirs, &init.css_file) {
             Ok((themes, errors)) => {
                 let mut v = themes_list.guard();
                 let mut index = 0;
@@ -207,7 +208,7 @@ impl SimpleComponent for Style {
                     err: None,
                     themes_list,
                     css_file: init.css_file,
-                    system_data_dir: init.system_data_dir,
+                    system_data_dirs: init.system_data_dirs,
                     initial_position: Some(index),
                 }
             }
@@ -217,7 +218,7 @@ impl SimpleComponent for Style {
                     err: Some(err),
                     themes_list,
                     css_file: init.css_file,
-                    system_data_dir: init.system_data_dir,
+                    system_data_dirs: init.system_data_dirs,
                     initial_position: None,
                 }
             }
@@ -231,7 +232,7 @@ impl SimpleComponent for Style {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         trace!("style::update: {message:?}");
         match message {
-            StyleInput::Reload => match load_themes(&self.system_data_dir, &self.css_file) {
+            StyleInput::Reload => match load_themes(&self.system_data_dirs, &self.css_file) {
                 Ok((themes, errors)) => {
                     let mut v = self.themes_list.guard();
                     let mut index = 0;
@@ -258,7 +259,7 @@ impl SimpleComponent for Style {
 }
 
 fn load_themes(
-    system_data_dir: &Path,
+    system_data_dirs: &[Path],
     css_path: &Path,
 ) -> Result<(Vec<Theme>, Vec<String>), String> {
     let current = fs::read_to_string(css_path)
@@ -267,17 +268,23 @@ fn load_themes(
         })
         .unwrap_or_default();
 
-    let path = system_data_dir.join("themes");
-    let themes = config_lib::style::load_themes(&path, &current);
-    // trace!("Loaded themes: {:?}", themes);
-    match themes {
-        Ok((themes, errors)) => {
-            debug!("Loaded {} themes, {} errors", themes.len(), errors.len());
-            Ok((themes, errors.iter().map(ToString::to_string).collect()))
-        }
-        Err(err) => {
-            warn!("Failed to load themes: {err}");
-            Err(err.to_string())
+    let themes: Vec<Theme> = Vec::with_capacity(8);
+    let errors: Vec<anyhow::Error> = Vec::with_capacity(8);
+    for dir in system_data_dirs {
+        let dir = dir.join("themes");
+        if dir.exists() {
+            let data = config_lib::style::load_themes(&dir, &current);
+            themes.extend(data.0);
+            errors.extend(data.1);
+        } else {
+            debug!("{} doesnt exist", dir.display());
         }
     }
+
+    if themes.is_empty() {
+        warn!("Failed to load any themes, 0 themes found");
+        return Err("Failed to load any themes, 0 themes found".to_string());
+    }
+    debug!("Loaded {} themes, {} errors", themes.len(), errors.len());
+    Ok((themes, errors.iter().map(ToString::to_string).collect()))
 }

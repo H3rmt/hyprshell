@@ -27,7 +27,7 @@ pub enum LauncherInput {
 
 #[derive(Debug)]
 pub struct LauncherInit {
-    pub config: crate::Launcher,
+    pub config: Rc<ConfigFile>,
 }
 
 #[derive(Debug)]
@@ -173,6 +173,8 @@ impl SimpleComponent for Launcher {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        // TODO
+        // https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.Banner.html
         let launcher_plugins = LauncherPlugins::builder()
             .launch(LauncherPluginsInit {
                 config: init.config.plugins.clone(),

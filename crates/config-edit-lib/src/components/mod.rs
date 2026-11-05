@@ -1,4 +1,4 @@
-// pub mod changes;
+mod changes;
 mod footer;
 // mod generate;
 // mod launcher;

@@ -1,3 +1,4 @@
+use crate::components::changes::*;
 use crate::components::footer::*;
 use crate::components::nix_preview::*;
 use crate::components::switch::SwitchOutput;
@@ -17,7 +18,7 @@ use relm4_components::alert::{Alert, AlertResponse, AlertSettings};
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{error, info, trace, warn};
 
 const HELP_URL: &str = concat!(
     "https://github.com/H3rmt/hyprshell/tree/v",
@@ -39,7 +40,7 @@ pub struct Root {
     alert_dialog: Controller<Alert>,
     windows: Controller<Windows>,
     // launcher: Controller<Launcher>,
-    // changes: Controller<Changes>,
+    changes: Controller<Changes>,
     nix_preview: Controller<NixPreview>,
     // style: Controller<Style>,
     // generate: Controller<Generate>,
@@ -52,7 +53,8 @@ pub struct Root {
 #[derive(Debug)]
 pub enum RootInput {
     Ignore,
-    /// bool: intial config (changes no config behaviour)
+    ToggleSidebar,
+    /// bool: intial config (changes no config found behaviour)
     Reload(bool),
     CloseRequest,
     Close,
@@ -62,7 +64,6 @@ pub enum RootInput {
     AbortGenerate,
     ReloadHyprshell,
     OpenAbout,
-    ClosePopover,
 
     Reset,
     SetConfig(io::ConfigFile),
@@ -73,10 +74,8 @@ pub enum RootInput {
     Windows(WindowsOutput),
     // Launcher(LauncherOutput),
     // Style(StyleOutput),
-    // Changes(ChangesOutput),
+    Changes(ChangesOutput),
     // Generate(GenerateOutput),
-
-    // TODO dont use this
     Toast(adw::Toast),
 }
 
@@ -107,12 +106,21 @@ impl SimpleComponent for Root {
         let group = setup_keybinds_and_actions(&sender);
         group.register_for_widget(&root);
 
+        let popover = gtk::Popover::new();
+        let (s, r) = relm4::channel::<bool>();
         let mut menu: FactoryVecDeque<MenuItem> = FactoryVecDeque::builder()
             .launch(gtk::Box::default())
-            .detach();
-        // .forward(sender.input_sender(), |msg| match msg {
-        //     MenuItemOutput::Close => RootInput::ClosePopover,
-        // });
+            .forward(&s, |a| a == MenuItemOutput::Close);
+        let popover_weak = popover.downgrade();
+        relm4::spawn_local(async move {
+            while let Some(close) = r.recv().await {
+                if close {
+                    if let Some(popover) = popover_weak.upgrade() {
+                        popover.popdown();
+                    }
+                }
+            }
+        });
 
         let mut l = menu.guard();
         for conf in vec![
@@ -153,9 +161,6 @@ impl SimpleComponent for Root {
                 FooterOutput::Reset => RootInput::Reset,
                 FooterOutput::Close => RootInput::CloseRequest,
                 FooterOutput::Save => RootInput::Save(false),
-                // FooterOutput::ReloadConfig => RootInput::Reload(false),
-                // FooterOutput::Abort => RootInput::AbortGenerate,
-                // FooterOutput::ReloadHyprshell => RootInput::ReloadHyprshell,
             });
 
         let changes_list = gtk::ListBox::builder()
@@ -199,11 +204,9 @@ impl SimpleComponent for Root {
         //     })
         //     .forward(sender.input_sender(), RootInput::Launcher);
         let nix_preview = NixPreview::builder().launch(NixPreviewInit {}).detach();
-        // let changes = Changes::builder()
-        //     .launch(ChangesInit {
-        //         config: config.clone(),
-        //     })
-        //     .forward(sender.input_sender(), RootInput::Changes);
+        let changes = Changes::builder()
+            .launch(ChangesInit {})
+            .forward(sender.input_sender(), RootInput::Changes);
         // let generate = Generate::builder()
         //     .launch(GenerateInit {
         //         system_data_dirs: init.system_data_dirs,
@@ -224,7 +227,7 @@ impl SimpleComponent for Root {
             footer,
             windows,
             // launcher,
-            // changes,
+            changes,
             // style,
             nix_preview,
             alert_dialog,
@@ -236,7 +239,6 @@ impl SimpleComponent for Root {
         let toast_overlay = model.toaster.overlay_widget();
         let footer = model.footer.widget();
         let menu = model.menu.widget();
-        let popover = gtk::Popover::new();
         let view_stack = &model.view_stack;
         let widgets = view_output!();
 
@@ -246,12 +248,12 @@ impl SimpleComponent for Root {
         //     "Style",
         //     "viewimage",
         // );
-        // model.view_stack.add_titled_with_icon(
-        //     model.changes.widget(),
-        //     None,
-        //     "Changes",
-        //     "document-edit-symbolic",
-        // );
+        model.view_stack.add_titled_with_icon(
+            model.changes.widget(),
+            None,
+            "Changes",
+            "document-edit-symbolic",
+        );
         model.view_stack.add_titled_with_icon(
             model.nix_preview.widget(),
             None,
@@ -273,122 +275,126 @@ impl SimpleComponent for Root {
         //     );
         // }
         model.view_stack.set_visible_child_name("overview");
-        widgets
-            .view_stack_switcher
-            .set_stack(Some(&model.view_stack));
         sender.input(RootInput::Reload(true));
         ComponentParts { model, widgets }
     }
 
     view! {
-        #[root]
-        adw::ApplicationWindow {
-            set_title: Some("Hyprshell Config Editor"),
-            set_default_width: 900,
-            set_default_height: 700,
-            set_resizable: true,
-            #[wrap(Some)]
-            #[local_ref]
-            set_content = toast_overlay -> adw::ToastOverlay {
-                set_vexpand: true,
-                adw::ToolbarView {
-                    set_top_bar_style: adw::ToolbarStyle::Raised,
-                    // set_reveal_bottom_bars: true,
-                    // set_reveal_top_bars: true,
-                    add_top_bar = &adw::HeaderBar {
-                      //           set_show_end_title_buttons: true,
-                      //           set_show_start_title_buttons: true,
-                      //           set_show_back_button: true,
-                      //           // pack_start = &gtk::Button {
-                      //           //     set_label: "Generate new",
-                      //           //     set_css_classes: &["pill", "warning"],
-                      //           //     #[watch]
-                      //           //     set_visible: !model.is_generate_mode,
-                      //           //     connect_clicked[sender] => move |_| {
-                      //           //         sender.input(RootInput::Regenerate);
-                      //           //     }
-                      //           // }
-                    },
-                    adw::OverlaySplitView {
-                      #[watch]
-                      set_collapsed: !model.is_show_sidebar,
-                      #[wrap(Some)]
-                      set_content = &adw::ToolbarView {
-                        set_bottom_bar_style: adw::ToolbarStyle::Flat,
-                        #[local_ref]
-                        add_bottom_bar = footer -> gtk::ActionBar {},
-                        adw::Clamp {
-                          set_maximum_size: 1000,
-                          gtk::ScrolledWindow {
-                            #[local_ref]
-                            view_stack -> adw::ViewStack {
-                                // TODO check
-                                set_enable_transitions: true,
-                                set_hhomogeneous: false,
-                                set_vhomogeneous: false,
-                                set_transition_duration: 110,
-                            }
-                          }
-                        }
-                      },
-                      #[wrap(Some)]
-                      set_sidebar: view_stack_switcher = &adw::ViewSwitcherSidebar {
-                          set_expand: true,
-                          set_mode: adw::SidebarMode::Sidebar,
-                          #[wrap(Some)]
-                          set_suffix = &gtk::Box {
-                            set_valign: gtk::Align::End,
-                            set_halign: gtk::Align::Fill,
-                            set_vexpand: true,
-                            set_spacing: 1,
-                            set_orientation: gtk::Orientation::Horizontal,
-                            set_margin_all: 4,
-                            // gtk::Box {
-                              // gtk::Button {
-                              //     set_label: "Force Reload Daemon",
-                              //     set_css_classes: &["destructive-action"],
-                              //     // connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::ReloadHyprshell),
-                              // },
-                              // gtk::Button {
-                              //     set_label: "Force Reload from Disk",
-                              //     set_css_classes: &["destructive-action"],
-                              //     // connect_clicked[sender] => move |_| sender.output_sender().emit(FooterOutput::Reload),
-                              // },
-                            // },
-                            gtk::Label {
-                              // set_css_classes: &["test-colored"],
-                              set_hexpand: true,
-                              set_halign: gtk::Align::Start,
-                              set_valign: gtk::Align::End,
-                              set_margin_bottom: 5,
-                              set_margin_start: 5,
-                              set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", HELP_URL, env!("CARGO_PKG_VERSION")),
-                            },
-                            gtk::MenuButton {
-                              set_hexpand: true,
-                              set_halign: gtk::Align::End,
-                              set_icon_name: "open-menu-symbolic",
-                              #[wrap(Some)]
-                              #[local_ref]
-                              set_popover = &popover -> gtk::Popover {
-                                #[local_ref]
-                                menu -> gtk::Box {
-                                  set_orientation: gtk::Orientation::Vertical,
-                                  set_spacing: 0,
-                                  set_valign: gtk::Align::Center,
-                                }
-                              },
-                            }
-                          },
-                      },
-                    },
+      #[root]
+      adw::ApplicationWindow {
+        set_title: Some("Hyprshell Config Editor"),
+        set_default_width: 900,
+        set_default_height: 700,
+        set_resizable: true,
+        #[wrap(Some)]
+        #[local_ref]
+        set_content = toast_overlay -> adw::ToastOverlay {
+          set_vexpand: true,
+          adw::ToolbarView {
+            set_top_bar_style: adw::ToolbarStyle::Raised,
+            // set_reveal_bottom_bars: true,
+            // set_reveal_top_bars: true,
+            add_top_bar = &adw::HeaderBar {
+              set_show_end_title_buttons: true,
+              set_show_start_title_buttons: true,
+              set_show_back_button: true,
+              pack_start = &gtk::Box {
+                set_spacing: 8,
+                set_margin_start: 4,
+                set_orientation: gtk::Orientation::Horizontal,
+                gtk::Button {
+                  #[watch]
+                  set_icon_name: if model.is_show_sidebar { "arrow-left" } else { "arrow-right" },
+                  set_tooltip_text: Some("Toggle sidebar"),
+                  set_css_classes: &["rounded", "flat"],
+                  connect_clicked[sender] => move |_| {
+                      sender.input(RootInput::ToggleSidebar);
+                  }
                 },
+                gtk::Button {
+                  set_label: "Generate new config",
+                  set_css_classes: &["rounded", "warning"],
+                  #[watch]
+                  set_visible: !model.is_generate_mode,
+                  connect_clicked[sender] => move |_| {
+                    sender.input(RootInput::Regenerate);
+                  }
+                }
+              }
             },
-            connect_close_request[sender] => move |_| {
-                sender.input(RootInput::CloseRequest);
-                gtk::glib::Propagation::Stop
-            }
+            adw::OverlaySplitView {
+              set_show_sidebar: true,
+              #[watch]
+              set_sidebar_width_fraction: if model.is_show_sidebar { 0.25 } else { 0.01 },
+              set_min_sidebar_width: 1.0,
+              set_sidebar_width_unit: adw::LengthUnit::Sp,
+              #[wrap(Some)]
+              set_content = &adw::ToolbarView {
+                set_bottom_bar_style: adw::ToolbarStyle::Flat,
+                #[local_ref]
+                add_bottom_bar = footer -> gtk::ActionBar {},
+                adw::Clamp {
+                  set_maximum_size: 800,
+                  gtk::ScrolledWindow {
+                    #[local_ref]
+                    view_stack -> adw::ViewStack {
+                        // TODO check
+                        set_enable_transitions: true,
+                        set_hhomogeneous: false,
+                        set_vhomogeneous: false,
+                        set_transition_duration: 110,
+                    }
+                  }
+                }
+              },
+              #[wrap(Some)]
+              set_sidebar: view_stack_switcher = &adw::ViewSwitcherSidebar {
+                set_expand: false,
+                set_mode: adw::SidebarMode::Sidebar,
+                set_stack: Some(view_stack),
+                #[wrap(Some)]
+                set_suffix = &gtk::Box {
+                  set_valign: gtk::Align::End,
+                  set_halign: gtk::Align::Fill,
+                  set_vexpand: true,
+                  set_spacing: 1,
+                  set_orientation: gtk::Orientation::Horizontal,
+                  set_margin_all: 4,
+                  gtk::Label {
+                    #[watch]
+                    set_visible: model.is_show_sidebar,
+                    set_hexpand: true,
+                    set_halign: gtk::Align::Start,
+                    set_valign: gtk::Align::End,
+                    set_margin_bottom: 5,
+                    set_margin_start: 5,
+                    set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", HELP_URL, env!("CARGO_PKG_VERSION")),
+                  },
+                  gtk::MenuButton {
+                    set_hexpand: true,
+                    set_halign: gtk::Align::End,
+                    set_icon_name: "open-menu-symbolic",
+                    #[wrap(Some)]
+                    #[local_ref]
+                    set_popover = &popover -> gtk::Popover {
+                      #[local_ref]
+                      menu -> gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 0,
+                        set_valign: gtk::Align::Center,
+                      }
+                    },
+                  }
+                },
+              },
+            },
+          },
+        },
+        connect_close_request[sender] => move |_| {
+            sender.input(RootInput::CloseRequest);
+            gtk::glib::Propagation::Stop
         }
+      }
     }
 
     #[allow(clippy::too_many_lines)]
@@ -396,16 +402,16 @@ impl SimpleComponent for Root {
         trace!("root::update: {message:?}");
         match message {
             RootInput::Ignore => (),
-            RootInput::ClosePopover => (),
             RootInput::OpenAbout => {
                 // hacky way to get root window
-                let u = self.alert_dialog.widget();
+                let u = self.toaster.overlay_widget();
                 adw::AboutDialog::builder()
                   .application_icon("hyprshell-settings")
                   .application_name("Hyprshell Settings Editor")
                   .developer_name("H3rmt")
                   .issue_url("https://github.com/H3rmt/hyprshell/issues")
                   .license(include_str!("../../../../LICENSE"))
+                  // TODO
                   .release_notes("<p>RELEASE NOTES</p>\n<ul><li>a</li><li>b</li></ul><p><code>let test = 23;</code></p>")
                   // .release_notes_version(env!("CARGO_PKG_VERSION"))
                   .version(env!("CARGO_PKG_VERSION"))
@@ -413,8 +419,10 @@ impl SimpleComponent for Root {
                   .build()
                   .present(Some(u));
             }
+            RootInput::ToggleSidebar => {
+                self.is_show_sidebar = !self.is_show_sidebar;
+            }
             RootInput::CloseRequest => {
-                debug!("close request");
                 // let changes = generate_items(
                 //     &self.alert_dialog_changes_list,
                 //     &self.config,
@@ -534,7 +542,7 @@ impl SimpleComponent for Root {
                 } else {
                     warn!("Config file was deleted");
                     let button = adw::Toast::builder()
-                        .title("Config file missing")
+                        .title("Config file was deleted")
                         .button_label("Generate new")
                         .timeout(0)
                         .build();
@@ -582,21 +590,20 @@ impl SimpleComponent for Root {
                 // self.launcher.emit(LauncherInput::Set(
                 //     self.config.windows.overview.launcher.clone(),
                 // ));
-                // self.changes
-                //     .emit(ChangesInput::SetConfig(self.config.clone()));
+                self.changes
+                    .emit(ChangesInput::SetConfig(io_config.clone()));
             }
             RootInput::DispatchPrevConfigUpdate => {
-                // let prev_io_config = self.prev_config;
+                let prev_io_config = &self.prev_config;
 
-                // self.windows
-                //     .emit(WindowsInput::SetPrev(prev_io_config.windows.clone()));
+                self.windows
+                    .emit(WindowsInput::SetPrev(prev_io_config.windows.clone()));
                 // self.launcher.emit(LauncherInput::SetPrev(
                 //     self.prev_config.windows.overview.launcher.clone(),
                 // ));
-                // self.changes
-                //     .emit(ChangesInput::SetPrevConfig(self.prev_config.clone()));
+                self.changes
+                    .emit(ChangesInput::SetPrevConfig(self.prev_config.clone()));
             }
-
             RootInput::Save(close) => {
                 // let config: &mut ConfigFile = self.config.clone().into();
                 let config: &mut io::ConfigFile = todo!("todo");
@@ -631,16 +638,16 @@ impl SimpleComponent for Root {
             RootInput::Reset => {
                 *(self.config.get_raw_config_mut()) = self.prev_config.clone();
 
-                // self.windows.emit(WindowsInput::Reset);
+                self.windows.emit(WindowsInput::Reset);
                 // self.launcher.emit(LauncherInput::Reset);
                 // self.changes
                 //     .emit(ChangesInput::SetConfig(self.config.clone()));
             }
-            // RootInput::Changes(msg) => match msg {
-            //     ChangesOutput::ChangesExist(changes_exist) => {
-            //         self.footer.emit(FooterInput::ChangesExist(changes_exist));
-            //     }
-            // },
+            RootInput::Changes(msg) => match msg {
+                ChangesOutput::ChangesExist(changes_exist) => {
+                    self.footer.emit(FooterInput::ChangesExist(changes_exist));
+                }
+            },
             RootInput::Toast(toast) => {
                 self.toaster.add_toast(toast);
             } // RootInput::Style(msg) => match msg {
@@ -1073,7 +1080,7 @@ pub struct MenuItemInit {
     red: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MenuItemOutput {
     Close,
 }

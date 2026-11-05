@@ -14,6 +14,7 @@ use relm4::{
 };
 use relm4::{adw, gtk};
 use std::path::Path;
+use std::rc::Rc;
 use tracing::trace;
 
 #[derive(Debug)]
@@ -50,12 +51,12 @@ pub enum GenerateInput {
 
 #[derive(Debug)]
 pub struct GenerateInit {
-    pub system_data_dir: Box<Path>,
+    pub system_data_dirs: Rc<[Box<Path>]>,
 }
 
 #[derive(Debug)]
 pub enum GenerateOutput {
-    Finish(crate::Config),
+    Finish(Rc<ConfigFile>),
 }
 
 struct Out {
@@ -124,6 +125,7 @@ impl SimpleComponent for Generate {
                     _ => gtk::Label::new(Some("INVALID GENERATE STEP")) {}
                 },
             },
+            // https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.CarouselIndicatorLines.html
             adw::CarouselIndicatorDots {
                 set_carousel: Some(themes_carousel),
             },

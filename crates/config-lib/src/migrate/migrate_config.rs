@@ -11,8 +11,9 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, instrument, warn};
 
+#[instrument(level = "debug", fields())]
 pub fn migrate(config_file: &Path) -> anyhow::Result<ConfigFile> {
     let old_version = get_config_version(config_file)?;
 
@@ -57,7 +58,12 @@ pub fn migrate(config_file: &Path) -> anyhow::Result<ConfigFile> {
             let old_config: migrate::m4t5::Config =
                 load_legacy_config_file(config_file).context("Failed to load old config")?;
             let i1 = crate::io::Config::from(old_config);
-            crate::io::ConfigFile::new_without_file(i1)
+            let mut tmp = crate::io::ConfigFile::new_without_file(i1);
+            // TODO tmp remove
+            pub use crate::io::raw::RawIOConfig;
+            tmp.get_raw_config_mut().windows.as_mut().unwrap().switch_2 =
+                Some(crate::io::Switch::default());
+            tmp
         }
         _ => bail!("Unsupported old config version {old_version}, cannot migrate"),
     };

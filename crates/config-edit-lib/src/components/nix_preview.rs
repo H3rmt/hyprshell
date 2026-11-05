@@ -35,6 +35,8 @@ impl SimpleComponent for NixPreview {
         root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        // TODO
+        // https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.StatusPage.html
         let model = Self {};
 
         let widgets = view_output!();
