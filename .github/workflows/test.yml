@@ -35,7 +35,7 @@ jobs:
     name: Run build tests
     runs-on: "ubuntu-26.04"
     container:
-      image: ghcr.io/h3rmt/actions-image:latest
+      image: ghcr.io/h3rmt/actions-image:latest@sha256:6fd397a957de68ed34d77d4a37e2cffb1e15965c0fdbc84d9d69bf9fcabbd688
       options: --privileged
     if: github.ref == 'refs/heads/hyprshell'
     steps:
