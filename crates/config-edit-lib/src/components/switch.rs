@@ -1,6 +1,6 @@
 use crate::components::shortcut_dialog::*;
 
-use crate::util::{SetCursor, SetTextIfDifferent, mod_key_to_accelerator};
+use crate::util::{SetTextIfDifferent, mod_key_to_accelerator};
 use config_lib::io;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
@@ -89,66 +89,120 @@ impl SimpleComponent for Switch {
     }
 
     view! {
-        #[root]
-        adw::ExpanderRow {
-            set_title_selectable: true,
-            set_show_enable_switch: true,
-            set_hexpand: true,
-            set_css_classes: &["enable-frame"],
-            add_prefix = &gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_halign: gtk::Align::Fill,
-                set_valign: gtk::Align::Center,
-                set_spacing: 25,
+      gtk::Box {
+        set_orientation: gtk::Orientation::Vertical,
+        set_spacing: 14,
+        gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
+            set_spacing: 16,
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_spacing: 2,
+                set_hexpand: true,
                 gtk::Label {
                     set_label: model.name,
+                    set_halign: gtk::Align::Start,
+                    set_css_classes: &["setting-title"],
                 },
-                model.keyboard_shortcut.widget().clone() -> gtk::Button {
-                    #[watch]
-                    set_sensitive: model.enabled,
-                },
-                _adw::ShortcutLabel::new(&mod_key_to_accelerator(model.config.modifier, &model.config.key)) {
-                    #[watch]
-                    set_accelerator: &mod_key_to_accelerator(model.config.modifier, &model.config.key),
-                    #[watch]
-                    set_css_classes: if model.enabled {
-                        if mod_key_to_accelerator(model.config.modifier, &model.config.key) == mod_key_to_accelerator(model.prev_config.modifier, &model.prev_config.key)
-                            { &[] }
-                        else
-                            { &["blue-label"] }
-                    } else {
-                        &["gray-label"]
-                    },
+                gtk::Label {
+                    set_label: "abbbbbbbbbbbbbbbbbbbbbbbbb",
+                    set_halign: gtk::Align::Start,
+                    set_css_classes: &["setting-subtitle"],
                 },
             },
-            #[watch]
-            #[block_signal(h)]
-            set_enable_expansion: model.enabled,
-            connect_enable_expansion_notify[sender] => move |e| {sender.input_sender().emit(SwitchInput::_Enabled(e.enables_expansion()));} @h,
-            #[watch]
-            set_expanded: model.enabled,
-            add_row = &gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_css_classes: &["frame-row"],
-                set_spacing: 30,
-                gtk::Box {
+            gtk::Switch {
+                set_valign: gtk::Align::Center,
+                #[watch]
+                #[block_signal(h)]
+                set_active: model.enabled,
+                connect_active_notify[sender] => move |e| { sender.input_sender().emit(SwitchInput::_Enabled(e.is_active())); } @h,
+            },
+        },
+      gtk::Frame {
+          set_css_classes: &["setting-card"],
+          gtk::ListBox {
+              set_selection_mode: gtk::SelectionMode::None,
+              set_css_classes: &["boxed-list"],
+              adw::ActionRow {
+                set_subtitle: "Test",
+                set_title: "Switch workspaces",
+                #[watch]
+                set_css_classes: if model.config.switch_workspaces == model.prev_config.switch_workspaces { &[] } else { &["blue-label"] },
+                add_suffix = &gtk::Switch {
+                    set_valign: gtk::Align::Center,
+                    #[watch]
+                    #[block_signal(h_5)]
+                    set_active: model.config.switch_workspaces,
+                    connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::SwitchWorkspaces(e.is_active())); } @h_5,
+                }
+              },
+          }
+        },
+      },
+
+    /*
+            #[root]
+            adw::ExpanderRow {
+                set_title_selectable: true,
+                set_show_enable_switch: true,
+                set_hexpand: true,
+                set_css_classes: &["enable-frame"],
+                set_title: model.name,
+                set_expanded: model.name == "Switch 2",
+                add_row = &gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 10,
+                    set_spacing: 12,
+                    set_css_classes: &["switch-setting-row"],
                     gtk::Label {
-                        #[watch]
-                        set_css_classes: if model.config.filter_by == model.prev_config.filter_by { &[] } else { &["blue-label"]  },
-                        set_label: "Filter",
+                        set_label: "Shortcut",
+                        set_width_request: 240,
+                        set_halign: gtk::Align::Start,
+                        set_css_classes: &["windows-setting-label"],
                     },
-                    gtk::Image::from_icon_name("dialog-information-symbolic") {
-                        set_cursor_by_name: "help",
-                        set_tooltip_text: Some("Filter the shown windows by the provided filters")
+                    _adw::ShortcutLabel::new(&mod_key_to_accelerator(model.config.modifier, &model.config.key)) {
+                        #[watch]
+                        set_accelerator: &mod_key_to_accelerator(model.config.modifier, &model.config.key),
+                        #[watch]
+                        set_css_classes: if model.enabled {
+                            if mod_key_to_accelerator(model.config.modifier, &model.config.key) == mod_key_to_accelerator(model.prev_config.modifier, &model.prev_config.key)
+                                { &[] }
+                            else
+                                { &["blue-label"] }
+                        } else {
+                            &["gray-label"]
+                        },
+                    },
+                    gtk::Box {
+                        set_hexpand: true,
+                    },
+                    model.keyboard_shortcut.widget().clone() -> gtk::Button {
+                        set_label: "Change",
+                        set_css_classes: &["rounded"],
+                        #[watch]
+                        set_sensitive: model.enabled,
+                    },
+                },
+                #[watch]
+                #[block_signal(h)]
+                set_enable_expansion: model.enabled,
+                connect_enable_expansion_notify[sender] => move |e| {sender.input_sender().emit(SwitchInput::_Enabled(e.enables_expansion()));} @h,
+                add_row = &gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: 12,
+                    set_css_classes: &["switch-setting-row"],
+                    gtk::Label {
+                        set_label: "Filter",
+                        set_width_request: 240,
+                        set_halign: gtk::Align::Start,
+                        #[watch]
+                        set_css_classes: if model.config.filter_by == model.prev_config.filter_by { &["windows-setting-label"] } else { &["windows-setting-label", "blue-label"] },
                     },
                     adw::ExpanderRow {
                         #[watch]
-                        set_title: &format!("{:?}", model.config.filter_by),
+                        set_title: &filter_summary(&model.config.filter_by),
                         set_hexpand: true,
-                        set_title_lines: 2,
-                        set_css_classes: &["item-expander"],
+                        set_title_lines: 1,
+                        set_css_classes: &["item-expander", "filter-control"],
                         add_row = &adw::SwitchRow {
                             #[watch]
                             #[block_signal(h_2)]
@@ -170,19 +224,17 @@ impl SimpleComponent for Switch {
                             connect_active_notify[sender] => move |c| { sender.output_sender().emit(SwitchOutput::FilterMonitor(c.is_active())); } @h_4,
                             set_title: "Current monitor",
                         }
-                    }
-                },
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 10,
-                    gtk::Label {
-                        set_label: "Switch Workspaces",
-                        #[watch]
-                        set_css_classes: if model.config.switch_workspaces == model.prev_config.switch_workspaces { &[] } else { &["blue-label"] },
                     },
-                    gtk::Image::from_icon_name("dialog-information-symbolic") {
-                        set_cursor_by_name: "help",
-                        set_tooltip_text: Some("Switch between workspaces in the Switch mode instead of windows")
+                },
+                add_row = &gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_css_classes: &["switch-setting-row"],
+                    gtk::Label {
+                        set_label: "Switch workspaces",
+                        set_hexpand: true,
+                        set_halign: gtk::Align::Start,
+                        #[watch]
+                        set_css_classes: if model.config.switch_workspaces == model.prev_config.switch_workspaces { &["windows-setting-label"] } else { &["windows-setting-label", "blue-label"] },
                     },
                     gtk::Switch {
                         #[watch]
@@ -192,22 +244,15 @@ impl SimpleComponent for Switch {
                         set_valign: gtk::Align::Center,
                     },
                 },
-            },
-            add_row = &gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_css_classes: &["frame-row"],
-                set_spacing: 30,
-                gtk::Box {
+                add_row = &gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 10,
+                    set_css_classes: &["switch-setting-row"],
                     gtk::Label {
-                        set_label: "Exclude workspaces",
+                        set_label: "Excluded workspaces",
+                        set_hexpand: true,
+                        set_halign: gtk::Align::Start,
                         #[watch]
-                        set_css_classes: if model.config.exclude_workspaces == model.prev_config.exclude_workspaces { &[] } else { &["blue-label"] },
-                    },
-                    gtk::Image::from_icon_name("dialog-information-symbolic") {
-                        set_cursor_by_name: "help",
-                        set_tooltip_text: Some("Exclude workspaces by regex \n(hyprctl workspaces -j | jq \".[].name\")")
+                        set_css_classes: if model.config.exclude_workspaces == model.prev_config.exclude_workspaces { &["windows-setting-label"] } else { &["windows-setting-label", "blue-label"] },
                     },
                     gtk::Entry {
                         set_input_purpose: gtk::InputPurpose::FreeForm,
@@ -218,33 +263,31 @@ impl SimpleComponent for Switch {
                         #[block_signal(h_6)]
                         set_text_if_different: &model.config.exclude_workspaces,
                         connect_changed[sender] => move |e| { sender.output_sender().emit(SwitchOutput::ExcludeWorkspaces(e.text().into())) } @h_6,
-                    }
-                },
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 10,
-                    gtk::Label {
-                        set_label: "Key to kill window",
-                        #[watch]
-                        set_css_classes: if model.config.kill_key == '\0' { &["red-label"] } else if model.config.kill_key == model.prev_config.kill_key { &[] } else { &["blue-label"] },
                     },
-                    gtk::Image::from_icon_name("dialog-information-symbolic") {
-                        set_cursor_by_name: "help",
-                        set_tooltip_text: Some("Press this key to kill the focused window")
+                },
+                add_row = &gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_css_classes: &["switch-setting-row"],
+                    gtk::Label {
+                        set_label: "Key to close a window",
+                        set_hexpand: true,
+                        set_halign: gtk::Align::Start,
+                        #[watch]
+                        set_css_classes: if model.config.kill_key == '\0' { &["windows-setting-label", "red-label"] } else if model.config.kill_key == model.prev_config.kill_key { &["windows-setting-label"] } else { &["windows-setting-label", "blue-label"] },
                     },
                     gtk::Entry {
                         set_input_purpose: gtk::InputPurpose::FreeForm,
-                        set_placeholder_text: Some("q"),
-                        set_hexpand: true,
+                        set_placeholder_text: Some("Q"),
+                        set_width_request: 56,
                         set_valign: gtk::Align::Center,
                         #[watch]
                         #[block_signal(h_7)]
-                        set_text_if_different: &(if model.config.kill_key == '\0' { "".to_string() } else { model.config.kill_key.to_string() }),
+                        set_text_if_different: &(if model.config.kill_key == '\0' { String::new() } else { model.config.kill_key.to_string() }),
                         connect_changed[sender] => move |e| { sender.output_sender().emit(SwitchOutput::KillKey(e.text().to_string().chars().next())) } @h_7,
-                    }
-                },
+                    },
+                }
             }
-        }
+     */
     }
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
@@ -257,11 +300,11 @@ impl SimpleComponent for Switch {
                 false => sender.output_sender().emit(SwitchOutput::Enabled(None)),
             },
             SwitchInput::_OpenKeyboardShortcut => {
-                // self.keyboard_shortcut
-                //     .emit(KeyboardShortcutInput::ShowKeyboardShortcutDialog(
-                //         Some((self.config.modifier, self.config.key.clone())),
-                //         None,
-                //     ));
+                self.keyboard_shortcut
+                    .emit(KeyboardShortcutInput::ShowKeyboardShortcutDialog(
+                        Some((self.config.modifier, self.config.key.to_string())),
+                        None,
+                    ));
             }
             SwitchInput::Set(config) => {
                 match config {
@@ -291,4 +334,20 @@ impl SimpleComponent for Switch {
             }
         }
     }
+}
+
+fn filter_summary(filters: &[io::FilterBy]) -> String {
+    if filters.is_empty() {
+        return "No filters".to_string();
+    }
+
+    filters
+        .iter()
+        .map(|filter| match filter {
+            io::FilterBy::SameClass => "Same class",
+            io::FilterBy::CurrentWorkspace => "Current workspace",
+            io::FilterBy::CurrentMonitor => "Current monitor",
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }

@@ -2,9 +2,6 @@
 .popover-action-row label {
   font-weight: 400;
 }
-.popover-action-label.red-label {
-  font-weight: 600;
-}
 .popover-action-row:hover,
 .popover-action-row:focus {
   background-color: alpha(currentColor, 0.08);
@@ -13,6 +10,9 @@
   outline-style: none;
   outline-width: 0;
   box-shadow: none;
+}
+.popover-action-label.red-label {
+  font-weight: 600;
 }
 
 /* Add more padding on global footer */
@@ -27,19 +27,61 @@
 }
 
 /* Label Colors to see changes and invalid */
-.blue-label {
+.blue-label .title {
   color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
 }
 
-.gray-label {
+.gray-label .title {
   color: color-mix(in srgb, currentColor 40%, #464444 60%);
 }
 
-.red-label {
+.red-label .title {
   color: color-mix(in srgb, currentColor 40%, #f00 60%);
 }
 
 /* rounded buttons */
 .rounded {
   border-radius: 9999px;
+}
+
+/* Windows settings page */
+.page {
+  padding: 8px;
+}
+
+.setting-title {
+  font-size: 2.15rem;
+  font-weight: 700;
+}
+
+.setting-subtitle {
+  color: alpha(currentColor, 0.65);
+  font-size: 1rem;
+}
+
+.setting-card {
+  border-width: 1px;
+  border-radius: 14px;
+  /*background-color: color-mix(in srgb, var(--config-base-bg) 96%, var(--config-base-text) 4%);*/
+}
+
+.setting-card-heading {
+  padding: 10px 16px;
+  border-radius: 12px 12px 0 0;
+  /*background-color: var(--config-header-bg);*/
+}
+
+.setting-card-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.setting-setting-row {
+  padding: 8px 16px;
+  min-height: 38px;
+  /*border-top: 1px solid var(--config-separator);*/
+}
+
+.setting-setting-row label {
+  font-size: 1rem;
 }

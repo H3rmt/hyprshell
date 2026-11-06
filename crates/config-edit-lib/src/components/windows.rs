@@ -1,6 +1,5 @@
 use crate::components::switch::*;
 
-use crate::util::SetCursor;
 use config_lib::io;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
@@ -51,18 +50,11 @@ impl SimpleComponent for Windows {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        // let windows_overview = WindowsOverview::builder()
-        //     .launch(WindowsOverviewInit {
-        //         config: init.config.overview.clone(),
-        //     })
-        //     .forward(sender.output_sender(), WindowsOutput::Overview);
         let switch = Switch::builder()
-            .launch(SwitchInit { name: "Switch" })
+            .launch(SwitchInit { name: "Switch 1" })
             .forward(sender.output_sender(), WindowsOutput::Switch);
         let switch_2 = Switch::builder()
-            .launch(SwitchInit {
-                name: "Switch 2 (TODO)",
-            })
+            .launch(SwitchInit { name: "Switch 2" })
             .forward(sender.output_sender(), WindowsOutput::Switch2);
 
         let model = Self {
@@ -71,7 +63,6 @@ impl SimpleComponent for Windows {
             config: Default::default(),
             prev_config: Default::default(),
 
-            // overview: windows_overview,
             switch,
             switch_2,
         };
@@ -83,73 +74,89 @@ impl SimpleComponent for Windows {
     view! {
         #[root]
         gtk::Box {
-            set_orientation: gtk::Orientation::Horizontal,
-            set_margin_all: 10,
-            adw::ExpanderRow {
-                set_title_selectable: true,
-                set_show_enable_switch: true,
-                set_hexpand: true,
-                set_css_classes: &[""],
-                set_title: "Windows (Overview and Switch)",
-                #[watch]
-                #[block_signal(h)]
-                set_enable_expansion: model.enabled,
-                connect_enable_expansion_notify[sender] => move |e| {sender.input_sender().emit(WindowsInput::_Enabled(e.enables_expansion())); } @h,
-                #[watch]
-                set_expanded: model.enabled,
-                add_row = &gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_css_classes: &["frame-row"],
-                    set_spacing: 30,
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
-                        set_spacing: 10,
-                        gtk::Label {
-                            #[watch]
-                            set_css_classes: if (model.config.scale - model.prev_config.scale).abs() < 0.01 { &[] } else { &["blue-label"]  },
-                            set_label: "Scale",
-                        },
-                        gtk::Image::from_icon_name("dialog-information-symbolic") {
-                            set_cursor_by_name: "help",
-                            set_tooltip_text: Some("The scale used to scale down the real dimension the windows displayed in the overview. \nCan be set from `0.5 < X > to 15.0`")
-                        },
-                        gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(1.0, 0.5, 15.0, 0.5, 1.0, 0.0),
-                            set_hexpand: true,
-                            set_digits: 2,
-                            #[watch]
-                            #[block_signal(h_2)]
-                            set_value: model.config.scale,
-                            connect_value_changed[sender] => move |e| { sender.output_sender().emit(WindowsOutput::Scale((e.value() * 100.0).round() / 100.0)); } @h_2,
-                        }
+            set_orientation: gtk::Orientation::Vertical,
+            set_spacing: 14,
+            set_margin_top: 12,
+            set_margin_bottom: 12,
+            set_margin_start: 14,
+            set_margin_end: 14,
+            set_css_classes: &["page"],
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 16,
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_spacing: 2,
+                    set_hexpand: true,
+                    gtk::Label {
+                        set_label: "Windows",
+                        set_halign: gtk::Align::Start,
+                        set_css_classes: &["setting-title"],
                     },
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
-                        set_spacing: 10,
-                        gtk::Label {
-                            #[watch]
-                            set_css_classes: if model.config.items_per_row == model.prev_config.items_per_row { &[] } else { &["blue-label"] },
-                            set_label: "Items per row",
-                        },
-                        gtk::Image::from_icon_name("dialog-information-symbolic") {
-                            set_cursor_by_name: "help",
-                            set_tooltip_text: Some("The number of workspaces or windows to show per row. \nIf you have 6 workspaces open and set this to 3, you will see 2 rows of 3 workspaces")
-                        },
-                        gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(1.0, 1.0, 100.0, 1.0, 5.0, 0.0),
-                            set_hexpand: true,
-                            set_digits: 0,
-                            #[watch]
-                            #[block_signal(h_3)]
-                            set_value: f64::from(model.config.items_per_row),
-                            connect_value_changed[sender] => move |e| { sender.output_sender().emit(WindowsOutput::ItemsPerRow(e.value() as u8)) } @h_3,
-                        }
-                    }
+                    gtk::Label {
+                        set_label: "Configure the overview and switcher",
+                        set_halign: gtk::Align::Start,
+                        set_css_classes: &["setting-subtitle"],
+                    },
                 },
-                // add_row = model.overview.widget(),
-                add_row = model.switch.widget(),
-                add_row = model.switch_2.widget(),
-            }
+                gtk::Switch {
+                    set_valign: gtk::Align::Center,
+                    #[watch]
+                    #[block_signal(h)]
+                    set_active: model.enabled,
+                    connect_active_notify[sender] => move |e| { sender.input_sender().emit(WindowsInput::_Enabled(e.is_active())); } @h,
+                },
+            },
+            gtk::Frame {
+                set_css_classes: &["setting-card"],
+                gtk::ListBox {
+                    set_selection_mode: gtk::SelectionMode::None,
+                    set_css_classes: &["boxed-list"],
+                    // gtk::Box {
+                    //     set_orientation: gtk::Orientation::Horizontal,
+                    //     set_css_classes: &["setting-card-heading"],
+                    //     gtk::Label {
+                    //         set_label: "Display",
+                    //         set_halign: gtk::Align::Start,
+                    //         set_css_classes: &["setting-card-title"],
+                    //     }
+                    // },
+                    adw::ActionRow {
+                      set_subtitle: "Scaling (x x x)",
+                      set_title: "Scale",
+                      #[watch]
+                      set_css_classes: if (model.config.scale - model.prev_config.scale).abs() < 0.01 { &[] } else { &["blue-label"] },
+                      add_suffix = &gtk::SpinButton {
+                          set_adjustment: &gtk::Adjustment::new(8.5, 0.5, 15.0, 0.5, 1.0, 0.0),
+                          set_width_request: 220,
+                          set_valign: gtk::Align::Center,
+                          set_digits: 2,
+                          #[watch]
+                          #[block_signal(h_2)]
+                          set_value: model.config.scale,
+                          connect_value_changed[sender] => move |e| { sender.output_sender().emit(WindowsOutput::Scale((e.value() * 100.0).round() / 100.0)); } @h_2,
+                      }
+                    },
+                    adw::ActionRow {
+                      set_subtitle: "Test",
+                      set_title: "Items per row",
+                      #[watch]
+                      set_css_classes: if model.config.items_per_row == model.prev_config.items_per_row { &[] } else { &["blue-label"] },
+                      add_suffix = &gtk::SpinButton {
+                          set_adjustment: &gtk::Adjustment::new(5.0, 1.0, 100.0, 1.0, 5.0, 0.0),
+                          set_width_request: 220,
+                          set_valign: gtk::Align::Center,
+                          set_digits: 0,
+                          #[watch]
+                          #[block_signal(h_4)]
+                          set_value: f64::from(model.config.items_per_row),
+                          connect_value_changed[sender] => move |e| { sender.output_sender().emit(WindowsOutput::ItemsPerRow(e.value() as u8)) } @h_4,
+                      }
+                    },
+                }
+            },
+            model.switch.widget(),
+            model.switch_2.widget(),
         }
     }
 
@@ -172,9 +179,6 @@ impl SimpleComponent for Windows {
                         self.enabled = false;
                     }
                 };
-                // self.overview.emit(WindowsOverviewInput::SetOverview(
-                //     self.config.overview.clone(),
-                // ));
                 self.switch
                     .emit(SwitchInput::Set(self.config.switch.clone()));
                 self.switch_2
@@ -190,9 +194,6 @@ impl SimpleComponent for Windows {
                         self.prev_enabled = false;
                     }
                 };
-                // self.overview.emit(WindowsOverviewInput::SetPrevOverview(
-                //     self.prev_config.overview.clone(),
-                // ));
                 self.switch
                     .emit(SwitchInput::SetPrev(self.prev_config.switch.clone()));
                 self.switch_2
@@ -201,7 +202,6 @@ impl SimpleComponent for Windows {
             WindowsInput::Reset => {
                 self.config = self.prev_config.clone();
                 self.enabled = self.prev_enabled;
-                // self.overview.emit(WindowsOverviewInput::ResetOverview);
                 self.switch.emit(SwitchInput::ResetSwitch);
                 self.switch_2.emit(SwitchInput::ResetSwitch);
             }

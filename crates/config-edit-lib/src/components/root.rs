@@ -258,13 +258,13 @@ impl SimpleComponent for Root {
             model.nix_preview.widget(),
             None,
             "Nix Preview",
-            "preview",
+            "preview-symbolic",
         );
         model.view_stack.add_titled_with_icon(
             model.windows.widget(),
             Some("overview"),
             "Windows",
-            "configure",
+            "configure-symbolic",
         );
         // if config.get_raw_config().windows.is_some() {
         //     model.view_stack.add_titled_with_icon(
@@ -304,7 +304,7 @@ impl SimpleComponent for Root {
                 set_orientation: gtk::Orientation::Horizontal,
                 gtk::Button {
                   #[watch]
-                  set_icon_name: if model.is_show_sidebar { "arrow-left" } else { "arrow-right" },
+                  set_icon_name: if model.is_show_sidebar { "arrow-left-symbolic" } else { "arrow-right-symbolic" },
                   set_tooltip_text: Some("Toggle sidebar"),
                   set_css_classes: &["rounded", "flat"],
                   connect_clicked[sender] => move |_| {
@@ -333,9 +333,9 @@ impl SimpleComponent for Root {
                 set_bottom_bar_style: adw::ToolbarStyle::Flat,
                 #[local_ref]
                 add_bottom_bar = footer -> gtk::ActionBar {},
-                adw::Clamp {
-                  set_maximum_size: 800,
-                  gtk::ScrolledWindow {
+                gtk::ScrolledWindow {
+                  adw::Clamp {
+                    set_maximum_size: 800,
                     #[local_ref]
                     view_stack -> adw::ViewStack {
                         // TODO check
