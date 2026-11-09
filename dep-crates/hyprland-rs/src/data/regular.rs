@@ -38,10 +38,29 @@ pub(crate) enum DataCommands {
 /// This struct holds a basic identifier for a workspace often used in other structs
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
-    /// The workspace Id
-    pub id: WorkspaceId,
+    /// The numeric id, present only for numbered workspaces.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<u32>,
+    /// The stable workspace address used to target the workspace
+    pub address: WorkspaceAddress,
+    /// The kind of workspace
+    #[serde(rename = "type")]
+    pub workspace_type: WorkspaceKind,
     /// The workspace's name
     pub name: String,
+}
+
+/// The kind of workspace returned by Hyprland.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum WorkspaceKind {
+    /// A regular workspace, numbered or named.
+    Normal,
+    /// A special (scratchpad) workspace.
+    Special,
+    /// The empty special-workspace placeholder returned by monitors.
+    #[serde(rename = "")]
+    Empty,
 }
 
 /// This enum provides the different monitor transforms
@@ -153,8 +172,14 @@ create_data_struct!(
 /// This struct holds information for a workspace
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Workspace {
-    /// The workspace Id
-    pub id: WorkspaceId,
+    /// The numeric id, present only for numbered workspaces.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<u32>,
+    /// The stable workspace address used to target the workspace
+    pub address: WorkspaceAddress,
+    /// The kind of workspace
+    #[serde(rename = "type")]
+    pub workspace_type: WorkspaceKind,
     /// The workspace's name
     pub name: String,
     /// The monitor the workspace is on
@@ -173,6 +198,12 @@ pub struct Workspace {
     /// The last window's title
     #[serde(rename = "lastwindowtitle")]
     pub last_window_title: String,
+    /// Whether the workspace is persistent.
+    #[serde(rename = "ispersistent", default)]
+    pub persistent: bool,
+    /// The current tiling layout name.
+    #[serde(rename = "tiledLayout", default)]
+    pub tiled_layout: String,
 }
 
 impl HyprDataActive for Workspace {
@@ -233,11 +264,23 @@ pub struct Client {
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
     pub floating: bool,
+    /// Is this window hidden?
+    #[serde(default)]
+    pub hidden: bool,
+    /// Is this window visible?
+    #[serde(default)]
+    pub visible: bool,
+    /// Does this window accept input?
+    #[serde(rename = "acceptsInput", default)]
+    pub accepts_input: bool,
     /// The internal fullscreen mode
     pub fullscreen: FullscreenMode,
     /// The client fullscreen mode
     #[serde(rename = "fullscreenClient")]
     pub fullscreen_client: FullscreenMode,
+    /// The fullscreen handler in use.
+    #[serde(rename = "fullscreenHandler", default)]
+    pub fullscreen_handler: String,
     /// The monitor id the window is on, can be None in some cases
     pub monitor: Option<MonitorId>,
     /// The initial window class
@@ -256,6 +299,12 @@ pub struct Client {
     pub xwayland: bool,
     /// Is this window pinned?
     pub pinned: bool,
+    /// Is the window pinned and fullscreened?
+    #[serde(rename = "pinFullscreened", default)]
+    pub pin_fullscreened: bool,
+    /// May this window be displayed above fullscreen windows?
+    #[serde(rename = "allowedOverFullscreen", default)]
+    pub allowed_over_fullscreen: bool,
     /// Group members
     pub grouped: Vec<Box<Address>>,
     /// Is this window print on screen
@@ -265,6 +314,27 @@ pub struct Client {
     /// When was this window last focused relatively to other windows? 0 for current, 1 previous, 2 previous before that, etc
     #[serde(rename = "focusHistoryID")]
     pub focus_history_id: i8,
+    /// User-defined window tags.
+    #[serde(default)]
+    pub tags: Vec<String>,
+    /// Does this window inhibit idle?
+    #[serde(rename = "inhibitingIdle", default)]
+    pub inhibiting_idle: bool,
+    /// The XDG toplevel tag.
+    #[serde(rename = "xdgTag", default)]
+    pub xdg_tag: String,
+    /// The XDG toplevel description.
+    #[serde(rename = "xdgDescription", default)]
+    pub xdg_description: String,
+    /// The window's content type.
+    #[serde(rename = "contentType", default)]
+    pub content_type: String,
+    /// The client tear hint.
+    #[serde(rename = "tearingHint", default)]
+    pub tearing_hint: bool,
+    /// The stable window identifier.
+    #[serde(rename = "stableId", default)]
+    pub stable_id: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -738,3 +808,124 @@ create_data_struct!(
     holding_type: WorkspaceRuleset,
     doc: "This struct holds a vector of workspace rules per workspace"
 );
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::{Client, Monitor, Workspace, WorkspaceBasic, WorkspaceKind};
+
+    #[test]
+    fn workspace_basic_deserializes_addressable_workspace() {
+        let numbered: WorkspaceBasic =
+            serde_json::from_str(r#"{"id":2,"address":"2","type":"normal","name":"2"}"#).unwrap();
+        let named: WorkspaceBasic =
+            serde_json::from_str(r#"{"address":"Web","type":"normal","name":"Web"}"#).unwrap();
+
+        assert_eq!(numbered.id, Some(2));
+        assert_eq!(numbered.address, "2");
+        assert_eq!(numbered.workspace_type, WorkspaceKind::Normal);
+        assert_eq!(numbered.name, "2");
+        assert_eq!(named.id, None);
+        assert_eq!(named.address, "Web");
+        assert_eq!(named.workspace_type, WorkspaceKind::Normal);
+    }
+
+    #[test]
+    fn workspace_deserializes_addressable_workspace() {
+        let workspace: Workspace = serde_json::from_str(
+            r#"{
+                "address":"special:term",
+                "type":"special",
+                "name":"special:term",
+                "monitor":"DP-1",
+                "monitorID":0,
+                "windows":0,
+                "hasfullscreen":false,
+                "lastwindow":"0x0",
+                "lastwindowtitle":""
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(workspace.address, "special:term");
+        assert_eq!(workspace.workspace_type, WorkspaceKind::Special);
+    }
+
+    #[test]
+    fn client_deserializes_special_workspace_without_an_id() {
+        let client: Client = serde_json::from_str(
+            r#"{
+                "address":"0x556eb9564080",
+                "mapped":true,
+                "at":[4357,38],
+                "size":[757,1036],
+                "workspace":{"address":"special:htop","type":"special","name":"special:htop"},
+                "floating":false,
+                "fullscreen":0,
+                "fullscreenClient":0,
+                "monitor":0,
+                "class":"Alacritty",
+                "title":"Alacritty",
+                "initialClass":"Alacritty",
+                "initialTitle":"Alacritty",
+                "pid":59926,
+                "xwayland":false,
+                "pinned":false,
+                "grouped":[],
+                "swallowing":"0x0",
+                "focusHistoryID":0,
+                "hidden":false,
+                "visible":true,
+                "acceptsInput":true,
+                "pinFullscreened":false,
+                "fullscreenHandler":"default",
+                "allowedOverFullscreen":true,
+                "tags":[],
+                "inhibitingIdle":false,
+                "xdgTag":"",
+                "xdgDescription":"",
+                "contentType":"none",
+                "tearingHint":false,
+                "stableId":"1800001b"
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(client.workspace.id, None);
+        assert_eq!(client.workspace.address, "special:htop");
+        assert_eq!(client.workspace.workspace_type, WorkspaceKind::Special);
+    }
+
+    #[test]
+    fn monitor_deserializes_addressable_workspaces() {
+        let monitor: Monitor = serde_json::from_str(
+            r#"{
+                "id":0,
+                "name":"DP-1",
+                "description":"Display",
+                "width":1920,
+                "height":1080,
+                "refreshRate":60.0,
+                "x":0,
+                "y":0,
+                "activeWorkspace":{"id":1,"address":"1","type":"normal","name":"1"},
+                "specialWorkspace":{"address":"","type":"","name":""},
+                "reserved":[0,0,0,0],
+                "scale":1.0,
+                "transform":0,
+                "focused":true,
+                "dpmsStatus":true,
+                "vrr":false,
+                "disabled":false
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(monitor.active_workspace.id, Some(1));
+        assert_eq!(monitor.active_workspace.address, "1");
+        assert_eq!(
+            monitor.special_workspace.workspace_type,
+            WorkspaceKind::Empty
+        );
+    }
+}

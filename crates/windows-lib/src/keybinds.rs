@@ -10,7 +10,8 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             mods: vec![overview.modifier.to_str()],
             key: overview.key.clone(),
             exec: generate_transfer_socat(&ExternalTransferType::OpenOverview),
-            release: false,
+            release: true,
+            transparent: false,
             desc: format!(
                 "Open Overview with {} + {}",
                 overview.modifier, overview.key
@@ -25,6 +26,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 reverse: false,
             })),
             release: false,
+            transparent: false,
             desc: format!("Open Switch with {} + {}", switch.modifier, switch.key),
         });
         binds.push(ExecBind {
@@ -34,6 +36,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 reverse: true,
             })),
             release: false,
+            transparent: false,
             desc: format!("Open Switch (reverse) with {} + `", switch.modifier),
         });
         binds.push(ExecBind {
@@ -43,6 +46,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 reverse: true,
             })),
             release: false,
+            transparent: false,
             desc: format!(
                 "Open Switch (reverse) with {} + shift + {}",
                 switch.modifier, switch.key
@@ -55,6 +59,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 switch: true,
             })),
             release: true,
+            transparent: true,
             desc: format!(
                 "Close Switch (reverse) with {} + {}_l",
                 switch.modifier, switch.modifier,
@@ -67,6 +72,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 switch: true,
             })),
             release: true,
+            transparent: true,
             desc: format!(
                 "Close Switch (reverse) with {} + {}_r",
                 switch.modifier, switch.modifier,
@@ -79,6 +85,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 switch: true,
             })),
             release: true,
+            transparent: true,
             desc: "Close Switch (reverse) with shift + shift_l".to_string(),
         });
         binds.push(ExecBind {
@@ -88,6 +95,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
                 switch: true,
             })),
             release: true,
+            transparent: true,
             desc: "Close Switch (reverse) with shift + shift_r".to_string(),
         });
     }

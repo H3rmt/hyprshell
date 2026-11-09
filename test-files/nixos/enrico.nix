@@ -20,14 +20,22 @@
     enable = true;
     package = inputs.hyprland.packages.x86_64-linux.hyprland;
     portalPackage = inputs.hyprland.packages.x86_64-linux.xdg-desktop-portal-hyprland;
-    extraConfig = ''
-      monitor = Virtual-1, 1920x1080@60, 0x0, 1
-      monitor = ,prefered,auto,1
-      bind = super, return, exec, kitty
-      bind = super, q, killactive
-      bind = super, f, exec, firefox
-    '';
   };
+
+  xdg.configFile."hypr/hyprland.lua".text = ''
+    hl.monitor({ output = "Virtual-1", mode = "1920x1080@60", position = "0x0", scale = 1 })
+    hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+
+    hl.bind("SUPER + RETURN", function()
+        hl.dispatch(hl.dsp.exec_cmd("kitty"))
+    end)
+    hl.bind("SUPER + Q", function()
+        hl.dispatch(hl.dsp.window.kill())
+    end)
+    hl.bind("SUPER + F", function()
+        hl.dispatch(hl.dsp.exec_cmd("firefox"))
+    end)
+  '';
 
   programs.kitty = {
     enable = true;

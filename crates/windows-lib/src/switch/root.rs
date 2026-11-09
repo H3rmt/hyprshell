@@ -260,14 +260,15 @@ impl SwitchRoot {
         self.window.set_visible(true);
         self.window.grab_focus();
 
+        let active = self.data.active.clone();
         if self.switch.switch_workspaces {
-            self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
+            self.populate_workspace_mode(&hypr_data, self.general.scale, &active);
         } else {
-            self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
+            self.populate_clients_only_mode(&hypr_data, self.general.scale, &active);
         }
     }
 
-    fn populate_workspace_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: Active) {
+    fn populate_workspace_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: &Active) {
         let mut lock = self.items.guard();
         lock.clear();
 
@@ -294,7 +295,7 @@ impl SwitchRoot {
             lock.push_back(WorkspacesInit {
                 monitor_data: monitor.clone(),
                 remove_html: self.remove_html.clone(),
-                id: *wid,
+                id: wid.clone(),
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
@@ -311,7 +312,12 @@ impl SwitchRoot {
         }
     }
 
-    fn populate_clients_only_mode(&mut self, hypr_data: &HyprlandData, scale: f64, active: Active) {
+    fn populate_clients_only_mode(
+        &mut self,
+        hypr_data: &HyprlandData,
+        scale: f64,
+        active: &Active,
+    ) {
         let mut lock = self.clients_only.guard();
         lock.clear();
 
@@ -350,7 +356,7 @@ impl SwitchRoot {
                 direction,
                 true,
                 &self.data.hypr_data,
-                self.data.active,
+                self.data.active.clone(),
                 self.general.items_per_row,
             )
         } else {
@@ -358,22 +364,22 @@ impl SwitchRoot {
                 direction,
                 true,
                 &self.data.hypr_data,
-                self.data.active,
+                self.data.active.clone(),
                 self.general.items_per_row,
             )
         };
 
-        let old_active = self.data.active;
-        self.data.active = new_active;
+        let old_active = self.data.active.clone();
+        self.data.active = new_active.clone();
 
         if self.switch.switch_workspaces {
-            self.update_workspace_active(old_active, new_active);
+            self.update_workspace_active(&old_active, &new_active);
         } else {
-            self.update_clients_only_active(old_active, new_active);
+            self.update_clients_only_active(&old_active, &new_active);
         }
     }
 
-    fn update_workspace_active(&self, old_active: Active, new_active: Active) {
+    fn update_workspace_active(&self, old_active: &Active, new_active: &Active) {
         // Update workspace active state
         if old_active.workspace != new_active.workspace {
             for (idx, item) in self.items.iter().enumerate() {
@@ -390,7 +396,7 @@ impl SwitchRoot {
         }
     }
 
-    fn update_clients_only_active(&self, old_active: Active, new_active: Active) {
+    fn update_clients_only_active(&self, old_active: &Active, new_active: &Active) {
         // Clear old active
         if let Some(old_id) = old_active.client {
             for (idx, item) in self.clients_only.iter().enumerate() {
@@ -447,19 +453,20 @@ impl SwitchRoot {
                     ControlFlow::Break
                 });
             } else {
-                let id = self.data.active.workspace;
-                debug!(
-                    "Switching to workspace {}",
-                    self.data
-                        .hypr_data
-                        .workspaces
-                        .iter()
-                        .find(|(wid, _)| *wid == id)
-                        .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
-                );
+                let workspace_address = self.data.active.workspace.clone();
+                let (address, name) = self
+                    .data
+                    .hypr_data
+                    .workspaces
+                    .find_by_first(&workspace_address)
+                    .map_or_else(
+                        || (workspace_address.clone(), "<Unknown>".to_string()),
+                        |workspace| (workspace.address.clone(), workspace.name.clone()),
+                    );
+                debug!("Switching to workspace {name}");
                 glib::idle_add_local(move || {
-                    if let Err(e) = switch_workspace(id) {
-                        tracing::warn!("Failed to switch to workspace {id:?}: {e}");
+                    if let Err(e) = switch_workspace(address.clone()) {
+                        tracing::warn!("Failed to switch to workspace {address:?}: {e}");
                     }
                     ControlFlow::Break
                 });
@@ -485,7 +492,7 @@ impl SwitchRoot {
     }
 
     fn kill_workspace_clients(&self) {
-        let workspace_id = self.data.active.workspace;
+        let workspace_id = self.data.active.workspace.clone();
         debug!(
             "Killing all clients in workspace {}",
             self.data
@@ -493,7 +500,7 @@ impl SwitchRoot {
                 .workspaces
                 .iter()
                 .find(|(wid, _)| *wid == workspace_id)
-                .map_or_else(|| workspace_id.to_string(), |(_, w)| w.name.clone())
+                .map_or_else(|| workspace_id.clone(), |(_, w)| w.name.clone())
         );
 
         let clients_to_kill: Vec<_> = self
@@ -532,18 +539,18 @@ impl SwitchRoot {
             }
         };
 
-        while match self.data.active {
+        while match &self.data.active {
             Active {
                 client: Some(id), ..
-            } => hypr_data.clients.find_by_first(&id).is_none(),
-            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(&id).is_none(),
+            } => hypr_data.clients.find_by_first(id).is_none(),
+            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(id).is_none(),
         } {
             self.data.active = if self.switch.switch_workspaces {
                 find_next_workspace(
                     Direction::Right,
                     true,
                     &hypr_data,
-                    self.data.active,
+                    self.data.active.clone(),
                     self.general.items_per_row,
                 )
             } else {
@@ -551,21 +558,22 @@ impl SwitchRoot {
                     Direction::Right,
                     true,
                     &hypr_data,
-                    self.data.active,
+                    self.data.active.clone(),
                     self.general.items_per_row,
                 )
             };
         }
 
         self.data = SwitchData {
-            active: self.data.active,
+            active: self.data.active.clone(),
             hypr_data: hypr_data.clone(),
         };
 
+        let active = self.data.active.clone();
         if self.switch.switch_workspaces {
-            self.populate_workspace_mode(&hypr_data, self.general.scale, self.data.active);
+            self.populate_workspace_mode(&hypr_data, self.general.scale, &active);
         } else {
-            self.populate_clients_only_mode(&hypr_data, self.general.scale, self.data.active);
+            self.populate_clients_only_mode(&hypr_data, self.general.scale, &active);
         }
     }
 }
@@ -628,7 +636,7 @@ impl Default for SwitchData {
         Self {
             active: Active {
                 client: None,
-                workspace: -1,
+                workspace: String::new(),
                 monitor: -1,
             },
             hypr_data: HyprlandData::default(),

@@ -1,24 +1,24 @@
-use core_lib::{ClientData, ClientId, MonitorData, MonitorId, WorkspaceData, WorkspaceId};
+use core_lib::{ClientData, ClientId, MonitorData, MonitorId, WorkspaceAddress, WorkspaceData};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
 /// Sorts clients with complex sorting
 pub fn sort_clients_by_position(
     clients: Vec<(ClientId, ClientData)>,
-    workspaces: &Vec<(WorkspaceId, WorkspaceData)>,
+    workspaces: &Vec<(WorkspaceAddress, WorkspaceData)>,
     monitors: &Vec<(MonitorId, MonitorData)>,
 ) -> Vec<(ClientId, ClientData)> {
     // monitor -> workspace -> clients
     let mut presorted_clients = {
         let mut presorted_clients: BTreeMap<
             MonitorId,
-            BTreeMap<WorkspaceId, Vec<(ClientId, ClientData)>>,
+            BTreeMap<WorkspaceAddress, Vec<(ClientId, ClientData)>>,
         > = BTreeMap::new();
         for (addr, client) in clients {
             presorted_clients
                 .entry(client.monitor)
                 .or_default()
-                .entry(client.workspace)
+                .entry(client.workspace.clone())
                 .or_default()
                 .push((addr, client));
         }
@@ -120,13 +120,13 @@ pub fn sort_clients_by_recent(clients: &mut [(ClientId, ClientData)]) {
 }
 
 pub fn sort_workspaces_by_recent(
-    workspaces: &mut [(WorkspaceId, WorkspaceData)],
+    workspaces: &mut [(WorkspaceAddress, WorkspaceData)],
     clients: &[(ClientId, ClientData)],
 ) {
     let mut ordering = vec![];
     for (_, client) in clients {
         if !ordering.contains(&client.workspace) {
-            ordering.push(client.workspace);
+            ordering.push(client.workspace.clone());
         }
     }
 
@@ -148,10 +148,10 @@ pub fn sort_monitor_by_x(monitors: &mut [(MonitorId, MonitorData)]) {
 }
 
 pub fn sort_workspaces_by_position(
-    workspaces: &mut [(WorkspaceId, WorkspaceData)],
+    workspaces: &mut [(WorkspaceAddress, WorkspaceData)],
     monitors: &[(MonitorId, MonitorData)],
 ) {
-    workspaces.sort_by(|(a_id, a), (b_id, b)| {
+    workspaces.sort_by(|(_, a), (_, b)| {
         let monitor_a = monitors
             .iter()
             .position(|(id, _)| id == &a.monitor)
@@ -161,19 +161,70 @@ pub fn sort_workspaces_by_position(
             .position(|(id, _)| id == &b.monitor)
             .unwrap_or(0);
         match monitor_a.cmp(&monitor_b) {
-            // move special workspaces with -ids after normal workspaces
             Ordering::Equal => {
-                // -10 > 10
-                if *a_id < 0 && *b_id > 0 {
-                    return Ordering::Greater;
+                if a.special != b.special {
+                    return a.special.cmp(&b.special);
                 }
-                // 10 > -10
-                if *a_id > 0 && *b_id < 0 {
-                    return Ordering::Less;
+                match (a.address.parse::<u32>().ok(), b.address.parse::<u32>().ok()) {
+                    (Some(a_id), Some(b_id)) => a_id.cmp(&b_id),
+                    (Some(_), None) => Ordering::Less,
+                    (None, Some(_)) => Ordering::Greater,
+                    (None, None) => a.address.cmp(&b.address),
                 }
-                a_id.cmp(b_id)
             }
             other => other,
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sort_workspaces_by_position;
+    use core_lib::{MonitorData, WorkspaceAddress, WorkspaceData};
+
+    fn workspace(address: &str, special: bool) -> (WorkspaceAddress, WorkspaceData) {
+        (
+            address.to_string(),
+            WorkspaceData {
+                address: address.to_string(),
+                name: address.to_string(),
+                special,
+                width: 0,
+                height: 0,
+                monitor: 0,
+                any_client_enabled: true,
+            },
+        )
+    }
+
+    #[test]
+    fn workspaces_sort_by_number_before_named_and_special_addresses() {
+        let mut workspaces = vec![
+            workspace("special:term", true),
+            workspace("Web", false),
+            workspace("10", false),
+            workspace("2", false),
+            workspace("1", false),
+        ];
+        let monitors = vec![(
+            0,
+            MonitorData {
+                id: 0,
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 0,
+                scale: 1.0,
+                connector: String::new(),
+            },
+        )];
+
+        sort_workspaces_by_position(&mut workspaces, &monitors);
+
+        let addresses: Vec<_> = workspaces
+            .iter()
+            .map(|(address, _)| address.as_str())
+            .collect();
+        assert_eq!(addresses, ["1", "2", "10", "Web", "special:term"]);
+    }
 }

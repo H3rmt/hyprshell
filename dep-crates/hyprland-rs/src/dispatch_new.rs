@@ -53,7 +53,7 @@ pub enum MonitorIdentifier {
     #[display("{_0}")]
     Id(MonitorId),
     /// The monitor name
-    #[display("{_0}")]
+    #[display("name:{_0}")]
     Name(String),
     /// The current monitor
     #[display("current")]
@@ -71,6 +71,9 @@ pub enum MonitorIdentifier {
 pub enum WorkspaceIdentifier {
     /// The workspace Id
     Id(WorkspaceId),
+    /// The exact Hyprland workspace address
+    #[display("{_0}")]
+    Address(WorkspaceAddress),
     /// The workspace relative to the current workspace
     #[display("{}", format_relative(*_0))]
     Relative(i32),
@@ -187,6 +190,9 @@ pub enum Dispatch {
         format_bool_field("on_current_monitor", *_1)
     )]
     FocusWorkspace(WorkspaceIdentifier, bool),
+    /// Toggle a named special workspace by its bare name.
+    #[display("hl.dsp.workspace.toggle_special({})", format_string(_0))]
+    ToggleSpecialWorkspace(String),
     /// move the focus to a window
     #[display("hl.dsp.focus({{ {}}})", format_string_field("window", _0.to_string()))]
     FocusWindow(WindowIdentifier),
@@ -283,5 +289,26 @@ impl Dispatch {
             )));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod address_tests {
+    use super::{Dispatch, WorkspaceIdentifier};
+
+    #[test]
+    fn workspace_address_is_passed_as_a_selector_without_rewriting() {
+        assert_eq!(
+            WorkspaceIdentifier::Address("special:notes".to_string()).to_string(),
+            "special:notes"
+        );
+        assert_eq!(
+            WorkspaceIdentifier::Name("Web".to_string()).to_string(),
+            "name:Web"
+        );
+        assert_eq!(
+            Dispatch::ToggleSpecialWorkspace("htop".to_string()).to_string(),
+            "hl.dsp.workspace.toggle_special(\"htop\")"
+        );
     }
 }

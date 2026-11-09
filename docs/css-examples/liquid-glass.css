@@ -1,11 +1,12 @@
-/* please add layerrules to hyprland config:
+/* Add these layer rules to ~/.config/hypr/hyprland.lua:
 
-layerrule = blur, hyprshell_overview
-layerrule = ignorezero, hyprshell_overview
-layerrule = blur, hyprshell_switch
-layerrule = ignorezero, hyprshell_switch
-layerrule = blur, hyprshell_launcher
-layerrule = ignorezero, hyprshell_launcher
+for _, namespace in ipairs({"hyprshell_overview", "hyprshell_switch", "hyprshell_launcher"}) do
+    hl.layer_rule({
+        match = { namespace = namespace },
+        blur = true,
+        ignore_alpha = 0,
+    })
+end
 */
 
 

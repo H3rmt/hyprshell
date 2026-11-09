@@ -38,25 +38,13 @@ fn get_prev_follow_mouse() -> &'static Mutex<Option<u8>> {
 
 pub fn set_no_follow_mouse(value: Option<u8>) -> anyhow::Result<()> {
     let value = value.unwrap_or(3);
-    if let Err(e) = set_no_follow_mouse_lua(value) {
-        warn!("Failed to set follow_mouse to {value}, trying legacy syntax: {e:?}");
-        set_no_follow_mouse_legacy(value)
-            .with_context(|| format!("Failed to set follow_mouse to {value}"))?;
-    }
-    trace!("Set follow_mouse to {}", value);
-    Ok(())
-}
-
-pub fn set_no_follow_mouse_lua(value: u8) -> anyhow::Result<()> {
     let raw = hyprland::EvalRaw::new(format!(
         "hl.config({{ input = {{ follow_mouse = {value} }} }})"
     ));
     raw.eval()
-        .with_context(|| format!("Failed to set follow_mouse to {value} (lua)"))
-}
-pub fn set_no_follow_mouse_legacy(value: u8) -> anyhow::Result<()> {
-    Keyword::set("input:follow_mouse", value.to_string())
-        .with_context(|| format!("Failed to set follow_mouse to {value} (legacy)"))
+        .with_context(|| format!("Failed to set follow_mouse to {value}"))?;
+    trace!("Set follow_mouse to {}", value);
+    Ok(())
 }
 
 pub fn reset_no_follow_mouse() -> anyhow::Result<()> {
@@ -112,7 +100,7 @@ fn internal_get_initial_active() -> anyhow::Result<Active> {
         .map(|c| to_client_id(&c.address));
     let active_ws = Workspace::get_active()
         .context("unable to get initial workspace")?
-        .id;
+        .address;
     let active_monitor = Monitor::get_active()
         .context("unable to get initial monitor")?
         .id;
@@ -125,7 +113,7 @@ fn internal_get_initial_active() -> anyhow::Result<Active> {
 }
 
 pub fn check_version() -> anyhow::Result<()> {
-    pub const MIN_VERSION: Version = Version::new(0, 55, 0);
+    pub const MIN_VERSION: Version = Version::new(0, 57, 0);
 
     let version = get_version()
         .context("Failed to get version! (hyprland is probably outdated or too new??)")?;

@@ -106,6 +106,9 @@ pub trait HyprDataActiveOptional {
 /// > its a type because it might change at some point
 pub type WorkspaceId = i32;
 
+/// This type provides the stable address used to identify a workspace.
+pub type WorkspaceAddress = String;
+
 /// This type provides the id used to identify monitors
 /// > its a type because it might change at some point
 pub type MonitorId = i128;
@@ -231,8 +234,8 @@ impl fmt::Display for CommandContent {
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.flag {
-            CommandFlag::JSON => write!(f, "j/{}", &self.data),
-            CommandFlag::Empty => write!(f, "/{}", &self.data),
+            CommandFlag::JSON => write!(f, "j/{}", self.data),
+            CommandFlag::Empty => write!(f, "/{}", self.data),
         }
     }
 }

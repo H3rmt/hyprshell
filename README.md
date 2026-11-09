@@ -24,7 +24,7 @@ It provides a customizable GUI for switching between windows or workspaces, laun
 
 ## Installation
 
-**Minimum hyprland version: 0.55.0, using lua for configuration**
+**Minimum Hyprland version: 0.57.0 (Lua configuration required)**
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
 
@@ -91,9 +91,9 @@ Enable the systemd service (generated with `hyprshell config generate`) [recomme
 systemctl --user enable --now hyprshell.service
 ```
 
-Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
+Or add the following to your Hyprland Lua configuration (`~/.config/hypr/hyprland.lua`):
 
-```ini
+```lua
 hl.on("hyprland.start", function()
     -- Run hyprshell daemon
     hl.exec_cmd("hyprshell run")

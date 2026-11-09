@@ -9,7 +9,7 @@ To develop for Hyprshell, you need to have the following installed:
 - **Rust**: Latest stable version (minimum `1.92.0`).
 - **GTK4 & Libadwaita**: Development headers for GTK4 and Libadwaita.
 - **GTK4 Layer Shell**: Development headers for [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell).
-- **Hyprland**: Minimum version `0.55.0`. Development headers (`hyprland-devel`) are needed for the plugin.
+- **Hyprland**: Minimum version `0.57.0`. Development headers (`hyprland-devel`) are needed for the plugin.
 - **just**: A handy command runner used for various development tasks.
 
 ### Installing `just`

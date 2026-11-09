@@ -210,6 +210,9 @@ impl std::fmt::Display for FirstEmpty {
 pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
+    /// The exact Hyprland workspace address
+    #[display("{_0}")]
+    Address(&'a WorkspaceAddress),
     /// The workspace relative to the current workspace
     #[display("{}", format_relative(*_0, ""))]
     Relative(i32),
@@ -265,6 +268,8 @@ pub(super) mod fmt {
 pub enum WorkspaceIdentifier<'a> {
     /// The workspace Id
     Id(WorkspaceId),
+    /// The exact Hyprland workspace address
+    Address(&'a WorkspaceAddress),
     /// The workspace relative to the current workspace
     Relative(i32),
     /// The workspace on the monitor relative to the current workspace
@@ -286,6 +291,7 @@ impl std::fmt::Display for WorkspaceIdentifier<'_> {
         use WorkspaceIdentifier::*;
         let out = match self {
             Id(id) => format!("{id}"),
+            Address(address) => address.to_string(),
             Name(name) => format!("name:{name}"),
             Relative(int) => format_relative(*int, ""),
             RelativeMonitor(int) => format_relative(*int, "m"),
@@ -544,7 +550,7 @@ pub enum DispatchType<'a> {
     /// This dispatcher applied a option to all windows in a workspace
     WorkspaceOption(WorkspaceOptions),
     /// This dispatcher renames a workspace
-    RenameWorkspace(WorkspaceId, Option<&'a str>),
+    RenameWorkspace(WorkspaceIdentifier<'a>, Option<&'a str>),
     /// This exits Hyprland **(DANGEROUS)**
     Exit,
     /// This dispatcher forces the renderer to reload
@@ -827,10 +833,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ToggleSpecialWorkspace(Some(name)) => format!("togglespecialworkspace {name}"),
         ToggleSpecialWorkspace(None) => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
-            format!(
-                "renameworkspace{sep}{id} {}",
-                name.unwrap_or(&id.to_string())
-            )
+            let default_name = match id {
+                WorkspaceIdentifier::Id(id) => id.to_string(),
+                WorkspaceIdentifier::Address(address) => address.to_string(),
+                WorkspaceIdentifier::Name(name) => name.to_string(),
+                _ => id.to_string(),
+            };
+            format!("renameworkspace{sep}{id} {}", name.unwrap_or(&default_name))
         }
         SwapActiveWorkspaces(mon, mon2) => format!("swapactiveworkspaces{sep}{mon} {mon2}",),
         BringActiveToTop => "bringactivetotop".to_string(),
@@ -1005,4 +1014,22 @@ macro_rules! dispatch {
     ($instance:expr; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
+}
+
+#[cfg(test)]
+mod workspace_address_tests {
+    use super::WorkspaceIdentifierWithSpecial;
+
+    #[test]
+    fn workspace_address_is_passed_as_a_selector_without_rewriting() {
+        let address = "Web".to_string();
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::Address(&address).to_string(),
+            "Web"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::Name("Web").to_string(),
+            "name:Web"
+        );
+    }
 }

@@ -93,7 +93,7 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
     ),
     (
         "4.10.6",
-        "Version 4.10.6 reimplements support for legacy hyprland config",
+        "Version 4.10.6 reimplemented legacy Hyprland .conf support, which Hyprland 0.57 has since removed.",
     ),
 ];
 
@@ -174,7 +174,7 @@ mod tests {
     #[test_log(default_log_filter = "trace")]
     fn test_empty_versions() {
         let result = filter_version_messages(&[], &v("1.0.0"), &v("0.9.0"));
-        assert!(result.is_empty());
+        assert_eq!(result, [] as [std::string::String; 0]);
     }
 
     #[test_log::test]
@@ -182,7 +182,7 @@ mod tests {
     fn test_older_current_version() {
         let versions = [("1.0.0", "test")];
         let result = filter_version_messages(&versions, &v("0.9.0"), &v("1.0.0"));
-        assert!(result.is_empty());
+        assert_eq!(result, [] as [std::string::String; 0]);
     }
 
     #[test_log::test]
@@ -198,7 +198,7 @@ mod tests {
     fn test_same_version() {
         let versions = [("1.0.0", "test")];
         let result = filter_version_messages(&versions, &v("1.0.0"), &v("1.0.0"));
-        assert!(result.is_empty());
+        assert_eq!(result, [] as [std::string::String; 0]);
     }
 
     #[test_log::test]

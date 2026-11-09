@@ -1,6 +1,7 @@
 use core_lib::Direction;
 use core_lib::{
-    Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, GetFirstOrLast, HyprlandData, RevIf, WorkspaceAddress,
+    WorkspaceData,
 };
 use std::cmp::{max, min};
 use tracing::{debug, instrument, trace, trace_span, warn};
@@ -28,7 +29,7 @@ pub fn find_next_workspace(
         let workspaces = &hypr_data.workspaces[0];
         return Active {
             client: None,
-            workspace: workspaces.0,
+            workspace: workspaces.0.clone(),
             monitor: workspaces.1.monitor,
         };
     }
@@ -46,7 +47,7 @@ pub fn find_next_workspace(
         .get(index)
         .map(|(id, data)| Active {
             client: None,
-            workspace: *id,
+            workspace: (*id).clone(),
             monitor: data.monitor,
         })
         .unwrap_or_else(|| {
@@ -78,7 +79,12 @@ pub fn find_next_client(
 
     #[allow(clippy::option_if_let_else)]
     let next_active = match active.client {
-        None => find_first_client(direction, &hypr_data.clients, &hypr_data.workspaces, active),
+        None => find_first_client(
+            direction,
+            &hypr_data.clients,
+            &hypr_data.workspaces,
+            &active,
+        ),
         Some(client_id) => {
             let filtered = hypr_data
                 .clients
@@ -90,7 +96,7 @@ pub fn find_next_client(
                 let client = &hypr_data.clients[0];
                 return Active {
                     client: Some(client.0),
-                    workspace: client.1.workspace,
+                    workspace: client.1.workspace.clone(),
                     monitor: client.1.monitor,
                 };
             }
@@ -104,7 +110,7 @@ pub fn find_next_client(
                 .get(index)
                 .map(|(id, data)| Active {
                     client: Some(*id),
-                    workspace: data.workspace,
+                    workspace: data.workspace.clone(),
                     monitor: data.monitor,
                 })
                 .unwrap_or_else(|| {
@@ -208,8 +214,8 @@ fn wrap_grid(i: isize, max: isize, grid_size: isize, row_len: isize) -> isize {
 fn find_first_client(
     direction: Direction,
     clients: &[(ClientId, ClientData)],
-    workspaces: &[(WorkspaceId, WorkspaceData)],
-    active: Active,
+    workspaces: &[(WorkspaceAddress, WorkspaceData)],
+    active: &Active,
 ) -> Active {
     let get_last = matches!(direction, Direction::Left | Direction::Up);
     let (id, next) = clients
@@ -244,7 +250,7 @@ fn find_first_client(
         });
     Active {
         client: Some(*id),
-        workspace: next.workspace,
+        workspace: next.workspace.clone(),
         monitor: next.monitor,
     }
 }
@@ -260,7 +266,7 @@ mod tests {
         enabled: Option<usize>,
     ) -> (
         Vec<(ClientId, ClientData)>,
-        Vec<(WorkspaceId, WorkspaceData)>,
+        Vec<(WorkspaceAddress, WorkspaceData)>,
     ) {
         let clients: Vec<(ClientId, ClientData)> = (0..client_count)
             .map(|i| {
@@ -274,7 +280,7 @@ mod tests {
                         class: String::new(),
                         title: String::new(),
                         #[allow(clippy::cast_possible_wrap)]
-                        workspace: (i % workspace_count) as WorkspaceId,
+                        workspace: (i % workspace_count).to_string(),
                         monitor: 0,
                         focus_history_id: 0,
                         floating: false,
@@ -287,18 +293,20 @@ mod tests {
             .collect();
 
         #[allow(clippy::cast_possible_wrap)]
-        let workspaces: Vec<(WorkspaceId, WorkspaceData)> = (0..workspace_count)
+        let workspaces: Vec<(WorkspaceAddress, WorkspaceData)> = (0..workspace_count)
             .map(|i| {
                 (
-                    i as WorkspaceId,
+                    i.to_string(),
                     WorkspaceData {
+                        address: i.to_string(),
                         name: String::new(),
+                        special: false,
                         width: 0,
                         height: 0,
                         monitor: 0,
                         any_client_enabled: clients
                             .iter()
-                            .any(|(_, c)| c.workspace == i as WorkspaceId && c.enabled),
+                            .any(|(_, c)| c.workspace == i.to_string() && c.enabled),
                     },
                 )
             })
@@ -318,25 +326,25 @@ mod tests {
         };
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         trace!("data: {hypr_data:?}");
 
         assert_eq!(
-            find_next_workspace(Direction::Right, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Right, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Left, true, &hypr_data, active, 6),
+            find_next_workspace(Direction::Left, true, &hypr_data, active.clone(), 6),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Up, false, &hypr_data, active, 200),
+            find_next_workspace(Direction::Up, false, &hypr_data, active.clone(), 200),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Down, false, &hypr_data, active, 0),
+            find_next_workspace(Direction::Down, false, &hypr_data, active.clone(), 0),
             active
         );
     }
@@ -352,41 +360,41 @@ mod tests {
         };
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         trace!("data: {hypr_data:?}");
 
         assert_eq!(
-            find_next_workspace(Direction::Right, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Right, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Left, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Left, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Up, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Up, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Down, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Down, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Right, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Right, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Left, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Left, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Up, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Up, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Down, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Down, false, &hypr_data, active.clone(), 3),
             active
         );
     }
@@ -402,41 +410,41 @@ mod tests {
         };
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         trace!("data: {hypr_data:?}");
 
         assert_eq!(
-            find_next_workspace(Direction::Right, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Right, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Left, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Left, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Up, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Up, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Down, true, &hypr_data, active, 3),
+            find_next_workspace(Direction::Down, true, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Right, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Right, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Left, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Left, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Up, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Up, false, &hypr_data, active.clone(), 3),
             active
         );
         assert_eq!(
-            find_next_workspace(Direction::Down, false, &hypr_data, active, 3),
+            find_next_workspace(Direction::Down, false, &hypr_data, active.clone(), 3),
             active
         );
     }
@@ -451,30 +459,30 @@ mod tests {
         };
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         trace!("data: {hypr_data:?}");
 
-        let next = find_next_workspace(Direction::Right, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 1);
-        let next = find_next_workspace(Direction::Left, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 4);
+        let next = find_next_workspace(Direction::Right, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "1");
+        let next = find_next_workspace(Direction::Left, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "4");
 
-        let next = find_next_workspace(Direction::Up, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 3);
-        let next = find_next_workspace(Direction::Down, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 3);
+        let next = find_next_workspace(Direction::Up, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "3");
+        let next = find_next_workspace(Direction::Down, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "3");
 
-        let next = find_next_workspace(Direction::Right, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 1);
-        let next = find_next_workspace(Direction::Left, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        let next = find_next_workspace(Direction::Right, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "1");
+        let next = find_next_workspace(Direction::Left, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
 
-        let next = find_next_workspace(Direction::Up, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        let next = find_next_workspace(Direction::Up, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
         let next = find_next_workspace(Direction::Down, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 3);
+        assert_eq!(next.workspace, "3");
     }
 
     #[test_log::test]
@@ -488,30 +496,30 @@ mod tests {
         };
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         trace!("data: {hypr_data:?}");
 
-        let next = find_next_workspace(Direction::Right, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 1);
-        let next = find_next_workspace(Direction::Left, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 2);
+        let next = find_next_workspace(Direction::Right, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "1");
+        let next = find_next_workspace(Direction::Left, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "2");
 
-        let next = find_next_workspace(Direction::Up, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
-        let next = find_next_workspace(Direction::Down, true, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        let next = find_next_workspace(Direction::Up, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
+        let next = find_next_workspace(Direction::Down, true, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
 
-        let next = find_next_workspace(Direction::Right, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 1);
-        let next = find_next_workspace(Direction::Left, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        let next = find_next_workspace(Direction::Right, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "1");
+        let next = find_next_workspace(Direction::Left, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
 
-        let next = find_next_workspace(Direction::Up, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        let next = find_next_workspace(Direction::Up, false, &hypr_data, active.clone(), 3);
+        assert_eq!(next.workspace, "0");
         let next = find_next_workspace(Direction::Down, false, &hypr_data, active, 3);
-        assert_eq!(next.workspace, 0);
+        assert_eq!(next.workspace, "0");
     }
 
     #[test_log::test]
@@ -528,11 +536,11 @@ mod tests {
 
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         assert_eq!(
-            find_next_client(Direction::Right, true, &hypr_data, active, 3),
+            find_next_client(Direction::Right, true, &hypr_data, active.clone(), 3),
             active
         );
     }
@@ -551,30 +559,30 @@ mod tests {
 
         let active = Active {
             client: None,
-            workspace: 0,
+            workspace: "0".to_string(),
             monitor: 0,
         };
         assert_eq!(
-            find_next_client(Direction::Left, true, &hypr_data, active, 3),
+            find_next_client(Direction::Left, true, &hypr_data, active.clone(), 3),
             Active {
                 client: Some(0),
-                workspace: 0,
+                workspace: "0".to_string(),
                 monitor: 0,
             }
         );
         assert_eq!(
-            find_next_client(Direction::Right, true, &hypr_data, active, 3),
+            find_next_client(Direction::Right, true, &hypr_data, active.clone(), 3),
             Active {
                 client: Some(0),
-                workspace: 0,
+                workspace: "0".to_string(),
                 monitor: 0,
             }
         );
         assert_eq!(
-            find_next_client(Direction::Up, true, &hypr_data, active, 3),
+            find_next_client(Direction::Up, true, &hypr_data, active.clone(), 3),
             Active {
                 client: Some(0),
-                workspace: 0,
+                workspace: "0".to_string(),
                 monitor: 0,
             }
         );
@@ -582,7 +590,7 @@ mod tests {
             find_next_client(Direction::Down, true, &hypr_data, active, 3),
             Active {
                 client: Some(0),
-                workspace: 0,
+                workspace: "0".to_string(),
                 monitor: 0,
             }
         );
@@ -594,7 +602,7 @@ mod tests {
         fn current(idx: u64) -> Active {
             Active {
                 client: Some(idx),
-                workspace: 1,
+                workspace: "1".to_string(),
                 monitor: 0,
             }
         }
@@ -655,7 +663,7 @@ mod tests {
         fn current(idx: u64) -> Active {
             Active {
                 client: Some(idx),
-                workspace: 1,
+                workspace: "1".to_string(),
                 monitor: 0,
             }
         }

@@ -1,4 +1,4 @@
-use crate::{ClientId, WorkspaceId};
+use crate::{ClientId, WorkspaceAddress};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -97,7 +97,7 @@ impl Identifier {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum WindowsOverride {
     ClientId(ClientId),
-    WorkspaceID(WorkspaceId),
+    WorkspaceID(WorkspaceAddress),
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]

@@ -1,7 +1,7 @@
 use crate::shared::workspace_clients::{
     WorkspaceClients, WorkspaceClientsInit, WorkspaceClientsInput, WorkspaceClientsOutput,
 };
-use core_lib::{ClientData, ClientId, MonitorData, WorkspaceData, WorkspaceId};
+use core_lib::{ClientData, ClientId, MonitorData, WorkspaceAddress, WorkspaceData};
 use regex::Regex;
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
@@ -12,7 +12,7 @@ use relm4::prelude::*;
 pub struct Workspaces {
     active: bool,
     pub data: WorkspaceData,
-    pub workspace_id: WorkspaceId,
+    pub workspace_id: WorkspaceAddress,
     pub remove_html: Regex,
     pub scale: f64,
     pub monitor_data: MonitorData,
@@ -29,7 +29,7 @@ pub enum WorkspacesInput {
 pub struct WorkspacesInit {
     pub monitor_data: MonitorData,
     pub data: WorkspaceData,
-    pub id: WorkspaceId,
+    pub id: WorkspaceAddress,
     pub remove_html: Regex,
     pub scale: f64,
     pub clients: Vec<(ClientId, ClientData)>,
@@ -37,7 +37,7 @@ pub struct WorkspacesInit {
 
 #[derive(Debug)]
 pub enum WorkspacesOutput {
-    Clicked(WorkspaceId),
+    Clicked(WorkspaceAddress),
     ClickedC(ClientId),
 }
 
@@ -53,7 +53,7 @@ impl FactoryComponent for Workspaces {
         gtk::FlowBoxChild {
             gtk::Box {
                 #[watch]
-                set_css_classes: &workspace_css_classes(self.active, self.workspace_id),
+                set_css_classes: &workspace_css_classes(self.active, self.data.special),
                 set_width_request: scale(self.monitor_data.width, self.scale),
                 set_height_request: scale(self.monitor_data.height, self.scale),
                 gtk::Frame {
@@ -61,7 +61,7 @@ impl FactoryComponent for Workspaces {
                     set_label_widget = &gtk::Button {
                         set_cursor_from_name: Some("pointer"),
                         set_width_request: scale(self.monitor_data.width, self.scale),
-                        connect_clicked[sender, id = self.workspace_id] => move |_| sender.output_sender().emit(WorkspacesOutput::Clicked(id)),
+                        connect_clicked[sender, id = self.workspace_id.clone()] => move |_| sender.output_sender().emit(WorkspacesOutput::Clicked(id.clone())),
                         gtk::Label {
                             set_label: &self.workspace_label(),
                         }
@@ -142,7 +142,7 @@ impl FactoryComponent for Workspaces {
 impl Workspaces {
     fn workspace_label(&self) -> String {
         if self.data.name.trim().is_empty() {
-            self.workspace_id.to_string()
+            self.workspace_id.clone()
         } else {
             self.remove_html
                 .replace_all(&self.data.name, "")
@@ -155,13 +155,12 @@ fn scale<T: Into<f64>>(value: T, scale: f64) -> i32 {
     (value.into() / (15f64 - scale)) as i32
 }
 
-fn workspace_css_classes(active: bool, id: WorkspaceId) -> Vec<&'static str> {
+fn workspace_css_classes(active: bool, special: bool) -> Vec<&'static str> {
     let mut classes = vec!["workspace", "no-hover"];
     if active {
         classes.push("active");
     }
-    // Special workspaces have negative IDs
-    if id < 0 {
+    if special {
         classes.push("special");
     }
     classes
