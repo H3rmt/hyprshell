@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.9](https://github.com/H3rmt/hyprshell/compare/v4.10.8...v4.10.9) (2026-11-09)
+
+
+### Bug Fixes
+
+* fix new hyprland ipc handling ([05abe5e](https://github.com/H3rmt/hyprshell/commit/05abe5e14c6a9d4913e68320cd7cb69da0e18209))
+
 ## [4.10.8](https://github.com/H3rmt/hyprshell/compare/v4.10.7...v4.10.8) (2026-06-10)
 
 
