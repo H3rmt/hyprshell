@@ -1,11 +1,11 @@
-pub type WorkspaceId = i32;
+pub type WorkspaceAddress = String;
 pub type MonitorId = i128;
 pub type ClientId = u64;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active {
     pub client: Option<ClientId>,
-    pub workspace: WorkspaceId,
+    pub workspace: WorkspaceAddress,
     pub monitor: MonitorId,
 }
 
@@ -22,7 +22,9 @@ pub struct MonitorData {
 
 #[derive(Debug, Clone)]
 pub struct WorkspaceData {
+    pub address: WorkspaceAddress,
     pub name: String,
+    pub special: bool,
     pub width: u16,
     pub height: u16,
     pub monitor: MonitorId,
@@ -37,7 +39,7 @@ pub struct ClientData {
     pub height: i16,
     pub class: String,
     pub title: String,
-    pub workspace: WorkspaceId,
+    pub workspace: WorkspaceAddress,
     pub monitor: MonitorId,
     pub focus_history_id: i8,
     pub floating: bool,
@@ -48,7 +50,7 @@ pub struct ClientData {
 #[derive(Debug, Default, Clone)]
 pub struct HyprlandData {
     pub clients: Vec<(ClientId, ClientData)>,
-    pub workspaces: Vec<(WorkspaceId, WorkspaceData)>,
+    pub workspaces: Vec<(WorkspaceAddress, WorkspaceData)>,
     pub monitors: Vec<(MonitorId, MonitorData)>,
 }
 
@@ -62,9 +64,11 @@ impl ByFirst<ClientId, ClientData> for [(ClientId, ClientData)] {
     }
 }
 
-impl ByFirst<WorkspaceId, WorkspaceData> for [(WorkspaceId, WorkspaceData)] {
-    fn find_by_first(&self, id: &WorkspaceId) -> Option<&WorkspaceData> {
-        self.iter().find(|(wid, _)| *wid == *id).map(|(_, wd)| wd)
+impl ByFirst<WorkspaceAddress, WorkspaceData> for [(WorkspaceAddress, WorkspaceData)] {
+    fn find_by_first(&self, address: &WorkspaceAddress) -> Option<&WorkspaceData> {
+        self.iter()
+            .find(|(workspace_address, _)| workspace_address == address)
+            .map(|(_, wd)| wd)
     }
 }
 

@@ -1,7 +1,9 @@
 use crate::util::to_client_id;
 use anyhow::Context;
-use core_lib::{ByFirst, ClientData, ClientId, MonitorData, MonitorId, WorkspaceData, WorkspaceId};
-use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, Workspaces};
+use core_lib::{
+    ByFirst, ClientData, ClientId, MonitorData, MonitorId, WorkspaceAddress, WorkspaceData,
+};
+use hyprland::data::{Client, Clients, Monitor, Monitors, Workspace, WorkspaceKind, Workspaces};
 use hyprland::prelude::*;
 use regex::Regex;
 use tracing::{debug_span, instrument, trace, warn};
@@ -9,21 +11,16 @@ use tracing::{debug_span, instrument, trace, warn};
 fn get_hypr_data() -> anyhow::Result<(Vec<Monitor>, Vec<Workspace>, Vec<Client>)> {
     let _span = debug_span!("get_hypr_data").entered();
     let monitors = Monitors::get().context("monitors failed")?.to_vec();
-    // sort and filter all workspaces sorted by ID
-    let workspaces = {
-        let mut workspaces = Workspaces::get()
-            .context("workspaces failed")?
-            .into_iter()
-            .filter(|w| w.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
-            .collect::<Vec<_>>();
-
-        workspaces.sort_by_key(|a| a.id);
-        workspaces
-    };
+    // Ignore placeholder workspaces that do not have a targetable address.
+    let workspaces = Workspaces::get()
+        .context("workspaces failed")?
+        .into_iter()
+        .filter(|w| !w.address.is_empty())
+        .collect::<Vec<_>>();
     let clients = Clients::get()
         .context("clients failed")?
         .into_iter()
-        .filter(|c| c.workspace.id != -1) // TODO: check if still needed: ignore clients on invalid workspaces
+        .filter(|c| !c.workspace.address.is_empty())
         .collect::<Vec<_>>();
 
     Ok((monitors, workspaces, clients))
@@ -35,10 +32,10 @@ pub fn collect_hypr_data(
     exclude_workspaces: Option<&Regex>,
 ) -> anyhow::Result<(
     Vec<(ClientId, ClientData)>,
-    Vec<(WorkspaceId, WorkspaceData)>,
+    Vec<(WorkspaceAddress, WorkspaceData)>,
     Vec<(MonitorId, MonitorData)>,
     Option<(String, ClientId)>,
-    WorkspaceId,
+    WorkspaceAddress,
     MonitorId,
 )> {
     let (monitors, workspaces, clients) =
@@ -69,7 +66,7 @@ pub fn collect_hypr_data(
 
     // all workspaces with their data, x and y are the offset of the workspace
     let mut workspace_data = {
-        let mut wd: Vec<(WorkspaceId, WorkspaceData)> = Vec::with_capacity(workspaces.len());
+        let mut wd: Vec<(WorkspaceAddress, WorkspaceData)> = Vec::with_capacity(workspaces.len());
 
         for (monitor_id, monitor_data) in &monitor_data {
             workspaces
@@ -77,9 +74,11 @@ pub fn collect_hypr_data(
                 .filter(|ws| ws.monitor_id == Some(*monitor_id))
                 .for_each(|workspace| {
                     wd.push((
-                        workspace.id,
+                        workspace.address.clone(),
                         WorkspaceData {
+                            address: workspace.address.clone(),
                             name: workspace.name.clone(),
+                            special: workspace.workspace_type == WorkspaceKind::Special,
                             monitor: *monitor_id,
                             height: monitor_data.height,
                             width: monitor_data.width,
@@ -98,7 +97,10 @@ pub fn collect_hypr_data(
             let Some(monitor) = client.monitor else {
                 continue;
             };
-            if workspace_data.find_by_first(&client.workspace.id).is_some() {
+            if workspace_data
+                .find_by_first(&client.workspace.address)
+                .is_some()
+            {
                 cd.push((
                     to_client_id(&client.address),
                     ClientData {
@@ -107,7 +109,7 @@ pub fn collect_hypr_data(
                         width: client.size.0,
                         height: client.size.1,
                         class: client.class.clone(),
-                        workspace: client.workspace.id,
+                        workspace: client.workspace.address.clone(),
                         monitor,
                         focus_history_id: client.focus_history_id,
                         title: client.title.clone(),
@@ -140,17 +142,27 @@ pub fn collect_hypr_data(
     trace!("workspaces after filter by regex: {}", workspace_data.len());
     client_data.retain(|(_id, cl)| workspace_data.find_by_first(&cl.workspace).is_some());
 
-    workspace_data.sort_by_key(|a| a.0);
+    workspace_data.sort_by(|(a_address, a), (b_address, b)| {
+        if a.special != b.special {
+            return a.special.cmp(&b.special);
+        }
+        match (a.address.parse::<u32>().ok(), b.address.parse::<u32>().ok()) {
+            (Some(a_id), Some(b_id)) => a_id.cmp(&b_id),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => a_address.cmp(b_address),
+        }
+    });
     monitor_data.sort_by_key(|a| a.0);
 
     // is broken, reports the "normal" workspace as active when a client in special workspace is selected
     // let active_ws = Workspace::get_active()?.id;
     let active_ws = Workspace::get_active()
-        .map(|w| w.id)
+        .map(|w| w.address)
         .context("active workspace failed")?;
     let active_ws = Client::get_active()
         .context("active client failed")?
-        .map_or(active_ws, |a| a.workspace.id);
+        .map_or(active_ws, |a| a.workspace.address);
     let active_monitor = Monitor::get_active().context("active monitor failed")?.id;
     let active_client = Client::get_active()
         .context("active client failed")?

@@ -323,7 +323,9 @@ impl State {
                 Dispatch::instance_call_async(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
-                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Regular(name) => {
+                            WorkspaceIdentifierWithSpecial::Address(name)
+                        }
                         WorkspaceType::Special(opt) => {
                             WorkspaceIdentifierWithSpecial::Special(match opt {
                                 Some(name) => Some(name),
@@ -372,7 +374,9 @@ impl State {
                 Dispatch::instance_call(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
-                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Regular(name) => {
+                            WorkspaceIdentifierWithSpecial::Address(name)
+                        }
                         WorkspaceType::Special(opt) => {
                             WorkspaceIdentifierWithSpecial::Special(match opt {
                                 Some(name) => Some(name),

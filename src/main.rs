@@ -214,7 +214,7 @@ fn main() -> anyhow::Result<()> {
         }
         cli::Command::Socat { json } => {
             #[cfg(debug_assertions)]
-            core_lib::notify(&json, std::time::Duration::from_secs(2));
+            core_lib::notify(&json, std::time::Duration::from_secs(1));
             core_lib::transfer::send_raw_to_socket(&json)
                 .context("Failed to send JSON to socket")?;
         }
@@ -238,7 +238,7 @@ fn check_features() {
 
 fn check_env() {
     tracing::debug!(
-        "ENV: HYPRSHELL_NO_LISTENERS: {}, HYPRSHELL_NO_ALL_ICONS: {}, HYPRSHELL_RELOAD_DELAY: {}, HYPRSHELL_RELOAD_DEBOUNCE: {}, HYPRSHELL_LOG_MODULE_PATH: {}, HYPRSHELL_EXPERIMENTAL: {}, HYPRSHELL_RUN_ACTIONS_IN_DEBUG: {}",
+        "ENV: HYPRSHELL_NO_LISTENERS: {}, HYPRSHELL_NO_ALL_ICONS: {}, HYPRSHELL_RELOAD_DELAY: {}, HYPRSHELL_RELOAD_DEBOUNCE: {}, HYPRSHELL_LOG_MODULE_PATH: {}, HYPRSHELL_EXPERIMENTAL: {}, HYPRSHELL_RUN_ACTIONS_IN_DEBUG: {}, HYPRSHELL_NO_REGISTER_KEYBINDS: {}, HYPRSHELL_ADD_KEYBIND_NOTIFICATIONS: {}",
         env::var("HYPRSHELL_NO_LISTENERS").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_NO_ALL_ICONS").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_RELOAD_DELAY").unwrap_or_else(|_| "-None-".to_string()),
@@ -246,6 +246,8 @@ fn check_env() {
         env::var("HYPRSHELL_LOG_MODULE_PATH").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_EXPERIMENTAL").unwrap_or_else(|_| "-None-".to_string()),
         env::var("HYPRSHELL_RUN_ACTIONS_IN_DEBUG").unwrap_or_else(|_| "-None-".to_string()),
+        env::var("HYPRSHELL_NO_REGISTER_KEYBINDS").unwrap_or_else(|_| "-None-".to_string()),
+        env::var("HYPRSHELL_ADD_KEYBIND_NOTIFICATIONS").unwrap_or_else(|_| "-None-".to_string()),
     );
     let os_name = fs::read_to_string("/etc/os-release")
         .ok()

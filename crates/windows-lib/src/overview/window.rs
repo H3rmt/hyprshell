@@ -1,6 +1,6 @@
 use crate::shared::{Workspaces, WorkspacesInit, WorkspacesInput, WorkspacesOutput};
 use core_lib::{
-    Active, ClientData, ClientId, MonitorData, OVERVIEW_NAMESPACE, WorkspaceData, WorkspaceId,
+    Active, ClientData, ClientId, MonitorData, OVERVIEW_NAMESPACE, WorkspaceAddress, WorkspaceData,
 };
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
@@ -50,7 +50,7 @@ pub struct OverviewWindowInit {
 
 #[derive(Debug)]
 pub enum OverviewWindowOutput {
-    Clicked(WorkspaceId),
+    Clicked(WorkspaceAddress),
     ClickedC(ClientId),
 }
 
@@ -135,7 +135,7 @@ impl SimpleComponent for OverviewWindow {
             }
             OverviewWindowInput::SetActive(prev, next) => {
                 if self.open {
-                    self.set_active(prev, next);
+                    self.set_active(&prev, &next);
                 } else {
                     trace!("not open");
                 }
@@ -198,7 +198,7 @@ impl OverviewWindow {
             lock.push_back(WorkspacesInit {
                 monitor_data: data.monitor.clone(),
                 remove_html: self.remove_html.clone(),
-                id: *wid,
+                id: wid.clone(),
                 data: workspace_data.clone(),
                 scale,
                 clients: workspace_clients,
@@ -224,7 +224,7 @@ impl OverviewWindow {
         }
     }
 
-    fn set_active(&self, old_active: Active, new_active: Active) {
+    fn set_active(&self, old_active: &Active, new_active: &Active) {
         for (idx, item) in self.items.iter().enumerate() {
             if item.workspace_id == old_active.workspace
                 && item.workspace_id != new_active.workspace
@@ -265,6 +265,6 @@ impl OverviewWindow {
 pub struct OverviewWindowData {
     pub active: Active,
     pub clients: Vec<(ClientId, ClientData)>,
-    pub workspaces: Vec<(WorkspaceId, WorkspaceData)>,
+    pub workspaces: Vec<(WorkspaceAddress, WorkspaceData)>,
     pub monitor: MonitorData,
 }

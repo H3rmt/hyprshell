@@ -7,7 +7,7 @@ pub fn notify(body: &str, duration: Duration) {
     let _ = Notification::new()
         .summary("Hyprshell")
         .body(body)
-        .appname("hyprshell")
+        .appname("hyprshell-settings")
         .timeout(duration)
         .urgency(notify_rust::Urgency::Normal)
         .show();

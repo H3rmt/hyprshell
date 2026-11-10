@@ -13,7 +13,9 @@ pub fn configure_wm_initial() {
 pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
     apply_layerrules().warn_details("Failed to apply layerrules");
     debug!("applied layerrules");
-    apply_binds(config).context("Failed to apply binds")?;
+    if std::env::var_os("HYPRSHELL_NO_REGISTER_KEYBINDS").is_none() {
+        apply_binds(config).context("Failed to apply binds")?;
+    }
     Ok(())
 }
 

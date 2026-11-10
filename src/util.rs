@@ -93,7 +93,11 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
     ),
     (
         "4.10.6",
-        "Version 4.10.6 reimplements support for legacy hyprland config",
+        "Version 4.10.6 reimplemented legacy Hyprland .conf support, which Hyprland 0.57 has since removed.",
+    ),
+    (
+        "4.10.9",
+        "Version 4.10.9 updates hyprshell to use new hyprctl workspace format.",
     ),
 ];
 

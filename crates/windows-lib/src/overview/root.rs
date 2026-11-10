@@ -6,7 +6,7 @@ use crate::overview::window::{
 };
 #[cfg(feature = "live_windows")]
 use crate::shared::refresh_captures;
-use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceId};
+use core_lib::{Active, ByFirst, ClientId, Direction, HyprlandData, MonitorId, WorkspaceAddress};
 use exec_lib::switch::{switch_client, switch_workspace};
 #[cfg(feature = "live_windows")]
 use exec_lib::wayland_capture::CaptureManager;
@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
@@ -56,7 +56,7 @@ pub enum OverviewRootInput {
     OpenOverview,
     Switch(Direction, bool),
     CloseOverview(bool),
-    CloseOverviewClick(WorkspaceId),
+    CloseOverviewClick(WorkspaceAddress),
     CloseOverviewClickC(ClientId),
     CloseItem(ClientId),
     ReloadOverview,
@@ -95,7 +95,7 @@ impl SimpleComponent for OverviewRoot {
         let mut windows = BTreeMap::new();
 
         #[cfg(feature = "live_windows")]
-        let live_thumbnails = std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some_and(|v| v == "1");
+        let live_thumbnails = std::env::var_os("HYPRSHELL_EXPERIMENTAL").is_some();
         #[cfg(feature = "live_windows")]
         let live_thumbnails_icons =
             std::env::var_os("HYPRSHELL_EXPERIMENTAL_ICONS").is_none_or(|v| v != "0");
@@ -274,7 +274,7 @@ impl OverviewRoot {
             active,
             hypr_data: hypr_data.clone(),
         };
-        self.render(hypr_data, self.data.active, true);
+        self.render(hypr_data, &self.data.active, true);
 
         #[cfg(feature = "live_windows")]
         if self.live_thumbnails {
@@ -289,7 +289,7 @@ impl OverviewRoot {
                         .send(OverviewRootInput::RefreshThumbnails)
                         .is_err()
                     {
-                        warn!("Failed to send refresh thumbnails");
+                        tracing::warn!("Failed to send refresh thumbnails");
                         return ControlFlow::Break;
                     }
                     ControlFlow::Continue
@@ -304,7 +304,7 @@ impl OverviewRoot {
                 direction,
                 false,
                 &self.data.hypr_data,
-                self.data.active,
+                self.data.active.clone(),
                 self.general.items_per_row,
             )
         } else {
@@ -318,17 +318,20 @@ impl OverviewRoot {
                 direction,
                 false,
                 &self.data.hypr_data,
-                self.data.active,
+                self.data.active.clone(),
                 self.general.items_per_row,
             )
         };
 
-        let old_active = self.data.active;
-        self.data.active = new_active;
+        let old_active = self.data.active.clone();
+        self.data.active = new_active.clone();
 
         if new_active != old_active {
             for window in self.windows.values() {
-                window.emit(OverviewWindowInput::SetActive(old_active, new_active));
+                window.emit(OverviewWindowInput::SetActive(
+                    old_active.clone(),
+                    new_active.clone(),
+                ));
             }
         }
     }
@@ -365,19 +368,20 @@ impl OverviewRoot {
                     ControlFlow::Break
                 });
             } else {
-                let id = self.data.active.workspace;
-                debug!(
-                    "Switching to workspace {}",
-                    self.data
-                        .hypr_data
-                        .workspaces
-                        .iter()
-                        .find(|(wid, _)| *wid == id)
-                        .map_or_else(|| "<Unknown>".to_string(), |(_, w)| w.name.clone())
-                );
+                let workspace_address = self.data.active.workspace.clone();
+                let (address, name) = self
+                    .data
+                    .hypr_data
+                    .workspaces
+                    .find_by_first(&workspace_address)
+                    .map_or_else(
+                        || (workspace_address.clone(), "<Unknown>".to_string()),
+                        |workspace| (workspace.address.clone(), workspace.name.clone()),
+                    );
+                debug!("Switching to workspace {name}");
                 glib::idle_add_local(move || {
-                    if let Err(e) = switch_workspace(id) {
-                        tracing::warn!("Failed to switch to workspace {id:?}: {e}");
+                    if let Err(e) = switch_workspace(address.clone()) {
+                        tracing::warn!("Failed to switch to workspace {address:?}: {e}");
                     }
                     ControlFlow::Break
                 });
@@ -411,29 +415,29 @@ impl OverviewRoot {
             }
         };
 
-        while match self.data.active {
+        while match &self.data.active {
             Active {
                 client: Some(id), ..
-            } => hypr_data.clients.find_by_first(&id).is_none(),
-            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(&id).is_none(),
+            } => hypr_data.clients.find_by_first(id).is_none(),
+            Active { workspace: id, .. } => hypr_data.workspaces.find_by_first(id).is_none(),
         } {
             self.data.active = find_next_workspace(
                 Direction::Right,
                 true,
                 &hypr_data,
-                self.data.active,
+                self.data.active.clone(),
                 self.general.items_per_row,
             );
         }
 
         self.data = OverviewData {
-            active: self.data.active,
+            active: self.data.active.clone(),
             hypr_data: hypr_data.clone(),
         };
-        self.render(hypr_data, self.data.active, false);
+        self.render(hypr_data, &self.data.active, false);
     }
 
-    fn render(&self, hypr_data: HyprlandData, active: Active, open: bool) {
+    fn render(&self, hypr_data: HyprlandData, active: &Active, open: bool) {
         let mut mapped_ws = BTreeMap::new();
         for (i, workspace_data) in hypr_data.workspaces {
             mapped_ws
@@ -453,7 +457,7 @@ impl OverviewRoot {
             if let Some(data) = hypr_data.monitors.find_by_first(monitor_id) {
                 // always update, maybe last client got removed
                 let data = OverviewWindowData {
-                    active,
+                    active: active.clone(),
                     clients: mapped_cl.remove(monitor_id).unwrap_or_default(),
                     workspaces: mapped_ws.remove(monitor_id).unwrap_or_default(),
                     monitor: data.clone(),
@@ -498,7 +502,7 @@ impl OverviewRoot {
                             .send(OverviewRootInput::RefreshThumbnails)
                             .is_err()
                         {
-                            warn!("Failed to send refresh thumbnails");
+                            tracing::warn!("Failed to send refresh thumbnails");
                             return ControlFlow::Break;
                         }
                         ControlFlow::Continue
@@ -531,7 +535,7 @@ impl Default for OverviewData {
         Self {
             active: Active {
                 client: None,
-                workspace: -1,
+                workspace: String::new(),
                 monitor: -1,
             },
             hypr_data: HyprlandData::default(),

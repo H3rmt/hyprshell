@@ -24,7 +24,7 @@ It provides a customizable GUI for switching between windows or workspaces, laun
 
 ## Installation
 
-**Minimum Hyprland version: 0.55.0, using lua or legacy configuration**
+**Minimum Hyprland version: 0.57.0 (Lua configuration required)**
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/hyprshell.svg)](https://repology.org/project/hyprshell/versions)
 
@@ -100,7 +100,7 @@ systemctl --user enable --now hyprshell.service
 This will only work if you either use `uwsm` or have [Systemd Startup](https://wiki.hypr.land/Useful-Utilities/Systemd-start/) configured.
 Check with `systemctl status graphical.target` to see if hyprshell would be started.
 
-Or add the following to your Hyprland configuration (`~/.config/hypr/hyprland.conf`):
+Or add the following to your Hyprland Lua configuration (`~/.config/hypr/hyprland.lua`):
 
 ```lua
 hl.on("hyprland.start", function()
@@ -151,3 +151,5 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode
+- `HYPRSHELL_NO_REGISTER_KEYBINDS`: TODO
+- `HYPRSHELL_ADD_KEYBIND_NOTIFICATIONS`: TODO

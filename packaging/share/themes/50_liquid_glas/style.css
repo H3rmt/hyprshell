@@ -1,4 +1,4 @@
-/* please add layerrules to hyprland config:
+/* Add these layer rules to ~/.config/hypr/hyprland.lua:
 
 hl.layer_rule({ match = { namespace = "hyprshell_overview" }, blur = true, ignore_alpha = 0.0, dim_around = true })
 hl.layer_rule({ match = { namespace = "hyprshell_launcher" }, blur = true, ignore_alpha = 0.0 })
