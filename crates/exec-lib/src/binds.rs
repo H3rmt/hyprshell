@@ -88,20 +88,7 @@ pub fn apply_exec_bind_lua(bind: &ExecBind) -> anyhow::Result<()> {
     let binding = Binding {
         mods: binds,
         key: bind.key.to_string(),
-        flags: if bind.release {
-            vec![
-                Flag::Release,
-                Flag::Transparent,
-                Flag::AutoConsuming,
-                Flag::Description(bind.desc.clone()),
-            ]
-        } else {
-            vec![
-                Flag::AutoConsuming,
-                Flag::Repeating,
-                Flag::Description(bind.desc.clone()),
-            ]
-        },
+        flags: lua_flags(bind),
         dispatcher: Dispatch::ExecCmd(bind.exec.clone(), None),
     };
     trace!("binding exec: {binding:?}");
@@ -128,14 +115,78 @@ pub fn apply_exec_bind_legacy(bind: &ExecBind) -> anyhow::Result<()> {
     let binding = binds::Binding {
         mods: mods.as_slice(),
         key: binds::Key::Key(&bind.key),
-        flags: if bind.release {
-            &[binds::Flag::r, binds::Flag::t]
-        } else {
-            &[binds::Flag::e]
-        },
+        flags: &legacy_flags(bind),
         dispatcher: DispatchType::Exec(&bind.exec),
     };
     trace!("binding exec: {binding:?}");
     binds::Binder::bind(binding).with_context(|| format!("binding exec failed: {bind:?}"))?;
     Ok(())
+}
+
+fn lua_flags(bind: &ExecBind) -> Vec<Flag> {
+    let mut flags = vec![Flag::AutoConsuming, Flag::Description(bind.desc.clone())];
+    if bind.release {
+        flags.push(Flag::Release);
+    }
+    if bind.repeating {
+        flags.push(Flag::Repeating);
+    }
+    if bind.transparent {
+        flags.push(Flag::Transparent);
+    }
+    flags
+}
+
+fn legacy_flags(bind: &ExecBind) -> Vec<binds::Flag> {
+    let mut flags = Vec::new();
+    if bind.release {
+        flags.push(binds::Flag::r);
+    }
+    if bind.repeating {
+        flags.push(binds::Flag::e);
+    }
+    if bind.transparent {
+        flags.push(binds::Flag::t);
+    }
+    flags
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn overview_and_switch_flags_match_across_backends() {
+        for (release, repeating, transparent, expected_lua, expected_legacy) in [
+            (false, false, false, vec![], ""),
+            (true, false, false, vec![Flag::Release], "r"),
+            (false, true, false, vec![Flag::Repeating], "e"),
+            (
+                true,
+                false,
+                true,
+                vec![Flag::Release, Flag::Transparent],
+                "rt",
+            ),
+        ] {
+            let binding = ExecBind {
+                mods: vec!["alt"],
+                key: "Tab".into(),
+                exec: "hyprshell socat test".into(),
+                release,
+                repeating,
+                transparent,
+                desc: "Activation test".into(),
+            };
+            let flags = lua_flags(&binding);
+            assert!(flags.contains(&Flag::AutoConsuming));
+            assert!(flags.contains(&Flag::Description(binding.desc.clone())));
+            assert_eq!(flags[2..], expected_lua);
+            let legacy = legacy_flags(&binding)
+                .iter()
+                .map(ToString::to_string)
+                .collect::<String>();
+            assert_eq!(legacy, expected_legacy);
+        }
+    }
 }

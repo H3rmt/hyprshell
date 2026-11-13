@@ -39,6 +39,8 @@ The default values for these configs, which are also the values that get used wh
 
 This mode displays the windows in a downscaled view of the screen. It also shows the launcher. This option itself is optional, if not set, this mode is disabled.
 
+Overview shortcuts with ordinary keys (such as Alt+Tab) activate once on key press, regardless of the order in which the keys are released. Modifier keys (such as `Super_L`) activate on release. Holding an overview shortcut does not repeatedly toggle it; switch-mode navigation still repeats.
+
 - **launcher:**_[Launcher]_ Configuration for the launcher.
 - **key:**_[string]_ The key to use to open the Overview mode (like "tab" or "alt_r"). This is used to register the keybinding to open the Overview mode. If you want to only open using a modifier, set this to the modifier name like `super_l`.
 - **modifier:**_[string]_ The modifier that must be pressed together with the key to open the Overview mode (like ctrl). This MUST be one of these modifiers: `alt, ctrl, super`.
