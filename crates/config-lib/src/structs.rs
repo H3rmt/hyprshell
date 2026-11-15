@@ -170,6 +170,8 @@ impl Default for CalcPluginConfig {
 pub struct Switch {
     pub modifier: Modifier,
     pub key: Box<str>,
+    pub keys: Option<Vec<Box<str>>>,
+    pub reverse_keys: Vec<Box<str>>,
     pub filter_by_same_class: bool,
     pub filter_by_current_workspace: bool,
     pub filter_by_current_monitor: bool,
@@ -183,5 +185,14 @@ impl Default for Switch {
         crate::io::Switch::default()
             .try_into()
             .expect("the default config invalid")
+    }
+}
+
+impl Switch {
+    #[must_use]
+    pub fn forward_keys(&self) -> &[Box<str>] {
+        self.keys
+            .as_deref()
+            .unwrap_or_else(|| std::slice::from_ref(&self.key))
     }
 }

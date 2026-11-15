@@ -1,7 +1,10 @@
 use crate::Config;
-use anyhow::bail;
+use anyhow::{Context, bail, ensure};
+use std::collections::HashSet;
+use xkbcommon::xkb;
 
 pub fn check(config: &Config) -> anyhow::Result<()> {
+    check_switches(config)?;
     if config
         .windows
         .as_ref()
@@ -59,6 +62,57 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn check_switches(config: &Config) -> anyhow::Result<()> {
+    if let Some(windows) = &config.windows {
+        for (name, switch) in [
+            ("windows.switch", &windows.switch),
+            ("windows.switch_2", &windows.switch_2),
+        ] {
+            if let Some(switch) = switch {
+                check_switch_keys(switch)
+                    .with_context(|| format!("Invalid shortcuts in {name}"))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn check_switch_keys(switch: &crate::Switch) -> anyhow::Result<()> {
+    ensure!(
+        !switch.forward_keys().is_empty(),
+        "Forward keys cannot be empty; disable switch mode instead"
+    );
+    let mut forward = HashSet::new();
+    for key in switch.forward_keys() {
+        ensure!(
+            forward.insert(checked_keysym(key)?),
+            "Duplicate forward key: {key}"
+        );
+    }
+    let mut reverse = HashSet::new();
+    for key in &switch.reverse_keys {
+        let symbol = checked_keysym(key)?;
+        ensure!(
+            !forward.contains(&symbol),
+            "Key appears in both forward and reverse lists: {key}"
+        );
+        ensure!(reverse.insert(symbol), "Duplicate reverse key: {key}");
+    }
+    Ok(())
+}
+
+fn checked_keysym(key: &str) -> anyhow::Result<String> {
+    ensure!(
+        !key.is_empty()
+            && !key.chars().any(|character| character.is_control()
+                || matches!(character, ',' | '+' | ' ' | '\\' | '"')),
+        "Invalid key name: {key:?}"
+    );
+    let symbol = xkb::keysym_from_name(key, xkb::KEYSYM_NO_FLAGS);
+    ensure!(symbol.raw() != 0, "Unknown XKB key name: {key}");
+    Ok(xkb::keysym_get_name(symbol).to_ascii_lowercase())
 }
 
 #[cfg(test)]

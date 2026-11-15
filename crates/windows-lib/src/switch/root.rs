@@ -13,7 +13,7 @@ use relm4::adw::glib::ControlFlow;
 use relm4::adw::gtk;
 use relm4::adw::gtk::glib;
 use relm4::adw::prelude::*;
-use relm4::gtk::gdk::Key;
+use relm4::gtk::gdk::{Key, ModifierType};
 use relm4::gtk::{EventControllerKey, Orientation, SelectionMode};
 use relm4::prelude::*;
 use std::time::Duration;
@@ -232,25 +232,51 @@ impl SimpleComponent for SwitchRoot {
 
 impl SwitchRoot {
     fn setup_keyboard_controller(&mut self, sender: &ComponentSender<Self>) {
-        // TODO add a check in config check so these always succeed
-        if let Some(k) = Key::from_name(self.switch.key.to_string()) {
-            if let Some(kk) = Key::from_name(self.switch.kill_key.to_string()) {
-                let key_controller = EventControllerKey::new();
-                let sender_2 = sender.clone();
-                key_controller.connect_key_pressed(move |_, key, _, _| {
-                    trace!("Key pressed: {:?}", key);
-                    handle_key(key, k, kk, &sender_2.clone())
-                });
-                if let Some(controller) = self.controller.take() {
-                    self.window.remove_controller(&controller);
-                }
-                self.window.add_controller(key_controller);
-            } else {
-                error!("Invalid kill key name: {}", self.switch.kill_key);
-            }
-        } else {
-            error!("Invalid key name: {}", self.switch.key);
+        let forward: Option<Vec<_>> = self
+            .switch
+            .forward_keys()
+            .iter()
+            .map(|key| Key::from_name(key.as_ref()))
+            .collect();
+        let reverse: Option<Vec<_>> = self
+            .switch
+            .reverse_keys
+            .iter()
+            .map(|key| Key::from_name(key.as_ref()))
+            .collect();
+        let Some((forward, reverse, kill_key)) = forward
+            .zip(reverse)
+            .zip(Key::from_name(self.switch.kill_key.to_string()))
+            .map(|((forward, reverse), kill_key)| (forward, reverse, kill_key))
+        else {
+            error!("Invalid switch keyboard configuration");
+            return;
+        };
+        let key_controller = EventControllerKey::new();
+        let event_sender = sender.clone();
+        key_controller.connect_key_pressed(move |controller, key, keycode, state| {
+            trace!("Key pressed: {key:?}");
+            let unshifted = state
+                .contains(ModifierType::SHIFT_MASK)
+                .then(|| {
+                    let event = controller.current_event()?;
+                    let event = event.downcast_ref::<gtk::gdk::KeyEvent>()?;
+                    let group = i32::try_from(event.layout()).ok()?;
+                    controller
+                        .widget()?
+                        .display()
+                        .translate_key(keycode, state & !ModifierType::SHIFT_MASK, group)
+                        .map(|(base, _, _, _)| base)
+                })
+                .flatten();
+            let key = shifted_forward_key(key, unshifted, state, &forward);
+            handle_key(key, state, &forward, &reverse, kill_key, &event_sender)
+        });
+        if let Some(controller) = self.controller.take() {
+            self.window.remove_controller(&controller);
         }
+        self.window.add_controller(key_controller.clone());
+        self.controller = Some(key_controller.upcast());
     }
 
     #[allow(unused_variables)]
@@ -706,10 +732,20 @@ impl SwitchRoot {
 
 fn handle_key(
     key: Key,
-    s_key: Key,
+    state: ModifierType,
+    forward: &[Key],
+    reverse: &[Key],
     kill_key: Key,
     event_sender: &ComponentSender<SwitchRoot>,
 ) -> glib::Propagation {
+    if key != Key::Escape
+        && let Some(direction) = shortcut_direction(key, state, forward, reverse)
+    {
+        event_sender
+            .input_sender()
+            .emit(SwitchRootInput::Switch(direction));
+        return glib::Propagation::Stop;
+    }
     match key {
         Key::Escape => {
             event_sender
@@ -717,13 +753,13 @@ fn handle_key(
                 .emit(SwitchRootInput::CloseSwitch(false));
             glib::Propagation::Stop
         }
-        k if k == s_key || k == Key::l || k == Key::Right => {
+        Key::l | Key::Right => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(Direction::Right));
             glib::Propagation::Stop
         }
-        Key::ISO_Left_Tab | Key::grave | Key::dead_grave | Key::h | Key::Left => {
+        Key::h | Key::Left => {
             event_sender
                 .input_sender()
                 .emit(SwitchRootInput::Switch(Direction::Left));
@@ -748,6 +784,129 @@ fn handle_key(
             glib::Propagation::Stop
         }
         _ => glib::Propagation::Proceed,
+    }
+}
+
+fn shifted_forward_key(
+    key: Key,
+    unshifted: Option<Key>,
+    state: ModifierType,
+    forward: &[Key],
+) -> Key {
+    if state.contains(ModifierType::SHIFT_MASK)
+        && let Some(base) = unshifted
+        && let Some(candidate) = forward.iter().find(|candidate| {
+            **candidate == base || (**candidate == Key::grave && base == Key::dead_grave)
+        })
+    {
+        *candidate
+    } else {
+        key
+    }
+}
+
+fn shortcut_direction(
+    key: Key,
+    state: ModifierType,
+    forward: &[Key],
+    reverse: &[Key],
+) -> Option<Direction> {
+    let shifted_tab = key == Key::ISO_Left_Tab && forward.contains(&Key::Tab);
+    if shifted_tab
+        || (state.contains(ModifierType::SHIFT_MASK)
+            && forward
+                .iter()
+                .any(|candidate| candidate.to_lower() == key.to_lower()))
+    {
+        Some(Direction::Left)
+    } else if forward.contains(&key) || (key == Key::dead_grave && forward.contains(&Key::grave)) {
+        Some(Direction::Right)
+    } else if reverse.contains(&key) || (key == Key::dead_grave && reverse.contains(&Key::grave)) {
+        Some(Direction::Left)
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]
+mod shortcut_tests {
+    use super::*;
+
+    #[test]
+    fn configured_keys_and_shifted_tab_select_the_expected_direction() {
+        let forward = [Key::Tab, Key::F6];
+        let reverse = [Key::grave, Key::F7];
+        assert_eq!(
+            shortcut_direction(Key::F6, ModifierType::empty(), &forward, &reverse),
+            Some(Direction::Right)
+        );
+        assert_eq!(
+            shortcut_direction(Key::F7, ModifierType::empty(), &forward, &reverse),
+            Some(Direction::Left)
+        );
+        assert_eq!(
+            shortcut_direction(Key::F6, ModifierType::SHIFT_MASK, &forward, &reverse),
+            Some(Direction::Left)
+        );
+        assert_eq!(
+            shortcut_direction(
+                Key::ISO_Left_Tab,
+                ModifierType::SHIFT_MASK,
+                &forward,
+                &reverse
+            ),
+            Some(Direction::Left)
+        );
+    }
+
+    #[test]
+    fn grave_and_dead_grave_are_not_hardcoded() {
+        for key in [Key::grave, Key::dead_grave] {
+            assert_eq!(
+                shortcut_direction(key, ModifierType::empty(), &[Key::Tab], &[]),
+                None
+            );
+            assert_eq!(
+                shortcut_direction(key, ModifierType::empty(), &[Key::Tab], &[Key::grave]),
+                Some(Direction::Left)
+            );
+        }
+        assert_eq!(
+            shortcut_direction(Key::ISO_Left_Tab, ModifierType::SHIFT_MASK, &[Key::F6], &[]),
+            None
+        );
+        assert_eq!(
+            shortcut_direction(Key::dead_grave, ModifierType::empty(), &[Key::grave], &[]),
+            Some(Direction::Right)
+        );
+    }
+
+    #[test]
+    fn shifted_letters_use_the_forward_keys_reverse_binding() {
+        assert_eq!(
+            shortcut_direction(Key::A, ModifierType::SHIFT_MASK, &[Key::a], &[]),
+            Some(Direction::Left)
+        );
+    }
+
+    #[test]
+    fn shifted_punctuation_uses_only_configured_forward_keys() {
+        let state = ModifierType::SHIFT_MASK;
+        for (shifted, base) in [(Key::exclam, Key::_1), (Key::asciitilde, Key::grave)] {
+            let normalized = shifted_forward_key(shifted, Some(base), state, &[base]);
+            assert_eq!(
+                shortcut_direction(normalized, state, &[base], &[]),
+                Some(Direction::Left)
+            );
+            assert_eq!(
+                shifted_forward_key(shifted, Some(base), state, &[Key::Tab]),
+                shifted
+            );
+            assert_eq!(
+                shifted_forward_key(shifted, Some(base), ModifierType::empty(), &[base]),
+                shifted
+            );
+        }
     }
 }
 

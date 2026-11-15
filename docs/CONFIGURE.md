@@ -97,6 +97,42 @@ This mode displays the windows in a downscaled view of the screen. It also shows
 
 This mode displays the windows sorted by their most recent access. This option itself is optional, if not set, this mode is disabled.
 
+- **key:**_[string]_ Legacy forward key, default `"Tab"`. Used only when `keys` is omitted.
+- **keys:**_[List<string>?]_ Forward XKB key names. When provided, this replaces `key`; the list must not be empty. Each key also has a Shift-modified reverse shortcut.
+- **reverse_keys:**_[List<string>]_ Dedicated reverse XKB key names, default `["grave"]`. Set this to `[]` to free the modifier + backtick shortcut while retaining Shift + forward-key navigation.
+
+Existing configuration files retain their previous shortcuts without a version change.
+Key lists cannot contain duplicate or unknown XKB names, or overlap between directions.
+All shortcuts share `modifier`; modifier-release and arrow/Vim navigation remain available.
+Inside the switcher, `dead_grave` aliases `grave` only in a direction where `grave` is configured.
+The same fields are supported in the `switch_2` configuration; this does not enable that mode.
+
+For Ctrl+Tab without Ctrl+backtick in TOML:
+
+```toml
+[windows.switch]
+modifier = "ctrl"
+keys = ["Tab"]
+reverse_keys = []
+```
+
+For multiple forward and reverse shortcuts:
+
+```toml
+[windows.switch]
+modifier = "alt"
+keys = ["Tab", "F6"]
+reverse_keys = ["grave", "F7"]
+```
+
+In JSON/JSON5 use `"keys": ["Tab"]` and `"reverse_keys": []`; in RON use
+`keys: Some(["Tab"])` and `reverse_keys: []` within the switch configuration.
+In Home Manager use `programs.hyprshell.settings.windows.switch.keys = [ "Tab" ];`
+and `programs.hyprshell.settings.windows.switch.reverse_keys = [ ];`.
+The graphical editor exposes both lists and can record additional shortcuts.
+Recording a shortcut changes the shared modifier for the entire switch mode;
+clearing the reverse list does not disable Shift+Tab.
+
 - **modifier:**_[string]_ The modifier that must be helled down together with `tab` key to open the Switch mode (for example `alt`). Letting go of this key will close the Switch mode. This MUST be one of these modifiers: `alt, ctrl, super`.
 - **filter_by**_[List<FilterBy>]_ Filter the windows by the provided filter. This is a list of `FilterBy` objects. (example: `filter_by: [current_workspace]`)
     - **same_class:** Only includes windows of the same class / type. If you currently have alacritty open, only alacritty windows will be shown.

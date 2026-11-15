@@ -37,6 +37,7 @@ rec {
     buildInputs = [
       pkgs.libadwaita
       pkgs.gtk4-layer-shell
+      pkgs.libxkbcommon
     ];
   };
 
