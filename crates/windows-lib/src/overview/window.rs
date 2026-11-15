@@ -206,6 +206,8 @@ impl OverviewWindow {
                 live_thumbnails: self.live_thumbnails,
                 #[cfg(feature = "live_windows")]
                 live_thumbnails_icons: self.live_thumbnails_icons,
+                #[cfg(feature = "live_windows")]
+                thumbnails: std::collections::HashMap::new(),
             });
         }
         drop(lock);

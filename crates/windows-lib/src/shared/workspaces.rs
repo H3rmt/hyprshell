@@ -39,6 +39,9 @@ pub struct WorkspacesInit {
     pub live_thumbnails: bool,
     #[cfg(feature = "live_windows")]
     pub live_thumbnails_icons: bool,
+    /// Previous thumbnails by client, shown until a fresh capture arrives
+    #[cfg(feature = "live_windows")]
+    pub thumbnails: std::collections::HashMap<ClientId, gtk::gdk::Texture>,
 }
 
 #[derive(Debug)]
@@ -113,6 +116,8 @@ impl FactoryComponent for Workspaces {
                         live_thumbnails: init.live_thumbnails,
                         #[cfg(feature = "live_windows")]
                         live_thumbnails_icons: init.live_thumbnails_icons,
+                        #[cfg(feature = "live_windows")]
+                        thumbnail: init.thumbnails.get(id).cloned(),
                     });
                 }
             }

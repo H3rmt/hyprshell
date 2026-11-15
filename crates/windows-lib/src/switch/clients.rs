@@ -1,9 +1,9 @@
 use crate::icon::set_icon;
+use crate::label::client_label;
 use core_lib::{ClientData, ClientId, MonitorData};
 use relm4::adw::gtk;
 use relm4::adw::prelude::*;
 use relm4::gtk::gdk;
-use relm4::gtk::pango;
 use relm4::prelude::*;
 
 /// Clients component for `FlowBox` parent (non-workspace mode)
@@ -34,6 +34,9 @@ pub struct ClientsInit {
     pub scale: f64,
     #[cfg(feature = "live_windows")]
     pub live_thumbnails: bool,
+    /// Previous thumbnail of this client, shown until a fresh capture arrives
+    #[cfg(feature = "live_windows")]
+    pub thumbnail: Option<gdk::Texture>,
 }
 
 #[derive(Debug)]
@@ -55,18 +58,8 @@ impl FactoryComponent for Clients {
                 set_cursor_from_name: Some("pointer"),
                 set_width_request: scale(self.monitor_data.width, self.scale),
                 set_height_request: scale(self.monitor_data.height, self.scale),
+                #[name(frame)]
                 gtk::Frame {
-                    #[wrap(Some)]
-                    set_label_widget = &gtk::Label {
-                        set_overflow: gtk::Overflow::Visible,
-                        set_margin_start: 6,
-                        set_ellipsize: pango::EllipsizeMode::End,
-                        set_label: if self.data.title.trim().is_empty() {
-                            &self.data.class
-                        } else {
-                            &self.data.title
-                        },
-                    },
                     set_label_align: 0.5,
                     if self.live_thumbnails {
                         #[name(picture)]
@@ -90,13 +83,17 @@ impl FactoryComponent for Clients {
 
     fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
         // trace!("self {}x{}", init.data.width, init.data.height);
+        #[cfg(feature = "live_windows")]
+        let paintable: Option<gdk::Paintable> = init.thumbnail.map(Cast::upcast);
+        #[cfg(not(feature = "live_windows"))]
+        let paintable = None;
         Self {
             active: false,
             data: init.data,
             monitor_data: init.monitor_data,
             id: init.id,
             scale: init.scale,
-            paintable: None,
+            paintable,
             #[cfg(feature = "live_windows")]
             live_thumbnails: init.live_thumbnails,
             #[cfg(not(feature = "live_windows"))]
@@ -112,6 +109,9 @@ impl FactoryComponent for Clients {
         _sender: FactorySender<Self>,
     ) -> Self::Widgets {
         let widgets = view_output!();
+        widgets
+            .frame
+            .set_label_widget(Some(&client_label(&self.data)));
 
         if !self.live_thumbnails {
             // Set the icon for this client
