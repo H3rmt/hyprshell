@@ -103,6 +103,7 @@ This mode displays the windows sorted by their most recent access. This option i
     - **current_workspace:** Only includes windows of the current workspace.
     - **current_monitor:** Only includes windows of the current monitor.
 - **switch_workspaces:**_[boolean]_ Switch between workspaces in the Switch mode instead of windows.
+- **show_on_all_monitors:**_[boolean]_ Show a copy of the Switch mode on every monitor instead of only the focused one. The copies follow the selection; only the copy on the focused monitor takes keyboard and mouse input.
 
 # CSS
 

@@ -233,6 +233,7 @@ in
           ])) [ "current_monitor" ];
           switch_workspaces = mkOpt "Switch workspaces" bool false;
           kill_key = mkOpt "Key to kill window" str "q";
+          show_on_all_monitors = mkOpt "Show the switch on every monitor" bool false;
           exclude_workspaces = mkOpt "Exclude workspaces regex" str "";
         };
         switch_2 = {
@@ -250,6 +251,7 @@ in
           ])) [ "current_monitor" ];
           switch_workspaces = mkOpt "Switch workspaces" bool false;
           kill_key = mkOpt "Key to kill window" str "q";
+          show_on_all_monitors = mkOpt "Show the switch on every monitor" bool false;
           exclude_workspaces = mkOpt "Exclude workspaces regex" str "";
         };
       };

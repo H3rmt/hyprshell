@@ -99,6 +99,7 @@ impl TryFrom<Switch> for crate::Switch {
             switch_workspaces: value.switch_workspaces,
             exclude_workspaces: value.exclude_workspaces,
             kill_key: value.kill_key,
+            show_on_all_monitors: value.show_on_all_monitors,
         })
     }
 }
@@ -122,6 +123,7 @@ impl From<crate::Switch> for Switch {
             switch_workspaces: value.switch_workspaces,
             exclude_workspaces: value.exclude_workspaces,
             kill_key: value.kill_key,
+            show_on_all_monitors: value.show_on_all_monitors,
         }
     }
 }
