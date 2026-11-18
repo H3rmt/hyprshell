@@ -20,7 +20,9 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
-use tracing::{debug, error, trace, warn};
+#[cfg(feature = "live_windows")]
+use tracing::warn;
+use tracing::{debug, error, trace};
 
 const KILL_TIMEOUT: Duration = Duration::from_millis(200);
 #[cfg(feature = "live_windows")]
@@ -341,6 +343,8 @@ impl OverviewRoot {
         }
     }
 
+    // Capture cleanup needs mutable access only when thumbnails are compiled in.
+    #[cfg_attr(not(feature = "live_windows"), allow(clippy::needless_pass_by_ref_mut))]
     fn close_overview(&mut self, do_switch: bool) {
         for window in self.windows.values() {
             window.emit(OverviewWindowInput::CloseOverview);

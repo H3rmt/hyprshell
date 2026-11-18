@@ -7,6 +7,7 @@ use hyprland::data::{
     Animations, Binds, Client, Clients, Monitor, Monitors, Workspace, Workspaces,
 };
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
+use hyprshell_hyprland as hyprland;
 
 fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();

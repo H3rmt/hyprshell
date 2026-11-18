@@ -2286,6 +2286,7 @@ dependencies = [
  "fragile",
  "futures",
  "gtk4",
+ "hyprshell-relm4-components",
  "libadwaita",
  "libpanel",
  "once_cell",

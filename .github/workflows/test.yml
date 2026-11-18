@@ -1,6 +1,8 @@
 name: test
 
 on:
+  pull_request:
+    branches: [hyprshell]
   push:
     branches-ignore:
       - "release-please-**"
@@ -12,20 +14,28 @@ concurrency:
 
 jobs:
   check-nix:
-    name: Run Nix Flake Check
+    name: Rust checks
     runs-on: "ubuntu-26.04"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           sudo apt update
-          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection libgbm-dev zstd libdbus-1-dev
+          sudo apt -y install --no-install-recommends meson ninja-build python3 valac libgtk-4-dev libadwaita-1-dev libpango1.0-dev libgtk4-layer-shell-dev gobject-introspection libgbm-dev zstd libdbus-1-dev libssl-dev shellcheck
           rustup default stable
 
           failed=0
-          cargo build || failed=1
+          shellcheck scripts/*.sh scripts/ci/*.sh || failed=1
+          cargo build --locked || failed=1
           cargo xtask cmd check -v --locked || failed=1
+          cargo clippy --locked --workspace --all-targets --no-deps -- -D warnings || failed=1
+          cargo clippy --locked --no-default-features --all-targets --no-deps \
+            -p hyprshell -p hyprshell-windows-lib -p hyprshell-exec-lib -p hyprshell-xtask \
+            -- -D warnings || failed=1
           cargo xtask cmd lint -v || failed=1
           cargo xtask cmd test -v --no-nextest --locked || failed=1
+          test_runtime=$(mktemp -d)
+          trap 'rm -rf -- "$test_runtime"' EXIT
+          XDG_RUNTIME_DIR="$test_runtime" cargo test --locked -p hyprshell-wl-clipboard-rs --lib -- --test-threads=2 || failed=1
           exit "$failed"
 
       # run: nix build '.#checks.x86_64-linux.hyprshell-check-nix-configs' -L

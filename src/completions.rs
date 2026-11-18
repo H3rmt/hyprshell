@@ -17,7 +17,7 @@ pub fn generate(shell: &str, path: Option<PathBuf>, delete: bool) -> anyhow::Res
             path.push("hyprshell.bash");
             if delete {
                 remove_file(&path)
-                    .with_context(|| format!("failed to remove file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to remove file: {}", path.display()))?;
                 info!(
                     "Removed existing bash completion script at: {}",
                     path.display()
@@ -25,18 +25,18 @@ pub fn generate(shell: &str, path: Option<PathBuf>, delete: bool) -> anyhow::Res
             } else {
                 aot::generate(aot::Bash, cli, "hyprshell", &mut buffer);
                 write(&path, buffer)
-                    .with_context(|| format!("failed to write to file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to write to file: {}", path.display()))?;
                 info!("Generated bash completion script at: {}", path.display());
             }
         }
         "zsh" => {
             let mut path = path.unwrap_or_else(|| "/usr/share/zsh/site-functions".into());
             create_dir_all(&path)
-                .with_context(|| format!("failed to create directory: {}", &path.display()))?;
+                .with_context(|| format!("failed to create directory: {}", path.display()))?;
             path.push("_hyprshell");
             if delete {
                 remove_file(&path)
-                    .with_context(|| format!("failed to remove file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to remove file: {}", path.display()))?;
                 info!(
                     "Removed existing zsh completion script at: {}",
                     path.display()
@@ -44,18 +44,18 @@ pub fn generate(shell: &str, path: Option<PathBuf>, delete: bool) -> anyhow::Res
             } else {
                 aot::generate(aot::Zsh, cli, "hyprshell", &mut buffer);
                 write(&path, buffer)
-                    .with_context(|| format!("failed to write to file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to write to file: {}", path.display()))?;
                 info!("Generated zsh completion script at: {}", path.display());
             }
         }
         "fish" => {
             let mut path = path.unwrap_or_else(|| "/usr/share/fish/vendor_completions.d".into());
             create_dir_all(&path)
-                .with_context(|| format!("failed to create directory: {}", &path.display()))?;
+                .with_context(|| format!("failed to create directory: {}", path.display()))?;
             path.push("hyprshell.fish");
             if delete {
                 remove_file(&path)
-                    .with_context(|| format!("failed to remove file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to remove file: {}", path.display()))?;
                 info!(
                     "Removed existing fish completion script at: {}",
                     path.display()
@@ -63,7 +63,7 @@ pub fn generate(shell: &str, path: Option<PathBuf>, delete: bool) -> anyhow::Res
             } else {
                 aot::generate(aot::Fish, cli, "hyprshell", &mut buffer);
                 write(&path, buffer)
-                    .with_context(|| format!("failed to write to file: {}", &path.display()))?;
+                    .with_context(|| format!("failed to write to file: {}", path.display()))?;
                 info!("Generated fish completion script at: {}", path.display());
             }
         }

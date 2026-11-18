@@ -4,6 +4,7 @@
 use hyprland::dispatch;
 use hyprland::dispatch::DispatchType::*;
 use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
+use hyprshell_hyprland as hyprland;
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
