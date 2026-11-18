@@ -1,4 +1,4 @@
-use crate::Config;
+use crate::{Config, Switch};
 use std::fmt::Write;
 use std::path::Path;
 
@@ -101,11 +101,39 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
         } else {
             let _ = builder.write_str(&format!("{italic}<Switch mode disabled>{reset}\n"));
         }
+
+        if let Some(switch_2) = &windows.switch_2 {
+            let _ = builder.write_str(&explain_second_switch(switch_2, bold, blue, reset));
+        }
     } else {
         let _ = builder.write_str(&format!("{italic}<Windows disabled>{reset}\n"));
     }
 
     builder
+}
+
+/// The second switcher, `windows.switch_2`, and whatever it is narrowed to.
+fn explain_second_switch(switch: &Switch, bold: &str, blue: &str, reset: &str) -> String {
+    let mut scope = Vec::new();
+    if switch.filter_by_same_class {
+        scope.push("of the focused application");
+    }
+    if switch.filter_by_current_workspace {
+        scope.push("on the current workspace");
+    }
+    if switch.filter_by_current_monitor {
+        scope.push("on the current monitor");
+    }
+    let scope = if scope.is_empty() {
+        String::new()
+    } else {
+        format!(" limited to windows {}", scope.join(" and "))
+    };
+
+    format!(
+        "Press {bold}{blue}{}{reset} + {bold}{blue}{}{reset} and hold {bold}{blue}{}{reset} for the second switcher{scope}. Press {bold}{blue}{}{reset} and {blue}shift{reset} + {bold}{blue}{}{reset} to select a different window, release {bold}{blue}{}{reset} to close the window.\n",
+        switch.modifier, switch.key, switch.modifier, switch.key, switch.key, switch.modifier,
+    )
 }
 
 #[cfg(test)]
