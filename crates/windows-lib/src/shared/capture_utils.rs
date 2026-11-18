@@ -1,11 +1,41 @@
 use std::collections::HashMap;
-use std::os::fd::AsRawFd;
+use std::os::fd::{AsRawFd, OwnedFd};
 
 use relm4::adw::gtk;
 use tracing::{trace, warn};
 
 use core_lib::ClientId;
 use exec_lib::wayland_capture::{CaptureManager, ObjectId};
+
+use gtk::glib::{ffi as glib_ffi, gobject_ffi, object::ObjectType};
+
+/// Key attached to the texture so the dmabuf fd stays open for as long as the
+/// `GdkTexture` is alive.
+fn attach_dmabuf_fd(texture: &gtk::gdk::Texture, fd: OwnedFd) {
+    static DMABUF_FD_KEY: &std::ffi::CStr = c"hyprshell-windows-lib:dmabuf-fd";
+
+    unsafe extern "C" fn drop_owned_fd(data: glib_ffi::gpointer) {
+        if !data.is_null() {
+            // Safety: the box was created in attach_dmabuf_fd and is freed
+            // exactly once, when the object's qdata is destroyed.
+            unsafe {
+                drop(Box::from_raw(data as *mut OwnedFd));
+            }
+        }
+    }
+
+    // Safety: the texture outlives this call, and the boxed fd is only
+    // released by the object's qdata destroy notify when the texture dies.
+    unsafe {
+        let obj = texture.as_ptr() as *mut gobject_ffi::GObject;
+        gobject_ffi::g_object_set_data_full(
+            obj,
+            DMABUF_FD_KEY.as_ptr(),
+            Box::into_raw(Box::new(fd)) as glib_ffi::gpointer,
+            Some(drop_owned_fd),
+        );
+    }
+}
 
 pub fn refresh_captures(
     mgr: &mut CaptureManager,
@@ -79,7 +109,10 @@ pub fn refresh_captures(
                         .build()
                 };
                 match tex {
-                    Ok(t) => Some(t),
+                    Ok(t) => {
+                        attach_dmabuf_fd(&t, output.fd);
+                        Some(t)
+                    }
                     Err(e) => {
                         warn!("Failed to create texture for client {client_id}: {e}");
                         None
