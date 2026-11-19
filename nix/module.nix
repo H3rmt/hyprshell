@@ -166,22 +166,14 @@ in
                         ])
                         (submodule {
                           options = {
-                            custom = lib.mkOption {
-                              description = "Custom action object";
-                              type = submodule {
-                                options = {
-                                  names = lib.mkOption {
-                                    description = "Names for the action";
-                                    type = listOf str;
-                                    default = [ ];
-                                  };
-                                  details = mkOpt "Details about the action" str null;
-                                  command = mkOpt "Command to run" str null;
-                                  icon = mkOpt "Icon name" str null;
-                                };
-                              };
-                              default = { };
+                            names = lib.mkOption {
+                              description = "Names for the action";
+                              type = listOf str;
+                              default = [ ];
                             };
+                            details = mkOpt "Details about the action" str null;
+                            command = mkOpt "Command to run" str null;
+                            icon = mkOpt "Icon name" str null;
                           };
                         })
                     ))
