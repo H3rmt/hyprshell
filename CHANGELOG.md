@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.10.11](https://github.com/H3rmt/hyprshell/compare/v4.10.10...v4.10.11) (2026-11-19)
+
+
+### Bug Fixes
+
+* fix release of keys in switch mode ([2aef1d3](https://github.com/H3rmt/hyprshell/commit/2aef1d31fcab5102dd086e1c3d512f55e0d17591))
+
 ## [4.10.10](https://github.com/H3rmt/hyprshell/compare/v4.10.9...v4.10.10) (2026-11-19)
 
 
