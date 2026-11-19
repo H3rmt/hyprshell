@@ -38,6 +38,7 @@ rec {
     buildInputs = [
       pkgs.gtk4
       pkgs.libadwaita
+      pkgs.libgbm
       pkgs.gtk4-layer-shell
       pkgs.libnotify
       pkgs.dbus
