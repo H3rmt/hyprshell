@@ -193,25 +193,21 @@ in
                       "shutdown"
                       "suspend"
                       {
-                        custom = {
-                          names = [
-                            "Kill"
-                            "Stop"
-                          ];
-                          details = "Kill or stop a process by name";
-                          command = "pkill \"{}\" && notify-send hyprshell \"stopped {}\"";
-                          icon = "remove";
-                        };
+                        names = [
+                          "Kill"
+                          "Stop"
+                        ];
+                        details = "Kill or stop a process by name";
+                        command = "pkill \"{}\" && notify-send hyprshell \"stopped {}\"";
+                        icon = "remove";
                       }
                       {
-                        custom = {
-                          names = [
-                            "Reload Hyprshell"
-                          ];
-                          details = "Reload Hyprshell";
-                          command = "sleep 1; hyprshell socat '\"Restart\"'";
-                          icon = "system-restart";
-                        };
+                        names = [
+                          "Reload Hyprshell"
+                        ];
+                        details = "Reload Hyprshell";
+                        command = "sleep 1; hyprshell socat '\"Restart\"'";
+                        icon = "system-restart";
                       }
                     ];
               };
