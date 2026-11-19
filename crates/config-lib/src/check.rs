@@ -1,4 +1,4 @@
-use crate::Config;
+use crate::{Config, Modifier};
 use anyhow::bail;
 
 pub fn check(config: &Config) -> anyhow::Result<()> {
@@ -19,6 +19,17 @@ pub fn check(config: &Config) -> anyhow::Result<()> {
         bail!(
             "If a modifier key is used to open it must include _l or _r at the end. (e.g. super_l, alt_r, etc)\nctrl_l / _r is NOT a valid modifier key, only control_l / _r is"
         );
+    }
+
+    if let Some(windows) = &config.windows {
+        for (name, switch) in [
+            ("windows.switch", windows.switch.as_ref()),
+            ("windows.switch_2", windows.switch_2.as_ref()),
+        ] {
+            if switch.is_some_and(|switch| switch.modifier == Modifier::None) {
+                bail!("{name}.modifier cannot be 'none': the switcher requires a modifier key");
+            }
+        }
     }
 
     if let Some(l) = &config
@@ -119,6 +130,32 @@ mod tests {
             .expect("config option missing");
         overview.key = Box::from("super");
         assert!(check(&config).is_err());
+    }
+
+    #[test]
+    fn test_switch_requires_modifier() {
+        let mut config = full();
+        let windows = config.windows.as_mut().unwrap();
+        windows.switch.as_mut().unwrap().modifier = Modifier::None;
+        assert!(
+            check(&config)
+                .unwrap_err()
+                .to_string()
+                .contains("windows.switch.modifier")
+        );
+
+        let windows = config.windows.as_mut().unwrap();
+        windows.switch = None;
+        windows.switch_2 = Some(Switch {
+            modifier: Modifier::None,
+            ..Switch::default()
+        });
+        assert!(
+            check(&config)
+                .unwrap_err()
+                .to_string()
+                .contains("windows.switch_2.modifier")
+        );
     }
 
     #[test_log::test]
