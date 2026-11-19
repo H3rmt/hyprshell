@@ -166,11 +166,7 @@ in
                         ])
                         (submodule {
                           options = {
-                            names = lib.mkOption {
-                              description = "Names for the action";
-                              type = listOf str;
-                              default = [ ];
-                            };
+                            name = mkOpt "Name for the action" str null;
                             details = mkOpt "Details about the action" str null;
                             command = mkOpt "Command to run" str null;
                             icon = mkOpt "Icon name" str null;
@@ -185,18 +181,13 @@ in
                       "shutdown"
                       "suspend"
                       {
-                        names = [
-                          "Kill"
-                          "Stop"
-                        ];
+                        name = "Kill";
                         details = "Kill or stop a process by name";
                         command = "pkill \"{}\" && notify-send hyprshell \"stopped {}\"";
                         icon = "remove";
                       }
                       {
-                        names = [
-                          "Reload Hyprshell"
-                        ];
+                        name = "Reload Hyprshell";
                         details = "Reload Hyprshell";
                         command = "sleep 1; hyprshell socat '\"Restart\"'";
                         icon = "system-restart";
