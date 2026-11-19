@@ -99,6 +99,10 @@ const NEW_VERSION_INFOS: &[(&str, &str)] = &[
         "4.10.9",
         "Version 4.10.9 updates hyprshell to use new hyprctl workspace format.",
     ),
+    (
+        "4.10.10",
+        "Version 4.10.10 fixes the switcher being stuck when releasing modifier key.",
+    ),
 ];
 
 /// Checks if the current version is newer than the cached version.

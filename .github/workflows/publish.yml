@@ -46,33 +46,34 @@ jobs:
       - name: Publish to crates.io
         run: |
           set -euxo pipefail
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git fetch --tags origin hyprshell-release
           git checkout ${{ github.ref }} -b hyprshell-release
           git log -1 --pretty=%B
           git push origin HEAD:hyprshell-release --force
           git switch hyprshell-release
-          
+
           current_sha=$(git rev-parse HEAD)
           jq --arg sha "$current_sha" '.["last-release-sha"]=$sha' release-please-config.json > tmp.json
           mv tmp.json release-please-config.json
           git add release-please-config.json
           git commit -m "chore(release): update last-release-sha"
           git push origin hyprshell-release
-          
+
           git tag --delete ${{ github.ref_name }}
           git push --delete origin ${{ github.ref_name }}
-          
+
           version=$(echo ${{ github.ref_name }} | sed 's/v//')
           cargo ws publish custom $version -m "chore(release): bump versions to $version" --no-individual-tags --allow-branch hyprshell-release --exact --yes --force "hyprshell*" --token ${{ secrets.CRATES_TOKEN }}
-          
+
           # push current branch to hyprshell branch (for development)
-          git fetch origin hyprshell
-          git push origin HEAD:hyprshell
-          
+          # deactivated because sometimes releases are done from other branches
+          # git fetch origin hyprshell
+          # git push origin HEAD:hyprshell
+
           gh release edit ${{ github.ref_name }} --latest --draft=false --title "hyprshell ${{ github.ref_name }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

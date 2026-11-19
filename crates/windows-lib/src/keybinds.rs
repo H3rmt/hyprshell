@@ -1,17 +1,17 @@
 use config_lib::Windows;
-use core_lib::binds::{ExecBind, generate_transfer_socat};
+use core_lib::binds::{ExecBind, ExecBindBehavior, generate_transfer_socat};
 use core_lib::transfer::{CloseSwitch, ExternalTransferType, OpenSwitch};
 
 #[must_use]
 pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
     let mut binds = Vec::new();
+
     if let Some(overview) = &windows.overview {
         binds.push(ExecBind {
             mods: vec![overview.modifier.to_str()],
             key: overview.key.clone(),
             exec: generate_transfer_socat(&ExternalTransferType::OpenOverview),
-            release: true,
-            transparent: false,
+            behavior: ExecBindBehavior::Release,
             desc: format!(
                 "Open Overview with {} + {}",
                 overview.modifier, overview.key
@@ -25,8 +25,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: false,
             })),
-            release: false,
-            transparent: false,
+            behavior: ExecBindBehavior::Repeating,
             desc: format!("Open Switch with {} + {}", switch.modifier, switch.key),
         });
         binds.push(ExecBind {
@@ -35,8 +34,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: true,
             })),
-            release: false,
-            transparent: false,
+            behavior: ExecBindBehavior::Repeating,
             desc: format!("Open Switch (reverse) with {} + `", switch.modifier),
         });
         binds.push(ExecBind {
@@ -45,58 +43,53 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: true,
             })),
-            release: false,
-            transparent: false,
+            behavior: ExecBindBehavior::Repeating,
             desc: format!(
                 "Open Switch (reverse) with {} + shift + {}",
                 switch.modifier, switch.key
             ),
         });
+
         binds.push(ExecBind {
-            mods: vec![switch.modifier.to_str()],
+            mods: vec![],
             key: switch.modifier.to_keysym_l().into(),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
-            release: true,
-            transparent: true,
-            desc: format!(
-                "Close Switch (reverse) with {} + {}_l",
-                switch.modifier, switch.modifier,
-            ),
+            // The modifier mask at release can differ from the mask at press
+            // (e.g. Tab was already held before Alt). Match the keysym instead.
+            behavior: ExecBindBehavior::TransparentReleaseIgnoringMods {
+                unless_keys_down: None,
+            },
+            desc: format!("Close Switch on {}_l release", switch.modifier),
         });
         binds.push(ExecBind {
-            mods: vec![switch.modifier.to_str()],
+            mods: vec![],
             key: switch.modifier.to_keysym_r().into(),
             exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
                 switch: true,
             })),
-            release: true,
-            transparent: true,
+            behavior: ExecBindBehavior::TransparentReleaseIgnoringMods {
+                unless_keys_down: None,
+            },
+            desc: format!("Close Switch on {}_r release", switch.modifier),
+        });
+        binds.push(ExecBind {
+            mods: vec![],
+            key: switch.key.clone(),
+            exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
+                switch: true,
+            })),
+            behavior: ExecBindBehavior::TransparentReleaseIgnoringMods {
+                unless_keys_down: Some((
+                    switch.modifier.to_keysym_l(),
+                    switch.modifier.to_keysym_r(),
+                )),
+            },
             desc: format!(
-                "Close Switch (reverse) with {} + {}_r",
-                switch.modifier, switch.modifier,
+                "Close Switch on {} release if {} is up",
+                switch.key, switch.modifier
             ),
-        });
-        binds.push(ExecBind {
-            mods: vec!["SHIFT"],
-            key: Box::from("Shift_L"),
-            exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
-                switch: true,
-            })),
-            release: true,
-            transparent: true,
-            desc: "Close Switch (reverse) with shift + shift_l".to_string(),
-        });
-        binds.push(ExecBind {
-            mods: vec!["SHIFT"],
-            key: Box::from("Shift_R"),
-            exec: generate_transfer_socat(&ExternalTransferType::CloseSwitch(CloseSwitch {
-                switch: true,
-            })),
-            release: true,
-            transparent: true,
-            desc: "Close Switch (reverse) with shift + shift_r".to_string(),
         });
     }
 
