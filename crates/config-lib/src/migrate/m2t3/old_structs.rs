@@ -34,8 +34,8 @@ pub struct Overview {
     pub launcher: Launcher,
     #[default = "super_l"]
     pub key: Box<str>,
-    #[default(crate::Modifier::Super)]
-    pub modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Super)]
+    pub modifier: crate::io::Modifier,
     #[default(Vec::new())]
     pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
@@ -47,8 +47,8 @@ pub struct Overview {
 pub struct Launcher {
     #[default(None)]
     pub default_terminal: Option<Box<str>>,
-    #[default(crate::Modifier::Ctrl)]
-    pub launch_modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Ctrl)]
+    pub launch_modifier: crate::io::Modifier,
     #[default = 650]
     pub width: u32,
     #[default = 5]

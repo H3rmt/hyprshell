@@ -1,9 +1,9 @@
-use core_lib::binds::{ExecBind, ExecBindBehavior};
+use core_lib::binds::{ExecBind, ExecBindBehavior, Mod};
 use core_lib::{LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, SWITCH_NAMESPACE};
-use hyprland::bind_new::{Binding, Flag, Mod};
+use hyprland::bind_new::{Binding, Flag};
 use hyprland::dispatch_new::Dispatch;
 use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
-use tracing::{trace, warn};
+use tracing::trace;
 
 pub fn apply_layerrules() -> anyhow::Result<()> {
     // TODO add option to enable blur
@@ -36,26 +36,12 @@ pub fn apply_layerrules() -> anyhow::Result<()> {
 }
 
 pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
-    let binds: Vec<_> = bind
-        .mods
-        .iter()
-        .filter_map(|m| match m.to_lowercase().as_str() {
-            "alt" => Some(Mod::Alt),
-            "control" | "ctrl" => Some(Mod::Ctrl),
-            "super" | "win" => Some(Mod::Super),
-            "shift" => Some(Mod::Shift),
-            _ => {
-                warn!("unknown mod: {m}");
-                None
-            }
-        })
-        .collect();
     let desc = format!("hyprshell-keybind: {}", bind.desc);
 
     let exec_prefix = if std::env::var_os("HYPRSHELL_ADD_KEYBIND_NOTIFICATIONS").is_some() {
         format!(
             "notify-send \"{} + {:?}\" \"{}\" -t 1000 -a hyprshell-settings && ",
-            bind.key, binds, bind.desc
+            bind.key, bind.mods, bind.desc
         )
     } else {
         String::new()
@@ -65,7 +51,16 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
     let dispatcher = dispatcher_for_bind(bind, exec);
 
     let binding = Binding {
-        mods: binds,
+        mods: bind
+            .mods
+            .iter()
+            .map(|m| match m {
+                Mod::Alt => hyprland::bind_new::Mod::Alt,
+                Mod::Ctrl => hyprland::bind_new::Mod::Ctrl,
+                Mod::Super => hyprland::bind_new::Mod::Super,
+                Mod::Shift => hyprland::bind_new::Mod::Shift,
+            })
+            .collect(),
         key: bind.key.to_string(),
         flags: {
             let mut flags = vec![Flag::AutoConsuming, Flag::Description(desc)];

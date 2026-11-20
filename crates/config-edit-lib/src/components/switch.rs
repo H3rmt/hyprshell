@@ -29,7 +29,7 @@ pub enum SwitchInput {
 pub enum SwitchOutput {
     Enabled(Option<io::Switch>),
     Key(String),
-    Modifier(config_lib::Modifier),
+    Modifier(config_lib::io::Modifier),
     FilterSameClass(bool),
     FilterWorkspace(bool),
     FilterMonitor(bool),

@@ -3,16 +3,13 @@ mod edit_sync;
 mod explain;
 #[cfg(not(feature = "disable_migrations"))]
 mod migrate;
-mod modifier;
 mod structs;
 pub mod style;
 pub mod workarrounds;
 
-pub use check::check;
 pub use explain::explain;
 pub use io::load::load_and_migrate_config;
 pub use io::save::write_io_config;
-pub use modifier::*;
 pub use structs::*;
 
 #[cfg(feature = "expose_raw_io")]

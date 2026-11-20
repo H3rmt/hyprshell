@@ -26,9 +26,13 @@ pub fn explain(config: &Config, config_file: Option<&Path>, enable_color: bool) 
     if let Some(windows) = &config.windows {
         if let Some(overview) = &windows.overview {
             let _ = builder.write_str(&format!(
-                "Use {bold}{blue}{}{reset} + {bold}{blue}{}{reset} to open the Overview. Use {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, press {blue}return{reset} to switch\n\
+                "Use {}{bold}{blue}{}{reset} to open the Overview. Use {blue}tab{reset} and {blue}grave{reset} / {blue}shift{reset} + {blue}tab{reset} to select a different window, press {blue}return{reset} to switch\n\
                 You can also use the {blue}arrow keys{reset} or {bold}{blue}{}{reset} + vim keys to navigate the workspaces. Use {blue}Esc{reset} to close the overview.\n",
-                overview.modifier,
+                if let Some(r#mod) = overview.modifier {
+                  format!("{bold}{blue}{}{reset} + ", r#mod)
+                } else {
+                  String::new()
+                },
                 overview.key,
                 overview.launcher.launch_modifier
             ));

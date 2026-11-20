@@ -91,8 +91,9 @@ clap = { version = "4.6.1", features = ["derive"] }
 clap_complete = "4.6.5"
 
 relm4 = { path = "dep-crates/relm4", package = "hyprshell-relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "=4.11.0-alpha.1" }
-#relm4 = { package = "relm4", default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
+# relm4 = { default-features = false, features = ["libadwaita", "macros", "gnome_48"], version = "0.11.0" }
 relm4-components = { path = "dep-crates/relm4-components", package = "hyprshell-relm4-components", version = "=4.11.0-alpha.1" }
+# relm4-components = { version = "0.11.0" }
 gtk4-layer-shell = { version = "0.8.0" }
 
 config-lib = { path = "crates/config-lib", package = "hyprshell-config-lib", version = "=4.11.0-alpha.1" }

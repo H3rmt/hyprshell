@@ -1,9 +1,7 @@
-use crate::{
-    Modifier,
-    edit_sync::{sync_document, to_pretty_document},
-};
+use crate::edit_sync::{sync_document, to_pretty_document};
 use anyhow::Context;
-use serde::{Deserialize, Serialize, de::IntoDeserializer};
+use serde::de::Visitor;
+use serde::{Deserialize, Serialize, Serializer, de::IntoDeserializer};
 use smart_default::SmartDefault;
 use std::path::Path;
 
@@ -298,4 +296,64 @@ pub enum FilterBy {
     SameClass,
     CurrentWorkspace,
     CurrentMonitor,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum Modifier {
+    Alt,
+    Ctrl,
+    Super,
+    None,
+}
+
+impl<'de> Deserialize<'de> for Modifier {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct ModVisitor;
+        impl Visitor<'_> for ModVisitor {
+            type Value = Modifier;
+            fn expecting(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+                fmt.write_str("one of: alt, ctrl, super, none")
+            }
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                value
+                    .try_into()
+                    .map_err(|_e| E::unknown_variant(value, &["alt", "ctrl", "super", "none"]))
+            }
+        }
+        deserializer.deserialize_str(ModVisitor)
+    }
+}
+
+impl Serialize for Modifier {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(match self {
+            Self::Alt => "alt",
+            Self::Ctrl => "ctrl",
+            Self::Super => "super",
+            Self::None => "none",
+        })
+    }
+}
+
+impl TryFrom<&str> for Modifier {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().as_str() {
+            "alt" => Ok(Self::Alt),
+            "ctrl" | "control" => Ok(Self::Ctrl),
+            "super" | "win" | "windows" | "meta" => Ok(Self::Super),
+            "none" => Ok(Self::None),
+            other => anyhow::bail!("Unknown modifier: {other}"),
+        }
+    }
 }

@@ -34,8 +34,8 @@ pub struct Overview {
     pub key: Box<str>,
     #[default = 430]
     pub top_offset: u16,
-    #[default(crate::Modifier::Super)]
-    pub modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Super)]
+    pub modifier: crate::io::Modifier,
     #[default(Vec::new())]
     pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
@@ -49,8 +49,8 @@ pub struct Overview {
 pub struct Launcher {
     #[default(None)]
     pub default_terminal: Option<Box<str>>,
-    #[default(crate::Modifier::Ctrl)]
-    pub launch_modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Ctrl)]
+    pub launch_modifier: crate::io::Modifier,
     #[default = 650]
     pub width: u16,
     #[default = 5]
@@ -172,8 +172,8 @@ pub struct CalcPluginConfig {
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Switch {
-    #[default(crate::Modifier::Alt)]
-    pub modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Alt)]
+    pub modifier: crate::io::Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
     #[default(vec![crate::io::FilterBy::CurrentMonitor])]

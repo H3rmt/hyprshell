@@ -1,4 +1,4 @@
-use crate::Modifier;
+use core_lib::Modifier;
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -42,7 +42,7 @@ pub struct Overview {
     pub launcher: Launcher,
     pub key: Box<str>,
     pub top_offset: u16,
-    pub modifier: Modifier,
+    pub modifier: Option<Modifier>,
     pub filter_by_same_class: bool,
     pub filter_by_current_workspace: bool,
     pub filter_by_current_monitor: bool,

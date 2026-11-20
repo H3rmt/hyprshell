@@ -5,7 +5,7 @@ use relm4_components::alert::{Alert, AlertMsg, AlertResponse, AlertSettings};
 #[derive(Debug)]
 pub struct KeyboardShortcut {
     key: Option<String>,
-    modifier: Option<config_lib::Modifier>,
+    modifier: Option<config_lib::io::Modifier>,
     is_visible: bool,
     dialog: Controller<Alert>,
     entry: gtk::Label,
@@ -14,15 +14,18 @@ pub struct KeyboardShortcut {
 
 #[derive(Debug)]
 pub enum KeyboardShortcutInput {
-    ShowKeyboardShortcutDialog(Option<(config_lib::Modifier, String)>, Option<gtk::Widget>),
+    ShowKeyboardShortcutDialog(
+        Option<(config_lib::io::Modifier, String)>,
+        Option<gtk::Widget>,
+    ),
 
     _HideKeyboardShortcut(bool),
     _UpdateKey(String),
-    _UpdateModifier(config_lib::Modifier),
+    _UpdateModifier(config_lib::io::Modifier),
 }
 #[derive(Debug)]
 pub enum KeyboardShortcutOutput {
-    SetKey(config_lib::Modifier, String),
+    SetKey(config_lib::io::Modifier, String),
     Abort,
 
     // send out instead of opening because

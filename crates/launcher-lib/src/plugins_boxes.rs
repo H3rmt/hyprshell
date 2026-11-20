@@ -9,7 +9,7 @@ use tracing::trace;
 pub struct LauncherPlugins {
     opt: PluginItem,
     enabled: bool,
-    launch_modifier: config_lib::Modifier,
+    launch_modifier: core_lib::Modifier,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -20,7 +20,7 @@ pub enum LauncherPluginsInput {
 #[derive(Debug)]
 pub struct LauncherPluginsInit {
     pub opt: PluginItem,
-    pub launch_modifier: config_lib::Modifier,
+    pub launch_modifier: core_lib::Modifier,
 }
 
 #[derive(Debug)]

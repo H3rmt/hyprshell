@@ -1,5 +1,5 @@
 use config_lib::Windows;
-use core_lib::binds::{ExecBind, ExecBindBehavior, generate_transfer_socat};
+use core_lib::binds::{ExecBind, ExecBindBehavior, Mod, generate_transfer_socat};
 use core_lib::transfer::{CloseSwitch, ExternalTransferType, OpenSwitch};
 
 #[must_use]
@@ -8,19 +8,24 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
 
     if let Some(overview) = &windows.overview {
         binds.push(ExecBind {
-            mods: vec![overview.modifier.to_str()],
+            mods: if let Some(m) = overview.modifier {
+                vec![m.into()]
+            } else {
+                vec![]
+            },
             key: overview.key.clone(),
             exec: generate_transfer_socat(&ExternalTransferType::OpenOverview),
             behavior: ExecBindBehavior::Release,
-            desc: format!(
-                "Open Overview with {} + {}",
-                overview.modifier, overview.key
-            ),
+            desc: if let Some(m) = overview.modifier {
+                format!("Open Overview with {} + {}", m, overview.key)
+            } else {
+                format!("Open Overview with {}", overview.key)
+            },
         });
     }
     if let Some(switch) = &windows.switch {
         binds.push(ExecBind {
-            mods: vec![switch.modifier.to_str()],
+            mods: vec![switch.modifier.into()],
             key: switch.key.clone(),
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: false,
@@ -29,7 +34,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             desc: format!("Open Switch with {} + {}", switch.modifier, switch.key),
         });
         binds.push(ExecBind {
-            mods: vec![switch.modifier.to_str()],
+            mods: vec![switch.modifier.into()],
             key: Box::from("grave"),
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: true,
@@ -38,7 +43,7 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
             desc: format!("Open Switch (reverse) with {} + `", switch.modifier),
         });
         binds.push(ExecBind {
-            mods: vec![switch.modifier.to_str(), "shift"],
+            mods: vec![switch.modifier.into(), Mod::Shift],
             key: switch.key.clone(),
             exec: generate_transfer_socat(&ExternalTransferType::OpenSwitch(OpenSwitch {
                 reverse: true,
@@ -99,7 +104,8 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config_lib::{Modifier, Switch};
+    use config_lib::Switch;
+    use core_lib::Modifier;
 
     #[test]
     fn modifier_release_binds_ignore_modifiers() {
@@ -125,10 +131,10 @@ mod tests {
             .iter()
             .find(|bind| bind.key.as_ref() == "Tab" && bind.behavior == ExecBindBehavior::Repeating)
             .unwrap();
-        assert_eq!(open.mods, ["alt"]);
+        assert_eq!(open.mods, [Mod::Alt]);
         assert!(binds.iter().any(|bind| {
             bind.key.as_ref() == "Tab"
-                && bind.mods == ["alt", "shift"]
+                && bind.mods == [Mod::Alt, Mod::Shift]
                 && bind.behavior == ExecBindBehavior::Repeating
         }));
 

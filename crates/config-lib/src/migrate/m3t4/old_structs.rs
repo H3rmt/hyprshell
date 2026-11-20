@@ -32,8 +32,8 @@ pub struct Overview {
     pub launcher: m4t5::Launcher,
     #[default = "Super_L"]
     pub key: Box<str>,
-    #[default(crate::Modifier::Super)]
-    pub modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Super)]
+    pub modifier: crate::io::Modifier,
     #[default(Vec::new())]
     pub filter_by: Vec<crate::io::FilterBy>,
     #[default = false]
@@ -46,8 +46,8 @@ pub struct Overview {
 #[serde(default, deny_unknown_fields)]
 #[allow(clippy::struct_field_names)]
 pub struct Switch {
-    #[default(crate::Modifier::Alt)]
-    pub modifier: crate::Modifier,
+    #[default(crate::io::Modifier::Alt)]
+    pub modifier: crate::io::Modifier,
     #[default = "Tab"]
     pub key: Box<str>,
     #[default(vec![crate::io::FilterBy::CurrentMonitor])]

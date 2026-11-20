@@ -1,4 +1,4 @@
-use config_lib::Modifier;
+use config_lib::io::Modifier;
 use relm4::gtk::gdk::{Cursor, Key, ModifierType};
 use relm4::gtk::prelude::*;
 use relm4::{adw, gtk};
@@ -103,11 +103,7 @@ pub fn handle_key_and_modifier(
         },
     };
 
-    let label = if modifier == Modifier::None {
-        key_name.to_string()
-    } else {
-        format!("{modifier} + {key_name}")
-    };
+    let label = mod_key_to_string(modifier, &key_name);
 
     Some((key_name.to_string(), modifier, label))
 }
@@ -125,19 +121,16 @@ pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
         _ => key,
     };
 
-    if modifier == Modifier::None {
-        key.to_string()
-    } else {
-        format!("<{modifier}>{key}")
+    match Option::<core_lib::Modifier>::from(modifier) {
+        Some(m) => format!("<{m}>{key}"),
+        None => key.to_string(),
     }
 }
 
-#[tracing::instrument(level = "trace", ret(level = "trace"))]
 pub fn mod_key_to_string(modifier: Modifier, key: &str) -> String {
-    if modifier == Modifier::None {
-        key.to_string()
-    } else {
-        format!("{modifier} + {key}")
+    match Option::<core_lib::Modifier>::from(modifier) {
+        Some(m) => format!("{m} + {key}"),
+        None => key.to_string(),
     }
 }
 

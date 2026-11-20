@@ -76,14 +76,7 @@ pub fn load_and_migrate_config(
     config_file: &Path,
     allow_migrate: bool,
 ) -> anyhow::Result<crate::Config> {
-    let config = load_and_migrate_io_config(config_file, allow_migrate)?;
-
-    let config: crate::Config = config
+    load_and_migrate_io_config(config_file, allow_migrate)?
         .try_into()
-        .context("Failed to convert config to internal format")?;
-
-    // TODO move the check into the try from io config to exposed config
-    crate::check(&config)?;
-
-    Ok(config)
+        .context("Failed to convert config to internal format")
 }

@@ -65,7 +65,7 @@ impl From<old_structs::Launcher> for m2t3::Launcher {
     }
 }
 
-impl From<old_structs::Modifier> for crate::Modifier {
+impl From<old_structs::Modifier> for crate::io::Modifier {
     fn from(value: old_structs::Modifier) -> Self {
         match value {
             old_structs::Modifier::Alt => Self::Alt,

@@ -4,9 +4,9 @@ use crate::plugins_boxes::{
     LauncherPlugins, LauncherPluginsInit, LauncherPluginsInput, LauncherPluginsOutput,
 };
 use crate::result::{LauncherResults, LauncherResultsInit, LauncherResultsOutput};
-use config_lib::{Launcher, Modifier};
+use config_lib::Launcher;
 use core_lib::transfer::Identifier;
-use core_lib::{Direction, LAUNCHER_NAMESPACE, WarnWithDetails};
+use core_lib::{Direction, LAUNCHER_NAMESPACE, Modifier, WarnWithDetails};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use relm4::adw::gdk::ModifierType;
 use relm4::adw::prelude::*;
@@ -399,13 +399,11 @@ fn handle_key(
         Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
         Modifier::Alt => modt == ModifierType::ALT_MASK,
         Modifier::Super => modt == ModifierType::SUPER_MASK,
-        Modifier::None => false,
     };
     let alt_launch_mod = match launcher.alt_launch_modifier {
         Modifier::Ctrl => modt == ModifierType::CONTROL_MASK,
         Modifier::Alt => modt == ModifierType::ALT_MASK,
         Modifier::Super => modt == ModifierType::SUPER_MASK,
-        Modifier::None => false,
     };
     trace!(
         "key: {}{:?}, mods: {:?}, launch_mod: {}, launch_modifier: {}, alt_launch_modifier: {}",
