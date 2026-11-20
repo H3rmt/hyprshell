@@ -1,7 +1,7 @@
 use anyhow::Context;
 use config_lib::Config;
 use core_lib::WarnWithDetails;
-use exec_lib::binds::{apply_exec_bind, apply_layerrules};
+use exec_lib::binds::{apply_exec_bind, apply_layerrules, remove_hyprshell_keybinds};
 use tracing::debug;
 
 pub fn configure_wm_initial() {
@@ -20,6 +20,8 @@ pub fn configure_wm(config: &Config) -> anyhow::Result<()> {
 }
 
 fn apply_binds(config: &Config) -> anyhow::Result<()> {
+    remove_hyprshell_keybinds().context("Failed to remove existing hyprshell keybinds")?;
+
     if let Some(windows) = &config.windows {
         for bind in windows_lib::generate_open_keybinds(windows) {
             apply_exec_bind(&bind).context("Failed to apply open keybinds for windows")?;

@@ -70,7 +70,9 @@ pub fn start(
     thread::spawn(move || {
         socket_handler(&external_event_sender);
     });
-    configure_wm_initial();
+    // only reloads hyprland at start
+    // previously removed old keybinds, now old keybinds are just searched and removed
+    // configure_wm_initial();
 
     let wayland_socket_index = env::var("WAYLAND_DISPLAY")
         .ok()

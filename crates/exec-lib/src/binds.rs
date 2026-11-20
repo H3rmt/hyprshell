@@ -1,9 +1,13 @@
 use core_lib::binds::{ExecBind, ExecBindBehavior, Mod};
 use core_lib::{LAUNCHER_NAMESPACE, OVERVIEW_NAMESPACE, SWITCH_NAMESPACE};
-use hyprland::bind_new::{Binding, Flag};
+use hyprland::bind_new::{Binding, Flag, Mod as HyprlandMod};
+use hyprland::data::Binds;
 use hyprland::dispatch_new::Dispatch;
+use hyprland::prelude::{HyprData, HyprDataVec};
 use hyprland::window_rule::{LayerEffect, LayerMatch, LayerRule};
 use tracing::trace;
+
+const HYPRSHELL_BIND_DESCRIPTION_PREFIX: &str = "hyprshell-keybind: ";
 
 pub fn apply_layerrules() -> anyhow::Result<()> {
     // TODO add option to enable blur
@@ -36,7 +40,7 @@ pub fn apply_layerrules() -> anyhow::Result<()> {
 }
 
 pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
-    let desc = format!("hyprshell-keybind: {}", bind.desc);
+    let desc = format!("{}{}", HYPRSHELL_BIND_DESCRIPTION_PREFIX, bind.desc);
 
     let exec_prefix = if std::env::var_os("HYPRSHELL_ADD_KEYBIND_NOTIFICATIONS").is_some() {
         format!(
@@ -86,6 +90,54 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Remove any keybinds left by this application before registering the current set.
+///
+/// Hyprland keeps dynamically registered binds across config reloads, so merely
+/// registering the current set can leave stale binds behind when the config changes.
+#[tracing::instrument]
+pub fn remove_hyprshell_keybinds() -> anyhow::Result<()> {
+    let binds = Binds::get()?.to_vec();
+    let hyprshell_binds = binds.into_iter().filter(|bind| {
+        bind.description
+            .starts_with(HYPRSHELL_BIND_DESCRIPTION_PREFIX)
+    });
+
+    for bind in hyprshell_binds {
+        let mods = mods_from_mask(bind.modmask);
+        let key = if bind.key.is_empty() {
+            format!("code:{}", bind.keycode)
+        } else {
+            bind.key
+        };
+
+        tracing::trace!(?mods, %key, "unregistering hyprshell keybind");
+        Binding {
+            mods,
+            key,
+            // `bind_new::Binding::unbind` only uses the key and modifiers.
+            dispatcher: Dispatch::ExecCmd(String::new(), None),
+            flags: Vec::new(),
+        }
+        .unbind()?;
+    }
+
+    Ok(())
+}
+
+fn mods_from_mask(mask: u16) -> Vec<HyprlandMod> {
+    // These are the XKB modifier-mask bits used by Hyprland's `binds` JSON.
+    // Hyprshell keybinds use the four modifiers represented by its config.
+    [
+        (1, HyprlandMod::Shift),
+        (4, HyprlandMod::Ctrl),
+        (8, HyprlandMod::Alt),
+        (64, HyprlandMod::Super),
+    ]
+    .into_iter()
+    .filter_map(|(bit, modifier)| (mask & bit != 0).then_some(modifier))
+    .collect()
+}
+
 fn dispatcher_for_bind(bind: &ExecBind, exec: String) -> Dispatch {
     let dispatcher = Dispatch::ExecCmd(exec, None);
     if let ExecBindBehavior::TransparentReleaseIgnoringMods {
@@ -120,6 +172,14 @@ mod tests {
         assert_eq!(
             dispatcher_for_bind(&bind, "echo close".into()).to_string(),
             "function() if not hl.is_key_down(\"Alt_L\") and not hl.is_key_down(\"Alt_R\") then hl.dispatch(hl.dsp.exec_cmd(\"echo close\")) end end"
+        );
+    }
+
+    #[test]
+    fn modifier_mask_is_converted_to_hyprland_modifiers() {
+        assert_eq!(
+            mods_from_mask(1 | 4 | 64),
+            vec![HyprlandMod::Shift, HyprlandMod::Ctrl, HyprlandMod::Super]
         );
     }
 }
