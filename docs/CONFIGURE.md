@@ -19,6 +19,23 @@ The default values for these configs, which are also the values that get used wh
 
 Explanation was moved from this Document to the GUI Settings Editor (start with `hyprshell config edit`).
 
+### Overview shortcut
+
+The overview shortcut keeps the existing `windows.overview.modifier` and
+`windows.overview.key` configuration. For example, `modifier = "alt"` and
+`key = "Tab"` opens the overview as soon as Alt+Tab is pressed. Ordinary keys
+open on press and do not repeat while held, so the order in which Alt and Tab
+are released does not matter. Set `modifier = "none"` to use an ordinary key
+without a modifier.
+
+If `key` is a modifier keysym, the overview instead opens on that key's release.
+Modifier keysyms are recognized case-insensitively: `Super_L/R`, `Alt_L/R`,
+`Control_L/R`, `Shift_L/R`, `Meta_L/R` and `Hyper_L/R`. For example, `modifier = "none"` with
+`key = "Super_L"` opens the overview when the left Super key is released. This
+release binding is non-repeating and non-transparent, preventing a modifier
+shortcut from also opening the overview after using that modifier with another
+key. Switch-mode shortcuts are unaffected.
+
 # CSS
 
 The CSS file is located at `~/.config/hyprshell/styles.css` but can be configured using the `-s` argument.

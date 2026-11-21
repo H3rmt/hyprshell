@@ -1,5 +1,7 @@
 use config_lib::Windows;
-use core_lib::binds::{ExecBind, ExecBindBehavior, Mod, generate_transfer_socat};
+use core_lib::binds::{
+    ExecBind, ExecBindBehavior, Mod, generate_transfer_socat, is_modifier_keysym,
+};
 use core_lib::transfer::{CloseSwitch, ExternalTransferType, OpenSwitch};
 
 #[must_use]
@@ -7,21 +9,10 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
     let mut binds = Vec::new();
 
     if let Some(overview) = &windows.overview {
-        binds.push(ExecBind {
-            mods: if let Some(m) = overview.modifier {
-                vec![m.into()]
-            } else {
-                vec![]
-            },
-            key: overview.key.clone(),
-            exec: generate_transfer_socat(&ExternalTransferType::OpenOverview),
-            behavior: ExecBindBehavior::Release,
-            desc: if let Some(m) = overview.modifier {
-                format!("Open Overview with {} + {}", m, overview.key)
-            } else {
-                format!("Open Overview with {}", overview.key)
-            },
-        });
+        binds.push(generate_overview_keybind(
+            overview.key.clone(),
+            overview.modifier,
+        ));
     }
     if let Some(switch) = &windows.switch {
         binds.push(ExecBind {
@@ -101,6 +92,24 @@ pub fn generate_open_keybinds(windows: &Windows) -> Vec<ExecBind> {
     binds
 }
 
+fn generate_overview_keybind(key: Box<str>, modifier: Option<core_lib::Modifier>) -> ExecBind {
+    ExecBind {
+        mods: modifier.map_or_else(Vec::new, |modifier| vec![modifier.into()]),
+        behavior: if is_modifier_keysym(&key) {
+            ExecBindBehavior::Release
+        } else {
+            ExecBindBehavior::PressOnce
+        },
+        desc: if let Some(modifier) = modifier {
+            format!("Open Overview with {modifier} + {key}")
+        } else {
+            format!("Open Overview with {key}")
+        },
+        key,
+        exec: generate_transfer_socat(&ExternalTransferType::OpenOverview),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,5 +168,17 @@ mod tests {
                 .iter()
                 .any(|bind| { matches!(bind.key.as_ref(), "Shift_L" | "Shift_R") })
         );
+    }
+
+    #[test]
+    fn ordinary_overview_keys_are_press_once_with_or_without_a_modifier() {
+        let overview_bind = generate_overview_keybind("Tab".into(), Some(Modifier::Alt));
+        assert_eq!(overview_bind.behavior, ExecBindBehavior::PressOnce);
+        assert_eq!(overview_bind.mods, [Mod::Alt]);
+        assert_eq!(overview_bind.key.as_ref(), "Tab");
+
+        let overview_bind = generate_overview_keybind("Tab".into(), None);
+        assert_eq!(overview_bind.behavior, ExecBindBehavior::PressOnce);
+        assert!(overview_bind.mods.is_empty());
     }
 }

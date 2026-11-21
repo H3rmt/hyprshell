@@ -66,28 +66,31 @@ pub fn apply_exec_bind(bind: &ExecBind) -> anyhow::Result<()> {
             })
             .collect(),
         key: bind.key.to_string(),
-        flags: {
-            let mut flags = vec![Flag::AutoConsuming, Flag::Description(desc)];
-            match bind.behavior {
-                ExecBindBehavior::Repeating => flags.push(Flag::Repeating),
-                ExecBindBehavior::Release => flags.push(Flag::Release),
-                ExecBindBehavior::TransparentReleaseIgnoringMods { .. } => {
-                    // Do not swallow ordinary key presses just to watch for releases.
-                    flags.extend([
-                        Flag::Release,
-                        Flag::Transparent,
-                        Flag::IgnoreMods,
-                        Flag::NonConsuming,
-                    ]);
-                }
-            }
-            flags
-        },
+        flags: flags_for_behavior(bind.behavior, desc),
         dispatcher,
     };
     trace!("binding exec: {binding:?}");
     binding.bind()?;
     Ok(())
+}
+
+fn flags_for_behavior(behavior: ExecBindBehavior, desc: String) -> Vec<Flag> {
+    let mut flags = vec![Flag::AutoConsuming, Flag::Description(desc)];
+    match behavior {
+        ExecBindBehavior::PressOnce => {}
+        ExecBindBehavior::Repeating => flags.push(Flag::Repeating),
+        ExecBindBehavior::Release => flags.push(Flag::Release),
+        ExecBindBehavior::TransparentReleaseIgnoringMods { .. } => {
+            // Do not swallow ordinary key presses just to watch for releases.
+            flags.extend([
+                Flag::Release,
+                Flag::Transparent,
+                Flag::IgnoreMods,
+                Flag::NonConsuming,
+            ]);
+        }
+    }
+    flags
 }
 
 /// Remove any keybinds left by this application before registering the current set.
@@ -180,6 +183,54 @@ mod tests {
         assert_eq!(
             mods_from_mask(1 | 4 | 64),
             vec![HyprlandMod::Shift, HyprlandMod::Ctrl, HyprlandMod::Super]
+        );
+    }
+
+    #[test]
+    fn press_once_uses_normal_consuming_press_flags() {
+        assert_eq!(
+            flags_for_behavior(ExecBindBehavior::PressOnce, "overview".into()),
+            vec![Flag::AutoConsuming, Flag::Description("overview".into())]
+        );
+    }
+
+    #[test]
+    fn release_binding_has_no_repeat_or_transparent_flags() {
+        assert_eq!(
+            flags_for_behavior(ExecBindBehavior::Release, "overview".into()),
+            vec![
+                Flag::AutoConsuming,
+                Flag::Description("overview".into()),
+                Flag::Release,
+            ]
+        );
+    }
+
+    #[test]
+    fn switch_binding_flag_semantics_are_unchanged() {
+        assert_eq!(
+            flags_for_behavior(ExecBindBehavior::Repeating, "switch".into()),
+            vec![
+                Flag::AutoConsuming,
+                Flag::Description("switch".into()),
+                Flag::Repeating,
+            ]
+        );
+        assert_eq!(
+            flags_for_behavior(
+                ExecBindBehavior::TransparentReleaseIgnoringMods {
+                    unless_keys_down: None
+                },
+                "switch release".into()
+            ),
+            vec![
+                Flag::AutoConsuming,
+                Flag::Description("switch release".into()),
+                Flag::Release,
+                Flag::Transparent,
+                Flag::IgnoreMods,
+                Flag::NonConsuming,
+            ]
         );
     }
 }
