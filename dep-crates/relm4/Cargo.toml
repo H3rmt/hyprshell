@@ -11,7 +11,7 @@
 
 [package]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.97"
 name = "hyprshell-relm4"
 version = "4.11.0-alpha.1"
 authors = ["Aaron Erhardt <aaron.erhardt@t-online.de>"]

@@ -20,9 +20,9 @@ serde.workspace = true
 serde_json.workspace = true
 
 smart-default = { version = "0.7.1" }
-ron = { version = "0.12.1" }
-toml = "1.1.3"
-toml_edit = { version = "0.25.12", features = ["serde"] }
+ron = { version = "0.12.3" }
+toml = "1.2.2"
+toml_edit = { version = "0.25.20", features = ["serde"] }
 
 [features]
 ci_no_default_config_values = []

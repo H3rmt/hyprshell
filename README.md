@@ -69,7 +69,7 @@ Build with fewer features in [slim](#feature-flags) mode
 cargo install hyprshell --no-default-features --features "slim"
 ```
 
-Minimum required rustc version: `1.92.0` (from 11 December 2025)
+Minimum required rustc version: `1.97.0` (from 9 July, 2026)
 
 **Look at [pkbuild](./packaging/pkgbuild/PKGBUILD) to see which files need to be installed where.
 DON'T just build only the executable, else the settings app won't work correctly.**

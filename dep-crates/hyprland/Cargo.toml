@@ -5,7 +5,7 @@ readme = "README.md"
 description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/hyprland-community/hyprland-rs"
 
-rust-version = "1.85.0"
+rust-version = "1.97"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 version = "4.11.0-alpha.1"
 license = "GPL-3.0-or-later"
