@@ -1,4 +1,5 @@
 use config_lib::io::Modifier;
+use relm4::gtk::gdk::prelude::*;
 use relm4::gtk::gdk::{Cursor, Key, ModifierType};
 use relm4::gtk::prelude::*;
 use relm4::{adw, gtk};
@@ -127,10 +128,8 @@ pub fn handle_key_and_modifier(
 
 #[tracing::instrument(level = "trace", ret(level = "trace"))]
 pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
-    // Hyprland physical keycodes are not GTK accelerators; the caller shows
-    // them separately rather than passing them to ShortcutLabel's parser.
-    if is_keycode(key) {
-        return String::new();
+    if let Some(code) = key.strip_prefix("code:") {
+        return keycode_to_accelerator(modifier, code).unwrap_or_default();
     }
     // correct some keys that can sometimes have wrong capitalization
     let key = match &*key.to_lowercase() {
@@ -149,17 +148,27 @@ pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
     }
 }
 
-pub fn is_keycode(key: &str) -> bool {
-    key.starts_with("code:")
-}
-
-pub fn modifier_label(modifier: Modifier) -> &'static str {
-    match modifier {
-        Modifier::Alt => "Alt",
-        Modifier::Ctrl => "Ctrl",
-        Modifier::Super => "Super",
-        Modifier::None => "",
+fn keycode_to_accelerator(modifier: Modifier, code: &str) -> Option<String> {
+    if code.is_empty() || !code.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
     }
+    let code = code.parse::<u32>().ok()?;
+    let display = gtk::gdk::Display::default()?;
+    let keyboard = display.default_seat()?.keyboard()?;
+    let group = keyboard.active_layout_index();
+    if group < 0 {
+        return None;
+    }
+    let state = match modifier {
+        Modifier::Alt => ModifierType::ALT_MASK,
+        Modifier::Ctrl => ModifierType::CONTROL_MASK,
+        Modifier::Super => ModifierType::SUPER_MASK,
+        Modifier::None => ModifierType::empty(),
+    };
+    let (key, _, _, _) = display.translate_key(code, state, group)?;
+    let accelerator = gtk::accelerator_name(key, state);
+    gtk::accelerator_parse(accelerator.as_str())?;
+    Some(accelerator.to_string())
 }
 
 pub fn mod_key_to_string(modifier: Modifier, key: &str) -> String {

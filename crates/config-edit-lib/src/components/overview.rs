@@ -126,30 +126,12 @@ impl SimpleComponent for Overview {
                         add_suffix = &gtk::Box {
                             set_valign: gtk::Align::Center,
                             set_spacing: 16,
-                            gtk::Box {
-                                set_spacing: 6,
+                            adw::ShortcutLabel::new("") {
                                 set_valign: gtk::Align::Center,
-                                adw::ShortcutLabel::new("") {
-                                    #[watch]
-                                    set_visible: !crate::util::is_keycode(&model.config.key),
-                                    #[watch]
-                                    set_accelerator: &crate::util::mod_key_to_accelerator(model.config.modifier, &model.config.key),
-                                },
-                                gtk::Label {
-                                    set_css_classes: &["keycap", "shortcut-code-keycap"],
-                                    #[watch]
-                                    set_visible: crate::util::is_keycode(&model.config.key) && model.config.modifier != io::Modifier::None,
-                                    #[watch]
-                                    set_label: crate::util::modifier_label(model.config.modifier),
-                                },
-                                gtk::Label {
-                                    set_css_classes: &["keycap", "shortcut-code-keycap"],
-                                    set_tooltip_text: Some("Hyprland physical keycode"),
-                                    #[watch]
-                                    set_visible: crate::util::is_keycode(&model.config.key),
-                                    #[watch]
-                                    set_label: &model.config.key,
-                                },
+                                #[watch]
+                                set_visible: !crate::util::mod_key_to_accelerator(model.config.modifier, &model.config.key).is_empty(),
+                                #[watch]
+                                set_accelerator: &crate::util::mod_key_to_accelerator(model.config.modifier, &model.config.key),
                             },
                             model.keyboard_shortcut.widget().clone() -> gtk::Button {
                                 set_valign: gtk::Align::Center,

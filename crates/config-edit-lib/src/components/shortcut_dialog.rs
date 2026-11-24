@@ -16,25 +16,14 @@ pub struct KeyboardShortcut {
 struct ShortcutDialog {
     dialog: adw::AlertDialog,
     preview: adw::ShortcutLabel,
-    code_group: gtk::Box,
-    code_modifier: gtk::Label,
-    code: gtk::Label,
     error: gtk::Label,
 }
 
 impl ShortcutDialog {
     fn set_shortcut(&self, modifier: config_lib::io::Modifier, key: &str) {
-        let is_keycode = crate::util::is_keycode(key);
-        self.preview.set_visible(!is_keycode);
-        self.code_group.set_visible(is_keycode);
-        self.code_modifier
-            .set_visible(modifier != config_lib::io::Modifier::None);
-        self.code_modifier.set_label(crate::util::modifier_label(modifier));
-        self.code.set_label(key);
-        if !is_keycode {
-            self.preview
-                .set_accelerator(&crate::util::mod_key_to_accelerator(modifier, key));
-        }
+        let accelerator = crate::util::mod_key_to_accelerator(modifier, key);
+        self.preview.set_visible(!accelerator.is_empty());
+        self.preview.set_accelerator(&accelerator);
     }
 }
 
@@ -122,7 +111,6 @@ impl SimpleComponent for KeyboardShortcut {
                     dialog.set_shortcut(modifier, &key);
                 } else {
                     dialog.preview.set_visible(false);
-                    dialog.code_group.set_visible(false);
                 }
             }
             KeyboardShortcutInput::_HideKeyboardShortcut(confirm) => {
@@ -177,17 +165,6 @@ fn create_shortcut_dialog(
     let preview = adw::ShortcutLabel::new("");
     preview.set_halign(gtk::Align::Center);
     preview.add_css_class("shortcut-preview");
-    let code_modifier = gtk::Label::new(None);
-    code_modifier.set_css_classes(&["keycap", "shortcut-code-keycap"]);
-    let code = gtk::Label::new(None);
-    code.set_css_classes(&["keycap", "shortcut-code-keycap"]);
-    code.set_tooltip_text(Some("Hyprland physical keycode"));
-    let code_group = gtk::Box::new(gtk::Orientation::Horizontal, 6);
-    code_group.set_halign(gtk::Align::Center);
-    code_group.add_css_class("shortcut-preview");
-    code_group.set_visible(false);
-    code_group.append(&code_modifier);
-    code_group.append(&code);
     let error = gtk::Label::new(Some("Unsupported shortcut"));
     error.add_css_class("error");
     error.set_visible(false);
@@ -195,7 +172,6 @@ fn create_shortcut_dialog(
     content.set_margin_top(12);
     content.set_margin_bottom(12);
     content.append(&preview);
-    content.append(&code_group);
     content.append(&error);
 
     let dialog = adw::AlertDialog::new(
@@ -258,9 +234,6 @@ fn create_shortcut_dialog(
     ShortcutDialog {
         dialog,
         preview,
-        code_group,
-        code_modifier,
-        code,
         error,
     }
 }

@@ -4,13 +4,6 @@
   font-weight: 700;
 }
 
-.shortcut-code-keycap {
-  background-color: alpha(currentColor, 0.1);
-  border-radius: 5px;
-  padding: 3px 6px;
-  font-weight: 600;
-}
-
 /* Match the vertical spacing of the expanded sidebar rows. */
 .compact-view-switcher > toggle {
   margin-bottom: 8px;
