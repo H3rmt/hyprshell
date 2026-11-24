@@ -90,17 +90,34 @@ pub fn handle_key_and_modifier(
     state: ModifierType,
 ) -> Option<(String, Modifier, String)> {
     let key_name = val.name()?;
-    let modifier = match val {
-        Key::Alt_L | Key::Alt_R => Modifier::Alt,
-        Key::Control_L | Key::Control_R => Modifier::Ctrl,
-        Key::Super_L | Key::Super_R => Modifier::Super,
-        _ => match state {
-            ModifierType::NO_MODIFIER_MASK => Modifier::None,
-            ModifierType::ALT_MASK => Modifier::Alt,
-            ModifierType::CONTROL_MASK => Modifier::Ctrl,
-            ModifierType::SUPER_MASK => Modifier::Super,
-            _ => return None,
-        },
+    let state = state
+        & (ModifierType::SHIFT_MASK
+            | ModifierType::ALT_MASK
+            | ModifierType::CONTROL_MASK
+            | ModifierType::SUPER_MASK
+            | ModifierType::HYPER_MASK
+            | ModifierType::META_MASK);
+    let modifier_key = match val {
+        Key::Alt_L | Key::Alt_R => Some((Modifier::Alt, ModifierType::ALT_MASK)),
+        Key::Control_L | Key::Control_R => Some((Modifier::Ctrl, ModifierType::CONTROL_MASK)),
+        Key::Super_L | Key::Super_R => Some((Modifier::Super, ModifierType::SUPER_MASK)),
+        _ => None,
+    };
+    let modifier = if let Some((modifier, mask)) = modifier_key {
+        if !(state & !mask).is_empty() {
+            return None;
+        }
+        modifier
+    } else if state.is_empty() {
+        Modifier::None
+    } else if state == ModifierType::ALT_MASK {
+        Modifier::Alt
+    } else if state == ModifierType::CONTROL_MASK {
+        Modifier::Ctrl
+    } else if state == ModifierType::SUPER_MASK {
+        Modifier::Super
+    } else {
+        return None;
     };
 
     let label = mod_key_to_string(modifier, &key_name);
@@ -110,6 +127,11 @@ pub fn handle_key_and_modifier(
 
 #[tracing::instrument(level = "trace", ret(level = "trace"))]
 pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
+    // Hyprland physical keycodes are not GTK accelerators; the caller shows
+    // them separately rather than passing them to ShortcutLabel's parser.
+    if is_keycode(key) {
+        return String::new();
+    }
     // correct some keys that can sometimes have wrong capitalization
     let key = match &*key.to_lowercase() {
         "super_l" => "Super_L",
@@ -124,6 +146,19 @@ pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
     match Option::<core_lib::Modifier>::from(modifier) {
         Some(m) => format!("<{m}>{key}"),
         None => key.to_string(),
+    }
+}
+
+pub fn is_keycode(key: &str) -> bool {
+    key.starts_with("code:")
+}
+
+pub fn modifier_label(modifier: Modifier) -> &'static str {
+    match modifier {
+        Modifier::Alt => "Alt",
+        Modifier::Ctrl => "Ctrl",
+        Modifier::Super => "Super",
+        Modifier::None => "",
     }
 }
 

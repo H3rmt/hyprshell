@@ -1,3 +1,6 @@
+use crate::components::shortcut_dialog::{
+    KeyboardShortcut, KeyboardShortcutInit, KeyboardShortcutInput, KeyboardShortcutOutput,
+};
 use crate::components::switch::{filter_summary, filters_match};
 use crate::util::SetTextIfDifferent;
 use config_lib::io;
@@ -10,6 +13,7 @@ pub struct Overview {
     config: io::Overview,
     prev_enabled: bool,
     prev_config: io::Overview,
+    keyboard_shortcut: Controller<KeyboardShortcut>,
 }
 
 #[derive(Debug)]
@@ -18,11 +22,13 @@ pub enum OverviewInput {
     SetPrev(Option<io::Overview>),
     Reset,
     Enabled(bool),
+    OpenKeyboardShortcut,
 }
 
 #[derive(Debug)]
 pub enum OverviewOutput {
     Enabled(Option<io::Overview>),
+    Shortcut(io::Modifier, String),
     FilterSameClass(bool),
     FilterWorkspace(bool),
     FilterMonitor(bool),
@@ -42,11 +48,32 @@ impl SimpleComponent for Overview {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let keyboard_shortcut = KeyboardShortcut::builder()
+            .launch(KeyboardShortcutInit {
+                label: None,
+                icon: Some("keyboard-layout".to_string()),
+                require_modifier: false,
+            })
+            .connect_receiver({
+                let sender = sender.clone();
+                move |_, output| match output {
+                    KeyboardShortcutOutput::SetKey(modifier, key) => {
+                        sender
+                            .output_sender()
+                            .emit(OverviewOutput::Shortcut(modifier, key));
+                    }
+                    KeyboardShortcutOutput::OpenRequest => {
+                        sender.input(OverviewInput::OpenKeyboardShortcut)
+                    }
+                    KeyboardShortcutOutput::Abort => (),
+                }
+            });
         let model = Self {
             enabled: false,
             config: Default::default(),
             prev_enabled: false,
             prev_config: Default::default(),
+            keyboard_shortcut,
         };
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -91,6 +118,44 @@ impl SimpleComponent for Overview {
                 gtk::ListBox {
                     set_selection_mode: gtk::SelectionMode::None,
                     set_css_classes: &["boxed-list"],
+                    adw::ActionRow {
+                        set_title: "Keyboard shortcut",
+                        set_subtitle: "Shortcut to open the overview",
+                        #[watch]
+                        set_css_classes: if model.config.key == model.prev_config.key && model.config.modifier == model.prev_config.modifier { &[] } else { &["blue-label"] },
+                        add_suffix = &gtk::Box {
+                            set_valign: gtk::Align::Center,
+                            set_spacing: 16,
+                            gtk::Box {
+                                set_spacing: 6,
+                                set_valign: gtk::Align::Center,
+                                adw::ShortcutLabel::new("") {
+                                    #[watch]
+                                    set_visible: !crate::util::is_keycode(&model.config.key),
+                                    #[watch]
+                                    set_accelerator: &crate::util::mod_key_to_accelerator(model.config.modifier, &model.config.key),
+                                },
+                                gtk::Label {
+                                    set_css_classes: &["keycap", "shortcut-code-keycap"],
+                                    #[watch]
+                                    set_visible: crate::util::is_keycode(&model.config.key) && model.config.modifier != io::Modifier::None,
+                                    #[watch]
+                                    set_label: crate::util::modifier_label(model.config.modifier),
+                                },
+                                gtk::Label {
+                                    set_css_classes: &["keycap", "shortcut-code-keycap"],
+                                    set_tooltip_text: Some("Hyprland physical keycode"),
+                                    #[watch]
+                                    set_visible: crate::util::is_keycode(&model.config.key),
+                                    #[watch]
+                                    set_label: &model.config.key,
+                                },
+                            },
+                            model.keyboard_shortcut.widget().clone() -> gtk::Button {
+                                set_valign: gtk::Align::Center,
+                            },
+                        },
+                    },
                     adw::ExpanderRow {
                         set_title: "Filter windows",
                         #[watch]
@@ -178,9 +243,16 @@ impl SimpleComponent for Overview {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            OverviewInput::Enabled(enabled) => sender.output_sender().emit(OverviewOutput::Enabled(
-                enabled.then(|| self.config.clone()),
-            )),
+            OverviewInput::OpenKeyboardShortcut => {
+                self.keyboard_shortcut
+                    .emit(KeyboardShortcutInput::ShowKeyboardShortcutDialog(
+                        Some((self.config.modifier, self.config.key.to_string())),
+                        None,
+                    ));
+            }
+            OverviewInput::Enabled(enabled) => sender.output_sender().emit(
+                OverviewOutput::Enabled(enabled.then(|| self.config.clone())),
+            ),
             OverviewInput::Set(config) => {
                 self.enabled = config.is_some();
                 if let Some(config) = config {

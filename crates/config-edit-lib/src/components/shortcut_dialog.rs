@@ -1,15 +1,41 @@
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
-use relm4_components::alert::{Alert, AlertMsg, AlertResponse, AlertSettings};
 
 #[derive(Debug)]
 pub struct KeyboardShortcut {
     key: Option<String>,
     modifier: Option<config_lib::io::Modifier>,
     is_visible: bool,
-    dialog: Controller<Alert>,
-    entry: gtk::Label,
+    dialog: Option<ShortcutDialog>,
+    anchor: gtk::Button,
     label: Option<String>,
+    require_modifier: bool,
+}
+
+#[derive(Debug)]
+struct ShortcutDialog {
+    dialog: adw::AlertDialog,
+    preview: adw::ShortcutLabel,
+    code_group: gtk::Box,
+    code_modifier: gtk::Label,
+    code: gtk::Label,
+    error: gtk::Label,
+}
+
+impl ShortcutDialog {
+    fn set_shortcut(&self, modifier: config_lib::io::Modifier, key: &str) {
+        let is_keycode = crate::util::is_keycode(key);
+        self.preview.set_visible(!is_keycode);
+        self.code_group.set_visible(is_keycode);
+        self.code_modifier
+            .set_visible(modifier != config_lib::io::Modifier::None);
+        self.code_modifier.set_label(crate::util::modifier_label(modifier));
+        self.code.set_label(key);
+        if !is_keycode {
+            self.preview
+                .set_accelerator(&crate::util::mod_key_to_accelerator(modifier, key));
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -20,8 +46,7 @@ pub enum KeyboardShortcutInput {
     ),
 
     _HideKeyboardShortcut(bool),
-    _UpdateKey(String),
-    _UpdateModifier(config_lib::io::Modifier),
+    _UpdateShortcut(Option<(config_lib::io::Modifier, String)>),
 }
 #[derive(Debug)]
 pub enum KeyboardShortcutOutput {
@@ -37,6 +62,7 @@ pub enum KeyboardShortcutOutput {
 pub struct KeyboardShortcutInit {
     pub label: Option<String>,
     pub icon: Option<String>,
+    pub require_modifier: bool,
 }
 
 #[relm4::component(pub)]
@@ -50,56 +76,14 @@ impl SimpleComponent for KeyboardShortcut {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        use relm4::ComponentController;
-
-        let entry = gtk::Label::new(None);
-        let dialog = Alert::builder()
-            .transient_for(&root)
-            .launch(AlertSettings {
-                text: Some("Press Keyboard shortcut".to_string()),
-                secondary_text: None,
-                confirm_label: Some("Use".to_string()),
-                cancel_label: Some("Cancel".to_string()),
-                option_label: None,
-                is_modal: true,
-                destructive_accept: false,
-                extra_child: Some(entry.clone().into()),
-            })
-            .forward(sender.input_sender(), |res| match res {
-                AlertResponse::Confirm => KeyboardShortcutInput::_HideKeyboardShortcut(true),
-                AlertResponse::Cancel => KeyboardShortcutInput::_HideKeyboardShortcut(false),
-                AlertResponse::Option => unreachable!("no option button in alert dialog"),
-            });
-
-        // Attach an EventControllerKey to the alert dialog's window to print raw key events.
-        let key_controller = gtk::EventControllerKey::new();
-        let entry_2 = entry.clone();
-        let window = dialog.widgets().gtk_window_12.clone();
-        let send = sender.clone();
-        key_controller.connect_key_pressed(move |_, val, _, state| {
-            tracing::debug!("Raw key event - val: {}, state: {:?}", val, state);
-            match crate::util::handle_key_and_modifier(val, state) {
-                Some((key, r#mod, label)) => {
-                    entry.set_text(&label);
-                    send.input(KeyboardShortcutInput::_UpdateKey(key));
-                    send.input(KeyboardShortcutInput::_UpdateModifier(r#mod));
-                }
-                None => {
-                    entry.set_text("---");
-                }
-            }
-            gtk::glib::Propagation::Stop
-        });
-        window.add_controller(key_controller);
-
         let model = Self {
             key: None,
             modifier: None,
             is_visible: false,
-
-            entry: entry_2,
-            dialog,
+            anchor: root.clone(),
+            dialog: None,
             label: init.label.clone(),
+            require_modifier: init.require_modifier,
         };
 
         let widgets = view_output!();
@@ -121,14 +105,29 @@ impl SimpleComponent for KeyboardShortcut {
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         tracing::trace!("shortcut_dialog::update: {message:?}");
         match message {
-            KeyboardShortcutInput::_UpdateKey(key) => {
-                self.key = Some(key);
-            }
-            KeyboardShortcutInput::_UpdateModifier(modifier) => {
-                self.modifier = Some(modifier);
+            KeyboardShortcutInput::_UpdateShortcut(shortcut) => {
+                let Some(dialog) = &self.dialog else {
+                    return;
+                };
+                let shortcut = shortcut.filter(|(modifier, _)| {
+                    !self.require_modifier || *modifier != config_lib::io::Modifier::None
+                });
+                self.key = shortcut.as_ref().map(|(_, key)| key.clone());
+                self.modifier = shortcut.as_ref().map(|(modifier, _)| *modifier);
+                dialog
+                    .dialog
+                    .set_response_enabled("use", shortcut.is_some());
+                dialog.error.set_visible(shortcut.is_none());
+                if let Some((modifier, key)) = shortcut {
+                    dialog.set_shortcut(modifier, &key);
+                } else {
+                    dialog.preview.set_visible(false);
+                    dialog.code_group.set_visible(false);
+                }
             }
             KeyboardShortcutInput::_HideKeyboardShortcut(confirm) => {
                 self.is_visible = false;
+                self.dialog = None;
                 if confirm {
                     if let (Some(key), Some(r#mod)) = (&self.key, &self.modifier) {
                         sender
@@ -145,22 +144,123 @@ impl SimpleComponent for KeyboardShortcut {
                 }
             }
             KeyboardShortcutInput::ShowKeyboardShortcutDialog(initial, root) => {
-                if let Some(root) = root {
-                    self.dialog
-                        .widget()
-                        .set_transient_for(root.toplevel_window().as_ref());
+                if self.is_visible {
+                    return;
                 }
                 self.is_visible = true;
                 self.key = initial.as_ref().map(|(_, key)| key.clone());
                 self.modifier = initial.map(|(r#mod, _)| r#mod);
+                let dialog = create_shortcut_dialog(self.require_modifier, &sender);
+                dialog.dialog.set_response_enabled(
+                    "use",
+                    self.key.is_some()
+                        && self.modifier.is_some_and(|modifier| {
+                            !self.require_modifier || modifier != config_lib::io::Modifier::None
+                        }),
+                );
                 if let (Some(r#mod), Some(key)) = (&self.modifier, &self.key) {
-                    self.entry
-                        .set_text(&crate::util::mod_key_to_string(*r#mod, key));
-                } else {
-                    self.entry.set_text("");
+                    dialog.set_shortcut(*r#mod, key);
                 }
-                self.dialog.emit(AlertMsg::Show);
+                dialog
+                    .dialog
+                    .present(Some(root.as_ref().unwrap_or(self.anchor.upcast_ref())));
+                self.dialog = Some(dialog);
             }
         }
+    }
+}
+
+fn create_shortcut_dialog(
+    require_modifier: bool,
+    sender: &ComponentSender<KeyboardShortcut>,
+) -> ShortcutDialog {
+    let preview = adw::ShortcutLabel::new("");
+    preview.set_halign(gtk::Align::Center);
+    preview.add_css_class("shortcut-preview");
+    let code_modifier = gtk::Label::new(None);
+    code_modifier.set_css_classes(&["keycap", "shortcut-code-keycap"]);
+    let code = gtk::Label::new(None);
+    code.set_css_classes(&["keycap", "shortcut-code-keycap"]);
+    code.set_tooltip_text(Some("Hyprland physical keycode"));
+    let code_group = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+    code_group.set_halign(gtk::Align::Center);
+    code_group.add_css_class("shortcut-preview");
+    code_group.set_visible(false);
+    code_group.append(&code_modifier);
+    code_group.append(&code);
+    let error = gtk::Label::new(Some("Unsupported shortcut"));
+    error.add_css_class("error");
+    error.set_visible(false);
+    let content = gtk::Box::new(gtk::Orientation::Vertical, 8);
+    content.set_margin_top(12);
+    content.set_margin_bottom(12);
+    content.append(&preview);
+    content.append(&code_group);
+    content.append(&error);
+
+    let dialog = adw::AlertDialog::new(
+        Some("Set Keyboard Shortcut"),
+        Some(if require_modifier {
+            "Press a key with Alt, Ctrl, or Super, then confirm."
+        } else {
+            "Press a key, optionally with Alt, Ctrl, or Super, then confirm."
+        }),
+    );
+    dialog.set_extra_child(Some(&content));
+    dialog.add_responses(&[("cancel", "Cancel"), ("use", "Use Shortcut")]);
+    dialog.set_close_response("cancel");
+    dialog.set_response_appearance("use", adw::ResponseAppearance::Suggested);
+    let send = sender.clone();
+    dialog.connect_response(None, move |_, response| {
+        send.input(KeyboardShortcutInput::_HideKeyboardShortcut(
+            response == "use",
+        ));
+    });
+
+    let key_controller = gtk::EventControllerKey::new();
+    key_controller.set_propagation_phase(gtk::PropagationPhase::Capture);
+    let dialog_weak = dialog.downgrade();
+    let send = sender.clone();
+    key_controller.connect_key_pressed(move |_, val, _, state| {
+        tracing::trace!("Raw key event - val: {}, state: {:?}", val, state);
+        let modifiers = state
+            & (gtk::gdk::ModifierType::SHIFT_MASK
+                | gtk::gdk::ModifierType::ALT_MASK
+                | gtk::gdk::ModifierType::CONTROL_MASK
+                | gtk::gdk::ModifierType::SUPER_MASK
+                | gtk::gdk::ModifierType::HYPER_MASK
+                | gtk::gdk::ModifierType::META_MASK);
+        // Keep the confirmation buttons keyboard-accessible without intercepting
+        // modifier+Tab shortcuts such as Alt+Tab.
+        if matches!(val, gtk::gdk::Key::Tab | gtk::gdk::Key::ISO_Left_Tab)
+            && (modifiers.is_empty() || modifiers == gtk::gdk::ModifierType::SHIFT_MASK)
+        {
+            return gtk::glib::Propagation::Proceed;
+        }
+        if matches!(
+            val,
+            gtk::gdk::Key::Return | gtk::gdk::Key::KP_Enter | gtk::gdk::Key::space
+        ) && modifiers.is_empty()
+            && dialog_weak
+                .upgrade()
+                .and_then(|dialog| adw::prelude::AdwDialogExt::focus(&dialog))
+                .is_some_and(|focus| focus.is::<gtk::Button>())
+        {
+            return gtk::glib::Propagation::Proceed;
+        }
+        let shortcut = crate::util::handle_key_and_modifier(val, state)
+            .map(|(key, modifier, _)| (modifier, key));
+        send.input(KeyboardShortcutInput::_UpdateShortcut(shortcut));
+        gtk::glib::Propagation::Stop
+    });
+    dialog.add_controller(key_controller);
+
+    ShortcutDialog {
+        dialog,
+        preview,
+        code_group,
+        code_modifier,
+        code,
+        error,
     }
 }

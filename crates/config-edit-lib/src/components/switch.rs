@@ -28,8 +28,7 @@ pub enum SwitchInput {
 #[derive(Debug)]
 pub enum SwitchOutput {
     Enabled(Option<io::Switch>),
-    Key(String),
-    Modifier(config_lib::io::Modifier),
+    Shortcut(config_lib::io::Modifier, String),
     FilterSameClass(bool),
     FilterWorkspace(bool),
     FilterMonitor(bool),
@@ -61,13 +60,13 @@ impl SimpleComponent for Switch {
             .launch(KeyboardShortcutInit {
                 label: None,
                 icon: Some("keyboard-layout".to_string()),
+                require_modifier: true,
             })
             .connect_receiver(move |_, out| {
                 #[allow(clippy::match_wildcard_for_single_variants)]
                 match out {
                     KeyboardShortcutOutput::SetKey(r#mod, key) => {
-                        outs.emit(SwitchOutput::Key(key));
-                        outs.emit(SwitchOutput::Modifier(r#mod));
+                        outs.emit(SwitchOutput::Shortcut(r#mod, key));
                     }
                     KeyboardShortcutOutput::OpenRequest => {
                         ins.emit(SwitchInput::_OpenKeyboardShortcut);
@@ -128,6 +127,44 @@ impl SimpleComponent for Switch {
           gtk::ListBox {
               set_selection_mode: gtk::SelectionMode::None,
               set_css_classes: &["boxed-list"],
+              adw::ActionRow {
+                set_title: "Keyboard shortcut",
+                set_subtitle: "Shortcut to open the switcher",
+                #[watch]
+                set_css_classes: if model.config.key == model.prev_config.key && model.config.modifier == model.prev_config.modifier { &[] } else { &["blue-label"] },
+                add_suffix = &gtk::Box {
+                    set_valign: gtk::Align::Center,
+                    set_spacing: 16,
+                    gtk::Box {
+                        set_spacing: 6,
+                        set_valign: gtk::Align::Center,
+                        adw::ShortcutLabel::new("") {
+                            #[watch]
+                            set_visible: !crate::util::is_keycode(&model.config.key),
+                            #[watch]
+                            set_accelerator: &crate::util::mod_key_to_accelerator(model.config.modifier, &model.config.key),
+                        },
+                        gtk::Label {
+                            set_css_classes: &["keycap", "shortcut-code-keycap"],
+                            #[watch]
+                            set_visible: crate::util::is_keycode(&model.config.key) && model.config.modifier != io::Modifier::None,
+                            #[watch]
+                            set_label: crate::util::modifier_label(model.config.modifier),
+                        },
+                        gtk::Label {
+                            set_css_classes: &["keycap", "shortcut-code-keycap"],
+                            set_tooltip_text: Some("Hyprland physical keycode"),
+                            #[watch]
+                            set_visible: crate::util::is_keycode(&model.config.key),
+                            #[watch]
+                            set_label: &model.config.key,
+                        },
+                    },
+                    model.keyboard_shortcut.widget().clone() -> gtk::Button {
+                        set_valign: gtk::Align::Center,
+                    },
+                },
+              },
               adw::ExpanderRow {
                 set_title: "Filter windows",
                 #[watch]

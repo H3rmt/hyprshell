@@ -44,6 +44,12 @@ impl SimpleComponent for Changes {
             set_orientation: gtk::Orientation::Vertical,
             set_margin_all: 10,
             set_spacing: 15,
+            gtk::Label {
+                set_label: "In progress: not all changes are shown in this overview.",
+                set_wrap: true,
+                set_justify: gtk::Justification::Center,
+                set_css_classes: &["dim-label"],
+            },
             adw::Clamp {
               set_maximum_size: 450,
               #[local_ref]
@@ -519,14 +525,9 @@ pub fn generate_items(
     //         }
     //     }
 
-    if changes.first_child().is_none() {
-        // add_info(changes, "No changes");
-        add_info_with_reset(changes, "No changes", true);
-        add_info_subtitle_with_reset(changes, "No changes", "test".to_string(), true);
-        false
-    } else {
-        true
-    }
+    let changed = config != prev_config;
+    add_info(changes, if changed { "Unsaved changes" } else { "No changes" });
+    changed
 }
 
 #[allow(clippy::too_many_lines)]

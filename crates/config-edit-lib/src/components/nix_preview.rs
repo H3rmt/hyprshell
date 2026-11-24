@@ -1,6 +1,5 @@
 use relm4::adw::prelude::*;
-use relm4::gtk;
-use relm4::{ComponentParts, ComponentSender, RelmWidgetExt, SimpleComponent};
+use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw};
 
 #[derive(Debug)]
 pub struct NixPreview {}
@@ -21,12 +20,12 @@ impl SimpleComponent for NixPreview {
     type Output = NixPreviewOutput;
 
     view! {
-        gtk::Box {
-            set_orientation: gtk::Orientation::Vertical,
-            set_margin_all: 10,
-            gtk::Label {
-                set_label:  "Nix preview (TODO)"
-            }
+        adw::StatusPage {
+            set_icon_name: Some("document-properties-symbolic"),
+            set_title: "Nix Preview Unavailable",
+            set_description: Some("Nix preview is still in progress and is not available in this alpha."),
+            set_hexpand: true,
+            set_vexpand: true,
         }
     }
 
@@ -35,8 +34,6 @@ impl SimpleComponent for NixPreview {
         root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        // TODO
-        // https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.StatusPage.html
         let model = Self {};
 
         let widgets = view_output!();

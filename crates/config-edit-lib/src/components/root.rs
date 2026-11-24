@@ -14,12 +14,12 @@ use relm4::new_action_group;
 use relm4::new_stateless_action;
 use relm4::prelude::*;
 use relm4::{abstractions::Toaster, adw::prelude::*};
-use relm4_components::alert::{Alert, AlertResponse, AlertSettings};
+use relm4_components::alert::{Alert, AlertMsg, AlertResponse, AlertSettings};
 
 use std::path::Path;
 use std::process::Command;
 use std::rc::Rc;
-use tracing::{error, info, trace, warn};
+use tracing::{error, trace, warn};
 
 const HELP_URL: &str = concat!(
     "https://github.com/H3rmt/hyprshell/tree/v",
@@ -222,7 +222,8 @@ impl SimpleComponent for Root {
             css_file: init.css_path.clone(),
             config: io::ConfigFile::new_without_file(config.clone()),
             prev_config: config,
-            is_generate_mode: init.generate,
+            // Generation is unavailable; keep the regular editor visible.
+            is_generate_mode: false,
             is_show_sidebar: true,
             // generate,
             footer,
@@ -297,6 +298,10 @@ impl SimpleComponent for Root {
             .sync_create()
             .build();
         sender.input(RootInput::Reload(true));
+        // Reload already requests generation when no config exists.
+        if init.generate && model.config_file.exists() {
+            sender.input(RootInput::Regenerate);
+        }
         ComponentParts { model, widgets }
     }
 
@@ -465,21 +470,26 @@ impl SimpleComponent for Root {
                 self.is_show_sidebar = !self.is_show_sidebar;
             }
             RootInput::CloseRequest => {
-                // let changes = generate_items(
-                //     &self.alert_dialog_changes_list,
-                //     &self.config,
-                //     &self.prev_config,
-                // );
-                // if changes {
-                //     self.alert_dialog.emit(AlertMsg::Show);
-                // } else {
-                sender.input(RootInput::Close);
-                // }
+                if generate_items(
+                    &self.alert_dialog_changes_list,
+                    self.config.get_raw_config(),
+                    &self.prev_config,
+                ) {
+                    self.alert_dialog.emit(AlertMsg::Show);
+                } else {
+                    sender.input(RootInput::Close);
+                }
             }
             RootInput::Close => {
                 relm4::main_application().quit();
             }
             RootInput::Regenerate => {
+                sender.input(RootInput::Toast(
+                    adw::Toast::builder()
+                        .title("Generating a config is not supported in this alpha.")
+                        .timeout(6)
+                        .build(),
+                ));
                 // self.is_generate_mode = true;
                 // self.footer.emit(FooterInput::GenerateMode(true));
                 // self.generate.emit(GenerateInput::Start);
@@ -562,6 +572,8 @@ impl SimpleComponent for Root {
                 }
             }
             RootInput::Reload(initial) => {
+                // TODO: If there are unsaved diffs, show a toast with a confirm
+                // action before reloading changes from disk.
                 if self.config_file.exists() {
                     match config_lib::load_and_migrate_io_config(&self.config_file, true) {
                         Ok(c) => {
@@ -646,41 +658,19 @@ impl SimpleComponent for Root {
                 self.changes
                     .emit(ChangesInput::SetPrevConfig(self.prev_config.clone()));
             }
-            RootInput::Save(close) => {
-                // let config: &mut ConfigFile = self.config.clone().into();
-                let config: &mut io::ConfigFile = todo!("todo");
-                match config_lib::write_io_config(&self.config_file, config, true) {
-                    Ok(()) => {
-                        info!("Saved config to {}", self.config_file.display());
-                        sender.input(RootInput::Toast(
-                            adw::Toast::builder()
-                                .title("Saved".to_string())
-                                .timeout(2)
-                                .build(),
-                        ));
-                    }
-                    Err(err) => {
-                        error!("Failed to save config: {err:#}");
-                        sender.input(RootInput::Toast(
-                            adw::Toast::builder()
-                                .title(err.to_string())
-                                .timeout(0)
-                                .build(),
-                        ));
-                    }
-                }
-
-                if close {
-                    sender.input(RootInput::Close);
-                }
-                sender.input(RootInput::SetPrevConfig(
-                    self.config.get_raw_config().clone(),
+            RootInput::Save(_close) => {
+                sender.input(RootInput::Toast(
+                    adw::Toast::builder()
+                        .title("Saving is not supported in this alpha. Changes have not been saved.")
+                        .timeout(6)
+                        .build(),
                 ));
             }
             RootInput::Reset => {
                 *(self.config.get_raw_config_mut()) = self.prev_config.clone();
 
                 self.windows.emit(WindowsInput::Reset);
+                self.changes.emit(ChangesInput::SetConfig(self.prev_config.clone()));
                 // self.launcher.emit(LauncherInput::Reset);
                 // self.changes
                 //     .emit(ChangesInput::SetConfig(self.config.clone()));
@@ -819,6 +809,12 @@ impl SimpleComponent for Root {
                         if let Some(windows) = cfg.windows.as_mut() {
                             match msg {
                                 OverviewOutput::Enabled(config) => windows.overview = config,
+                                OverviewOutput::Shortcut(modifier, key) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        overview.modifier = modifier;
+                                        overview.key = key.into_boxed_str();
+                                    }
+                                }
                                 OverviewOutput::FilterSameClass(enabled) => {
                                     if let Some(overview) = windows.overview.as_mut() {
                                         update_overview_filter(&mut overview.filter_by, io::FilterBy::SameClass, enabled);
@@ -890,16 +886,10 @@ impl SimpleComponent for Root {
                                 windows.switch = config;
                             }
                         }
-                        SwitchOutput::Key(key) => {
+                        SwitchOutput::Shortcut(modifier, key) => {
                             if let Some(windows) = cfg.windows.as_mut() {
                                 if let Some(switch) = windows.switch.as_mut() {
                                     switch.key = key.into_boxed_str();
-                                };
-                            }
-                        }
-                        SwitchOutput::Modifier(modifier) => {
-                            if let Some(windows) = cfg.windows.as_mut() {
-                                if let Some(switch) = windows.switch.as_mut() {
                                     switch.modifier = modifier;
                                 };
                             }
@@ -988,16 +978,10 @@ impl SimpleComponent for Root {
                                 windows.switch_2 = config;
                             }
                         }
-                        SwitchOutput::Key(key) => {
+                        SwitchOutput::Shortcut(modifier, key) => {
                             if let Some(windows) = cfg.windows.as_mut() {
                                 if let Some(switch) = windows.switch_2.as_mut() {
                                     switch.key = key.into_boxed_str();
-                                };
-                            }
-                        }
-                        SwitchOutput::Modifier(modifier) => {
-                            if let Some(windows) = cfg.windows.as_mut() {
-                                if let Some(switch) = windows.switch_2.as_mut() {
                                     switch.modifier = modifier;
                                 };
                             }
@@ -1126,7 +1110,7 @@ fn setup_keybinds_and_actions(
     app.set_accelerators_for_action::<SaveConfig>(&["<Control>S"]);
     let send = sender.clone();
     group.add_action(RelmAction::<SaveConfig>::new_stateless(move |_| {
-        send.input_sender().emit(RootInput::Save(true));
+        send.input_sender().emit(RootInput::Save(false));
     }));
 
     app.set_accelerators_for_action::<ReloadConfig>(&["<Control>R"]);
