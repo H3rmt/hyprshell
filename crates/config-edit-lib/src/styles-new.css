@@ -1,3 +1,8 @@
+/* Match the vertical spacing of the expanded sidebar rows. */
+.compact-view-switcher > toggle {
+  margin-bottom: 8px;
+}
+
 /* Popover in sidebar (for custom actions) */
 .popover-action-row label {
   font-weight: 400;

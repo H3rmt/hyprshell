@@ -240,6 +240,20 @@ impl SimpleComponent for Root {
         let footer = model.footer.widget();
         let menu = model.menu.widget();
         let view_stack = &model.view_stack;
+        let compact_switcher = adw::ToggleGroup::new();
+        for (name, icon, tooltip) in [
+            ("changes", "document-edit-symbolic", "Changes"),
+            ("nix-preview", "preview-symbolic", "Nix Preview"),
+            ("overview", "configure-symbolic", "Windows"),
+        ] {
+            compact_switcher.add(
+                adw::Toggle::builder()
+                    .name(name)
+                    .icon_name(icon)
+                    .tooltip(tooltip)
+                    .build(),
+            );
+        }
         let widgets = view_output!();
 
         // model.view_stack.add_titled_with_icon(
@@ -250,13 +264,13 @@ impl SimpleComponent for Root {
         // );
         model.view_stack.add_titled_with_icon(
             model.changes.widget(),
-            None,
+            Some("changes"),
             "Changes",
             "document-edit-symbolic",
         );
         model.view_stack.add_titled_with_icon(
             model.nix_preview.widget(),
-            None,
+            Some("nix-preview"),
             "Nix Preview",
             "preview-symbolic",
         );
@@ -275,6 +289,12 @@ impl SimpleComponent for Root {
         //     );
         // }
         model.view_stack.set_visible_child_name("overview");
+        model
+            .view_stack
+            .bind_property("visible-child-name", &compact_switcher, "active-name")
+            .bidirectional()
+            .sync_create()
+            .build();
         sender.input(RootInput::Reload(true));
         ComponentParts { model, widgets }
     }
@@ -299,8 +319,8 @@ impl SimpleComponent for Root {
               set_show_start_title_buttons: true,
               set_show_back_button: true,
               pack_start = &gtk::Box {
-                set_spacing: 8,
-                set_margin_start: 4,
+                set_spacing: 10,
+                set_margin_start: 5,
                 set_orientation: gtk::Orientation::Horizontal,
                 gtk::Button {
                   #[watch]
@@ -326,7 +346,8 @@ impl SimpleComponent for Root {
               set_show_sidebar: true,
               #[watch]
               set_sidebar_width_fraction: if model.is_show_sidebar { 0.25 } else { 0.01 },
-              set_min_sidebar_width: 1.0,
+              #[watch]
+              set_min_sidebar_width: if model.is_show_sidebar { 160.0 } else { 56.0 },
               set_sidebar_width_unit: adw::LengthUnit::Sp,
               #[wrap(Some)]
               set_content = &adw::ToolbarView {
@@ -348,45 +369,65 @@ impl SimpleComponent for Root {
                 }
               },
               #[wrap(Some)]
-              set_sidebar: view_stack_switcher = &adw::ViewSwitcherSidebar {
-                set_expand: false,
-                set_mode: adw::SidebarMode::Sidebar,
-                set_stack: Some(view_stack),
-                #[wrap(Some)]
-                set_suffix = &gtk::Box {
-                  set_valign: gtk::Align::End,
-                  set_halign: gtk::Align::Fill,
-                  set_vexpand: true,
-                  set_spacing: 1,
-                  set_orientation: gtk::Orientation::Horizontal,
-                  set_margin_all: 4,
-                  gtk::Label {
-                    #[watch]
-                    set_visible: model.is_show_sidebar,
-                    set_hexpand: true,
-                    set_halign: gtk::Align::Start,
-                    set_valign: gtk::Align::End,
-                    set_margin_bottom: 5,
-                    set_margin_start: 5,
-                    set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", HELP_URL, env!("CARGO_PKG_VERSION")),
-                  },
-                  gtk::MenuButton {
-                    set_hexpand: true,
-                    set_halign: gtk::Align::End,
-                    set_icon_name: "open-menu-symbolic",
-                    #[wrap(Some)]
-                    #[local_ref]
-                    set_popover = &popover -> gtk::Popover {
-                      #[local_ref]
-                      menu -> gtk::Box {
-                        set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: 0,
-                        set_valign: gtk::Align::Center,
-                      }
-                    },
-                  }
-                },
-              },
+               set_sidebar = &gtk::Box {
+                 set_orientation: gtk::Orientation::Vertical,
+                 set_hexpand: true,
+                 set_vexpand: true,
+                 adw::ViewSwitcherSidebar {
+                   #[watch]
+                   set_visible: model.is_show_sidebar,
+                   set_vexpand: true,
+                   set_mode: adw::SidebarMode::Sidebar,
+                   set_stack: Some(view_stack),
+                 },
+                 #[local_ref]
+                 compact_switcher -> adw::ToggleGroup {
+                   #[watch]
+                   set_visible: !model.is_show_sidebar,
+                   set_orientation: gtk::Orientation::Vertical,
+                   set_halign: gtk::Align::Center,
+                   set_valign: gtk::Align::Start,
+                   set_margin_top: 10,
+                   set_css_classes: &["flat", "round", "compact-view-switcher"],
+                 },
+                 gtk::Box {
+                   set_vexpand: true,
+                 },
+                 gtk::Box {
+                   set_orientation: gtk::Orientation::Horizontal,
+                   set_halign: gtk::Align::Fill,
+                   set_spacing: 1,
+                   set_margin_start: 8,
+                   set_margin_end: 8,
+                   set_margin_bottom: 8,
+                   gtk::Label {
+                     #[watch]
+                     set_visible: model.is_show_sidebar,
+                     set_hexpand: true,
+                     set_halign: gtk::Align::Start,
+                     set_valign: gtk::Align::End,
+                     set_margin_bottom: 5,
+                     set_margin_start: 5,
+                     set_markup: &format!("<a href=\"{}\">Hyprshell v{}</a>", HELP_URL, env!("CARGO_PKG_VERSION")),
+                   },
+                   gtk::MenuButton {
+                     set_hexpand: true,
+                     #[watch]
+                     set_halign: if model.is_show_sidebar { gtk::Align::End } else { gtk::Align::Center },
+                     set_icon_name: "open-menu-symbolic",
+                     #[wrap(Some)]
+                     #[local_ref]
+                     set_popover = &popover -> gtk::Popover {
+                       #[local_ref]
+                       menu -> gtk::Box {
+                         set_orientation: gtk::Orientation::Vertical,
+                         set_spacing: 0,
+                         set_valign: gtk::Align::Center,
+                       }
+                     },
+                   }
+                 }
+               },
             },
           },
         },
