@@ -87,14 +87,21 @@ pub struct Windows {
     pub scale: f64,
     #[default = 5]
     pub items_per_row: u8,
-    #[default = 300]
-    pub live_preview_refresh_rate: u16,
+    pub live_settings: LiveSettings,
     #[default(None)]
     pub overview: Option<Overview>,
     #[default(None)]
     pub switch: Option<Switch>,
     #[default(None)]
     pub switch_2: Option<Switch>,
+}
+
+#[derive(SmartDefault, Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(not(feature = "ci_no_default_config_values"), serde(default))]
+#[serde(deny_unknown_fields)]
+pub struct LiveSettings {
+    #[default = 300]
+    pub refresh_rate: u16,
 }
 
 #[derive(SmartDefault, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]

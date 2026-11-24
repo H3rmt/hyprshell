@@ -1,6 +1,6 @@
 use crate::components::shortcut_dialog::*;
 
-use crate::util::{SetTextIfDifferent, mod_key_to_accelerator};
+use crate::util::SetTextIfDifferent;
 use config_lib::io;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
@@ -34,6 +34,7 @@ pub enum SwitchOutput {
     FilterWorkspace(bool),
     FilterMonitor(bool),
     SwitchWorkspaces(bool),
+    LivePreview(bool),
     ExcludeWorkspaces(String),
     KillKey(Option<char>),
 }
@@ -92,6 +93,7 @@ impl SimpleComponent for Switch {
       gtk::Box {
         set_orientation: gtk::Orientation::Vertical,
         set_spacing: 14,
+        set_margin_top: 12,
         gtk::Box {
             set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 16,
@@ -102,7 +104,8 @@ impl SimpleComponent for Switch {
                 gtk::Label {
                     set_label: model.name,
                     set_halign: gtk::Align::Start,
-                    set_css_classes: &["setting-title"],
+                    #[watch]
+                    set_css_classes: if model.enabled == model.prev_enabled { &["setting-title"] } else { &["setting-title", "blue-label"] },
                 },
                 gtk::Label {
                     set_label: "abbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -120,11 +123,49 @@ impl SimpleComponent for Switch {
         },
       gtk::Frame {
           set_css_classes: &["setting-card"],
+          #[watch]
+          set_visible: model.enabled,
           gtk::ListBox {
               set_selection_mode: gtk::SelectionMode::None,
               set_css_classes: &["boxed-list"],
+              adw::ExpanderRow {
+                set_title: "Filter windows",
+                #[watch]
+                set_subtitle: &filter_summary(&model.config.filter_by),
+                #[watch]
+                set_css_classes: if filters_match(&model.config.filter_by, &model.prev_config.filter_by) { &["expander"] } else { &["expander", "blue-label"] },
+                add_row = &adw::SwitchRow {
+                    set_title: "Same class",
+                    #[watch]
+                    set_css_classes: if model.config.filter_by.contains(&io::FilterBy::SameClass) == model.prev_config.filter_by.contains(&io::FilterBy::SameClass) { &[] } else { &["blue-label"] },
+                    #[watch]
+                    #[block_signal(h_2)]
+                    set_active: model.config.filter_by.contains(&io::FilterBy::SameClass),
+                    connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::FilterSameClass(e.is_active())); } @h_2,
+                },
+                add_row = &adw::SwitchRow {
+                    set_title: "Current workspace",
+                    set_subtitle: "Cannot be combined with current monitor",
+                    #[watch]
+                    set_css_classes: if model.config.filter_by.contains(&io::FilterBy::CurrentWorkspace) == model.prev_config.filter_by.contains(&io::FilterBy::CurrentWorkspace) { &[] } else { &["blue-label"] },
+                    #[watch]
+                    #[block_signal(h_3)]
+                    set_active: model.config.filter_by.contains(&io::FilterBy::CurrentWorkspace),
+                    connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::FilterWorkspace(e.is_active())); } @h_3,
+                },
+                add_row = &adw::SwitchRow {
+                    set_title: "Current monitor",
+                    set_subtitle: "Cannot be combined with current workspace",
+                    #[watch]
+                    set_css_classes: if model.config.filter_by.contains(&io::FilterBy::CurrentMonitor) == model.prev_config.filter_by.contains(&io::FilterBy::CurrentMonitor) { &[] } else { &["blue-label"] },
+                    #[watch]
+                    #[block_signal(h_4)]
+                    set_active: model.config.filter_by.contains(&io::FilterBy::CurrentMonitor),
+                    connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::FilterMonitor(e.is_active())); } @h_4,
+                },
+              },
               adw::ActionRow {
-                set_subtitle: "Test",
+                set_subtitle: "Switch between workspaces instead of individual windows",
                 set_title: "Switch workspaces",
                 #[watch]
                 set_css_classes: if model.config.switch_workspaces == model.prev_config.switch_workspaces { &[] } else { &["blue-label"] },
@@ -134,6 +175,50 @@ impl SimpleComponent for Switch {
                     #[block_signal(h_5)]
                     set_active: model.config.switch_workspaces,
                     connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::SwitchWorkspaces(e.is_active())); } @h_5,
+                }
+              },
+              adw::ActionRow {
+                set_title: "Live preview",
+                set_subtitle: "Show live window previews",
+                #[watch]
+                set_css_classes: if model.config.live_preview == model.prev_config.live_preview { &[] } else { &["blue-label"] },
+                add_suffix = &gtk::Switch {
+                    set_valign: gtk::Align::Center,
+                    #[watch]
+                    #[block_signal(h_8)]
+                    set_active: model.config.live_preview,
+                    connect_active_notify[sender] => move |e| { sender.output_sender().emit(SwitchOutput::LivePreview(e.is_active())); } @h_8,
+                }
+              },
+              adw::ActionRow {
+                set_title: "Excluded workspaces",
+                set_subtitle: "Regular expression matching workspace names",
+                #[watch]
+                set_css_classes: if model.config.exclude_workspaces == model.prev_config.exclude_workspaces { &[] } else { &["blue-label"] },
+                add_suffix = &gtk::Entry {
+                    set_placeholder_text: Some("special:(htop)|irrelevant"),
+                    set_width_request: 220,
+                    set_valign: gtk::Align::Center,
+                    #[watch]
+                    #[block_signal(h_6)]
+                    set_text_if_different: &model.config.exclude_workspaces,
+                    connect_changed[sender] => move |e| { sender.output_sender().emit(SwitchOutput::ExcludeWorkspaces(e.text().into())); } @h_6,
+                }
+              },
+              adw::ActionRow {
+                set_title: "Key to close a window",
+                set_subtitle: "A single character",
+                #[watch]
+                set_css_classes: if model.config.kill_key == '\0' { &["red-label"] } else if model.config.kill_key == model.prev_config.kill_key { &[] } else { &["blue-label"] },
+                add_suffix = &gtk::Entry {
+                    set_placeholder_text: Some("q"),
+                    set_max_length: 1,
+                    set_width_chars: 3,
+                    set_valign: gtk::Align::Center,
+                    #[watch]
+                    #[block_signal(h_7)]
+                    set_text_if_different: &(if model.config.kill_key == '\0' { String::new() } else { model.config.kill_key.to_string() }),
+                    connect_changed[sender] => move |e| { sender.output_sender().emit(SwitchOutput::KillKey(e.text().chars().next())); } @h_7,
                 }
               },
           }
@@ -336,7 +421,7 @@ impl SimpleComponent for Switch {
     }
 }
 
-fn filter_summary(filters: &[io::FilterBy]) -> String {
+pub(super) fn filter_summary(filters: &[io::FilterBy]) -> String {
     if filters.is_empty() {
         return "No filters".to_string();
     }
@@ -350,4 +435,14 @@ fn filter_summary(filters: &[io::FilterBy]) -> String {
         })
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+pub(super) fn filters_match(filters: &[io::FilterBy], previous: &[io::FilterBy]) -> bool {
+    [
+        io::FilterBy::SameClass,
+        io::FilterBy::CurrentWorkspace,
+        io::FilterBy::CurrentMonitor,
+    ]
+    .iter()
+    .all(|filter| filters.contains(filter) == previous.contains(filter))
 }

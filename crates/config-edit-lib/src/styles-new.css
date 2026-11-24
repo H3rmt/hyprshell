@@ -32,15 +32,19 @@
 }
 
 /* Label Colors to see changes and invalid */
-.blue-label .title {
+row.blue-label > box.header > box.title > label.title,
+row.blue-label.expander > box > list > row.header > box.header > box.title > label.title,
+.setting-title.blue-label {
   color: color-mix(in srgb, currentColor 40%, #13bdda 60%);
 }
 
-.gray-label .title {
+row.gray-label > box.header > box.title > label.title,
+row.gray-label.expander > box > list > row.header > box.header > box.title > label.title {
   color: color-mix(in srgb, currentColor 40%, #464444 60%);
 }
 
-.red-label .title {
+row.red-label > box.header > box.title > label.title,
+row.red-label.expander > box > list > row.header > box.header > box.title > label.title {
   color: color-mix(in srgb, currentColor 40%, #f00 60%);
 }
 

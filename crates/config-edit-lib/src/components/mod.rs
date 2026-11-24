@@ -4,6 +4,7 @@ mod footer;
 // mod launcher;
 // mod launcher_plugins;
 mod nix_preview;
+mod overview;
 pub mod root;
 mod shortcut_dialog;
 mod switch;

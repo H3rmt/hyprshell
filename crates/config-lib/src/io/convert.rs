@@ -27,7 +27,7 @@ impl TryFrom<io::Windows> for crate::Windows {
             general: crate::WindowsGeneral {
                 scale: value.scale,
                 items_per_row: value.items_per_row,
-                live_preview_refresh_rate: value.live_preview_refresh_rate,
+                live_preview_refresh_rate: value.live_settings.refresh_rate,
             },
             switch: value.switch.map(io::Switch::try_into).transpose()?,
             switch_2: value.switch_2.map(io::Switch::try_into).transpose()?,

@@ -1,6 +1,7 @@
 use crate::components::changes::*;
 use crate::components::footer::*;
 use crate::components::nix_preview::*;
+use crate::components::overview::OverviewOutput;
 use crate::components::switch::SwitchOutput;
 use crate::components::windows::*;
 use config_lib::io::{self, RawIOConfig};
@@ -813,7 +814,45 @@ impl SimpleComponent for Root {
                         if let Some(windows) = cfg.windows.as_mut() {
                             windows.items_per_row = items_per_row;
                         }
-                    } //     WindowsOutput::Overview(msg) => match msg {
+                    }
+                    WindowsOutput::Overview(msg) => {
+                        if let Some(windows) = cfg.windows.as_mut() {
+                            match msg {
+                                OverviewOutput::Enabled(config) => windows.overview = config,
+                                OverviewOutput::FilterSameClass(enabled) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::SameClass, enabled);
+                                    }
+                                }
+                                OverviewOutput::FilterWorkspace(enabled) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::CurrentWorkspace, enabled);
+                                    }
+                                }
+                                OverviewOutput::FilterMonitor(enabled) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::CurrentMonitor, enabled);
+                                    }
+                                }
+                                OverviewOutput::ExcludeWorkspaces(value) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        overview.exclude_workspaces = value.into_boxed_str();
+                                    }
+                                }
+                                OverviewOutput::TopOffset(value) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        overview.top_offset = value;
+                                    }
+                                }
+                                OverviewOutput::LivePreview(value) => {
+                                    if let Some(overview) = windows.overview.as_mut() {
+                                        overview.live_preview = value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //     WindowsOutput::Overview(msg) => match msg {
                     //         WindowsOverviewOutput::Enabled(enabled) => {
                     //             r#ref.overview.enabled = enabled;
                     //         }
@@ -921,6 +960,13 @@ impl SimpleComponent for Root {
                                 };
                             }
                         }
+                        SwitchOutput::LivePreview(enabled) => {
+                            if let Some(windows) = cfg.windows.as_mut() {
+                                if let Some(switch) = windows.switch.as_mut() {
+                                    switch.live_preview = enabled;
+                                }
+                            }
+                        }
                         SwitchOutput::ExcludeWorkspaces(exclude_workspaces) => {
                             if let Some(windows) = cfg.windows.as_mut() {
                                 if let Some(switch) = windows.switch.as_mut() {
@@ -1012,6 +1058,13 @@ impl SimpleComponent for Root {
                                 };
                             }
                         }
+                        SwitchOutput::LivePreview(enabled) => {
+                            if let Some(windows) = cfg.windows.as_mut() {
+                                if let Some(switch) = windows.switch_2.as_mut() {
+                                    switch.live_preview = enabled;
+                                }
+                            }
+                        }
                         SwitchOutput::ExcludeWorkspaces(exclude_workspaces) => {
                             if let Some(windows) = cfg.windows.as_mut() {
                                 if let Some(switch) = windows.switch_2.as_mut() {
@@ -1032,6 +1085,21 @@ impl SimpleComponent for Root {
                 sender.input(RootInput::DispatchConfigUpdate);
             }
         }
+    }
+}
+
+fn update_overview_filter(filters: &mut Vec<io::FilterBy>, filter: io::FilterBy, enabled: bool) {
+    filters.retain(|existing| {
+        existing != &filter
+            && !(enabled
+                && matches!(
+                    (&filter, existing),
+                    (io::FilterBy::CurrentWorkspace, io::FilterBy::CurrentMonitor)
+                        | (io::FilterBy::CurrentMonitor, io::FilterBy::CurrentWorkspace)
+                ))
+    });
+    if enabled {
+        filters.push(filter);
     }
 }
 

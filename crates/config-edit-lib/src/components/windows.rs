@@ -1,3 +1,4 @@
+use crate::components::overview::*;
 use crate::components::switch::*;
 
 use config_lib::io;
@@ -11,7 +12,7 @@ pub struct Windows {
     prev_enabled: bool,
     prev_config: io::Windows,
 
-    // overview: Controller<WindowsOverview>,
+    overview: Controller<Overview>,
     switch: Controller<Switch>,
     switch_2: Controller<Switch>,
 }
@@ -30,7 +31,7 @@ pub enum WindowsOutput {
     Scale(f64),
     ItemsPerRow(u8),
 
-    // Overview(WindowsOverviewOutput),
+    Overview(OverviewOutput),
     Switch(SwitchOutput),
     Switch2(SwitchOutput),
 }
@@ -50,6 +51,9 @@ impl SimpleComponent for Windows {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let overview = Overview::builder()
+            .launch(())
+            .forward(sender.output_sender(), WindowsOutput::Overview);
         let switch = Switch::builder()
             .launch(SwitchInit { name: "Switch 1" })
             .forward(sender.output_sender(), WindowsOutput::Switch);
@@ -63,6 +67,7 @@ impl SimpleComponent for Windows {
             config: Default::default(),
             prev_config: Default::default(),
 
+            overview,
             switch,
             switch_2,
         };
@@ -91,7 +96,8 @@ impl SimpleComponent for Windows {
                     gtk::Label {
                         set_label: "Windows",
                         set_halign: gtk::Align::Start,
-                        set_css_classes: &["setting-title"],
+                        #[watch]
+                        set_css_classes: if model.enabled == model.prev_enabled { &["setting-title"] } else { &["setting-title", "blue-label"] },
                     },
                     gtk::Label {
                         set_label: "Configure the overview and switcher",
@@ -109,6 +115,8 @@ impl SimpleComponent for Windows {
             },
             gtk::Frame {
                 set_css_classes: &["setting-card"],
+                #[watch]
+                set_visible: model.enabled,
                 gtk::ListBox {
                     set_selection_mode: gtk::SelectionMode::None,
                     set_css_classes: &["boxed-list"],
@@ -127,7 +135,7 @@ impl SimpleComponent for Windows {
                       #[watch]
                       set_css_classes: if (model.config.scale - model.prev_config.scale).abs() < 0.01 { &[] } else { &["blue-label"] },
                       add_suffix = &gtk::SpinButton {
-                          set_adjustment: &gtk::Adjustment::new(8.5, 0.5, 15.0, 0.5, 1.0, 0.0),
+                          set_adjustment: &gtk::Adjustment::new(8.5, 0.1, 15.0, 0.5, 1.0, 0.0),
                           set_width_request: 220,
                           set_valign: gtk::Align::Center,
                           set_digits: 2,
@@ -155,8 +163,15 @@ impl SimpleComponent for Windows {
                     },
                 }
             },
-            model.switch.widget(),
-            model.switch_2.widget(),
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_spacing: 14,
+                #[watch]
+                set_visible: model.enabled,
+                model.overview.widget(),
+                model.switch.widget(),
+                model.switch_2.widget(),
+            },
         }
     }
 
@@ -179,6 +194,8 @@ impl SimpleComponent for Windows {
                         self.enabled = false;
                     }
                 };
+                self.overview
+                    .emit(OverviewInput::Set(self.config.overview.clone()));
                 self.switch
                     .emit(SwitchInput::Set(self.config.switch.clone()));
                 self.switch_2
@@ -194,6 +211,8 @@ impl SimpleComponent for Windows {
                         self.prev_enabled = false;
                     }
                 };
+                self.overview
+                    .emit(OverviewInput::SetPrev(self.prev_config.overview.clone()));
                 self.switch
                     .emit(SwitchInput::SetPrev(self.prev_config.switch.clone()));
                 self.switch_2
@@ -202,6 +221,7 @@ impl SimpleComponent for Windows {
             WindowsInput::Reset => {
                 self.config = self.prev_config.clone();
                 self.enabled = self.prev_enabled;
+                self.overview.emit(OverviewInput::Reset);
                 self.switch.emit(SwitchInput::ResetSwitch);
                 self.switch_2.emit(SwitchInput::ResetSwitch);
             }
