@@ -457,8 +457,9 @@ impl SimpleComponent for Root {
                   .application_name("Hyprshell Settings Editor")
                   .developer_name("H3rmt")
                   .issue_url("https://github.com/H3rmt/hyprshell/issues")
-                  .license(include_str!("../../../../LICENSE"))
-                  // TODO
+                  // TODO works on release build but not in dry publish
+                  // .license(include_str!("../../../../LICENSE"))
+                  // TODOgit
                   .release_notes("<p>RELEASE NOTES</p>\n<ul><li>a</li><li>b</li></ul><p><code>let test = 23;</code></p>")
                   // .release_notes_version(env!("CARGO_PKG_VERSION"))
                   .version(env!("CARGO_PKG_VERSION"))
@@ -661,7 +662,9 @@ impl SimpleComponent for Root {
             RootInput::Save(_close) => {
                 sender.input(RootInput::Toast(
                     adw::Toast::builder()
-                        .title("Saving is not supported in this alpha. Changes have not been saved.")
+                        .title(
+                            "Saving is not supported in this alpha. Changes have not been saved.",
+                        )
                         .timeout(6)
                         .build(),
                 ));
@@ -670,7 +673,8 @@ impl SimpleComponent for Root {
                 *(self.config.get_raw_config_mut()) = self.prev_config.clone();
 
                 self.windows.emit(WindowsInput::Reset);
-                self.changes.emit(ChangesInput::SetConfig(self.prev_config.clone()));
+                self.changes
+                    .emit(ChangesInput::SetConfig(self.prev_config.clone()));
                 // self.launcher.emit(LauncherInput::Reset);
                 // self.changes
                 //     .emit(ChangesInput::SetConfig(self.config.clone()));
@@ -817,17 +821,29 @@ impl SimpleComponent for Root {
                                 }
                                 OverviewOutput::FilterSameClass(enabled) => {
                                     if let Some(overview) = windows.overview.as_mut() {
-                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::SameClass, enabled);
+                                        update_overview_filter(
+                                            &mut overview.filter_by,
+                                            io::FilterBy::SameClass,
+                                            enabled,
+                                        );
                                     }
                                 }
                                 OverviewOutput::FilterWorkspace(enabled) => {
                                     if let Some(overview) = windows.overview.as_mut() {
-                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::CurrentWorkspace, enabled);
+                                        update_overview_filter(
+                                            &mut overview.filter_by,
+                                            io::FilterBy::CurrentWorkspace,
+                                            enabled,
+                                        );
                                     }
                                 }
                                 OverviewOutput::FilterMonitor(enabled) => {
                                     if let Some(overview) = windows.overview.as_mut() {
-                                        update_overview_filter(&mut overview.filter_by, io::FilterBy::CurrentMonitor, enabled);
+                                        update_overview_filter(
+                                            &mut overview.filter_by,
+                                            io::FilterBy::CurrentMonitor,
+                                            enabled,
+                                        );
                                     }
                                 }
                                 OverviewOutput::ExcludeWorkspaces(value) => {
