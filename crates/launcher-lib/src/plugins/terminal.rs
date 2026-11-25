@@ -1,8 +1,9 @@
 use crate::plugin::{PluginItem, PluginReturn};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
-use exec_lib::run::run_program;
+use exec_lib::run::{run_program, run_terminal_program};
 use relm4::adw::gtk::gdk::Key;
+use std::path::Path;
 use std::path::PathBuf;
 use tracing::debug;
 
@@ -23,21 +24,21 @@ pub fn get_static_options(default_terminal: Option<&str>) -> Vec<PluginItem> {
     }]
 }
 
-pub fn launch_option(text: &str, default_terminal: Option<&str>) -> PluginReturn {
+pub fn launch_option(text: &str, default_terminal: Option<&str>, cache_dir: &Path) -> PluginReturn {
     if text.is_empty() {
         debug!("No text to run in terminal");
         return PluginReturn {
             show_animation: false,
         };
     }
-    run_program(
+    run_terminal_program(
         // exec shell to prevent needing 2 exits
         // echo to make the shell look better and show the executed command
         &format!("$SHELL -c \"echo '> {text}';{text};echo;exec $SHELL\""),
         None,
-        true,
         default_terminal,
         false,
+        cache_dir,
     )
     .warn_details("Failed to run program");
     PluginReturn {

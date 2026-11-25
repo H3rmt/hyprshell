@@ -4,6 +4,7 @@ use core_lib::{
     WarnWithDetails,
     transfer::{Identifier, PluginName},
 };
+use std::path::Path;
 use tracing::{error, info, trace};
 
 pub fn get_launch_items(config: &ActionsPluginConfig) -> Vec<LaunchItem> {
@@ -36,6 +37,7 @@ pub fn run_action(
     text: &str,
     _data_additional: Option<&str>,
     args: Option<&str>,
+    cache_dir: &Path,
 ) -> PluginReturn {
     if let Some(command) = data {
         let mut command = command.to_string();
@@ -63,7 +65,7 @@ pub fn run_action(
             info!("Not running action: {command} (debug mode)");
         } else {
             info!("Running action: {command}");
-            exec_lib::run::run_program(&command, None, false, None, true)
+            exec_lib::run::run_program(&command, None, true, cache_dir)
                 .warn_details("Failed to run command");
         }
     }

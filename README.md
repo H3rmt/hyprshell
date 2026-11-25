@@ -149,6 +149,7 @@ Debug commands are provided to help troubleshoot desktop files, icons, launcher 
 - `HYPRSHELL_RELOAD_DELAY`: Set the delay for starting the restart listeners(config, css, monitors, hypr-config) in milliseconds (default: `1000`).
 - `HYPRSHELL_RELOAD_DEBOUNCE`: Set the debounce time in milliseconds for reloading hyprshell after a message from restart listeners (default: `750`).
 - `HYPRSHELL_LOG_MODULE_PATH`: Add the module path to each log message. (use with -vv)
+- `HYPRSHELL_LOG_COMMAND_OUTPUT`: Set to `true` to write each launched command's stdout and stderr to a separate file under `<cache_dir>/logs`.
 - `HYPRSHELL_EXPERIMENTAL`: Enables experimental features (grep through the source code for `"HYPRSHELL_EXPERIMENTAL"` to see them)
 - `HYPRSHELL_RUN_ACTIONS_IN_DEBUG`: Run actions from launcher plugin in debug mode
 - `HYPRSHELL_NO_REGISTER_KEYBINDS`: TODO

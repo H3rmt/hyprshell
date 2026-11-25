@@ -69,6 +69,7 @@ pub struct OverviewRootInit {
     pub general: config_lib::WindowsGeneral,
     pub overview: config_lib::Overview,
     pub data_dir: Rc<PathBuf>,
+    pub cache_dir: Rc<PathBuf>,
     pub thumbnail_refresh_ms: u64,
 }
 
@@ -140,6 +141,7 @@ impl SimpleComponent for OverviewRoot {
             .launch(LauncherRootInit {
                 launcher: init.overview.launcher.clone(),
                 data_dir: init.data_dir,
+                cache_dir: init.cache_dir,
             })
             .forward(sender.input_sender(), |msg| match msg {
                 LauncherRootOutput::Switch(dir, ws) => OverviewRootInput::Switch(dir, ws),

@@ -529,9 +529,11 @@ impl SimpleComponent for Root {
             // },
             RootInput::ReloadHyprshell => {
                 let mut cmd = Command::new(get_hyprshell_path());
-                cmd.arg("socat").arg(core_lib::binds::generate_transfer(
-                    &core_lib::transfer::ExternalTransferType::Reload,
-                ));
+                cmd.arg("internal")
+                    .arg("socat")
+                    .arg(core_lib::binds::generate_transfer(
+                        &core_lib::transfer::ExternalTransferType::Reload,
+                    ));
                 if let Ok(output) = cmd.output().inspect_err(|err| {
                     sender.input_sender().emit(RootInput::Toast(
                         adw::Toast::builder()

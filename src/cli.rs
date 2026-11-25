@@ -80,6 +80,13 @@ pub enum Command {
         json: String,
     },
 
+    /// Internal helper commands
+    #[clap(hide = true)]
+    Internal {
+        #[clap(subcommand)]
+        command: InternalCommand,
+    },
+
     /// Generate completions for shells
     Completions {
         /// Shell to generate completion for (if not set completions for all shells will be generated)
@@ -96,6 +103,45 @@ pub enum Command {
         #[arg(short = 'd', long, default_value_t = false)]
         delete: bool,
     },
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum InternalCommand {
+    /// Send JSON to the hyprshell socket
+    Socat {
+        /// JSON to send to the socket
+        json: String,
+    },
+
+    /// Run a command detached from the launcher
+    Run(InternalRunArgs),
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct InternalRunArgs {
+    /// Directory in which command output logs are stored
+    #[arg(long, value_name = "PATH", required = true)]
+    pub log_dir: PathBuf,
+
+    /// Store command stdout and stderr for every run
+    #[arg(long)]
+    pub store_logs: bool,
+
+    /// Keep the command in the current process group
+    #[arg(long, alias = "same-process-group")]
+    pub same_process_group: bool,
+
+    /// Interpret COMMAND as a bash command string
+    #[arg(long)]
+    pub shell: bool,
+
+    /// Working directory for COMMAND
+    #[arg(long, value_name = "PATH")]
+    pub working_directory: Option<PathBuf>,
+
+    /// Command to execute; place it after `--`
+    #[arg(last = true, required = true, num_args = 1..)]
+    pub command: Vec<String>,
 }
 
 #[derive(Subcommand, Debug, Clone)]

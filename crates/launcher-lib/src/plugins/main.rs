@@ -76,6 +76,7 @@ pub fn launch(
     text: &str,
     default_terminal: Option<&str>,
     data_dir: &Path,
+    cache_dir: &Path,
     args: Option<&str>,
 ) -> PluginReturn {
     let _span = debug_span!("launch_plugin").entered();
@@ -86,18 +87,17 @@ pub fn launch(
                 iden.data_additional.as_deref(),
                 default_terminal,
                 data_dir,
+                cache_dir,
             )
         }),
         PluginName::Shell => {
-            debug_span!("shell").in_scope(|| shell::launch_option(text, default_terminal))
+            debug_span!("shell").in_scope(|| shell::launch_option(text, cache_dir))
         }
-        PluginName::Terminal => {
-            debug_span!("terminal").in_scope(|| terminal::launch_option(text, default_terminal))
-        }
-        PluginName::WebSearch => {
-            debug_span!("search").in_scope(|| web::launch_option(iden.data.as_deref(), text))
-        }
-        PluginName::Path => debug_span!("path").in_scope(|| path::launch_option(text)),
+        PluginName::Terminal => debug_span!("terminal")
+            .in_scope(|| terminal::launch_option(text, default_terminal, cache_dir)),
+        PluginName::WebSearch => debug_span!("search")
+            .in_scope(|| web::launch_option(iden.data.as_deref(), text, cache_dir)),
+        PluginName::Path => debug_span!("path").in_scope(|| path::launch_option(text, cache_dir)),
         PluginName::Calc => {
             #[cfg(feature = "calc")]
             debug_span!("calc")
@@ -114,6 +114,7 @@ pub fn launch(
                 text,
                 iden.data_additional.as_deref(),
                 args,
+                cache_dir,
             )
         }),
     }

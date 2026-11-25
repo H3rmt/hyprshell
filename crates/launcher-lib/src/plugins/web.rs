@@ -38,7 +38,7 @@ impl From<SearchEngine> for PluginItem {
     }
 }
 
-pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {
+pub fn launch_option(iden: Option<&str>, text: &str, cache_dir: &Path) -> PluginReturn {
     if text.is_empty() {
         debug!("No text to search for");
         return PluginReturn {
@@ -62,7 +62,7 @@ pub fn launch_option(iden: Option<&str>, text: &str) -> PluginReturn {
             format!("{} '{}'", browser.exec, url)
         };
         debug!("Launching browser: {}", cmdline);
-        run_program(&cmdline, None, false, None, false).warn_details("Failed to run program");
+        run_program(&cmdline, None, false, cache_dir).warn_details("Failed to run program");
 
         // try to focus browser
         if let Some(class) = &browser.startup_wm_class {

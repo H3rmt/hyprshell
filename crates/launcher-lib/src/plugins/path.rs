@@ -41,7 +41,7 @@ pub fn get_launch_items(text: &str) -> Vec<MatchedLaunchItem> {
     }
 }
 
-pub fn launch_option(text: &str) -> PluginReturn {
+pub fn launch_option(text: &str, cache_dir: &Path) -> PluginReturn {
     if text.is_empty() {
         debug!("No text to search for");
         return PluginReturn {
@@ -64,7 +64,7 @@ pub fn launch_option(text: &str) -> PluginReturn {
         format!("{} {}", file_manager.exec, text)
     };
     debug!("Launching file-manger: {}", cmdline);
-    run_program(&cmdline, None, false, None, false).warn_details("Failed to run program");
+    run_program(&cmdline, None, false, cache_dir).warn_details("Failed to run program");
     PluginReturn {
         show_animation: true,
     }

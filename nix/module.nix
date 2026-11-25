@@ -208,7 +208,7 @@ in
                       {
                         name = "Reload Hyprshell";
                         details = "Reload Hyprshell";
-                        command = "sleep 1; hyprshell socat '\"Restart\"'";
+                        command = "sleep 1; hyprshell internal socat '\"Restart\"'";
                         icon = "system-restart";
                       }
                     ];

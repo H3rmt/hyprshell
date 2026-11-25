@@ -3,7 +3,7 @@ use crate::plugins::applications::data::{get_stored_runs, save_run};
 use crate::plugins::applications::map::{DesktopAction, DesktopEntry, get_all_desktop_entries};
 use core_lib::WarnWithDetails;
 use core_lib::transfer::{Identifier, PluginName};
-use exec_lib::run::run_program;
+use exec_lib::run::{run_program, run_terminal_program};
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::{trace, warn};
@@ -73,6 +73,7 @@ pub fn launch_option(
     data_additional: Option<&str>,
     default_terminal: Option<&str>,
     data_dir: &Path,
+    cache_dir: &Path,
 ) -> PluginReturn {
     let entries = get_all_desktop_entries();
     if let Some(data) = data {
@@ -96,14 +97,19 @@ pub fn launch_option(
             } else {
                 entry.exec.clone()
             };
-            run_program(
-                &exec,
-                entry.exec_path.as_deref(),
-                entry.terminal,
-                default_terminal,
-                false,
-            )
-            .warn_details("Failed to run program");
+            if entry.terminal {
+                run_terminal_program(
+                    &exec,
+                    entry.exec_path.as_deref(),
+                    default_terminal,
+                    false,
+                    cache_dir,
+                )
+                .warn_details("Failed to run terminal program");
+            } else {
+                run_program(&exec, entry.exec_path.as_deref(), false, cache_dir)
+                    .warn_details("Failed to run program");
+            }
             trace!("Saving run: {:?}", entry.source);
             save_run(&entry.source, data_dir).warn_details("Failed to cache run");
             return PluginReturn {

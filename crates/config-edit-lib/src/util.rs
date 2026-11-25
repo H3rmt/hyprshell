@@ -128,6 +128,8 @@ pub fn handle_key_and_modifier(
 
 #[tracing::instrument(level = "trace", ret(level = "trace"))]
 pub fn mod_key_to_accelerator(modifier: Modifier, key: &str) -> String {
+    // TODO mouse:
+    // https://wiki.hypr.land/configuring/core/binds/devices/mouse/
     if let Some(code) = key.strip_prefix("code:") {
         return keycode_to_accelerator(modifier, code).unwrap_or_default();
     }

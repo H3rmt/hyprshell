@@ -17,7 +17,7 @@ pub fn get_hyprshell_path() -> String {
 #[must_use]
 pub fn generate_transfer_socat(transfer: &ExternalTransferType) -> String {
     format!(
-        r"{} socat '{}'",
+        r"{} internal socat '{}'",
         get_hyprshell_path(),
         generate_transfer(transfer)
     )

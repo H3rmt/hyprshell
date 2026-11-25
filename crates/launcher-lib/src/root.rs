@@ -28,6 +28,7 @@ pub struct LauncherRoot {
 
     switching: bool,
     data_dir: Rc<PathBuf>,
+    cache_dir: Rc<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -48,6 +49,7 @@ pub enum LauncherRootInput {
 pub struct LauncherRootInit {
     pub launcher: Launcher,
     pub data_dir: Rc<PathBuf>,
+    pub cache_dir: Rc<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -117,6 +119,7 @@ impl SimpleComponent for LauncherRoot {
         let model = Self {
             settings: init.launcher,
             data_dir: init.data_dir,
+            cache_dir: init.cache_dir,
             ui: LauncherUI {
                 window: root.clone(),
                 entry,
@@ -178,6 +181,7 @@ impl SimpleComponent for LauncherRoot {
                         &self.ui.entry.text(),
                         self.settings.default_terminal.as_deref(),
                         &self.data_dir,
+                        &self.cache_dir,
                         None,
                     );
                 } else {
@@ -198,6 +202,7 @@ impl SimpleComponent for LauncherRoot {
                     &self.ui.entry.text(),
                     self.settings.default_terminal.as_deref(),
                     &self.data_dir,
+                    &self.cache_dir,
                     item.args.as_deref(),
                 );
                 sender

@@ -29,7 +29,6 @@ pub struct Root {
     data_dir: Rc<PathBuf>,
     config_file: Rc<PathBuf>,
     css_path: Rc<PathBuf>,
-    #[allow(unused)]
     cache_dir: Rc<PathBuf>,
 }
 
@@ -187,6 +186,7 @@ impl Root {
                             general: windows.general.clone(),
                             overview: overview.clone(),
                             data_dir: self.data_dir.clone(),
+                            cache_dir: self.cache_dir.clone(),
                             thumbnail_refresh_ms: 500,
                         })
                         .detach();
